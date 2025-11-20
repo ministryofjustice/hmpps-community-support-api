@@ -7,6 +7,5 @@ CREATE TABLE IF NOT EXISTS referral (
     sex TEXT,
     date_of_birth DATE,
     ethnicity TEXT,
-    intervention_name TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -9,7 +9,6 @@ data class ReferralDto(
   val lastName: String?,
   val crn: String?,
   val referenceNumber: String?,
-  val interventionTitle: String?,
 ) {
   companion object {
     fun from(referral: Referral): ReferralDto = ReferralDto(
@@ -18,7 +17,6 @@ data class ReferralDto(
       lastName = referral.lastName,
       crn = referral.crn,
       referenceNumber = referral.referenceNumber,
-      interventionTitle = referral.interventionName,
     )
   }
 }

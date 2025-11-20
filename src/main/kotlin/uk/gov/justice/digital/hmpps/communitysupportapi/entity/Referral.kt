@@ -33,9 +33,6 @@ class Referral(
 
   val ethnicity: String? = null,
 
-  @Column(name = "intervention_name")
-  val interventionName: String? = null,
-
   @Column(name = "created_at", nullable = false)
   val createdAt: LocalDateTime = LocalDateTime.now(),
 )
