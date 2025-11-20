@@ -16,8 +16,13 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: ${hmpps-auth.url}/.well-known/jwks.json
-
       client:
+        registration:
+          community-support-api-client:
+            provider: hmpps-auth
+            client-id: hmpps-community-support-ipb-ui-client-1
+            client-secret: clientsecret
+            authorization-grant-type: client_credentials
         provider:
           hmpps-auth:
             token-uri: ${hmpps-auth.url}/oauth/token
