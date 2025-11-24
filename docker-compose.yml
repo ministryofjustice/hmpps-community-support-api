@@ -33,7 +33,7 @@ services:
       test: pg_isready -d auth-db
 
   postgresql:
-    image: postgres:17.4
+    image: postgres:17.7
     container_name: postgres-api
     networks:
       - hmpps
