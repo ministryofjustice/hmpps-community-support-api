@@ -10,7 +10,10 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
@@ -44,4 +47,20 @@ class ReferralController(
   fun getReferral(@PathVariable referralId: UUID): ResponseEntity<ReferralDto> = referralService.getReferral(referralId)
     .map { referral -> ResponseEntity.ok(ReferralDto.from(referral)) }
     .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+  @Operation(summary = "Create a referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral created",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralDto::class))],
+      ),
+    ],
+  )
+  @PostMapping("/referrals")
+  fun createReferral(@RequestBody createReferralRequest: CreateReferralRequest): ResponseEntity<ReferralDto> {
+    val referral = referralService.createReferral(createReferralRequest)
+    return ResponseEntity.ok(ReferralDto.from(referral))
+  }
 }
