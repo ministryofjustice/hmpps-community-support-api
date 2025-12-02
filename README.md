@@ -70,8 +70,8 @@ will still automatically go to `dps-releases` as well. This is configured by `re
 
 Ths channel should be specific to your team and is for daily / weekly security scanning job results. It is your team's
 responsibility to keep up-to-date with security issues and update your application so that these jobs pass. You will
-only be notified if the jobs fail. The scan results can always be found in circleci for your project. This is
-configured by `alerts-slack-channel` in `.circleci/config.yml`.
+only be notified if the jobs fail. The scan results can always be found in GitHub actions and results are sent to the GitHub security tab. This is
+configured by setting GitHub actions environment variable called `SECURITY_ALERTS_SLACK_CHANNEL_ID`.
 
 ### Non production kubernetes alerts
 
