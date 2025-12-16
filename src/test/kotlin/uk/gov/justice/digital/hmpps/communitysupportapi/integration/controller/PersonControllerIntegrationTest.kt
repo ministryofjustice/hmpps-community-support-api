@@ -1,10 +1,11 @@
-package uk.gov.justice.digital.hmpps.communitysupportapi.integration
+package uk.gov.justice.digital.hmpps.communitysupportapi.integration.controller
 
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 
 class PersonControllerIntegrationTest : IntegrationTestBase() {
 
