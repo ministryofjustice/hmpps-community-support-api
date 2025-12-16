@@ -55,11 +55,15 @@ abstract class IntegrationTestBase {
 
   internal fun setAuthorisation(
     username: String? = "AUTH_ADM",
-    roles: List<String> = listOf(),
+    roles: List<String> = listOf("ROLE_IPB_FRONTEND_RW"),
     scopes: List<String> = listOf("read"),
   ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisationHeader(username = username, scope = scopes, roles = roles)
 
   protected fun stubPingWithResponse(status: Int) {
     hmppsAuth.stubHealthPing(status)
+  }
+
+  fun stubAuthTokenEndpoint() {
+    hmppsAuth.stubGrantToken()
   }
 }
