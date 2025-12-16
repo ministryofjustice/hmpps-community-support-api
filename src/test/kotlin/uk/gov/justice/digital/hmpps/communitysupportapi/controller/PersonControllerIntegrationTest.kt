@@ -1,10 +1,11 @@
-package uk.gov.justice.digital.hmpps.communitysupportapi.integration
+package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 
 class PersonControllerIntegrationTest : IntegrationTestBase() {
 
@@ -25,7 +26,13 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     fun `should return forbidden if no role`() {
       webTestClient.get()
         .uri("/person/PERSONID")
-        .headers(setAuthorisation())
+        .headers(
+          setAuthorisation(
+            "AUTH_ADM",
+            listOf(),
+            listOf("read"),
+          ),
+        )
         .exchange()
         .expectStatus()
         .isForbidden
@@ -46,7 +53,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
       val expectedPersonResult = PersonDto("PERSONID")
       webTestClient.get()
         .uri("/person/PERSONID")
-        .headers(setAuthorisation(roles = listOf("ROLE_IPB_FRONTEND_RW")))
+        .headers(setAuthorisation())
         .exchange()
         .expectStatus()
         .isOk
@@ -60,7 +67,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     fun `should return Not Found with invalid person identifier`() {
       webTestClient.get()
         .uri("/person/A")
-        .headers(setAuthorisation(roles = listOf("ROLE_IPB_FRONTEND_RW")))
+        .headers(setAuthorisation())
         .exchange()
         .expectStatus()
         .isNotFound
