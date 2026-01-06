@@ -21,6 +21,7 @@ dependencies {
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-flyway")
+  implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
   // security
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
@@ -28,6 +29,7 @@ dependencies {
   implementation("org.springframework.security:spring-security-crypto:7.0.2")
   implementation("com.nimbusds:oauth2-oidc-sdk:11.30.1")
 
+  testImplementation("org.springframework.boot:spring-boot-test-autoconfigure")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.0.0-beta-2")
   testImplementation("org.springframework.boot:spring-boot-starter-test")

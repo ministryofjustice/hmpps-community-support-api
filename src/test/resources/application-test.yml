@@ -34,3 +34,12 @@ services:
 wiremock:
   logging:
     verbose: true
+
+external-api:
+  auth:
+    token: test-token
+  locations:
+    delius:
+      base-url: http://localhost:<wiremock_port>
+    nomis:
+      base-url: http://localhost:<wiremock_port>

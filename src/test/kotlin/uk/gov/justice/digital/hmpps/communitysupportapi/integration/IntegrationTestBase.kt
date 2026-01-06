@@ -1,5 +1,9 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.integration
 
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration
+import com.github.tomakehurst.wiremock.http.JvmProxyConfigurer.configureFor
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -12,6 +16,7 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.testcontainers.containers.PostgreSQLContainer
+import uk.gov.justice.digital.hmpps.communitysupportapi.config.RestClientConfig
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.wiremock.HmppsAuthApiExtension.Companion.hmppsAuth
 import uk.gov.justice.hmpps.test.kotlin.auth.JwtAuthorisationHelper
@@ -31,6 +36,9 @@ abstract class IntegrationTestBase {
   companion object {
 
     @JvmStatic
+    val wireMockServer = WireMockServer(WireMockConfiguration.options().dynamicPort())
+
+    @JvmStatic
     private val postgresContainer = PostgreSQLContainer<Nothing>("postgres:17")
       .apply {
         withUsername("admin")
@@ -41,7 +49,15 @@ abstract class IntegrationTestBase {
     @BeforeAll
     @JvmStatic
     fun startContainers() {
+      wireMockServer.start()
+      configureFor(wireMockServer.port())
       postgresContainer.start()
+    }
+
+    @AfterAll
+    @JvmStatic
+    fun stopWireMock() {
+      wireMockServer.stop()
     }
 
     @DynamicPropertySource
@@ -50,6 +66,9 @@ abstract class IntegrationTestBase {
       registry.add("spring.datasource.url") { postgresContainer.jdbcUrl }
       registry.add("spring.datasource.username") { postgresContainer.username }
       registry.add("spring.datasource.password") { postgresContainer.password }
+      registry.add("external-api.locations.delius.base-url") { wireMockServer.baseUrl() }
+      registry.add("external-api.locations.nomis.base-url") { wireMockServer.baseUrl() }
+      registry.add("external-api.auth.token") { "test-token" }
     }
   }
 

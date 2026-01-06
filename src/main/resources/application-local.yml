@@ -15,7 +15,7 @@ spring:
         registration:
           community-support-api-client:
             provider: hmpps-auth
-            client-id: ${API_CLIENT_ID:hmpps-community-support-ipb-ui-client-1}
+            client-id: ${API_CLIENT_ID:hmpps-community-support-api-1}
             client-secret: ${API_CLIENT_SECRET:clientsecret}
             authorization-grant-type: client_credentials
         provider:
@@ -23,4 +23,15 @@ spring:
             token-uri: ${hmpps-auth.url}/oauth/token
 
 hmpps-auth:
-  url: ${HMPPS_AUTH_BASE_URL:http://localhost:8090}/auth
+  url: https://sign-in-dev.hmpps.service.justice.gov.uk/auth
+
+logging:
+  level:
+    org.springframework.security.oauth2: DEBUG
+
+external-api:
+  locations:
+    delius:
+      base-url: http://localhost:<wiremock_port>
+    nomis:
+      url: https://nomis-api-dev.prison.service.justice.gov.uk/prisoner-search-dev.prison.service.justice.gov.uk/
