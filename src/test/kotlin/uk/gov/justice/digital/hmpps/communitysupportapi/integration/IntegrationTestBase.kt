@@ -12,6 +12,7 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.testcontainers.containers.PostgreSQLContainer
+import uk.gov.justice.digital.hmpps.communitysupportapi.common.TestDataCleaner
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.wiremock.HmppsAuthApiExtension.Companion.hmppsAuth
 import uk.gov.justice.hmpps.test.kotlin.auth.JwtAuthorisationHelper
@@ -27,6 +28,9 @@ abstract class IntegrationTestBase {
 
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthorisationHelper
+
+  @Autowired
+  protected lateinit var testDataCleaner: TestDataCleaner
 
   companion object {
 
