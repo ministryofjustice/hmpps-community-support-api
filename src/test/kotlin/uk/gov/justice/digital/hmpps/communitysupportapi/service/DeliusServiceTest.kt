@@ -10,10 +10,13 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
-import org.springframework.web.util.UriComponentsBuilder
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.DeliusClient
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.DeliusPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toAdditionalDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toPerson
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createDeliusPersonDto
 
 @ExtendWith(MockitoExtension::class)
 class DeliusServiceTest {
@@ -30,18 +33,21 @@ class DeliusServiceTest {
 
   @Test
   fun `should build correct URI and return person details by CRN`() {
-    val crn = "X123456"
+    val deliusPersonDto = createDeliusPersonDto(CRN)
 
-    val expectedResponse = DeliusPersonDto(crn = "X123456")
+    whenever(deliusClient.getPersonByCrn(CRN))
+      .thenReturn(deliusPersonDto)
 
-    whenever(deliusClient.getPersonByCrn(crn))
-      .thenReturn(expectedResponse)
+    val personAggregate = PersonAggregate(
+      person = deliusPersonDto.toPerson(),
+      additionalDetails = deliusPersonDto.toAdditionalDetails(),
+    )
 
-    val result = deliusService.getPersonDetailsByCrn(crn)
+    val result = deliusService.getPersonDetailsByCrn(CRN)
 
-    assertThat(result).isEqualTo(expectedResponse)
+    assertThat(result).isEqualTo(personAggregate)
 
-    verify(deliusClient).getPersonByCrn(crn)
+    verify(deliusClient).getPersonByCrn(CRN)
     verifyNoMoreInteractions(deliusClient)
   }
 

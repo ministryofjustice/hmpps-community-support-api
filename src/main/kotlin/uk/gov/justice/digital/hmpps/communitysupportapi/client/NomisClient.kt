@@ -6,11 +6,12 @@ import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
+import org.springframework.web.util.UriComponentsBuilder
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.nomis.NomisPersonDto
 
 @Component
 class NomisClient(
-  @Value("\${external-api.locations.nomis.url}") private val url: String, // should be baseUrl
+  @Value("\${external-api.locations.nomis.base-url}") private val baseUrl: String,
   private val restClient: RestClient,
 ) {
   companion object {
@@ -18,9 +19,13 @@ class NomisClient(
   }
 
   fun getPersonByPrisonerNumber(prisonerNumber: String): NomisPersonDto? {
-    log.debug("Calling Nomis to retrieve person details using Prisoner Number: {}", prisonerNumber)
+    log.debug("Calling Nomis to retrieve person details using prisoner number: {}", prisonerNumber)
 
-    val uri = "$url/prisoner/$prisonerNumber" // needs clarifying
+    val uri = UriComponentsBuilder
+      .fromUriString(baseUrl)
+      .pathSegment("prisoner", prisonerNumber)
+      .build()
+      .toUri()
 
     return try {
       restClient.get()
@@ -28,7 +33,7 @@ class NomisClient(
         .retrieve()
         .body<NomisPersonDto>()
     } catch (e: HttpClientErrorException.NotFound) {
-      log.info("No Nomis person found for prisoner number {}", prisonerNumber)
+      log.info("Unable to find person in Nomis with prisoner number {}", prisonerNumber)
       null
     }
   }

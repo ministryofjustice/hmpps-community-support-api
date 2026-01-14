@@ -7,8 +7,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse
-
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.nomisPersonJson
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.nomisPersonNotFoundJson
 
 class NomisClientIntegrationTest : IntegrationTestBase() {
 
@@ -18,19 +19,21 @@ class NomisClientIntegrationTest : IntegrationTestBase() {
   @Test
   fun `should return person when Nomis API returns 200`() {
     wireMockServer.stubFor(
-      get(urlEqualTo("/prisoner/A1234BC"))
+      get(urlEqualTo("/prisoner/$PRISONER_NUMBER"))
         .willReturn(
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(ExternalApiResponse.nomisPersonJson("A1234BC"))
-        )
+            .withBody(
+              nomisPersonJson(PRISONER_NUMBER),
+            ),
+        ),
     )
 
-    val result = nomisClient.getPersonByPrisonerNumber("A1234BC")
+    val result = nomisClient.getPersonByPrisonerNumber(PRISONER_NUMBER)
 
     assertThat(result).isNotNull()
-    assertThat(result!!.prisonerNumber).isEqualTo("A1234BC")
+    assertThat(result!!.prisonerNumber).isEqualTo(PRISONER_NUMBER)
   }
 
   @Test
@@ -41,11 +44,11 @@ class NomisClientIntegrationTest : IntegrationTestBase() {
           aResponse()
             .withStatus(404)
             .withHeader("Content-Type", "application/json")
-            .withBody(ExternalApiResponse.nomisPersonNotFoundJson())
-        )
+            .withBody(nomisPersonNotFoundJson()),
+        ),
     )
 
-    val result = nomisClient.getPersonByPrisonerNumber("UNKNOWN")
+    val result = nomisClient.getPersonByPrisonerNumber("Unknown")
 
     assertThat(result).isNull()
   }

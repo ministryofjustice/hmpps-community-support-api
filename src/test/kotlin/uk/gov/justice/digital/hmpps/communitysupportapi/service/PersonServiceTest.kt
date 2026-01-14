@@ -10,12 +10,20 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
-import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.DeliusPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toAdditionalDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toPerson
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createDeliusPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createNomisPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
 
 @ExtendWith(MockitoExtension::class)
 class PersonServiceTest {
@@ -29,71 +37,86 @@ class PersonServiceTest {
   @Mock
   lateinit var nomisService: NomisService
 
+  @Mock
+  lateinit var personRepository: PersonRepository
+
   @InjectMocks
   lateinit var personService: PersonService
 
   @Test
-  fun `CRN identifier calls Delius service`() {
-    val crnValue = "X123456"
-    val identifier = PersonIdentifier.Crn(crnValue)
+  fun `Calls Delius service with CRN identifier`() {
+    val identifier = PersonIdentifier.Crn(CRN)
 
-    whenever(personIdentifierValidator.validate(crnValue)).thenReturn(identifier)
+    whenever(personIdentifierValidator.validate(CRN)).thenReturn(identifier)
 
-    val deliusDto = DeliusPersonDto(crn = crnValue)
+    val deliusPersonDto = createDeliusPersonDto(CRN)
 
-    whenever(deliusService.getPersonDetailsByCrn(crnValue))
-      .thenReturn(deliusDto)
+    val expectedPersonAggregate = PersonAggregate(
+      person = deliusPersonDto.toPerson(),
+      additionalDetails = deliusPersonDto.toAdditionalDetails(),
+    )
 
-    val result = personService.getPerson(crnValue)
+    whenever(deliusService.getPersonDetailsByCrn(CRN)).thenReturn(expectedPersonAggregate)
 
-    assertEquals(identifier, result.identifier)
+    whenever(personRepository.save(any())).thenAnswer { invocation ->
+      invocation.arguments[0] as Person
+    }
 
-    verify(deliusService).getPersonDetailsByCrn(crnValue)
+    val result = personService.getPerson(CRN)
+
+    assertEquals(identifier.value, result.personIdentifier)
+
+    verify(deliusService).getPersonDetailsByCrn(CRN)
     verifyNoInteractions(nomisService)
   }
 
   @Test
-  fun `Prisoner Number identifier calls Nomis service`() {
-    val prisonerNumber = "A1234BC"
-    val identifier = PersonIdentifier.PrisonerNumber(prisonerNumber)
+  fun `Calls Nomis service with Prisoner Number identifier`() {
+    val identifier = PersonIdentifier.PrisonerNumber(PRISONER_NUMBER)
 
-    whenever(personIdentifierValidator.validate(prisonerNumber)).thenReturn(identifier)
+    whenever(personIdentifierValidator.validate(PRISONER_NUMBER)).thenReturn(identifier)
 
-    val nomisPersonDto = ExternalApiResponse.nomisPerson(prisonerNumber)
+    val nomisPersonDto = createNomisPersonDto(PRISONER_NUMBER)
 
-    whenever(nomisService.getPersonDetailsByPrisonerNumber(prisonerNumber))
-      .thenReturn(nomisPersonDto)
+    val personAggregate = PersonAggregate(
+      person = nomisPersonDto.toPerson(),
+      additionalDetails = nomisPersonDto.toAdditionalDetails(),
+    )
 
-    val result = personService.getPerson(prisonerNumber)
+    whenever(nomisService.getPersonDetailsByPrisonerNumber(PRISONER_NUMBER))
+      .thenReturn(personAggregate)
 
-    verify(nomisService).getPersonDetailsByPrisonerNumber(prisonerNumber)
+    val result = personService.getPerson(PRISONER_NUMBER)
+
+    assertEquals(identifier.value, result.personIdentifier)
+
+    verify(nomisService).getPersonDetailsByPrisonerNumber(PRISONER_NUMBER)
     verifyNoInteractions(deliusService)
-
-    assertEquals(identifier, result.identifier)
   }
 
   @Test
   fun `invalid identifier throws ValidationException`() {
-    whenever(personIdentifierValidator.validate("BAD"))
+    whenever(personIdentifierValidator.validate("NOT_VALID"))
       .thenThrow(ValidationException("Invalid identifier"))
 
     assertThrows<ValidationException> {
-      personService.getPerson("BAD")
+      personService.getPerson("NOT_VALID")
     }
 
     verifyNoInteractions(deliusService, nomisService)
   }
 
   @Test
-  fun `CRN not found in Delius throws NotFoundException`() {
-    val crnValue = "X123456"
-    val identifier = PersonIdentifier.Crn(crnValue)
+  fun `person not found from and external api throws NotFoundException`() {
+    val crn = "X123456"
+    val identifier = PersonIdentifier.Crn(crn)
 
-    whenever(personIdentifierValidator.validate(crnValue)).thenReturn(identifier)
-    whenever(deliusService.getPersonDetailsByCrn(crnValue)).thenReturn(null)
+    whenever(personIdentifierValidator.validate(crn)).thenReturn(identifier)
+    whenever(deliusService.getPersonDetailsByCrn(crn))
+      .thenThrow(NotFoundException("Person not found in Delius with identifier: $crn"))
 
     assertThrows<NotFoundException> {
-      personService.getPerson(crnValue)
+      personService.getPerson(identifier.value)
     }
   }
 }

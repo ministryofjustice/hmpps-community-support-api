@@ -32,6 +32,6 @@ logging:
 external-api:
   locations:
     delius:
-      base-url: http://localhost:<wiremock_port>
+      base-url: https://probation-offender-search-dev.hmpps.service.justice.gov.uk
     nomis:
-      url: https://nomis-api-dev.prison.service.justice.gov.uk/prisoner-search-dev.prison.service.justice.gov.uk/
+      base-url: https://nomis-api-dev.prison.service.justice.gov.uk/prisoner-search-dev.prison.service.justice.gov.uk

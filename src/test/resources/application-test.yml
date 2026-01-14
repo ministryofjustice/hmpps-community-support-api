@@ -40,6 +40,6 @@ external-api:
     token: test-token
   locations:
     delius:
-      base-url: http://localhost:<wiremock_port>
+      base-url: http://localhost:${wiremock.server.port}
     nomis:
-      base-url: http://localhost:<wiremock_port>
+      base-url: http://localhost:${wiremock.server.port}

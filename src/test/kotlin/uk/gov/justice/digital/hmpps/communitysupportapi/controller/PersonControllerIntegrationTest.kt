@@ -9,7 +9,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createNomisPersonAdditionalDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createNomisPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 
 class PersonControllerIntegrationTest : IntegrationTestBase() {
@@ -55,22 +57,29 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return OK with valid person identifier`() {
-      val nomisPerson = ExternalApiResponse.nomisPerson("A1234BC")
+      val nomisPerson = createNomisPersonDto(PRISONER_NUMBER)
 
       wireMockServer.stubFor(
-        get(urlEqualTo("/prisoner/A1234BC"))
+        get(urlEqualTo("/prisoner/$PRISONER_NUMBER"))
           .willReturn(
             aResponse()
               .withStatus(200)
               .withHeader("Content-Type", "application/json")
-              .withBody(nomisPerson.toJson())
-          )
+              .withBody(nomisPerson.toJson()),
+          ),
       )
 
-      val expectedPersonResult = PersonDto("A1234BC")
+      val expectedPersonResult = PersonDto(
+        PRISONER_NUMBER,
+        firstName = nomisPerson.firstName,
+        lastName = nomisPerson.lastName,
+        dateOfBirth = nomisPerson.dateOfBirth,
+        sex = nomisPerson.gender,
+        additionalDetails = createNomisPersonAdditionalDetails(),
+      )
 
       webTestClient.get()
-        .uri("/person/A1234BC")
+        .uri("/person/$PRISONER_NUMBER")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -97,8 +106,8 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
         get(urlEqualTo("/prisoner/$prisonerNumber"))
           .willReturn(
             aResponse()
-              .withStatus(404)
-          )
+              .withStatus(404),
+          ),
       )
 
       webTestClient.get()

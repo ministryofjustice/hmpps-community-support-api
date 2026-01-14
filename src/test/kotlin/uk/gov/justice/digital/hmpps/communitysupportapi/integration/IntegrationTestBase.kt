@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.integration
 
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.http.JvmProxyConfigurer.configureFor
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -11,12 +10,12 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 import org.springframework.http.HttpHeaders
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.testcontainers.containers.PostgreSQLContainer
-import uk.gov.justice.digital.hmpps.communitysupportapi.config.RestClientConfig
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.wiremock.HmppsAuthApiExtension.Companion.hmppsAuth
 import uk.gov.justice.hmpps.test.kotlin.auth.JwtAuthorisationHelper
@@ -25,6 +24,7 @@ import uk.gov.justice.hmpps.test.kotlin.auth.JwtAuthorisationHelper
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @ActiveProfiles("test")
 @AutoConfigureWebTestClient
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 abstract class IntegrationTestBase {
 
   @Autowired
@@ -36,7 +36,7 @@ abstract class IntegrationTestBase {
   companion object {
 
     @JvmStatic
-    val wireMockServer = WireMockServer(WireMockConfiguration.options().dynamicPort())
+    val wireMockServer = WireMockServer()
 
     @JvmStatic
     private val postgresContainer = PostgreSQLContainer<Nothing>("postgres:17")
@@ -66,8 +66,8 @@ abstract class IntegrationTestBase {
       registry.add("spring.datasource.url") { postgresContainer.jdbcUrl }
       registry.add("spring.datasource.username") { postgresContainer.username }
       registry.add("spring.datasource.password") { postgresContainer.password }
-      registry.add("external-api.locations.delius.base-url") { wireMockServer.baseUrl() }
-      registry.add("external-api.locations.nomis.base-url") { wireMockServer.baseUrl() }
+      registry.add("external-api.locations.delius.base-url") { "http://localhost:${wireMockServer.port()}" }
+      registry.add("external-api.locations.nomis.base-url") { "http://localhost:${wireMockServer.port()}" }
       registry.add("external-api.auth.token") { "test-token" }
     }
   }

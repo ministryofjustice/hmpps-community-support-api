@@ -12,7 +12,11 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.NomisClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toAdditionalDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toPerson
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createNomisPersonDto
 
 @ExtendWith(MockitoExtension::class)
 class NomisServiceTest {
@@ -29,18 +33,21 @@ class NomisServiceTest {
 
   @Test
   fun `should build correct URI and return person details by Prisoner Number`() {
-    val prisonerNumber = "A1234BC"
+    val nomisPersonDto = createNomisPersonDto(PRISONER_NUMBER)
 
-    val expectedResponse = ExternalApiResponse.nomisPerson(prisonerNumber)
+    whenever(nomisClient.getPersonByPrisonerNumber(PRISONER_NUMBER))
+      .thenReturn(nomisPersonDto)
 
-    whenever(nomisClient.getPersonByPrisonerNumber(prisonerNumber))
-      .thenReturn(expectedResponse)
+    val personAggregate = PersonAggregate(
+      person = nomisPersonDto.toPerson(),
+      additionalDetails = nomisPersonDto.toAdditionalDetails(),
+    )
 
-    val result = nomisService.getPersonDetailsByPrisonerNumber(prisonerNumber)
+    val result = nomisService.getPersonDetailsByPrisonerNumber(PRISONER_NUMBER)
 
-    assertThat(result).isEqualTo(expectedResponse)
+    assertThat(result).isEqualTo(personAggregate)
 
-    verify(nomisClient).getPersonByPrisonerNumber(prisonerNumber)
+    verify(nomisClient).getPersonByPrisonerNumber(PRISONER_NUMBER)
     verifyNoMoreInteractions(nomisClient)
   }
 

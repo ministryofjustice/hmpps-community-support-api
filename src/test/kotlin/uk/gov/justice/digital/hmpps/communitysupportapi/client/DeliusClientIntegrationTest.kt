@@ -1,12 +1,18 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.client
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.containing
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.deliusPersonJson
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.deliusPersonNotFoundJson
 
 class DeliusClientIntegrationTest : IntegrationTestBase() {
 
@@ -15,30 +21,39 @@ class DeliusClientIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `should return person when Delius API returns 200`() {
-    val responseBody = """{"crn":"X123456"}"""
     wireMockServer.stubFor(
-      get(urlEqualTo("/person/X123456"))
+      post(urlPathEqualTo("/search"))
+        .withHeader("Content-Type", containing("application/json"))
+        .withRequestBody(matchingJsonPath("$.crn", equalTo(CRN)))
         .willReturn(
           aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(responseBody)
-          .withStatus(200))
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(deliusPersonJson(CRN)),
+        ),
     )
 
-    val result = deliusClient.getPersonByCrn("X123456")
+    val result = deliusClient.getPersonByCrn(CRN)
 
-    assertThat(result).isNotNull
-    assertThat(result!!.crn).isEqualTo("X123456")
+    assertThat(result).isNotNull()
+    assertThat(result!!.otherIds?.crn).isEqualTo(CRN)
   }
 
   @Test
   fun `should return null when Delius API returns 404`() {
     wireMockServer.stubFor(
-      get(urlEqualTo("/person/X999999"))
-        .willReturn(aResponse().withStatus(404))
+      post(urlPathEqualTo("/search"))
+        .withHeader("Content-Type", containing("application/json"))
+        .withRequestBody(matchingJsonPath("$.crn", equalTo("Unknown")))
+        .willReturn(
+          aResponse()
+            .withStatus(404)
+            .withHeader("Content-Type", "application/json")
+            .withBody(deliusPersonNotFoundJson()),
+        ),
     )
 
-    val result = deliusClient.getPersonByCrn("X999999")
+    val result = deliusClient.getPersonByCrn("Unknown")
 
     assertThat(result).isNull()
   }

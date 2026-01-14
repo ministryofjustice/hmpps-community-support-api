@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.PersonService
 
 @RestController
@@ -26,7 +25,7 @@ class PersonController(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  @Operation(summary = "Find a person by an identifier i.e Prison Number or CRN")
+  @Operation(summary = "Find a person by an identifier i.e prison number or CRN")
   @ApiResponses(
     value = [
       ApiResponse(
@@ -41,14 +40,13 @@ class PersonController(
       ),
     ],
   )
-
   @GetMapping("/{personIdentifier}")
   fun getPersonDetails(
     @PathVariable personIdentifier: String,
   ): ResponseEntity<PersonDto> {
-    log.info("Attempt to find person using identifier {}", personIdentifier)
+    log.info("Attempt to find person using identifier: {}", personIdentifier)
 
     val person = personService.getPerson(personIdentifier)
-    return ResponseEntity.ok(person.toDto())
+    return ResponseEntity.ok(person)
   }
 }

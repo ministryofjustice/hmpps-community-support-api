@@ -2,11 +2,13 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.client
 
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.DeliusPersonDto
+import org.springframework.web.util.UriComponentsBuilder
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DeliusPersonDto
 
 @Component
 class DeliusClient(
@@ -20,15 +22,21 @@ class DeliusClient(
   fun getPersonByCrn(crn: String): DeliusPersonDto? {
     log.debug("Calling Delius to retrieve person details using CRN: {}", crn)
 
-    val uri = "$baseUrl/person/$crn"
+    val uri = UriComponentsBuilder
+      .fromUriString(baseUrl) // e.g. http://localhost:8080
+      .path("/search")
+      .build()
+      .toUri()
 
     return try {
-      restClient.get()
+      restClient.post()
         .uri(uri)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(mapOf("crn" to crn))
         .retrieve()
         .body<DeliusPersonDto>()
     } catch (e: HttpClientErrorException.NotFound) {
-      log.info("No Delius person found for prisoner number {}", crn)
+      log.info("Unable to find person in Delius with CRN: {}", crn)
       null
     }
   }
