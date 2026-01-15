@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.PersonService
 
 @RestController
-@RequestMapping("/person")
+@RequestMapping("/bff/person")
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class PersonController(
   private val personService: PersonService,
@@ -40,7 +40,7 @@ class PersonController(
       ),
     ],
   )
-  @GetMapping("/bff/{personIdentifier}")
+  @GetMapping("/{personIdentifier}")
   fun getPersonDetails(
     @PathVariable personIdentifier: String,
   ): ResponseEntity<PersonDto> {

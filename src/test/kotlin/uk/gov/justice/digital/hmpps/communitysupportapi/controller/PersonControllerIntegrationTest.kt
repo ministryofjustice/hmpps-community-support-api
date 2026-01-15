@@ -17,13 +17,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 class PersonControllerIntegrationTest : IntegrationTestBase() {
 
   @Nested
-  @DisplayName("GET /person/bff/{personIdentifier}")
+  @DisplayName("GET /bff/person/{personIdentifier}")
   inner class PersonEndpoint {
 
     @Test
     fun `should return unauthorized if no token`() {
       webTestClient.get()
-        .uri("/person/bff/PERSONID")
+        .uri("/bff/person/PERSONID")
         .exchange()
         .expectStatus()
         .isUnauthorized
@@ -32,7 +32,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return forbidden if no role`() {
       webTestClient.get()
-        .uri("/person/bff/PERSONID")
+        .uri("/bff/person/PERSONID")
         .headers(
           setAuthorisation(
             "AUTH_ADM",
@@ -48,7 +48,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return forbidden if wrong role`() {
       webTestClient.get()
-        .uri("/person/bff/PERSONID")
+        .uri("/bff/person/PERSONID")
         .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
         .exchange()
         .expectStatus()
@@ -79,7 +79,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/person/bff/$PRISONER_NUMBER")
+        .uri("/bff/person/$PRISONER_NUMBER")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -92,7 +92,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return Bad Request with invalid person identifier`() {
       webTestClient.get()
-        .uri("/person/bff/A")
+        .uri("/bff/person/A")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isBadRequest
@@ -111,7 +111,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/person/bff/$unknownPrisonerNumber")
+        .uri("/bff/person/$unknownPrisonerNumber")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isNotFound
