@@ -13,17 +13,19 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.service.PersonService
 
 @RestController
-@RequestMapping("/person")
+@RequestMapping("/bff/person")
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
-class PersonController {
+class PersonController(
+  private val personService: PersonService,
+) {
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  @Operation(summary = "Find a person by an identifier i.e Prison ID or CRN")
+  @Operation(summary = "Find a person by an identifier i.e prison number or CRN")
   @ApiResponses(
     value = [
       ApiResponse(
@@ -39,12 +41,12 @@ class PersonController {
     ],
   )
   @GetMapping("/{personIdentifier}")
-  fun getPersonDetails(@PathVariable personIdentifier: String): ResponseEntity<PersonDto> {
-    log.info("Attempting to find person using identifier $personIdentifier")
-    if (personIdentifier.length < 2) {
-      throw NotFoundException("Person Not Found for identifier $personIdentifier")
-    }
-    val person = PersonDto(personIdentifier)
+  fun getPersonDetails(
+    @PathVariable personIdentifier: String,
+  ): ResponseEntity<PersonDto> {
+    log.info("Attempt to find person using identifier: {}", personIdentifier)
+
+    val person = personService.getPerson(personIdentifier)
     return ResponseEntity.ok(person)
   }
 }
