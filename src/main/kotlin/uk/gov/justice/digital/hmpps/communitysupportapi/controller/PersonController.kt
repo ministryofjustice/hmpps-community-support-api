@@ -40,7 +40,7 @@ class PersonController(
       ),
     ],
   )
-  @GetMapping("/{personIdentifier}")
+  @GetMapping("/bff/{personIdentifier}")
   fun getPersonDetails(
     @PathVariable personIdentifier: String,
   ): ResponseEntity<PersonDto> {

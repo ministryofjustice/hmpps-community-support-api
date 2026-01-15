@@ -17,13 +17,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 class PersonControllerIntegrationTest : IntegrationTestBase() {
 
   @Nested
-  @DisplayName("GET /person/{personIdentifier}")
+  @DisplayName("GET /person/bff/{personIdentifier}")
   inner class PersonEndpoint {
 
     @Test
     fun `should return unauthorized if no token`() {
       webTestClient.get()
-        .uri("/person/PERSONID")
+        .uri("/person/bff/PERSONID")
         .exchange()
         .expectStatus()
         .isUnauthorized
@@ -32,7 +32,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return forbidden if no role`() {
       webTestClient.get()
-        .uri("/person/PERSONID")
+        .uri("/person/bff/PERSONID")
         .headers(
           setAuthorisation(
             "AUTH_ADM",
@@ -48,7 +48,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return forbidden if wrong role`() {
       webTestClient.get()
-        .uri("/person/PERSONID")
+        .uri("/person/bff/PERSONID")
         .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
         .exchange()
         .expectStatus()
@@ -79,7 +79,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/person/$PRISONER_NUMBER")
+        .uri("/person/bff/$PRISONER_NUMBER")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -92,7 +92,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return Bad Request with invalid person identifier`() {
       webTestClient.get()
-        .uri("/person/A")
+        .uri("/person/bff/A")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isBadRequest
@@ -100,10 +100,10 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return Not Found for valid person identifier that does not exist`() {
-      val prisonerNumber = "Z9786YX"
+      val unknownPrisonerNumber = "Z9786YX"
 
       wireMockServer.stubFor(
-        get(urlEqualTo("/prisoner/$prisonerNumber"))
+        get(urlEqualTo("/prisoner/$unknownPrisonerNumber"))
           .willReturn(
             aResponse()
               .withStatus(404),
@@ -111,7 +111,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/person/$prisonerNumber")
+        .uri("/person/bff/$unknownPrisonerNumber")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isNotFound

@@ -25,10 +25,6 @@ spring:
 hmpps-auth:
   url: https://sign-in-dev.hmpps.service.justice.gov.uk/auth
 
-logging:
-  level:
-    org.springframework.security.oauth2: DEBUG
-
 external-api:
   locations:
     delius:
