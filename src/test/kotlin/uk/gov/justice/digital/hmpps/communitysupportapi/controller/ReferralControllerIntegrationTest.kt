@@ -6,18 +6,19 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckReferralInformationRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.time.OffsetDateTime
+import java.util.UUID
 
 class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
@@ -42,7 +43,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return unauthorized if no token`() {
       webTestClient.get()
-        .uri("/referrals/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+        .uri("/bff/referrals/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
         .exchange()
         .expectStatus()
         .isUnauthorized
@@ -51,7 +52,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return forbidden if no role`() {
       webTestClient.get()
-        .uri("/referrals/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+        .uri("/bff/referrals/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
         .headers(
           setAuthorisation(
             "AUTH_ADM",
@@ -67,7 +68,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return forbidden if wrong role`() {
       webTestClient.get()
-        .uri("/referrals/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+        .uri("/bff/referrals/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
         .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
         .exchange()
         .expectStatus()
@@ -81,7 +82,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         id = UUID.randomUUID(),
         firstName = "John",
         lastName = "Smith",
-        createdAt = LocalDateTime.now(),
+        identifier = "X123456",
+        dateOfBirth = LocalDate.of(1980, 1, 1),
+        gender = "Male",
+        createdAt = OffsetDateTime.now(),
       )
 
       val person = personRepository.save(personDetails)
@@ -96,16 +100,16 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         createdAt = LocalDateTime.now(),
       )
 
-      referralRepository.save(referral)
+      val savedReferral = referralRepository.save(referral)
 
       val referralDto = ReferralDto(
-        id = referral.id,
+        id = referral.id!!,
         crn = referral.crn,
         referenceNumber = referral.referenceNumber,
       )
 
       webTestClient.get()
-        .uri("/referrals/${referral.id}")
+        .uri("/bff/referrals/${savedReferral.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -119,122 +123,11 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return Not Found with invalid referral identifier`() {
       webTestClient.get()
-        .uri("/referrals/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+        .uri("/bff/referrals/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
         .isNotFound
-    }
-  }
-
-  @Nested
-  @DisplayName("POST /check-referral-information")
-  inner class CheckReferralInformationEndPoint {
-
-    @BeforeEach
-    fun setup() {
-      testDataCleaner.cleanAllTables()
-    }
-
-    @Test
-    fun `should return unauthorized if no token`() {
-      webTestClient.post()
-        .uri("/check-referral-information")
-        .bodyValue(setUpData())
-        .exchange()
-        .expectStatus()
-        .isUnauthorized
-    }
-
-    @Test
-    fun `should return forbidden if no role`() {
-      webTestClient.post()
-        .uri("/check-referral-information")
-        .headers(
-          setAuthorisation(
-            "AUTH_ADM",
-            listOf(),
-            listOf("read"),
-          ),
-        )
-        .bodyValue(setUpData())
-        .exchange()
-        .expectStatus()
-        .isForbidden
-    }
-
-    @Test
-    fun `should return forbidden if wrong role`() {
-      webTestClient.post()
-        .uri("/check-referral-information")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .bodyValue(setUpData())
-        .exchange()
-        .expectStatus()
-        .isForbidden
-    }
-
-    @Test
-    fun `should return OK with valid referral information`() {
-      val referralInformationDto = ReferralInformationDto(
-        personId = UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2c"),
-        firstName = "John",
-        lastName = "Smith",
-        communityServiceProviderId = UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"),
-        communityServiceProviderName = "Community Support Service in Cleveland",
-        crn = "X123456",
-        sex = "Male",
-        region = "North East",
-        deliveryPartner = "Access 2 Advice",
-      )
-
-      webTestClient.post()
-        .uri("/check-referral-information")
-        .headers(setAuthorisation())
-        .bodyValue(setUpData())
-        .exchange()
-        .expectStatus()
-        .isOk
-        .expectBody(ReferralInformationDto::class.java)
-        .consumeWith { response ->
-          response.responseBody shouldBe referralInformationDto
-        }
-    }
-
-    @Test
-    fun `should return Not Found with invalid person identifier`() {
-      webTestClient.post()
-        .uri("/check-referral-information")
-        .headers(setAuthorisation())
-        .bodyValue(
-          CheckReferralInformationRequest(
-            personId = "bc852b9d-1997-4ce4-ba7f-cd1759e15d2b".let { UUID.fromString(it) },
-            communityServiceProviderId = "bc852b9d-1997-4ce4-ba7f-cd1759e15d2b".let { UUID.fromString(it) },
-            crn = "X123456",
-          ),
-        )
-        .exchange()
-        .expectStatus()
-        .isNotFound
-    }
-
-    private fun setUpData(): CheckReferralInformationRequest {
-      val personDetails = Person(
-        id = UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2c"),
-        firstName = "John",
-        lastName = "Smith",
-        createdAt = LocalDateTime.now(),
-        sex = "Male",
-      )
-
-      val person = personRepository.save(personDetails)
-      val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")).get()
-
-      return CheckReferralInformationRequest(
-        personId = person.id,
-        communityServiceProviderId = communityServiceProvider.id,
-        crn = "X123456",
-      )
     }
   }
 
@@ -250,7 +143,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return unauthorized if no token`() {
       webTestClient.post()
-        .uri("/referrals")
+        .uri("/bff/referrals")
         .bodyValue(setUpData())
         .exchange()
         .expectStatus()
@@ -260,7 +153,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return forbidden if no role`() {
       webTestClient.post()
-        .uri("/referrals")
+        .uri("/bff/referrals")
         .headers(
           setAuthorisation(
             "AUTH_ADM",
@@ -277,7 +170,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return forbidden if wrong role`() {
       webTestClient.post()
-        .uri("/referrals")
+        .uri("/bff/referrals")
         .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
         .bodyValue(setUpData())
         .exchange()
@@ -288,23 +181,32 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return OK with valid referral information`() {
       webTestClient.post()
-        .uri("/referrals")
+        .uri("/bff/referrals")
         .headers(setAuthorisation())
         .bodyValue(setUpData())
         .exchange()
         .expectStatus()
         .isOk
-        .expectBody(ReferralDto::class.java)
+        .expectBody(ReferralInformationDto::class.java)
         .consumeWith { response ->
           run {
-            val referral = referralRepository.findAll().firstOrNull()
+            val referral = referralRepository.findAll().firstOrNull()!!
+            val person = personRepository.findById(referral.personId).get()
+            val communityServiceProvider = communityServiceProviderRepository.findById(referral.communityServiceProviderId).get()
 
-            val referralDto = ReferralDto(
-              id = referral!!.id,
+            val referralInfo = ReferralInformationDto(
+              personId = referral.personId,
+              firstName = person.firstName,
+              lastName = person.lastName,
+              sex = person.additionalDetails?.sexualOrientation,
               crn = referral.crn,
+              communityServiceProviderId = referral.communityServiceProviderId,
+              communityServiceProviderName = communityServiceProvider.name,
+              region = communityServiceProvider.contractArea.region.name,
+              deliveryPartner = communityServiceProvider.providerName,
               referenceNumber = referral.referenceNumber,
             )
-            response.responseBody shouldBe referralDto
+            response.responseBody shouldBe referralInfo
           }
         }
     }
@@ -312,7 +214,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return Not Found with invalid referral identifier`() {
       webTestClient.post()
-        .uri("/referrals/")
+        .uri("/bff/referrals/")
         .headers(setAuthorisation())
         .bodyValue(
           CreateReferralRequest(
@@ -328,11 +230,13 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     private fun setUpData(): CreateReferralRequest {
       val personDetails = Person(
-        id = UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2c"),
+        id = UUID.randomUUID(),
         firstName = "John",
         lastName = "Smith",
-        createdAt = LocalDateTime.now(),
-        sex = "Male",
+        identifier = "X123456",
+        dateOfBirth = LocalDate.of(1980, 1, 1),
+        gender = "Male",
+        createdAt = OffsetDateTime.now(),
       )
 
       val person = personRepository.save(personDetails)

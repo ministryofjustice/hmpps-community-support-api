@@ -15,23 +15,22 @@ import java.util.UUID
 @Table(name = "referral_event")
 class ReferralEvent(
   @Id
-  @Column(name = "id", nullable = false)
-  val id: UUID? = null,
+  val id: UUID,
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "referral_id", nullable = false)
-  val referral: Referral,
+  var referral: Referral,
 
   @Column(name = "event_type")
   val eventType: String? = null,
 
   @Column(name = "created_at", nullable = false)
   @CreatedDate
-  val createdAt: LocalDateTime? = null,
+  val createdAt: LocalDateTime,
 
   @Column(name = "actor_type", nullable = false)
-  val actorType: String? = null,
+  val actorType: String,
 
   @Column(name = "actor_id")
-  val actorId: String? = null,
+  val actorId: String,
 )

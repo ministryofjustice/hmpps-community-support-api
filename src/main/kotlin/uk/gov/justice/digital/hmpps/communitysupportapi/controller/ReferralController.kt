@@ -15,11 +15,12 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckReferralInformationRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import java.util.UUID
 
@@ -48,23 +49,10 @@ class ReferralController(
       ),
     ],
   )
-  @GetMapping("/referrals/{referralId}")
+  @GetMapping("/bff/referrals/{referralId}")
   fun getReferral(@PathVariable referralId: UUID): ResponseEntity<ReferralDto> = referralService.getReferral(referralId)
-    .map { referral -> ResponseEntity.ok(ReferralDto.from(referral)) }
+    .map { referral -> ResponseEntity.ok(referral.toDto()) }
     .orElseThrow { NotFoundException("Referral not found for id $referralId") }
-
-  @Operation(summary = "Check a referral information")
-  @ApiResponses(
-    value = [
-      ApiResponse(
-        responseCode = "200",
-        description = "Referral information checked",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralInformationDto::class))],
-      ),
-    ],
-  )
-  @PostMapping("/check-referral-information")
-  fun checkReferralInformation(@RequestBody checkReferralInformationRequest: CheckReferralInformationRequest): ResponseEntity<ReferralInformationDto> = ResponseEntity.ok(referralService.checkReferralInformation(checkReferralInformationRequest))
 
   @Operation(summary = "Create a referral")
   @ApiResponses(
@@ -76,10 +64,10 @@ class ReferralController(
       ),
     ],
   )
-  @PostMapping("/referrals")
-  fun createReferral(@RequestBody createReferralRequest: CreateReferralRequest, authentication: JwtAuthenticationToken): ResponseEntity<ReferralDto> {
+  @PostMapping("/bff/referrals")
+  fun createReferral(@RequestBody createReferralRequest: CreateReferralRequest, authentication: JwtAuthenticationToken): ResponseEntity<ReferralInformationDto> {
     val user = userMapper.fromToken(authentication)
-    val referral = referralService.createReferral(user, createReferralRequest)
-    return ResponseEntity.ok(ReferralDto.from(referral))
+    val result = referralService.createReferral(user, createReferralRequest)
+    return ResponseEntity.ok(result.toReferralInformationDto())
   }
 }

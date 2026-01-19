@@ -3,20 +3,17 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.entity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.OneToMany
-import jakarta.persistence.OrderBy
 import jakarta.persistence.Table
 import org.springframework.data.annotation.CreatedDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 @Entity
 @Table(name = "referral")
 class Referral(
   @Id
-  @Column(name = "id", nullable = false)
   val id: UUID,
 
   @Column(name = "community_service_provider_id", nullable = false)
@@ -29,7 +26,7 @@ class Referral(
   val crn: String,
 
   @Column(name = "reference_number")
-  val referenceNumber: String? = null,
+  var referenceNumber: String? = null,
 
   @Column(name = "created_at", nullable = false)
   @CreatedDate
@@ -41,10 +38,14 @@ class Referral(
   @Column(name = "urgency")
   val urgency: Boolean? = null,
 
-  @OneToMany(mappedBy = "referral", fetch = FetchType.LAZY, cascade = [CascadeType.ALL], orphanRemoval = true)
-  @OrderBy("created_at DESC")
-  var referralEvents: MutableList<ReferralEvent> = mutableListOf(),
+  @OneToMany(mappedBy = "referral", cascade = [CascadeType.PERSIST, CascadeType.MERGE], orphanRemoval = true)
+  val referralEvents: MutableList<ReferralEvent> = mutableListOf(),
 ) {
   val submittedEvent: ReferralEvent?
     get() = referralEvents.firstOrNull { it.eventType == "SUBMITTED" }
+
+  fun addEvent(event: ReferralEvent) {
+    referralEvents.add(event)
+    event.referral = this
+  }
 }

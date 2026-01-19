@@ -30,6 +30,7 @@ fun PersonAggregate.toEntity(): PersonEntity {
 }
 
 fun PersonAdditionalDetails.toEntity(person: PersonEntity): PersonAdditionalDetailsEntity = PersonAdditionalDetailsEntity(
+  id = UUID.randomUUID(),
   person = person,
   ethnicity = ethnicity,
   preferredLanguage = preferredLanguage,
