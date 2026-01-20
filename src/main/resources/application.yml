@@ -18,7 +18,7 @@ spring:
         registration:
           community-support-api-client:
             provider: hmpps-auth
-            client-id: hmpps-community-support-ipb-ui-client-1
+            client-id: hmpps-community-support-api-1
             client-secret: clientsecret
             authorization-grant-type: client_credentials
         provider:

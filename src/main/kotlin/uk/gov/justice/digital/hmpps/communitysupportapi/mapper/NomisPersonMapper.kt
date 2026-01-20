@@ -5,7 +5,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 
-fun NomisPersonDto.toPerson() = Person(
+fun NomisPersonDto.toPerson(): Person = Person(
   identifier = PersonIdentifier.PrisonerNumber(prisonerNumber),
   firstName = firstName,
   lastName = lastName,
@@ -13,7 +13,7 @@ fun NomisPersonDto.toPerson() = Person(
   sex = gender,
 )
 
-fun NomisPersonDto.toAdditionalDetails() = PersonAdditionalDetails(
+fun NomisPersonDto.toAdditionalDetails(): PersonAdditionalDetails = PersonAdditionalDetails(
   ethnicity = ethnicity,
   preferredLanguage = languages.firstOrNull()?.code,
   neurodiverseConditions = null,

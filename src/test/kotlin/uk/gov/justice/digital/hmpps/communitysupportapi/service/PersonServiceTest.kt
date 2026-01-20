@@ -12,6 +12,7 @@ import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
+import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toAdditionalDetails
@@ -56,13 +57,13 @@ class PersonServiceTest {
       additionalDetails = deliusPersonDto.toAdditionalDetails(),
     )
 
-    whenever(deliusService.getPersonDetailsByCrn(CRN)).thenReturn(expectedPersonAggregate)
+    whenever(deliusService.getPersonDetailsByCrn(CRN)).thenReturn(Mono.just(expectedPersonAggregate))
 
     whenever(personRepository.save(any())).thenAnswer { invocation ->
       invocation.arguments[0] as Person
     }
 
-    val result = personService.getPerson(CRN)
+    val result = personService.getPerson(CRN).block()!!
 
     assertEquals(identifier.value, result.personIdentifier)
 
@@ -84,9 +85,9 @@ class PersonServiceTest {
     )
 
     whenever(nomisService.getPersonDetailsByPrisonerNumber(PRISONER_NUMBER))
-      .thenReturn(personAggregate)
+      .thenReturn(Mono.just(personAggregate))
 
-    val result = personService.getPerson(PRISONER_NUMBER)
+    val result = personService.getPerson(PRISONER_NUMBER).block()!!
 
     assertEquals(identifier.value, result.personIdentifier)
 
@@ -100,23 +101,23 @@ class PersonServiceTest {
       .thenThrow(ValidationException("Invalid identifier"))
 
     assertThrows<ValidationException> {
-      personService.getPerson("NOT_VALID")
+      personService.getPerson("NOT_VALID").block()
     }
 
     verifyNoInteractions(deliusService, nomisService)
   }
 
   @Test
-  fun `person not found from and external api throws NotFoundException`() {
+  fun `person not found from an external api throws NotFoundException`() {
     val crn = "X123456"
     val identifier = PersonIdentifier.Crn(crn)
 
     whenever(personIdentifierValidator.validate(crn)).thenReturn(identifier)
     whenever(deliusService.getPersonDetailsByCrn(crn))
-      .thenThrow(NotFoundException("Person not found in Delius with identifier: $crn"))
+      .thenReturn(Mono.error(NotFoundException("Person not found in Delius with identifier: $crn")))
 
     assertThrows<NotFoundException> {
-      personService.getPerson(identifier.value)
+      personService.getPerson(identifier.value).block()
     }
   }
 }

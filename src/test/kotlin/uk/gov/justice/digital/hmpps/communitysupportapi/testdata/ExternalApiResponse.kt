@@ -131,7 +131,7 @@ object ExternalApiResponse {
     religionOrBelief = deliusPerson.offenderProfile?.religion,
     transgender = null,
     sexualOrientation = deliusPerson.offenderProfile?.sexualOrientation,
-    address = deliusPerson.contactDetails.addresses.firstOrNull()?.id.toString(),
+    address = deliusPerson.contactDetails.addresses.firstOrNull()?.id?.toString(),
     phoneNumber = deliusPerson.contactDetails.phoneNumbers.firstOrNull()?.number,
     emailAddress = deliusPerson.contactDetails.emailAddresses.firstOrNull(),
   )

@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.DisplayName
@@ -59,7 +60,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     fun `should return OK with valid person identifier`() {
       val nomisPerson = createNomisPersonDto(PRISONER_NUMBER)
 
-      wireMockServer.stubFor(
+      stubFor(
         get(urlEqualTo("/prisoner/$PRISONER_NUMBER"))
           .willReturn(
             aResponse()
@@ -102,7 +103,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     fun `should return Not Found for valid person identifier that does not exist`() {
       val unknownPrisonerNumber = "Z9786YX"
 
-      wireMockServer.stubFor(
+      stubFor(
         get(urlEqualTo("/prisoner/$unknownPrisonerNumber"))
           .willReturn(
             aResponse()

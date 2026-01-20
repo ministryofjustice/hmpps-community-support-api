@@ -35,9 +35,12 @@ wiremock:
   logging:
     verbose: true
 
+management:
+  health:
+    db:
+      enabled: false
+
 external-api:
-  auth:
-    token: test-token
   locations:
     delius:
       base-url: http://localhost:${wiremock.server.port}

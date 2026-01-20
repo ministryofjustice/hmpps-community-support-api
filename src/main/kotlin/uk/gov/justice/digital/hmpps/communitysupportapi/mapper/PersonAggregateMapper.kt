@@ -40,7 +40,7 @@ fun PersonAdditionalDetails.toEntity(person: PersonEntity): PersonAdditionalDeta
   emailAddress = emailAddress,
 )
 
-fun PersonAggregate.toPersonDto() = PersonDto(
+fun PersonAggregate.toPersonDto(): PersonDto = PersonDto(
   personIdentifier = when (person.identifier) {
     is PersonIdentifier.Crn -> person.identifier.value
     is PersonIdentifier.PrisonerNumber -> person.identifier.value

@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.whenever
@@ -18,11 +17,6 @@ class CommunityServiceProviderIntegrationTest : IntegrationTestBase() {
 
   @MockitoSpyBean
   lateinit var communityServiceProviderRepository: CommunityServiceProviderRepository
-
-  @BeforeEach
-  fun setup() {
-    stubAuthTokenEndpoint()
-  }
 
   @Test
   fun `should return community service providers`() {

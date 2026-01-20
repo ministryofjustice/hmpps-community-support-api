@@ -10,6 +10,13 @@ configurations {
   testImplementation { exclude(group = "org.junit.vintage") }
 }
 
+dependencyManagement {
+  imports {
+    mavenBom("org.springframework.boot:spring-boot-dependencies:4.0.1")
+    mavenBom("org.springframework.cloud:spring-cloud-dependencies:2024.0.0")
+  }
+}
+
 dependencies {
   implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:2.0.0-beta-2")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -31,11 +38,14 @@ dependencies {
   implementation("org.springframework.security:spring-security-crypto:7.0.2")
   implementation("com.nimbusds:oauth2-oidc-sdk:11.30.1")
 
+  testImplementation("org.springframework.boot:spring-boot-starter-web")
+  testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.boot:spring-boot-test-autoconfigure")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
-//  testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
+  testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier")
+  testImplementation("org.springframework.cloud:spring-cloud-contract-wiremock")
+  testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner:5.0.0")
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.0.0-beta-2")
-  testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.mockito.kotlin:mockito-kotlin:6.1.0")
   testImplementation("org.wiremock:wiremock-standalone:3.13.2")
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.36") {
