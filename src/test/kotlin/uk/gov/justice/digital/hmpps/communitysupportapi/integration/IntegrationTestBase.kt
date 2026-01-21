@@ -68,8 +68,8 @@ abstract class IntegrationTestBase {
       registry.add("spring.datasource.url") { postgresContainer.jdbcUrl }
       registry.add("spring.datasource.username") { postgresContainer.username }
       registry.add("spring.datasource.password") { postgresContainer.password }
-      registry.add("external-api.locations.delius.base-url") { "http://localhost:${wireMockServer.port()}" }
-      registry.add("external-api.locations.nomis.base-url") { "http://localhost:${wireMockServer.port()}" }
+      registry.add("services.ndelius-integration-api.base-url") { "http://localhost:${wireMockServer.port()}" }
+      registry.add("services.oasys-api.base-url") { "http://localhost:${wireMockServer.port()}" }
       registry.add("hmpps-auth.url") { "http://localhost:8090/auth" }
     }
   }

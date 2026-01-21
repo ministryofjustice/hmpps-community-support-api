@@ -22,12 +22,8 @@ spring:
           hmpps-auth:
             token-uri: ${hmpps-auth.url}/oauth/token
 
-hmpps-auth:
-  url: https://sign-in-dev.hmpps.service.justice.gov.uk/auth
-
-external-api:
-  locations:
-    delius:
-      base-url: https://probation-offender-search-dev.hmpps.service.justice.gov.uk
-    nomis:
-      base-url: https://nomis-api-dev.prison.service.justice.gov.uk/prisoner-search-dev.prison.service.justice.gov.uk
+services:
+  ndelius-integration-api:
+    base-url: https://probation-offender-search-dev.hmpps.service.justice.gov.uk
+  oasys-api:
+    base-url: https://prisoner-search-dev.prison.service.justice.gov.uk

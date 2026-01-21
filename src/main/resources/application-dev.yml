@@ -1,11 +1,8 @@
 hmpps-auth:
   url: "http://localhost:8090/auth"
 
-external-api:
-  auth:
-    token: ${EXTERNAL_API_AUTH_TOKEN}
-  locations:
-    delius:
-      base-url: ${EXTERNAL_API_LOCATIONS_DELIUS_BASE-URL}
-    nomis:
-      base-url: ${EXTERNAL_API_LOCATIONS_NOMIS_BASE-URL}
+services:
+  ndelius-integration-api:
+    base-url: ${NDELIUS_INTEGRATION_API_BASE_URL}
+  oasys-api:
+    base-url: ${OASYS_API_BASE_URL}

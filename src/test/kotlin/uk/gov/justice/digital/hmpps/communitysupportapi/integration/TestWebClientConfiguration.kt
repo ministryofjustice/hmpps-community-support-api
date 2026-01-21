@@ -15,20 +15,23 @@ class TestWebClientConfiguration {
 
   @Bean
   @Qualifier("hmppsAuthHealthWebClient")
-  fun hmppsAuthHealthWebClient(@Value("\${hmpps-auth.url}") hmppsAuthBaseUrl: String): WebClient = WebClient.builder()
-    .healthWebClient(
-      hmppsAuthBaseUrl,
-      Duration.ofSeconds(2),
-    )
+  fun hmppsAuthHealthWebClient(
+    @Value("\${hmpps-auth.url}") hmppsAuthBaseUrl: String,
+  ): WebClient = WebClient.builder()
+    .healthWebClient(hmppsAuthBaseUrl, Duration.ofSeconds(2))
 
   @Bean
   fun reactiveOAuth2AuthorizedClientManager(): ReactiveOAuth2AuthorizedClientManager = mockk(relaxed = true)
 
   @Bean
   @Qualifier("deliusWebClient")
-  fun deliusWebClient(@Value("\${external-api.locations.delius.base-url}") deliusBaseUrl: String): WebClient = WebClient.builder().baseUrl(deliusBaseUrl).build()
+  fun deliusWebClient(
+    @Value("\${services.ndelius-integration-api.base-url}") deliusBaseUrl: String,
+  ): WebClient = WebClient.builder().baseUrl(deliusBaseUrl).build()
 
   @Bean
   @Qualifier("nomisWebClient")
-  fun nomisWebClient(@Value("\${external-api.locations.nomis.base-url}") nomisBaseUrl: String): WebClient = WebClient.builder().baseUrl(nomisBaseUrl).build()
+  fun nomisWebClient(
+    @Value("\${services.oasys-api.base-url}") nomisBaseUrl: String,
+  ): WebClient = WebClient.builder().baseUrl(nomisBaseUrl).build()
 }
