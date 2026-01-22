@@ -10,13 +10,6 @@ configurations {
   testImplementation { exclude(group = "org.junit.vintage") }
 }
 
-dependencyManagement {
-  imports {
-    mavenBom("org.springframework.boot:spring-boot-dependencies:4.0.1")
-    mavenBom("org.springframework.cloud:spring-cloud-dependencies:2024.0.0")
-  }
-}
-
 dependencies {
   implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:2.0.0-beta-2")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -42,9 +35,6 @@ dependencies {
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.boot:spring-boot-test-autoconfigure")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
-  testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier")
-  testImplementation("org.springframework.cloud:spring-cloud-contract-wiremock")
-  testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner:5.0.0")
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.0.0-beta-2")
   testImplementation("org.mockito.kotlin:mockito-kotlin:6.1.0")
   testImplementation("org.wiremock:wiremock-standalone:3.13.2")

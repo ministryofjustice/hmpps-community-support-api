@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.PersonService
 
@@ -42,9 +41,12 @@ class PersonController(
     ],
   )
   @GetMapping("/{personIdentifier}")
-  fun getPersonDetails(@PathVariable personIdentifier: String): Mono<ResponseEntity<PersonDto>> = personService.getPerson(personIdentifier)
-    .map { ResponseEntity.ok(it) }
-    .doOnSubscribe { log.info("Lookup started for identifier: {}", personIdentifier) }
-    .doOnSuccess { log.info("Lookup succeeded for identifier: {}", personIdentifier) }
-    .doOnError { e -> log.warn("Lookup failed for identifier: {}", personIdentifier, e) }
+  fun getPersonDetails(
+    @PathVariable personIdentifier: String,
+  ): ResponseEntity<PersonDto> {
+    log.info("Attempt to find person using identifier: {}", personIdentifier)
+
+    val person = personService.getPerson(personIdentifier)
+    return ResponseEntity.ok(person)
+  }
 }

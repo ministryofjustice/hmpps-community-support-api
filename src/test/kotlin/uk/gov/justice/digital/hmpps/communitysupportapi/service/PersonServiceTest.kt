@@ -63,7 +63,7 @@ class PersonServiceTest {
       invocation.arguments[0] as Person
     }
 
-    val result = personService.getPerson(CRN).block()!!
+    val result = personService.getPerson(CRN)
 
     assertEquals(identifier.value, result.personIdentifier)
 
@@ -87,7 +87,7 @@ class PersonServiceTest {
     whenever(nomisService.getPersonDetailsByPrisonerNumber(PRISONER_NUMBER))
       .thenReturn(Mono.just(personAggregate))
 
-    val result = personService.getPerson(PRISONER_NUMBER).block()!!
+    val result = personService.getPerson(PRISONER_NUMBER)
 
     assertEquals(identifier.value, result.personIdentifier)
 
@@ -101,7 +101,7 @@ class PersonServiceTest {
       .thenThrow(ValidationException("Invalid identifier"))
 
     assertThrows<ValidationException> {
-      personService.getPerson("NOT_VALID").block()
+      personService.getPerson("NOT_VALID")
     }
 
     verifyNoInteractions(deliusService, nomisService)
@@ -117,7 +117,7 @@ class PersonServiceTest {
       .thenReturn(Mono.error(NotFoundException("Person not found in Delius with identifier: $crn")))
 
     assertThrows<NotFoundException> {
-      personService.getPerson(identifier.value).block()
+      personService.getPerson(identifier.value)
     }
   }
 }
