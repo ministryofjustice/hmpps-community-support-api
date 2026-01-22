@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toAdditionalDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toPerson
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
@@ -84,8 +85,14 @@ class PersonServiceTest {
       additionalDetails = nomisPersonDto.toAdditionalDetails(),
     )
 
+    val person = personAggregate.toEntity()
+
     whenever(nomisService.getPersonDetailsByPrisonerNumber(PRISONER_NUMBER))
       .thenReturn(Mono.just(personAggregate))
+
+    whenever(personRepository.save(any())).thenAnswer { invocation ->
+      invocation.arguments[0] as Person
+    }
 
     val result = personService.getPerson(PRISONER_NUMBER)
 

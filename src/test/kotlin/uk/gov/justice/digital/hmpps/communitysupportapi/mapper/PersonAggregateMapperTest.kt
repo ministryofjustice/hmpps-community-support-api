@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createDeliusPersonAdditionalDetails
 import java.time.LocalDate
+import java.util.UUID
 
 class PersonAggregateMapperTest {
 
@@ -54,12 +55,14 @@ class PersonAggregateMapperTest {
       sex = "Male",
     )
 
-    val aggregate = PersonAggregate(
+    val personAggregate = PersonAggregate(
       person = person,
       additionalDetails = additionalDetails,
     )
 
-    val personDto = aggregate.toPersonDto()
+    val personId = UUID.randomUUID()
+
+    val personDto = personAggregate.toPersonDto(personId)
 
     personDto.personIdentifier shouldBe "X123456"
     personDto.firstName shouldBe "John"

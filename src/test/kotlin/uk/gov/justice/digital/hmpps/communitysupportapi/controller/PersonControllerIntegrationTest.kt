@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createNomisPersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createNomisPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
+import java.util.UUID
 
 class PersonControllerIntegrationTest : IntegrationTestBase() {
 
@@ -60,6 +61,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return OK with valid person identifier`() {
       val nomisPerson = createNomisPersonDto(PRISONER_NUMBER)
+      val personId = UUID.randomUUID()
 
       stubFor(
         get(urlEqualTo("/prisoner/$PRISONER_NUMBER"))
@@ -72,12 +74,14 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
       )
 
       val expectedPersonResult = PersonDto(
-        PRISONER_NUMBER,
+        personId,
+        personIdentifier = nomisPerson.prisonerNumber,
         firstName = nomisPerson.firstName,
         lastName = nomisPerson.lastName,
         dateOfBirth = nomisPerson.dateOfBirth,
         sex = nomisPerson.gender,
         additionalDetails = createNomisPersonAdditionalDetails(),
+
       )
 
       webTestClient.get()

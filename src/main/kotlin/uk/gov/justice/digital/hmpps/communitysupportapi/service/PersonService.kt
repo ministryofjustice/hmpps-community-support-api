@@ -33,8 +33,8 @@ class PersonService(
       },
     )
 
-    personRepository.save(personAggregate.toEntity())
+    val person = personRepository.save(personAggregate.toEntity())
 
-    return personAggregate.toPersonDto()
+    return personAggregate.toPersonDto(person.id)
   }
 }
