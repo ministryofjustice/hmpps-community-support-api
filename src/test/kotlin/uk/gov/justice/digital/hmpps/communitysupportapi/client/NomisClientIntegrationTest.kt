@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.nomisPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.nomisPersonNotFoundJson
+
 class NomisClientIntegrationTest : IntegrationTestBase() {
 
   @Autowired
