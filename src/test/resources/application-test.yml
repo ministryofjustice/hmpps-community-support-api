@@ -26,7 +26,7 @@ spring:
 services:
   ndelius-integration-api:
     base-url: "http://localhost:${wiremock.server.port}"
-  oasys-api:
+  nomis-api:
     base-url: "http://localhost:${wiremock.server.port}"
 
 wiremock:

@@ -4,5 +4,5 @@ hmpps-auth:
 services:
   ndelius-integration-api:
     base-url: ${NDELIUS_INTEGRATION_API_BASE_URL}
-  oasys-api:
+  nomis-api:
     base-url: ${NOMIS_API_BASE_URL}

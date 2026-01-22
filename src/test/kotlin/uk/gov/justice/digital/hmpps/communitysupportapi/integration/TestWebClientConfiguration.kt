@@ -32,6 +32,6 @@ class TestWebClientConfiguration {
   @Bean
   @Qualifier("nomisWebClient")
   fun nomisWebClient(
-    @Value("\${services.oasys-api.base-url}") nomisBaseUrl: String,
+    @Value("\${services.nomis-api.base-url}") nomisBaseUrl: String,
   ): WebClient = WebClient.builder().baseUrl(nomisBaseUrl).build()
 }

@@ -18,7 +18,7 @@ class WebClientConfiguration(
   @Value("\${hmpps-auth.url}") private val hmppsAuthBaseUri: String,
   @Value("\${api.health-timeout:2s}") private val healthTimeout: Duration,
   @Value("\${services.ndelius-integration-api.base-url}") private val deliusBaseUrl: String,
-  @Value("\${services.oasys-api.base-url}") private val nomisBaseUrl: String,
+  @Value("\${services.nomis-api.base-url}") private val nomisBaseUrl: String,
   private val authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
 ) {
   companion object {
