@@ -7,7 +7,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import org.springframework.data.annotation.CreatedDate
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
@@ -30,10 +30,10 @@ class Referral(
 
   @Column(name = "created_at", nullable = false)
   @CreatedDate
-  val createdAt: LocalDateTime,
+  val createdAt: OffsetDateTime,
 
   @Column(name = "updated_at")
-  val updatedAt: LocalDateTime? = null,
+  val updatedAt: OffsetDateTime? = null,
 
   @Column(name = "urgency")
   val urgency: Boolean? = null,
@@ -42,7 +42,7 @@ class Referral(
   val referralEvents: MutableList<ReferralEvent> = mutableListOf(),
 ) {
   val submittedEvent: ReferralEvent?
-    get() = referralEvents.firstOrNull { it.eventType == "SUBMITTED" }
+    get() = referralEvents.firstOrNull { it.eventType == ReferralEventType.SUBMITTED }
 
   fun addEvent(event: ReferralEvent) {
     referralEvents.add(event)

@@ -3,16 +3,18 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Service
@@ -20,7 +22,6 @@ class ReferralService(
   private val referralRepository: ReferralRepository,
   private val personRepository: PersonRepository,
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
-  private val referralEventRepository: ReferralEventRepository,
   private val referenceGenerator: ReferralReferenceGenerator,
 ) {
   companion object {
@@ -40,28 +41,23 @@ class ReferralService(
       .orElseThrow { NotFoundException("Community Service Provider not found for id ${createReferralRequest.communityServiceProviderId}") }
 
     val referralId = UUID.randomUUID()
-    val now = LocalDateTime.now()
-
-    val referenceNumber = generateReferenceNumberOrThrow(communityServiceProvider, referralId)
+    val now = OffsetDateTime.now()
 
     val referral = Referral(
-      id = UUID.randomUUID(),
+      id = referralId,
       crn = createReferralRequest.crn,
       personId = createReferralRequest.personId,
-      referenceNumber = referenceNumber,
       communityServiceProviderId = createReferralRequest.communityServiceProviderId,
       createdAt = now,
       updatedAt = now,
       urgency = createReferralRequest.urgency,
     )
 
-    logger.info("Created referral for crn = {}, referenceNumber = {}", referral.crn, referral.referenceNumber)
-
     val referralEvent = ReferralEvent(
       id = UUID.randomUUID(),
-      eventType = ReferralEventType.SUBMITTED.value,
+      eventType = ReferralEventType.CREATED,
       createdAt = now,
-      actorType = ActorType.AUTH.value,
+      actorType = ActorType.AUTH,
       actorId = user,
       referral = referral,
     )
@@ -75,7 +71,32 @@ class ReferralService(
     )
   }
 
-  private fun generateReferenceNumberOrThrow(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
+  fun submitReferral(referralId: UUID, user: String): SubmitReferralResponseDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val communityServiceProvider = communityServiceProviderRepository.findById(referral.communityServiceProviderId)
+      .orElseThrow { NotFoundException("Community Service Provider not found for id ${referral.communityServiceProviderId}") }
+
+    val referralEvent = ReferralEvent(
+      id = UUID.randomUUID(),
+      eventType = ReferralEventType.SUBMITTED,
+      createdAt = OffsetDateTime.now(),
+      actorType = ActorType.AUTH,
+      actorId = user,
+      referral = referral,
+    )
+
+    referral.addEvent(referralEvent)
+    referral.referenceNumber = generateReferenceNumber(communityServiceProvider, referralId)
+    val savedReferral = referralRepository.save(referral)
+    return SubmitReferralResponseDto(
+      referralId = savedReferral.id,
+      referenceNumber = savedReferral.referenceNumber,
+    )
+  }
+
+  private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
     val type = communityServiceProvider.providerName
 
     for (i in 1..MAX_REFERENCE_NUMBER_TRIES) {
@@ -90,14 +111,4 @@ class ReferralService(
     logger.error("Unable to generate a unique referral number for referral : {}", referralId)
     throw IllegalStateException("Unable to generate a unique referral reference for referral $referralId")
   }
-}
-
-enum class ReferralEventType(val value: String) {
-  SUBMITTED("SUBMITTED"),
-  UPDATED("UPDATED"),
-}
-
-enum class ActorType(val value: String) {
-  AUTH("AUTH"),
-  EXTERNAL("EXTERNAL"),
 }

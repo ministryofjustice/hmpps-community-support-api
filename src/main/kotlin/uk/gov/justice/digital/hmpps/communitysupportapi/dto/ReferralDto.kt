@@ -21,6 +21,7 @@ data class ReferralDto(
 
 data class ReferralInformationDto(
   val personId: UUID,
+  val referralId: UUID,
   val firstName: String?,
   val lastName: String?,
   val sex: String? = null,
@@ -34,6 +35,7 @@ data class ReferralInformationDto(
   companion object {
     fun from(result: ReferralCreationResult): ReferralInformationDto = ReferralInformationDto(
       personId = result.referral.personId,
+      referralId = result.referral.id,
       communityServiceProviderId = result.referral.communityServiceProviderId,
       firstName = result.person.firstName,
       lastName = result.person.lastName,
@@ -42,19 +44,19 @@ data class ReferralInformationDto(
       communityServiceProviderName = result.communityServiceProvider.name,
       region = result.communityServiceProvider.contractArea.region.name,
       deliveryPartner = result.communityServiceProvider.providerName,
-      referenceNumber = result.referral.referenceNumber,
     )
   }
 }
 
-/**
- * Lightweight result object returned from the service layer so controllers
- * can decide how to convert to DTOs / responses.
- */
 data class ReferralCreationResult(
   val referral: Referral,
   val person: Person,
   val communityServiceProvider: CommunityServiceProvider,
+)
+
+data class SubmitReferralResponseDto(
+  val referralId: UUID,
+  val referenceNumber: String?,
 )
 
 fun Referral.toDto() = ReferralDto.from(this)

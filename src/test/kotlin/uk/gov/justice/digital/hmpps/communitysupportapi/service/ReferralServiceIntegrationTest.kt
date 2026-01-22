@@ -4,7 +4,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
@@ -45,13 +47,12 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedReferral.communityServiceProviderId).isEqualTo(createReferralRequest.communityServiceProviderId)
     assertThat(savedReferral.crn).isEqualTo(createReferralRequest.crn)
     assertThat(savedReferral.referralEvents.size).isEqualTo(1)
-    assertThat(savedReferral.referenceNumber).isNotNull
+    assertThat(savedReferral.referenceNumber).isNull()
 
-    val submittedEvent = savedReferral.submittedEvent
-    assertThat(submittedEvent).isNotNull
-    assertThat(submittedEvent?.eventType).isEqualTo("SUBMITTED")
-    assertThat(submittedEvent?.actorType).isEqualTo("AUTH")
-    assertThat(submittedEvent?.actorId).isEqualTo("testUser")
+    val createdEvent = savedReferral.referralEvents.first { it.eventType == ReferralEventType.CREATED }
+    assertThat(createdEvent).isNotNull
+    assertThat(createdEvent.actorType).isEqualTo(ActorType.AUTH)
+    assertThat(createdEvent.actorId).isEqualTo("testUser")
   }
 
   private fun setUpData(): CreateReferralRequest {
