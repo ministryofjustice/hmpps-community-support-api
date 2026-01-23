@@ -19,7 +19,6 @@ class WebClientConfiguration(
   @Value("\${api.health-timeout:2s}") private val healthTimeout: Duration,
   @Value("\${services.ndelius-integration-api.base-url}") private val deliusBaseUrl: String,
   @Value("\${services.nomis-api.base-url}") private val nomisBaseUrl: String,
-  private val authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
 ) {
   companion object {
     const val COMMUNITY_SUPPORT_API_CLIENT_ID = "community-support-api-client"
@@ -42,7 +41,7 @@ class WebClientConfiguration(
 
   @Bean("deliusWebClient")
   @ConditionalOnMissingBean(name = ["deliusWebClient"])
-  fun deliusWebClient(builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(
+  fun deliusWebClient(builder: WebClient.Builder, authorizedClientManager: ReactiveOAuth2AuthorizedClientManager): WebClient = builder.reactiveAuthorisedWebClient(
     authorizedClientManager,
     COMMUNITY_SUPPORT_API_CLIENT_ID,
     deliusBaseUrl,
@@ -50,7 +49,7 @@ class WebClientConfiguration(
 
   @Bean("nomisWebClient")
   @ConditionalOnMissingBean(name = ["nomisWebClient"])
-  fun nomisWebClient(builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(
+  fun nomisWebClient(builder: WebClient.Builder, authorizedClientManager: ReactiveOAuth2AuthorizedClientManager): WebClient = builder.reactiveAuthorisedWebClient(
     authorizedClientManager,
     COMMUNITY_SUPPORT_API_CLIENT_ID,
     nomisBaseUrl,
