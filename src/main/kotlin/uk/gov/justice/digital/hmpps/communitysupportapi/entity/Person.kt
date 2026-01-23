@@ -4,8 +4,6 @@ import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
@@ -17,8 +15,7 @@ import java.util.UUID
 @Table(name = "person")
 class Person(
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  val id: UUID? = null,
+  val id: UUID,
 
   @Column(name = "identifier", nullable = false, unique = true)
   val identifier: String,

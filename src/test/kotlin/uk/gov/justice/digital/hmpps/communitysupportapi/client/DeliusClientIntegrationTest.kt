@@ -5,10 +5,13 @@ import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import reactor.test.StepVerifier
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.deliusPersonJson
@@ -21,7 +24,7 @@ class DeliusClientIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `should return person when Delius API returns 200`() {
-    wireMockServer.stubFor(
+    stubFor(
       post(urlPathEqualTo("/search"))
         .withHeader("Content-Type", containing("application/json"))
         .withRequestBody(matchingJsonPath("$.crn", equalTo(CRN)))
@@ -33,15 +36,15 @@ class DeliusClientIntegrationTest : IntegrationTestBase() {
         ),
     )
 
-    val result = deliusClient.getPersonByCrn(CRN)
+    val result = deliusClient.getPersonByCrn(CRN).block()
 
-    assertThat(result).isNotNull()
+    assertThat(result).isNotNull
     assertThat(result!!.otherIds?.crn).isEqualTo(CRN)
   }
 
   @Test
-  fun `should return null when Delius API returns 404`() {
-    wireMockServer.stubFor(
+  fun `should emit error when Delius API returns 404`() {
+    stubFor(
       post(urlPathEqualTo("/search"))
         .withHeader("Content-Type", containing("application/json"))
         .withRequestBody(matchingJsonPath("$.crn", equalTo("Unknown")))
@@ -53,8 +56,8 @@ class DeliusClientIntegrationTest : IntegrationTestBase() {
         ),
     )
 
-    val result = deliusClient.getPersonByCrn("Unknown")
-
-    assertThat(result).isNull()
+    StepVerifier.create(deliusClient.getPersonByCrn("Unknown"))
+      .expectErrorMatches { it is NotFoundException && it.message!!.contains("Unknown") }
+      .verify()
   }
 }

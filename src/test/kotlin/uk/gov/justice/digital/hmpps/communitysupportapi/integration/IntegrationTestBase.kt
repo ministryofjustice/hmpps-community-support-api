@@ -1,16 +1,17 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.integration
 
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.http.JvmProxyConfigurer.configureFor
-import org.junit.jupiter.api.AfterAll
+import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
+import org.springframework.context.annotation.Import
 import org.springframework.http.HttpHeaders
-import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -22,9 +23,9 @@ import uk.gov.justice.hmpps.test.kotlin.auth.JwtAuthorisationHelper
 
 @ExtendWith(HmppsAuthApiExtension::class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
-@ActiveProfiles("test")
 @AutoConfigureWebTestClient
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@Import(TestWebClientConfiguration::class)
+@ActiveProfiles("test")
 abstract class IntegrationTestBase {
 
   @Autowired
@@ -33,10 +34,14 @@ abstract class IntegrationTestBase {
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthorisationHelper
 
-  companion object {
+  @BeforeEach
+  fun setup() {
+    wireMockServer.resetRequests()
+    stubAuthTokenEndpoint()
+    stubPingWithResponse(200)
+  }
 
-    @JvmStatic
-    val wireMockServer = WireMockServer()
+  companion object {
 
     @JvmStatic
     private val postgresContainer = PostgreSQLContainer<Nothing>("postgres:17")
@@ -46,18 +51,15 @@ abstract class IntegrationTestBase {
         withReuse(true)
       }
 
+    @JvmStatic
+    val wireMockServer = WireMockServer(WireMockConfiguration.options().dynamicPort())
+
     @BeforeAll
     @JvmStatic
     fun startContainers() {
-      wireMockServer.start()
-      configureFor(wireMockServer.port())
       postgresContainer.start()
-    }
-
-    @AfterAll
-    @JvmStatic
-    fun stopWireMock() {
-      wireMockServer.stop()
+      wireMockServer.start()
+      WireMock.configureFor("localhost", wireMockServer.port())
     }
 
     @DynamicPropertySource
@@ -66,9 +68,9 @@ abstract class IntegrationTestBase {
       registry.add("spring.datasource.url") { postgresContainer.jdbcUrl }
       registry.add("spring.datasource.username") { postgresContainer.username }
       registry.add("spring.datasource.password") { postgresContainer.password }
-      registry.add("external-api.locations.delius.base-url") { "http://localhost:${wireMockServer.port()}" }
-      registry.add("external-api.locations.nomis.base-url") { "http://localhost:${wireMockServer.port()}" }
-      registry.add("external-api.auth.token") { "test-token" }
+      registry.add("services.ndelius-integration-api.base-url") { "http://localhost:${wireMockServer.port()}" }
+      registry.add("services.nomis-api.base-url") { "http://localhost:${wireMockServer.port()}" }
+      registry.add("hmpps-auth.url") { "http://localhost:8090/auth" }
     }
   }
 

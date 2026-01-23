@@ -25,7 +25,7 @@ class PersonController(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  @Operation(summary = "Find a person by an identifier i.e prison number or CRN")
+  @Operation(summary = "Find a person by an identifier i.e Prison Number or CRN")
   @ApiResponses(
     value = [
       ApiResponse(

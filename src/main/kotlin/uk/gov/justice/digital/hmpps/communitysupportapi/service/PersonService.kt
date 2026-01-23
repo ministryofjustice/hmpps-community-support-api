@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toPersonDto
@@ -20,25 +19,22 @@ class PersonService(
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
   }
+  fun getPerson(personIdentifier: String): PersonDto {
+    log.info("Received person lookup request for identifier: {}", personIdentifier)
 
-  @Transactional
-  fun getPerson(crnOrPrisonerNumber: String): PersonDto {
-    log.info("Received person lookup request for identifier: {}", crnOrPrisonerNumber)
+    val identifier = identifierValidator.validate(personIdentifier)
 
-    val personAggregate = when (
-      val identifier = identifierValidator.validate(crnOrPrisonerNumber)
-    ) {
-      is PersonIdentifier.Crn ->
-        deliusService.getPersonDetailsByCrn(identifier.value)
+    val personAggregate = requireNotNull(
+      when (identifier) {
+        is PersonIdentifier.Crn ->
+          deliusService.getPersonDetailsByCrn(identifier.value).block()
+        is PersonIdentifier.PrisonerNumber ->
+          nomisService.getPersonDetailsByPrisonerNumber(identifier.value).block()
+      },
+    )
 
-      is PersonIdentifier.PrisonerNumber ->
-        nomisService.getPersonDetailsByPrisonerNumber(identifier.value)
-    }
+    val person = personRepository.save(personAggregate.toEntity())
 
-    val person = personAggregate.toEntity()
-
-    personRepository.save(person)
-
-    return personAggregate.toPersonDto()
+    return personAggregate.toPersonDto(person.id)
   }
 }

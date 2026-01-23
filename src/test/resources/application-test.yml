@@ -24,22 +24,11 @@ spring:
     environment: dev
 
 services:
-  find-and-refer-intervention-api:
-    base-url: http://localhost:8095
   ndelius-integration-api:
-    base-url: http://localhost:8095
-  oasys-api:
-    base-url: http://localhost:8095
+    base-url: "http://localhost:${wiremock.server.port}"
+  nomis-api:
+    base-url: "http://localhost:${wiremock.server.port}"
 
 wiremock:
   logging:
     verbose: true
-
-external-api:
-  auth:
-    token: test-token
-  locations:
-    delius:
-      base-url: http://localhost:${wiremock.server.port}
-    nomis:
-      base-url: http://localhost:${wiremock.server.port}

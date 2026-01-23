@@ -2,12 +2,14 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.client
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import reactor.test.StepVerifier
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.nomisPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.nomisPersonNotFoundJson
 
@@ -16,30 +18,33 @@ class NomisClientIntegrationTest : IntegrationTestBase() {
   @Autowired
   lateinit var nomisClient: NomisClient
 
+  private val prisonerNumber = "A1234BC"
+
   @Test
   fun `should return person when Nomis API returns 200`() {
-    wireMockServer.stubFor(
-      get(urlEqualTo("/prisoner/$PRISONER_NUMBER"))
+    stubFor(
+      get(urlEqualTo("/prisoner/$prisonerNumber"))
         .willReturn(
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(
-              nomisPersonJson(PRISONER_NUMBER),
-            ),
+            .withBody(nomisPersonJson(prisonerNumber)),
         ),
     )
 
-    val result = nomisClient.getPersonByPrisonerNumber(PRISONER_NUMBER)
-
-    assertThat(result).isNotNull()
-    assertThat(result!!.prisonerNumber).isEqualTo(PRISONER_NUMBER)
+    StepVerifier.create(nomisClient.getPersonByPrisonerNumber(prisonerNumber))
+      .assertNext {
+        assertThat(it.prisonerNumber).isEqualTo(prisonerNumber)
+      }
+      .verifyComplete()
   }
 
   @Test
-  fun `should return null when Nomis API returns 404`() {
-    wireMockServer.stubFor(
-      get(urlEqualTo("/prisoner/UNKNOWN"))
+  fun `should emit error when Nomis API returns 404`() {
+    val unknownPrisoner = "UNKNOWN"
+
+    stubFor(
+      get(urlEqualTo("/prisoner/$unknownPrisoner"))
         .willReturn(
           aResponse()
             .withStatus(404)
@@ -48,8 +53,10 @@ class NomisClientIntegrationTest : IntegrationTestBase() {
         ),
     )
 
-    val result = nomisClient.getPersonByPrisonerNumber("Unknown")
-
-    assertThat(result).isNull()
+    StepVerifier.create(nomisClient.getPersonByPrisonerNumber(unknownPrisoner))
+      .expectErrorMatches { ex ->
+        ex is NotFoundException && ex.message!!.contains(unknownPrisoner)
+      }
+      .verify()
   }
 }

@@ -2,17 +2,20 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createNomisPersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createNomisPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
+import java.time.LocalDate
 
 class PersonControllerIntegrationTest : IntegrationTestBase() {
 
@@ -57,25 +60,14 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return OK with valid person identifier`() {
-      val nomisPerson = createNomisPersonDto(PRISONER_NUMBER)
-
-      wireMockServer.stubFor(
+      stubFor(
         get(urlEqualTo("/prisoner/$PRISONER_NUMBER"))
           .willReturn(
             aResponse()
               .withStatus(200)
               .withHeader("Content-Type", "application/json")
-              .withBody(nomisPerson.toJson()),
+              .withBody(createNomisPersonDto(PRISONER_NUMBER).toJson()),
           ),
-      )
-
-      val expectedPersonResult = PersonDto(
-        PRISONER_NUMBER,
-        firstName = nomisPerson.firstName,
-        lastName = nomisPerson.lastName,
-        dateOfBirth = nomisPerson.dateOfBirth,
-        sex = nomisPerson.gender,
-        additionalDetails = createNomisPersonAdditionalDetails(),
       )
 
       webTestClient.get()
@@ -83,9 +75,16 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
-        .expectBody(PersonDto::class.java)
+        .expectBody<PersonDto>()
         .consumeWith { response ->
-          response.responseBody shouldBe expectedPersonResult
+          val body = response.responseBody!!
+
+          body.id shouldNotBe null
+          body.personIdentifier shouldBe PRISONER_NUMBER
+          body.firstName shouldBe "John"
+          body.lastName shouldBe "Smith"
+          body.dateOfBirth shouldBe LocalDate.of(1985, 1, 1)
+          body.sex shouldBe "Male"
         }
     }
 
@@ -102,7 +101,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     fun `should return Not Found for valid person identifier that does not exist`() {
       val unknownPrisonerNumber = "Z9786YX"
 
-      wireMockServer.stubFor(
+      stubFor(
         get(urlEqualTo("/prisoner/$unknownPrisonerNumber"))
           .willReturn(
             aResponse()

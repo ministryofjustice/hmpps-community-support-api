@@ -1,2 +1,8 @@
 hmpps-auth:
   url: "http://localhost:8090/auth"
+
+services:
+  ndelius-integration-api:
+    base-url: ${NDELIUS_INTEGRATION_API_BASE_URL}
+  nomis-api:
+    base-url: ${NOMIS_API_BASE_URL}

@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.integration.health
 
 import org.junit.jupiter.api.Test
+import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 
 class HealthCheckTest : IntegrationTestBase() {
