@@ -43,6 +43,7 @@ abstract class IntegrationTestBase {
     wireMockServer.resetRequests()
     stubAuthTokenEndpoint()
     stubPingWithResponse(200)
+    testDataCleaner.cleanAllTables()
   }
 
   companion object {

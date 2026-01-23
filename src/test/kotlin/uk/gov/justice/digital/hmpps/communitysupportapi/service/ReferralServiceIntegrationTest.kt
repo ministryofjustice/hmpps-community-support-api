@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
@@ -29,11 +28,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralService: ReferralService
-
-  @BeforeEach
-  fun setup() {
-    testDataCleaner.cleanAllTables()
-  }
 
   @Test
   fun `createReferral should save referral and referral events`() {
