@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS referral (
     first_name TEXT,
     last_name TEXT,
     crn TEXT NOT NULL,
-    reference_number TEXT NOT NULL,
+    reference_number TEXT,
     sex TEXT,
     date_of_birth DATE,
     ethnicity TEXT,

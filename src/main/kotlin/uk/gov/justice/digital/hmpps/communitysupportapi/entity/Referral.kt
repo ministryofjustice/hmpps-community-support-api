@@ -1,11 +1,13 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.entity
 
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
-import java.time.LocalDate
-import java.time.LocalDateTime
+import org.springframework.data.annotation.CreatedDate
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
@@ -14,25 +16,36 @@ class Referral(
   @Id
   val id: UUID,
 
-  @Column(name = "first_name")
-  val firstName: String? = null,
+  @Column(name = "community_service_provider_id", nullable = false)
+  val communityServiceProviderId: UUID,
 
-  @Column(name = "last_name")
-  val lastName: String? = null,
+  @Column(name = "person_id", nullable = false)
+  val personId: UUID,
 
-  @Column(nullable = false)
+  @Column(name = "crn")
   val crn: String,
 
-  @Column(name = "reference_number", nullable = false)
-  val referenceNumber: String,
-
-  val sex: String? = null,
-
-  @Column(name = "date_of_birth")
-  val dateOfBirth: LocalDate? = null,
-
-  val ethnicity: String? = null,
+  @Column(name = "reference_number")
+  var referenceNumber: String? = null,
 
   @Column(name = "created_at", nullable = false)
-  val createdAt: LocalDateTime = LocalDateTime.now(),
-)
+  @CreatedDate
+  val createdAt: OffsetDateTime,
+
+  @Column(name = "updated_at")
+  val updatedAt: OffsetDateTime? = null,
+
+  @Column(name = "urgency")
+  val urgency: Boolean? = null,
+
+  @OneToMany(mappedBy = "referral", cascade = [CascadeType.PERSIST, CascadeType.MERGE], orphanRemoval = true)
+  val referralEvents: MutableList<ReferralEvent> = mutableListOf(),
+) {
+  val submittedEvent: ReferralEvent?
+    get() = referralEvents.firstOrNull { it.eventType == ReferralEventType.SUBMITTED }
+
+  fun addEvent(event: ReferralEvent) {
+    referralEvents.add(event)
+    event.referral = this
+  }
+}

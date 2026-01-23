@@ -1,22 +1,63 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import java.util.UUID
 
 data class ReferralDto(
   val id: UUID,
-  val firstName: String?,
-  val lastName: String?,
   val crn: String?,
   val referenceNumber: String?,
 ) {
   companion object {
     fun from(referral: Referral): ReferralDto = ReferralDto(
       id = referral.id,
-      firstName = referral.firstName,
-      lastName = referral.lastName,
       crn = referral.crn,
       referenceNumber = referral.referenceNumber,
     )
   }
 }
+
+data class ReferralInformationDto(
+  val personId: UUID,
+  val referralId: UUID,
+  val firstName: String?,
+  val lastName: String?,
+  val sex: String? = null,
+  val crn: String,
+  val communityServiceProviderId: UUID,
+  val communityServiceProviderName: String,
+  val region: String,
+  val referenceNumber: String? = null,
+  val deliveryPartner: String,
+) {
+  companion object {
+    fun from(result: ReferralCreationResult): ReferralInformationDto = ReferralInformationDto(
+      personId = result.referral.personId,
+      referralId = result.referral.id,
+      communityServiceProviderId = result.referral.communityServiceProviderId,
+      firstName = result.person.firstName,
+      lastName = result.person.lastName,
+      sex = result.person.additionalDetails?.sexualOrientation,
+      crn = result.referral.crn,
+      communityServiceProviderName = result.communityServiceProvider.name,
+      region = result.communityServiceProvider.contractArea.region.name,
+      deliveryPartner = result.communityServiceProvider.providerName,
+    )
+  }
+}
+
+data class ReferralCreationResult(
+  val referral: Referral,
+  val person: Person,
+  val communityServiceProvider: CommunityServiceProvider,
+)
+
+data class SubmitReferralResponseDto(
+  val referralId: UUID,
+  val referenceNumber: String?,
+)
+
+fun Referral.toDto() = ReferralDto.from(this)
+fun ReferralCreationResult.toReferralInformationDto(): ReferralInformationDto = ReferralInformationDto.from(this)
