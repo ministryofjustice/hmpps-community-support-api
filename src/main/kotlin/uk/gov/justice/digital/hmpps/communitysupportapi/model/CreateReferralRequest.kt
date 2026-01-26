@@ -6,5 +6,5 @@ data class CreateReferralRequest(
   val personId: UUID,
   val communityServiceProviderId: UUID,
   val crn: String,
-  val urgency: Boolean = false,
+  val urgency: Boolean? = null,
 )

@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius
 
+import com.fasterxml.jackson.annotation.JsonSetter
+import com.fasterxml.jackson.annotation.Nulls
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CodeDescriptionDto
 
 data class OffenderManagerDto(
@@ -7,12 +9,12 @@ data class OffenderManagerDto(
   val staff: StaffDto? = null,
   val providerEmployee: ProviderEmployeeDto? = null,
   val partitionArea: String? = null,
-  val softDeleted: Boolean = false,
+  val softDeleted: Boolean? = null,
   val team: TeamDto? = null,
   val probationArea: ProbationAreaDto? = null,
   val fromDate: String? = null,
   val toDate: String? = null,
-  val active: Boolean = true,
+  val active: Boolean? = null,
   val allocationReason: CodeDescriptionDto? = null,
 )
 
@@ -39,20 +41,21 @@ data class ProbationAreaDto(
   val probationAreaId: Int? = null,
   val code: String? = null,
   val description: String? = null,
-  val nps: Boolean = false,
+  val nps: Boolean? = null,
   val organisation: CodeDescriptionDto? = null,
   val institution: InstitutionDto? = null,
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val teams: List<ProbationAreaTeamDto> = emptyList(),
 )
 
 data class InstitutionDto(
   val institutionId: Int? = null,
-  val isEstablishment: Boolean = true,
+  val isEstablishment: Boolean? = null,
   val code: String? = null,
   val description: String? = null,
   val institutionName: String? = null,
   val establishmentType: CodeDescriptionDto? = null,
-  val isPrivate: Boolean = true,
+  val isPrivate: Boolean? = null,
   val nomsPrisonInstitutionCode: String? = null,
 )
 
@@ -62,7 +65,7 @@ data class ProbationAreaTeamDto(
   val code: String? = null,
   val description: String? = null,
   val name: String? = null,
-  val isPrivate: Boolean = true,
+  val isPrivate: Boolean? = null,
   val externalProvider: CodeDescriptionDto? = null,
   val localDeliveryUnit: CodeDescriptionDto? = null,
   val district: CodeDescriptionDto? = null,

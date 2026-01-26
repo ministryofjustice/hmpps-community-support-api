@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius
 
+import com.fasterxml.jackson.annotation.JsonSetter
+import com.fasterxml.jackson.annotation.Nulls
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CodeDescriptionDto
 import java.time.LocalDate
 
@@ -16,19 +18,23 @@ data class OffenderProfileDto(
   val remandStatus: String? = null,
   val previousConviction: PreviousConvictionDto? = null,
   val riskColour: String? = null,
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val disabilities: List<DisabilityDto> = emptyList(),
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val provisions: List<ProvisionDto> = emptyList(),
 )
 
 data class OffenderLanguagesDto(
   val primaryLanguage: String? = null,
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val otherLanguages: List<String> = emptyList(),
   val languageConcerns: String? = null,
-  val requiresInterpreter: Boolean = false,
+  val requiresInterpreter: Boolean? = null,
 )
 
 data class PreviousConvictionDto(
   val convictionDate: String? = null,
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val detail: Map<String, String> = emptyMap(),
 )
 
