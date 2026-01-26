@@ -7,7 +7,7 @@ data class AddressesDto(
   val fullAddress: String? = null,
   val postalCode: String? = null,
   val startDate: LocalDate? = null,
-  val primaryAddress: Boolean = false,
-  val noFixedAddress: Boolean = false,
+  val primaryAddress: Boolean? = null,
+  val noFixedAddress: Boolean? = null,
   val phoneNumber: PhoneNumberDto? = null,
 )

@@ -6,5 +6,5 @@ data class LanguagesDto(
   val readSkill: String? = null,
   val writeSkill: String? = null,
   val speakSkill: String? = null,
-  val interpreterRequested: Boolean? = false,
+  val interpreterRequested: Boolean? = null,
 )

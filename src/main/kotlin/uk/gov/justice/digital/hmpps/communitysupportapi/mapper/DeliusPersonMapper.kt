@@ -22,9 +22,9 @@ fun DeliusPersonDto.toAdditionalDetails() = PersonAdditionalDetails(
   religionOrBelief = offenderProfile?.religion,
   transgender = null,
   sexualOrientation = offenderProfile?.sexualOrientation,
-  address = contactDetails.addresses.firstOrNull()?.toDisplayString(),
-  phoneNumber = contactDetails.phoneNumbers.firstOrNull()?.number,
-  emailAddress = contactDetails.emailAddresses.firstOrNull(),
+  address = contactDetails?.addresses?.firstOrNull()?.toDisplayString(),
+  phoneNumber = contactDetails?.phoneNumbers?.firstOrNull()?.number,
+  emailAddress = contactDetails?.emailAddresses?.firstOrNull(),
 )
 
 fun AddressDto.toDisplayString(): String = listOfNotNull(

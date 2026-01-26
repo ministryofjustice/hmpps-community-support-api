@@ -7,7 +7,7 @@ data class AllConvictedOffencesDto(
   val offenceCode: String? = null,
   val offenceDescription: String? = null,
   val offenceDate: LocalDate? = null,
-  val latestBooking: Boolean = false,
+  val latestBooking: Boolean? = null,
   val sentenceStartDate: LocalDate? = null,
-  val primarySentence: Boolean = false,
+  val primarySentence: Boolean? = null,
 )

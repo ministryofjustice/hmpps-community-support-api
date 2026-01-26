@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToMono
+import org.springframework.web.reactive.function.client.bodyToFlux
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DeliusPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
@@ -39,7 +39,9 @@ class DeliusClient(
       .onStatus({ status -> status.is5xxServerError }) { response ->
         Mono.error(RuntimeException("Server error from Delius: ${response.statusCode()}"))
       }
-      .bodyToMono<DeliusPersonDto>()
+      .bodyToFlux<DeliusPersonDto>()
+      .next()
+      .switchIfEmpty(Mono.error(NotFoundException("Person not found in Delius with CRN: $crn")))
       .doOnError { e -> log.error("Error calling Delius API for CRN $crn", e) }
   }
 }

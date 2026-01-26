@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto.nomis
 
+import com.fasterxml.jackson.annotation.JsonSetter
+import com.fasterxml.jackson.annotation.Nulls
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PhoneNumberDto
 import java.time.LocalDate
 
@@ -18,15 +20,17 @@ data class NomisPersonDto(
   val gender: String = "Unknown",
   val ethnicity: String? = null,
   val raceCode: String? = null,
-  val requiresInterpreter: Boolean? = false,
+  val requiresInterpreter: Boolean? = null,
   val maritalStatus: String? = null,
   val religion: String? = null,
   val nationality: String? = null,
   val smoker: String? = null,
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val personalCareNeeds: List<PersonalCareNeedsDto> = emptyList(),
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val languages: List<LanguagesDto> = emptyList(),
   val currentFacialImageId: Int? = null,
-  val militaryRecord: Boolean? = false,
+  val militaryRecord: Boolean? = null,
   val status: String? = null,
   val lastMovementTypeCode: String? = null,
   val lastMovementReasonCode: String? = null,
@@ -37,7 +41,9 @@ data class NomisPersonDto(
   val previousPrisonId: String? = null,
   val previousPrisonLeavingDate: LocalDate? = null,
   val cellLocation: String? = null,
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val aliases: List<AliasesDto> = emptyList(),
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val alerts: List<AlertsDto> = emptyList(),
   val csra: String? = null,
   val category: String? = null,
@@ -47,8 +53,8 @@ data class NomisPersonDto(
   val imprisonmentStatusDescription: String? = null,
   val convictedStatus: String? = null,
   val mostSeriousOffence: String? = null,
-  val recall: Boolean? = false,
-  val indeterminateSentence: Boolean? = false,
+  val recall: Boolean? = null,
+  val indeterminateSentence: Boolean? = null,
   val sentenceStartDate: LocalDate? = null,
   val releaseDate: LocalDate? = null,
   val confirmedReleaseDate: LocalDate? = null,
@@ -73,7 +79,7 @@ data class NomisPersonDto(
   val tariffDate: LocalDate? = null,
   val releaseOnTemporaryLicenceDate: LocalDate? = null,
   val locationDescription: String? = null,
-  val restrictedPatient: Boolean? = false,
+  val restrictedPatient: Boolean? = null,
   val supportingPrisonId: String? = null,
   val dischargedHospitalId: String? = null,
   val dischargedHospitalDescription: String? = null,
@@ -89,12 +95,20 @@ data class NomisPersonDto(
   val shapeOfFace: String? = null,
   val build: String? = null,
   val shoeSize: Int? = null,
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val tattoos: List<BodyPartCommentDto> = emptyList(),
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val scars: List<BodyPartCommentDto> = emptyList(),
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val marks: List<BodyPartCommentDto> = emptyList(),
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val addresses: List<AddressesDto> = emptyList(),
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val emailAddresses: List<EmailAddressesDto> = emptyList(),
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val phoneNumbers: List<PhoneNumberDto> = emptyList(),
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val identifiers: List<IdentifiersDto> = emptyList(),
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   val allConvictedOffences: List<AllConvictedOffencesDto> = emptyList(),
 )
