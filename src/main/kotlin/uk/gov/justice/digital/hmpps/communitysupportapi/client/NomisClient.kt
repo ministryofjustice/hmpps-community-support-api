@@ -15,7 +15,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 class NomisClient(
   @Qualifier("nomisWebClient") private val webClient: WebClient,
 ) {
-
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
   }
@@ -26,18 +25,21 @@ class NomisClient(
     return webClient.get()
       .uri("/prisoner/$prisonerNumber")
       .accept(MediaType.APPLICATION_JSON)
-      .retrieve()
-      .onStatus({ status -> status.is4xxClientError }) { response ->
-        if (response.statusCode() == HttpStatus.NOT_FOUND) {
-          Mono.error(NotFoundException("Person not found in Nomis with identifier: $prisonerNumber"))
-        } else {
-          Mono.error(RuntimeException("Client error: ${response.statusCode()}"))
+      .exchangeToMono { response ->
+        log.debug("Request headers sent: {}", response.request().headers)
+        log.debug("Response status: {}", response.statusCode())
+        log.debug("Response headers: {}", response.headers().asHttpHeaders())
+
+        when {
+          response.statusCode() == HttpStatus.NOT_FOUND ->
+            Mono.error(NotFoundException("Person not found in Nomis with identifier: $prisonerNumber"))
+          response.statusCode().is4xxClientError ->
+            Mono.error(RuntimeException("Client error: ${response.statusCode()}"))
+          response.statusCode().is5xxServerError ->
+            Mono.error(RuntimeException("Server error from Nomis: ${response.statusCode()}"))
+          else -> response.bodyToMono<NomisPersonDto>()
         }
       }
-      .onStatus({ status -> status.is5xxServerError }) { response ->
-        Mono.error(RuntimeException("Server error from Nomis: ${response.statusCode()}"))
-      }
-      .bodyToMono<NomisPersonDto>()
       .doOnError { e -> log.error("Error calling Nomis API for Prisoner Number $prisonerNumber", e) }
   }
 }
