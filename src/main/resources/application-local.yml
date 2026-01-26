@@ -17,7 +17,6 @@ spring:
             client-id: ${API_CLIENT_ID:hmpps-community-support-api-1}
             client-secret: ${API_CLIENT_SECRET:clientsecret}
             authorization-grant-type: client_credentials
-            client-authentication-method: client_secret_basic
         provider:
           hmpps-auth:
             token-uri: ${hmpps-auth.url}/oauth/token
@@ -29,7 +28,7 @@ services:
     base-url: https://prisoner-search-dev.prison.service.justice.gov.uk
 
 hmpps-auth:
-  url: "https://sign-in-dev.hmpps.service.justice.gov.uk/auth"
+  url: "http://localhost:8090/auth"
 
 logging:
   level:
