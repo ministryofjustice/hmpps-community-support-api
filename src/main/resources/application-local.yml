@@ -14,6 +14,7 @@ spring:
       client:
         registration:
           community-support-api-client:
+            provider: hmpps-auth
             client-id: ${API_CLIENT_ID:hmpps-community-support-api-1}
             client-secret: ${API_CLIENT_SECRET:clientsecret}
             authorization-grant-type: client_credentials
