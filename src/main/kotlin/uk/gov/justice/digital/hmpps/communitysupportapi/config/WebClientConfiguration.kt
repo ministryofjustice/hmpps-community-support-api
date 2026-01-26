@@ -1,19 +1,18 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.config
 
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager
-import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager
-import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService
-import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository
+import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
+import org.springframework.security.oauth2.client.web.reactive.function.client.ServletOAuth2AuthorizedClientExchangeFilterFunction
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.hmpps.kotlin.auth.healthWebClient
-import uk.gov.justice.hmpps.kotlin.auth.reactiveAuthorisedWebClient
 import java.time.Duration
 
 @Configuration
@@ -34,30 +33,47 @@ class WebClientConfiguration(
   fun hmppsAuthHealthWebClient(builder: WebClient.Builder): WebClient = builder.healthWebClient(hmppsAuthBaseUri, healthTimeout)
 
   @Bean
-  @ConditionalOnBean(ReactiveClientRegistrationRepository::class)
-  fun reactiveOAuth2AuthorizedClientManager(
-    clientRegistrations: ReactiveClientRegistrationRepository,
-    authorizedClientService: ReactiveOAuth2AuthorizedClientService,
-  ): ReactiveOAuth2AuthorizedClientManager = AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(
-    clientRegistrations,
-    authorizedClientService,
-  )
+  fun authorizedClientManager(
+    clientRegistrationRepository: ClientRegistrationRepository,
+    authorizedClientService: OAuth2AuthorizedClientService,
+  ): OAuth2AuthorizedClientManager {
+    val authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder.builder()
+      .clientCredentials()
+      .build()
+
+    return AuthorizedClientServiceOAuth2AuthorizedClientManager(
+      clientRegistrationRepository,
+      authorizedClientService,
+    ).apply {
+      setAuthorizedClientProvider(authorizedClientProvider)
+    }
+  }
 
   @Bean("deliusWebClient")
-  fun deliusWebClient(builder: WebClient.Builder, authorizedClientManager: ObjectProvider<ReactiveOAuth2AuthorizedClientManager>): WebClient = authorizedClientManager.ifAvailable?.let { manager ->
-    builder.reactiveAuthorisedWebClient(
-      manager,
-      COMMUNITY_SUPPORT_API_CLIENT_ID,
-      deliusBaseUrl,
-    )
-  } ?: builder.baseUrl(deliusBaseUrl).build()
+  fun deliusWebClient(
+    builder: WebClient.Builder,
+    authorizedClientManager: OAuth2AuthorizedClientManager,
+  ): WebClient {
+    val oauth2Filter = ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
+    oauth2Filter.setDefaultClientRegistrationId(COMMUNITY_SUPPORT_API_CLIENT_ID)
+
+    return builder
+      .baseUrl(deliusBaseUrl)
+      .filter(oauth2Filter)
+      .build()
+  }
 
   @Bean("nomisWebClient")
-  fun nomisWebClient(builder: WebClient.Builder, authorizedClientManager: ObjectProvider<ReactiveOAuth2AuthorizedClientManager>): WebClient = authorizedClientManager.ifAvailable?.let { manager ->
-    builder.reactiveAuthorisedWebClient(
-      manager,
-      COMMUNITY_SUPPORT_API_CLIENT_ID,
-      nomisBaseUrl,
-    )
-  } ?: builder.baseUrl(nomisBaseUrl).build()
+  fun nomisWebClient(
+    builder: WebClient.Builder,
+    authorizedClientManager: OAuth2AuthorizedClientManager,
+  ): WebClient {
+    val oauth2Filter = ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
+    oauth2Filter.setDefaultClientRegistrationId(COMMUNITY_SUPPORT_API_CLIENT_ID)
+
+    return builder
+      .baseUrl(nomisBaseUrl)
+      .filter(oauth2Filter)
+      .build()
+  }
 }

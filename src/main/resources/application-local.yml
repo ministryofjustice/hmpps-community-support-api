@@ -30,3 +30,7 @@ services:
 
 hmpps-auth:
   url: "http://localhost:8090/auth"
+
+logging:
+  level:
+    uk.gov.justice.digital.hmpps.communitysupportapi.client: DEBUG
