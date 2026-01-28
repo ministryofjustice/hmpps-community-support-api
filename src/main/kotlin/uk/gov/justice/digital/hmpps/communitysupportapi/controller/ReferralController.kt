@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
@@ -41,7 +42,7 @@ class ReferralController(
       ApiResponse(
         responseCode = "200",
         description = "Referral found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralDto::class))],
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralDetailsBffResponseDto::class))],
       ),
       ApiResponse(
         responseCode = "404",
@@ -54,6 +55,24 @@ class ReferralController(
   fun getReferral(@PathVariable referralId: UUID): ResponseEntity<ReferralDto> = referralService.getReferral(referralId)
     .map { ResponseEntity.ok(it.toDto()) }
     .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+  @Operation(summary = "Get referral details page data")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral Details found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralDetailsBffResponseDto::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral-details-page/{referralId}")
+  fun getReferralDetailsPage(@PathVariable referralId: UUID): ResponseEntity<ReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getReferralDetailsPage(referralId))
 
   @Operation(summary = "Create a referral")
   @ApiResponses(

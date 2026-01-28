@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
@@ -30,6 +31,12 @@ class ReferralService(
   }
 
   fun getReferral(referralId: UUID) = referralRepository.findById(referralId)
+
+  fun getReferralDetailsPage(referralId: UUID): ReferralDetailsBffResponseDto {
+    val referral = referralRepository.findById(referralId).orElseThrow { NotFoundException("Referral not found for id $referralId") }
+    val person = personRepository.findById(referral.personId).orElseThrow { NotFoundException("Person not found for referral ${referral.id}") }
+    return ReferralDetailsBffResponseDto.from(referral, person)
+  }
 
   fun createReferral(user: String, createReferralRequest: CreateReferralRequest): ReferralCreationResult {
     if (!personRepository.existsById(createReferralRequest.personId)) {
