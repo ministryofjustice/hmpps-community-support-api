@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
-import com.github.tomakehurst.wiremock.http.Response.response
 import io.kotest.matchers.shouldBe
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -111,6 +110,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         id = referral.id,
         crn = referral.crn,
         referenceNumber = referral.referenceNumber,
+        createdDate = referral.createdAt,
       )
 
       webTestClient.get()

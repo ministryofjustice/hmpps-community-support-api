@@ -18,9 +18,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import java.util.UUID
@@ -51,9 +49,9 @@ class ReferralController(
     ],
   )
   @GetMapping("/bff/referral-details/{referralId}")
-  fun getReferral(@PathVariable referralId: UUID): ResponseEntity<ReferralDto> = referralService.getReferral(referralId)
-    .map { ResponseEntity.ok(it.toDto()) }
-    .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+  fun getReferral(@PathVariable referralId: UUID): ResponseEntity<ReferralDto> {
+    return ResponseEntity.ok(referralService.getReferral(referralId))
+  }
 
   @Operation(summary = "Create a referral")
   @ApiResponses(
