@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AssignmentFailureDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignmentId
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.User
@@ -105,6 +108,20 @@ class ReferralAssignmentService(
           .forEach { assignment ->
             referralUserAssignmentRepository.markDeletedByReferralIdAndUserId(referral.id, assignment.id.userId, "system", now)
           }
+      }
+      if (toAdd.isNotEmpty() || toUpdate.isNotEmpty() || toRemove.isNotEmpty()) {
+        // where to get the user Id ? from login session?
+        val referralEvent = ReferralEvent(
+          id = UUID.randomUUID(),
+          eventType = ReferralEventType.ASSIGNED,
+          createdAt = now,
+          actorType = ActorType.AUTH,
+          actorId = "dummaryUser",
+          referral = referral,
+        )
+
+        referral.addEvent(referralEvent)
+        val savedReferral = referralRepository.save(referral)
       }
       val message: String = if (toUpdate.isNotEmpty()) {
         if (submittedAssignments.size == 1) {
