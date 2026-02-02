@@ -121,7 +121,16 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .isOk
         .expectBody(ReferralDto::class.java)
         .consumeWith { response ->
-          response.responseBody shouldBe referralDto
+          val body = response.responseBody!!
+          // compare fields individually and allow a tiny tolerance for createdDate
+          body.id shouldBe referralDto.id
+          body.crn shouldBe referralDto.crn
+          body.referenceNumber shouldBe referralDto.referenceNumber
+
+          val nanosDiff =
+            java.time.Duration.between(referralDto.createdDate, body.createdDate).abs().toNanos()
+          // allow up to 1-millisecond difference to avoid nanosecond serialization jitter
+          assertThat(nanosDiff).isLessThanOrEqualTo(1_000_000L)
         }
     }
 
