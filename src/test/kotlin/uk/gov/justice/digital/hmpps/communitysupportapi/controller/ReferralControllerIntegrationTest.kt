@@ -22,6 +22,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServ
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
@@ -30,7 +31,6 @@ import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 
 class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
@@ -450,7 +450,6 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
       person.additionalDetails = additionalDetails
       personRepository.save(person)
-
 
       val savedReferral = referralRepository.save(
         ReferralFactory()
