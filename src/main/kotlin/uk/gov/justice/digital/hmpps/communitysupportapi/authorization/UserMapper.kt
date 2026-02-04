@@ -25,7 +25,7 @@ class UserMapper(
         null
       }
 
-    val userId = userName?.let { manageUsersClient.getUserDetails(it)?.userId }
+    val userDetails = userName?.let { manageUsersClient.getUserDetails(it) }
       ?: run {
         if (userName != null) {
           errors.add("no 'user_id' claim in token")
@@ -34,7 +34,9 @@ class UserMapper(
       }
 
     val authSource = authenticationHolder.authentication.authSource
-    if (authSource == AuthSource.NONE) {
+      .let { userDetails?.authSource ?: it.name }
+
+    if (authSource == AuthSource.NONE.name) {
       errors.add("no 'auth_source' claim in token")
     }
 
@@ -42,12 +44,12 @@ class UserMapper(
       throwAccessDenied(errors)
     }
 
-    return referralUserRepository.findByHmppsAuthId(requireNotNull(userId))
+    return referralUserRepository.findByHmppsAuthId(requireNotNull(userDetails?.userId))
       ?: referralUserRepository.save(
         ReferralUser(
           id = UUID.randomUUID(),
-          hmppsAuthId = userId,
-          authSource = authSource.name,
+          hmppsAuthId = userDetails.userId,
+          authSource = authSource,
           hmppsAuthUsername = requireNotNull(userName),
         ),
       )
