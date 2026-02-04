@@ -4,15 +4,14 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
-import java.time.LocalDate
-import java.time.OffsetDateTime
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import java.util.UUID
 
 class ReferralServiceIntegrationTest : IntegrationTestBase() {
@@ -27,6 +26,9 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   private lateinit var communityServiceProviderRepository: CommunityServiceProviderRepository
 
   @Autowired
+  private lateinit var referralProviderAssignmentRepository: ReferralProviderAssignmentRepository
+
+  @Autowired
   private lateinit var referralService: ReferralService
 
   @Test
@@ -38,10 +40,14 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val savedReferral = result.referral
 
     assertThat(savedReferral.personId).isEqualTo(createReferralRequest.personId)
-    assertThat(savedReferral.communityServiceProviderId).isEqualTo(createReferralRequest.communityServiceProviderId)
     assertThat(savedReferral.crn).isEqualTo(createReferralRequest.crn)
     assertThat(savedReferral.referralEvents.size).isEqualTo(1)
     assertThat(savedReferral.referenceNumber).isNull()
+
+    // Check provider assignment was created
+    val providerAssignments = referralProviderAssignmentRepository.findByReferralId(savedReferral.id)
+    assertThat(providerAssignments).hasSize(1)
+    assertThat(providerAssignments[0].communityServiceProvider.id).isEqualTo(createReferralRequest.communityServiceProviderId)
 
     val createdEvent = savedReferral.referralEvents.first { it.eventType == ReferralEventType.CREATED }
     assertThat(createdEvent).isNotNull
@@ -50,17 +56,13 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   }
 
   private fun setUpData(): CreateReferralRequest {
-    val personDetails = Person(
-      id = UUID.randomUUID(),
-      firstName = "John",
-      lastName = "Smith",
-      identifier = "X123456",
-      dateOfBirth = LocalDate.of(1980, 1, 1),
-      gender = "Male",
-      createdAt = OffsetDateTime.now(),
+    val person = personRepository.saveAndFlush(
+      PersonFactory()
+        .withFirstName("John")
+        .withLastName("Smith")
+        .withIdentifier("X123456")
+        .create(),
     )
-
-    val person = personRepository.saveAndFlush(personDetails)
     val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")).get()
 
     return CreateReferralRequest(

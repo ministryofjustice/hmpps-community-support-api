@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -24,6 +23,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformatio
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
+import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
 
 @RestController
@@ -31,6 +31,7 @@ import java.util.UUID
 class ReferralController(
   private val referralService: ReferralService,
   private val userMapper: UserMapper,
+  private val authenticationHolder: HmppsAuthenticationHolder,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -85,9 +86,9 @@ class ReferralController(
     ],
   )
   @PostMapping("/bff/referral")
-  fun createReferral(@RequestBody createReferralRequest: CreateReferralRequest, authentication: JwtAuthenticationToken): ResponseEntity<ReferralInformationDto> {
-    val user = userMapper.fromToken(authentication)
-    val result = referralService.createReferral(user, createReferralRequest)
+  fun createReferral(@RequestBody createReferralRequest: CreateReferralRequest): ResponseEntity<ReferralInformationDto> {
+    val user = userMapper.fromToken(authenticationHolder)
+    val result = referralService.createReferral(user.hmppsAuthUsername, createReferralRequest)
     return ResponseEntity.ok(result.toReferralInformationDto())
   }
 
@@ -102,8 +103,8 @@ class ReferralController(
     ],
   )
   @PostMapping("/bff/{referralId}/submit-a-referral")
-  fun submitReferral(@PathVariable referralId: UUID, authentication: JwtAuthenticationToken): ResponseEntity<SubmitReferralResponseDto> {
-    val user = userMapper.fromToken(authentication)
-    return ResponseEntity.ok(referralService.submitReferral(referralId, user))
+  fun submitReferral(@PathVariable referralId: UUID): ResponseEntity<SubmitReferralResponseDto> {
+    val user = userMapper.fromToken(authenticationHolder)
+    return ResponseEntity.ok(referralService.submitReferral(referralId, user.hmppsAuthUsername))
   }
 }

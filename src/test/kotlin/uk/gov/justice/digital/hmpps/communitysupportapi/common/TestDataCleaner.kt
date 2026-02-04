@@ -4,7 +4,6 @@ import jakarta.persistence.EntityManager
 import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import kotlin.apply
 
 @Transactional
 @Component
@@ -18,5 +17,9 @@ class TestDataCleaner(
       createNativeQuery("TRUNCATE TABLE person_additional_details CASCADE").executeUpdate()
       createNativeQuery("TRUNCATE TABLE person CASCADE").executeUpdate()
     }
+  }
+
+  fun refreshMaterializedView() {
+    entityManager.createNativeQuery("REFRESH MATERIALIZED VIEW case_list_view").executeUpdate()
   }
 }

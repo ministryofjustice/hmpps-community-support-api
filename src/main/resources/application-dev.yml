@@ -1,8 +1,12 @@
-hmpps-auth:
-  url: "http://localhost:8090/auth"
-
 services:
+  hmpps-auth-api:
+    base-url: "http://hmpps-auth:8090/auth"
   ndelius-integration-api:
     base-url: ${NDELIUS_INTEGRATION_API_BASE_URL}
   nomis-api:
     base-url: ${NOMIS_API_BASE_URL}
+  manage-users-api:
+    base-url: ${MANAGE_USERS_API_BASE_URL}
+    locations:
+      auth-user-groups: "/externalusers/{userId}/groups"
+      auth-user-details: "/users/{userName}"

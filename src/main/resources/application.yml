@@ -13,17 +13,17 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${hmpps-auth.url}/.well-known/jwks.json
+          jwk-set-uri: ${services.hmpps-auth-api.base-url}/.well-known/jwks.json
       client:
         registration:
           community-support-api-client:
             provider: hmpps-auth
-            client-id: hmpps-community-support-api-1
+            client-id: hmpps-community-support-api-2
             client-secret: clientsecret
             authorization-grant-type: client_credentials
         provider:
           hmpps-auth:
-            token-uri: ${hmpps-auth.url}/oauth/token
+            token-uri: ${services.hmpps-auth-api.base-url}/oauth/token
   http:
     codecs:
       max-in-memory-size: 10MB
@@ -60,3 +60,15 @@ management:
     info:
       cache:
         time-to-live: 2000ms
+webclient:
+  max-retry-attempts: 2
+  connect-timeout-seconds: 20
+  read-timeout-seconds: 10
+  write-timeout-seconds: 10
+  manage-users-api:
+    max-retry-attempts: 2
+
+# Materialized view refresh configuration
+case-list-view:
+  refresh-rate-ms: 300000  # 5 minutes
+

@@ -26,10 +26,6 @@ class NomisClient(
       .uri("/prisoner/$prisonerNumber")
       .accept(MediaType.APPLICATION_JSON)
       .exchangeToMono { response ->
-        log.debug("Request headers sent: {}", response.request().headers)
-        log.debug("Response status: {}", response.statusCode())
-        log.debug("Response headers: {}", response.headers().asHttpHeaders())
-
         when {
           response.statusCode() == HttpStatus.NOT_FOUND ->
             Mono.error(NotFoundException("Person not found in Nomis with identifier: $prisonerNumber"))
