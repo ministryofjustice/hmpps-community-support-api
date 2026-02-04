@@ -1,14 +1,13 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.authorization
 
 import org.springframework.security.access.AccessDeniedException
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.ManageUsersClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
+import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
-import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 
 @Component
 class UserMapper(
@@ -34,10 +33,10 @@ class UserMapper(
         null
       }
 
-      val authSource = authenticationHolder.authentication.authSource
-      if(authSource == AuthSource.NONE) {
-          errors.add("no 'auth_source' claim in token")
-      }
+    val authSource = authenticationHolder.authentication.authSource
+    if (authSource == AuthSource.NONE) {
+      errors.add("no 'auth_source' claim in token")
+    }
 
     if (errors.isNotEmpty()) {
       throwAccessDenied(errors)
