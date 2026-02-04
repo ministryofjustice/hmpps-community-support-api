@@ -27,11 +27,11 @@ class CaseListService(
     if (authenticationHolder.username.isNullOrBlank()) {
       throw AuthenticationCredentialsNotFoundException("No authenticated user found")
     }
-    if (authenticationHolder.authSource.name.equals("delius", ignoreCase = true)) {
+    val referralUser = userMapper.fromToken(authenticationHolder)
+    if (referralUser.authSource.equals("delius", ignoreCase = true)) {
       log.info("Delius user detected: ${authenticationHolder.username} - returning empty case list")
       return Page.empty()
     }
-    val referralUser = userMapper.fromToken(authenticationHolder)
     log.info("Fetching unassigned cases for user: ${referralUser.hmppsAuthUsername}")
 
     val accessScope = serviceProviderAccessScopeMapper.fromUser(referralUser)

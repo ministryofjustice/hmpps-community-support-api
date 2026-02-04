@@ -25,7 +25,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CaseListView
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CaseListViewRepository
-import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -99,15 +98,16 @@ class CaseListServiceTest {
   @Test
   fun `should return empty page when user is a Delius user`() {
     // Given
+    val referralUser = createReferralUser(authSource = "delius")
     whenever(authenticationHolder.username).thenReturn("delius-user")
-    whenever(authenticationHolder.authSource).thenReturn(AuthSource.DELIUS)
+    whenever(userMapper.fromToken(authenticationHolder)).thenReturn(referralUser)
 
     // When
     val result = caseListService.getUnassignedCases(pageable)
 
     // Then
     assertThat(result.isEmpty).isTrue()
-    verify(userMapper, never()).fromToken(any<HmppsAuthenticationHolder>())
+    verify(userMapper).fromToken(authenticationHolder)
     verify(serviceProviderAccessScopeMapper, never()).fromUser(any())
     verify(caseListViewRepository, never()).findAll(any<Specification<CaseListView>>(), any<Pageable>())
   }
@@ -120,7 +120,6 @@ class CaseListServiceTest {
     val emptyPage: Page<CaseListView> = Page.empty()
 
     whenever(authenticationHolder.username).thenReturn("test-user")
-    whenever(authenticationHolder.authSource).thenReturn(AuthSource.AUTH)
     whenever(userMapper.fromToken(authenticationHolder)).thenReturn(referralUser)
     whenever(serviceProviderAccessScopeMapper.fromUser(referralUser)).thenReturn(emptyAccessScope)
     whenever(caseListViewRepository.findAll(any<Specification<CaseListView>>(), any<Pageable>())).thenReturn(emptyPage)
@@ -145,7 +144,6 @@ class CaseListServiceTest {
     val expectedPage: Page<CaseListView> = PageImpl(caseListViews, pageable, caseListViews.size.toLong())
 
     whenever(authenticationHolder.username).thenReturn("test-user")
-    whenever(authenticationHolder.authSource).thenReturn(AuthSource.AUTH)
     whenever(userMapper.fromToken(authenticationHolder)).thenReturn(referralUser)
     whenever(serviceProviderAccessScopeMapper.fromUser(referralUser)).thenReturn(accessScope)
     whenever(caseListViewRepository.findAll(any<Specification<CaseListView>>(), eq(pageable))).thenReturn(expectedPage)
@@ -176,7 +174,6 @@ class CaseListServiceTest {
     val expectedPage: Page<CaseListView> = PageImpl(caseListViews, pageable, caseListViews.size.toLong())
 
     whenever(authenticationHolder.username).thenReturn("test-user")
-    whenever(authenticationHolder.authSource).thenReturn(AuthSource.AUTH)
     whenever(userMapper.fromToken(authenticationHolder)).thenReturn(referralUser)
     whenever(serviceProviderAccessScopeMapper.fromUser(referralUser)).thenReturn(accessScope)
     whenever(caseListViewRepository.findAll(any<Specification<CaseListView>>(), eq(pageable))).thenReturn(expectedPage)
