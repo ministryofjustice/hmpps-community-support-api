@@ -71,4 +71,10 @@ webclient:
 # Materialized view refresh configuration
 case-list-view:
   refresh-rate-ms: 300000  # 5 minutes
+services:
+  manage-users-api:
+    base-url: ${MANAGE_USERS_API_BASE_URL}
+    locations:
+      auth-user-groups: "/externalusers/{userId}/groups"
+      auth-user-details: "/users/{userName}"
 
