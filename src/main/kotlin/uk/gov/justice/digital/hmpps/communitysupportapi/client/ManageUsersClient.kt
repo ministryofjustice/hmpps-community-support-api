@@ -24,7 +24,7 @@ private data class AuthGroupResponse(
 )
 
 data class UserDetail(
-  val userName: String,
+  val username: String,
   val active: Boolean,
   val authSource: String,
   val name: String,
