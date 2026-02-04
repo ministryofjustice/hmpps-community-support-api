@@ -5,8 +5,9 @@ management.endpoint:
   health.cache.time-to-live: 0
   info.cache.time-to-live: 0
 
-hmpps-auth:
-  url: "http://localhost:8090/auth"
+# Disable scheduled refresh during tests (use manual refresh via TestDataCleaner)
+case-list-view:
+  refresh-rate-ms: 999999999  # Effectively disabled
 
 spring:
   jpa:
@@ -22,12 +23,38 @@ spring:
     password: admin_password
   application:
     environment: dev
+  security:
+    oauth2:
+      client:
+        provider:
+          hmpps-auth:
+            token-uri: http://localhost:8090/auth/oauth/token
+        registration:
+          community-support-api-client:
+            provider: hmpps-auth
+            client-id: test-client
+            client-secret: test-secret
+            authorization-grant-type: client_credentials
 
 services:
+  hmpps-auth-api:
+    base-url: "http://localhost:8090/auth"
   ndelius-integration-api:
     base-url: "http://localhost:${wiremock.server.port}"
   nomis-api:
     base-url: "http://localhost:${wiremock.server.port}"
+  manage-users-api:
+    base-url: "http://localhost:${wiremock.server.port}"
+    locations:
+      auth-user-groups: "/externalusers/{userId}/groups"
+      auth-user-details: "/users/{userName}"
+webclient:
+  max-retry-attempts: 2
+  connect-timeout-seconds: 20
+  read-timeout-seconds: 10
+  write-timeout-seconds: 10
+  manage-users-api:
+    max-retry-attempts: 2
 
 wiremock:
   logging:

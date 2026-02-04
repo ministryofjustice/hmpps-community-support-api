@@ -10,11 +10,14 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceP
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -23,6 +26,7 @@ class ReferralService(
   private val referralRepository: ReferralRepository,
   private val personRepository: PersonRepository,
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
+  private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
   private val referenceGenerator: ReferralReferenceGenerator,
 ) {
   companion object {
@@ -54,7 +58,6 @@ class ReferralService(
       id = referralId,
       crn = createReferralRequest.crn,
       personId = createReferralRequest.personId,
-      communityServiceProviderId = createReferralRequest.communityServiceProviderId,
       createdAt = now,
       updatedAt = now,
       urgency = createReferralRequest.urgency,
@@ -71,6 +74,16 @@ class ReferralService(
 
     referral.addEvent(referralEvent)
     val savedReferral = referralRepository.save(referral)
+
+    // Create the provider assignment
+    val providerAssignment = ReferralProviderAssignment(
+      id = UUID.randomUUID(),
+      referral = savedReferral,
+      communityServiceProvider = communityServiceProvider,
+      createdAt = LocalDateTime.now(),
+    )
+    referralProviderAssignmentRepository.save(providerAssignment)
+
     return ReferralCreationResult(
       referral = savedReferral,
       person = person,
@@ -82,8 +95,10 @@ class ReferralService(
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
-    val communityServiceProvider = communityServiceProviderRepository.findById(referral.communityServiceProviderId)
-      .orElseThrow { NotFoundException("Community Service Provider not found for id ${referral.communityServiceProviderId}") }
+    val providerAssignment = referralProviderAssignmentRepository.findByReferralId(referralId)
+      .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $referralId")
+
+    val communityServiceProvider = providerAssignment.communityServiceProvider
 
     val referralEvent = ReferralEvent(
       id = UUID.randomUUID(),
@@ -104,7 +119,7 @@ class ReferralService(
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
-    val type = communityServiceProvider.providerName
+    val type = communityServiceProvider.serviceProvider.name
 
     for (i in 1..MAX_REFERENCE_NUMBER_TRIES) {
       val candidate = referenceGenerator.generate(type)

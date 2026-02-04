@@ -18,6 +18,67 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://auth-db:5432/auth-db
       - APPLICATION_AUTHENTICATION_UI_ALLOWLIST=0.0.0.0/0
 
+  hmpps-manage-users:
+    image: quay.io/hmpps/hmpps-manage-users-api:latest
+    networks:
+      - hmpps
+    container_name: hmpps-manage-users
+    depends_on:
+      - hmpps-auth
+      - nomis-user-roles-api
+      - hmpps-external-users-api
+    ports:
+      - "8096:8096"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8096/health" ]
+    environment:
+      - SERVER_PORT=8096
+      - HMPPS_AUTH_ENDPOINT_URL=http://hmpps-auth:8090/auth
+      - API_BASE_URL_OAUTH=http://hmpps-auth:8090/auth
+      - SPRING_PROFILES_ACTIVE=dev
+      - EXTERNAL_USERS_ENDPOINT_URL=http://hmpps-external-users-api:8098
+      - NOMIS_ENDPOINT_URL=http://nomis-user-roles-api:8097
+      - DELIUS_ENDPOINT_URL=http://wiremock:8080/delius
+      - AUTHORIZATION_SERVER_TOKEN_ENDPOINT_URL=http://hmpps-auth:8090/auth/oauth/token
+
+  nomis-user-roles-api:
+    image: quay.io/hmpps/nomis-user-roles-api:latest
+    networks:
+      - hmpps
+    container_name: nomis-user-roles-api
+    depends_on:
+      - hmpps-auth
+    ports:
+      - "8097:8097"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8097/health" ]
+    environment:
+      - SERVER_PORT=8097
+      - SPRING_PROFILES_ACTIVE=dev
+      - API_BASE_URL_OAUTH=http://hmpps-auth:8090/auth
+
+  hmpps-external-users-api:
+    image: quay.io/hmpps/hmpps-external-users-api:latest
+    networks:
+      - hmpps
+    container_name: hmpps-external-users-api
+    depends_on:
+      - auth-db
+      - hmpps-auth
+    ports:
+      - "8098:8098"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8098/health/ping"]
+    environment:
+      - SERVER_PORT=8098
+      - SPRING_PROFILES_ACTIVE=dev
+      - API_BASE_URL_OAUTH=http://hmpps-auth:8090/auth
+      - SPRING_R2DBC_URL=r2dbc:postgresql://auth-db:5432/auth-db?sslmode=prefer
+      - SPRING_FLYWAY_URL=jdbc:postgresql://auth-db:5432/auth-db?sslmode=prefer
+      - SPRING_R2DBC_USERNAME=admin
+      - SPRING_R2DBC_PASSWORD=admin_password
+      - HMPPS_SQS_PROVIDER=localstack
+      - HMPPS_SQS_LOCALSTACKURL=http://localstack:4566
   auth-db:
     image: postgres:18
     networks:

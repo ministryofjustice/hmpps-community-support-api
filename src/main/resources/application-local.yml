@@ -10,26 +10,28 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${hmpps-auth.url}/.well-known/jwks.json
+          jwk-set-uri: ${services.hmpps-auth-api.base-url}/.well-known/jwks.json
       client:
         registration:
           community-support-api-client:
             provider: hmpps-auth
-            client-id: ${API_CLIENT_ID:hmpps-community-support-api-1}
+            client-id: ${API_CLIENT_ID:hmpps-community-support-api-2}
             client-secret: ${API_CLIENT_SECRET:clientsecret}
             authorization-grant-type: client_credentials
         provider:
           hmpps-auth:
-            token-uri: ${hmpps-auth.url}/oauth/token
+            token-uri: ${services.hmpps-auth-api.base-url}/oauth/token
 
 services:
   ndelius-integration-api:
     base-url: https://probation-offender-search-dev.hmpps.service.justice.gov.uk
   nomis-api:
     base-url: https://prisoner-search-dev.prison.service.justice.gov.uk
-
-hmpps-auth:
-  url: "http://localhost:8090/auth"
+  manage-users-api:
+    base-url: http://hmpps-manage-users:8096
+    locations:
+      auth-user-groups: "/externalusers/{userId}/groups"
+      auth-user-details: "/users/{userName}"
 
 logging:
   level:

@@ -6,20 +6,28 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.context.bean.override.mockito.MockitoBean
+import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalDetails
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
+import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -34,6 +42,16 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var communityServiceProviderRepository: CommunityServiceProviderRepository
+
+  @Autowired
+  private lateinit var referralProviderAssignmentRepository: ReferralProviderAssignmentRepository
+
+  @MockitoBean
+  private lateinit var userMapper: UserMapper
+
+  private val testUser = ReferralUserFactory()
+    .withHmppsAuthUsername("test-user")
+    .create()
 
   @Nested
   @DisplayName("GET /bff/referral-details/{referralId}")
@@ -82,37 +100,31 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return OK with valid referral information`() {
       // given some referral data are there
-      val personDetails = Person(
-        id = UUID.randomUUID(),
-        firstName = "John",
-        lastName = "Smith",
-        identifier = "X123456",
-        dateOfBirth = LocalDate.of(1980, 1, 1),
-        gender = "Male",
-        createdAt = OffsetDateTime.now(),
+      val person = personRepository.save(
+        PersonFactory()
+          .withFirstName("John")
+          .withLastName("Smith")
+          .withIdentifier("X123456")
+          .withDateOfBirth(LocalDate.of(1980, 1, 1))
+          .withGender("Male")
+          .withCreatedAt(OffsetDateTime.now())
+          .create(),
       )
 
-      val person = personRepository.save(personDetails)
-      val communityServiceProvider =
-        communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
-          .get()
-
-      val referral = Referral(
-        id = UUID.randomUUID(),
-        personId = person.id,
-        communityServiceProviderId = communityServiceProvider.id,
-        crn = "X123456",
-        referenceNumber = "REF123456",
-        createdAt = OffsetDateTime.now(),
+      val savedReferral = referralRepository.save(
+        ReferralFactory()
+          .withPersonId(person.id)
+          .withCrn("X123456")
+          .withReferenceNumber("REF123456")
+          .withCreatedAt(OffsetDateTime.now())
+          .create(),
       )
-
-      val savedReferral = referralRepository.save(referral)
 
       val referralDto = ReferralDto(
-        id = referral.id,
-        crn = referral.crn,
-        referenceNumber = referral.referenceNumber,
-        createdDate = referral.createdAt,
+        id = savedReferral.id,
+        crn = savedReferral.crn,
+        referenceNumber = savedReferral.referenceNumber,
+        createdDate = savedReferral.createdAt,
       )
 
       webTestClient.get()
@@ -196,6 +208,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return OK with valid referral information`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
       webTestClient.post()
         .uri("/bff/referral")
         .headers(setAuthorisation())
@@ -208,8 +222,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           run {
             val referral = referralRepository.findAll().firstOrNull()!!
             val person = personRepository.findById(referral.personId).get()
-            val communityServiceProvider =
-              communityServiceProviderRepository.findById(referral.communityServiceProviderId).get()
+            val providerAssignment = referralProviderAssignmentRepository.findByReferralId(referral.id).first()
+            val communityServiceProvider = providerAssignment.communityServiceProvider
 
             val referralInfo = ReferralInformationDto(
               referralId = referral.id,
@@ -218,10 +232,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
               lastName = person.lastName,
               sex = person.additionalDetails?.sexualOrientation,
               crn = referral.crn,
-              communityServiceProviderId = referral.communityServiceProviderId,
+              communityServiceProviderId = communityServiceProvider.id,
               communityServiceProviderName = communityServiceProvider.name,
               region = communityServiceProvider.contractArea.region.name,
-              deliveryPartner = communityServiceProvider.providerName,
+              deliveryPartner = communityServiceProvider.serviceProvider.name,
             )
             response.responseBody shouldBe referralInfo
           }
@@ -230,6 +244,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return Not Found with invalid referral identifier`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
       webTestClient.post()
         .uri("/bff/referral")
         .headers(setAuthorisation())
@@ -246,17 +262,13 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     private fun setUpData(): CreateReferralRequest {
-      val personDetails = Person(
-        id = UUID.randomUUID(),
-        firstName = "John",
-        lastName = "Smith",
-        identifier = "X123456",
-        dateOfBirth = LocalDate.of(1980, 1, 1),
-        gender = "Male",
-        createdAt = OffsetDateTime.now(),
+      val person = personRepository.save(
+        PersonFactory()
+          .withFirstName("John")
+          .withLastName("Smith")
+          .withIdentifier("X123456")
+          .create(),
       )
-
-      val person = personRepository.save(personDetails)
       val communityServiceProvider =
         communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
           .get()
@@ -316,30 +328,32 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return OK and create submitted event for valid referral`() {
-      val personDetails = Person(
-        id = UUID.randomUUID(),
-        firstName = "John",
-        lastName = "Smith",
-        identifier = "X123456",
-        dateOfBirth = LocalDate.of(1980, 1, 1),
-        gender = "Male",
-        createdAt = OffsetDateTime.now(),
-      )
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
-      val person = personRepository.save(personDetails)
+      val person = personRepository.save(
+        PersonFactory()
+          .withFirstName("John")
+          .withLastName("Smith")
+          .withIdentifier("X123456")
+          .create(),
+      )
       val communityServiceProvider =
         communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
           .get()
 
-      val referral = Referral(
-        id = UUID.randomUUID(),
-        personId = person.id,
-        communityServiceProviderId = communityServiceProvider.id,
-        crn = "X123456",
-        createdAt = OffsetDateTime.now(),
-      )
+      val referral = ReferralFactory()
+        .withPersonId(person.id)
+        .withCrn("X123456")
+        .create()
 
       val savedReferral = referralRepository.save(referral)
+
+      // Create the provider assignment
+      val providerAssignment = ReferralProviderAssignmentFactory()
+        .withReferral(savedReferral)
+        .withCommunityServiceProvider(communityServiceProvider)
+        .create()
+      referralProviderAssignmentRepository.save(providerAssignment)
 
       webTestClient.post()
         .uri("/bff/${savedReferral.id}/submit-a-referral")
@@ -411,49 +425,39 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return OK with valid referral details page information`() {
       // given some referral data are there
-
-      val personDetails = Person(
-        id = UUID.randomUUID(),
-        firstName = "John",
-        lastName = "Smith",
-        identifier = "X123456",
-        dateOfBirth = LocalDate.of(1980, 1, 1),
-        gender = "Male",
-        createdAt = OffsetDateTime.now(),
+      val person = personRepository.save(
+        PersonFactory()
+          .withFirstName("John")
+          .withLastName("Smith")
+          .withIdentifier("X123456")
+          .withDateOfBirth(LocalDate.of(1980, 1, 1))
+          .withGender("Male")
+          .create(),
       )
 
-      val person = personRepository.save(personDetails)
-      val additionalDetails = PersonAdditionalDetails(
-        id = UUID.randomUUID(),
-        ethnicity = "White",
-        preferredLanguage = "English",
-        neurodiverseConditions = "None",
-        religionOrBelief = "None",
-        transgender = "No",
-        sexualOrientation = "Straight",
-        address = "123 Test Street /n Test Town /n Testshire",
-        phoneNumber = "0191 234 5678",
-        emailAddress = "test@test.com",
-        person = person,
-      )
+      val additionalDetails = PersonAdditionalDetailsFactory()
+        .withPerson(person)
+        .withEthnicity("White")
+        .withPreferredLanguage("English")
+        .withNeurodiverseConditions("None")
+        .withReligionOrBelief("None")
+        .withTransgender("No")
+        .withSexualOrientation("Straight")
+        .withAddress("123 Test Street /n Test Town /n Testshire")
+        .withPhoneNumber("0191 234 5678")
+        .withEmailAddress("test@test.com")
+        .create()
 
       person.additionalDetails = additionalDetails
-
       personRepository.save(person)
-      val communityServiceProvider =
-        communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
-          .get()
 
-      val referral = Referral(
-        id = UUID.randomUUID(),
-        personId = person.id,
-        communityServiceProviderId = communityServiceProvider.id,
-        crn = "X123456",
-        referenceNumber = "REF123456",
-        createdAt = OffsetDateTime.now(),
+      val savedReferral = referralRepository.save(
+        ReferralFactory()
+          .withPersonId(person.id)
+          .withCrn("X123456")
+          .withReferenceNumber("REF123456")
+          .create(),
       )
-
-      val savedReferral = referralRepository.save(referral)
 
       val personDetailsTable = ReferralDetailsBffResponseDto.PersonDetailsTableDataDto(
         name = "${person.firstName} ${person.lastName}",
@@ -480,13 +484,13 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
 
       val referralDetailsTable = ReferralDetailsBffResponseDto.ReferralDetailsTableDataDto(
-        referralDate = referral.createdAt.toString(),
+        referralDate = savedReferral.createdAt.toString(),
         assignedTo = emptyList(),
       )
 
       val referralDetailsDto = ReferralDetailsBffResponseDto(
-        id = referral.id,
-        referenceNumber = referral.referenceNumber,
+        id = savedReferral.id,
+        referenceNumber = savedReferral.referenceNumber,
         createdDate = savedReferral.createdAt,
         personDetailsTableData = personDetailsTable,
         equalityDetailsTableData = equalityDetailsTable,

@@ -26,7 +26,7 @@ data class CommunitySupportServiceDto(
       id = communityServiceProvider.id.toString(),
       region = communityServiceProvider.contractArea.area,
       name = communityServiceProvider.name,
-      providerName = communityServiceProvider.providerName,
+      providerName = communityServiceProvider.serviceProvider.name,
       description = communityServiceProvider.description,
     )
   }

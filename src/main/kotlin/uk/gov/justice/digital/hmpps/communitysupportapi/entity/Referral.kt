@@ -16,13 +16,10 @@ class Referral(
   @Id
   val id: UUID,
 
-  @Column(name = "community_service_provider_id", nullable = false)
-  val communityServiceProviderId: UUID,
-
   @Column(name = "person_id", nullable = false)
   val personId: UUID,
 
-  @Column(name = "crn")
+  @Column(name = "person_identifier")
   val crn: String,
 
   @Column(name = "reference_number")

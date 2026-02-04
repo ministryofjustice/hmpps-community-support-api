@@ -21,8 +21,9 @@ class CommunityServiceProvider(
   @Column(nullable = false)
   val name: String,
 
-  @Column(nullable = false)
-  val providerName: String,
+  @ManyToOne
+  @JoinColumn(name = "service_provider_id", nullable = false)
+  val serviceProvider: ServiceProvider,
 
   @Column(nullable = false)
   val description: String,

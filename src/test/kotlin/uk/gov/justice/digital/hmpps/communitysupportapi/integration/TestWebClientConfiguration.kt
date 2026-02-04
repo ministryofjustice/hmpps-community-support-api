@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.integration
 
-import io.mockk.mockk
+import org.mockito.Mockito.mock
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.TestConfiguration
@@ -16,12 +16,12 @@ class TestWebClientConfiguration {
   @Bean
   @Qualifier("hmppsAuthHealthWebClient")
   fun hmppsAuthHealthWebClient(
-    @Value("\${hmpps-auth.url}") hmppsAuthBaseUrl: String,
+    @Value("\${services.hmpps-auth-api.base-url}") hmppsAuthBaseUrl: String,
   ): WebClient = WebClient.builder()
     .healthWebClient(hmppsAuthBaseUrl, Duration.ofSeconds(2))
 
   @Bean
-  fun reactiveOAuth2AuthorizedClientManager(): ReactiveOAuth2AuthorizedClientManager = mockk(relaxed = true)
+  fun reactiveOAuth2AuthorizedClientManager(): ReactiveOAuth2AuthorizedClientManager = mock(ReactiveOAuth2AuthorizedClientManager::class.java)
 
   @Bean
   @Qualifier("deliusWebClient")
@@ -34,4 +34,10 @@ class TestWebClientConfiguration {
   fun nomisWebClient(
     @Value("\${services.nomis-api.base-url}") nomisBaseUrl: String,
   ): WebClient = WebClient.builder().baseUrl(nomisBaseUrl).build()
+
+  @Bean
+  @Qualifier("manageUsersWebClient")
+  fun manageUsersWebClient(
+    @Value("\${services.manage-users-api.base-url}") manageUsersBaseUrl: String,
+  ): WebClient = WebClient.builder().baseUrl(manageUsersBaseUrl).build()
 }

@@ -2,6 +2,9 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.integration
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -75,7 +78,8 @@ abstract class IntegrationTestBase {
       registry.add("spring.datasource.password") { postgresContainer.password }
       registry.add("services.ndelius-integration-api.base-url") { "http://localhost:${wireMockServer.port()}" }
       registry.add("services.nomis-api.base-url") { "http://localhost:${wireMockServer.port()}" }
-      registry.add("hmpps-auth.url") { "http://localhost:8090/auth" }
+      registry.add("services.manage-users-api.base-url") { "http://localhost:${wireMockServer.port()}" }
+      registry.add("services.hmpps-auth-api.base-url") { "http://localhost:8090/auth" }
     }
   }
 
@@ -84,6 +88,19 @@ abstract class IntegrationTestBase {
     roles: List<String> = listOf("ROLE_IPB_FRONTEND_RW"),
     scopes: List<String> = listOf("read"),
   ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisationHeader(username = username, scope = scopes, roles = roles)
+
+  protected fun stubManageUsersGetUserGroups(userId: String, groups: List<Pair<String, String>>) {
+    val groupsJson = groups.joinToString(",") { """{"groupCode":"${it.first}","groupName":"${it.second}"}""" }
+    wireMockServer.stubFor(
+      get(urlPathMatching("/externalusers/$userId/groups"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody("[$groupsJson]")
+            .withStatus(200),
+        ),
+    )
+  }
 
   protected fun stubPingWithResponse(status: Int) {
     hmppsAuth.stubHealthPing(status)
