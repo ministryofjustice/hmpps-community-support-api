@@ -44,13 +44,13 @@ class UserMapper(
       throwAccessDenied(errors)
     }
 
-    return referralUserRepository.findByHmppsAuthId(requireNotNull(userDetails?.userId))
+    return referralUserRepository.findByHmppsAuthId((userDetails?.userId!!))
       ?: referralUserRepository.save(
         ReferralUser(
           id = UUID.randomUUID(),
           hmppsAuthId = userDetails.userId,
           authSource = authSource,
-          hmppsAuthUsername = requireNotNull(userName),
+          hmppsAuthUsername = userName!!,
         ),
       )
   }
