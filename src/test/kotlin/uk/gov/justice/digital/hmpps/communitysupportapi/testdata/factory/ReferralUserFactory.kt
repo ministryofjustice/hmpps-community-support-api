@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
-import com.sun.tools.javac.tree.TreeInfo.fullName
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import java.time.LocalDateTime
 import java.util.UUID
@@ -20,6 +19,7 @@ class ReferralUserFactory : TestEntityFactory<ReferralUser>() {
   fun withHmppsAuthUsername(hmppsAuthUsername: String) = apply { this.hmppsAuthUsername = hmppsAuthUsername }
   fun withAuthSource(authSource: String) = apply { this.authSource = authSource }
   fun withFullName(fullName: String) = apply { this.fullName = fullName }
+  fun withEmailAddress(fullName: String) = apply { this.emailAddress = emailAddress }
   fun withLastSyncedAt(lastSyncedAt: LocalDateTime?) = apply { this.lastSyncedAt = lastSyncedAt }
 
   override fun create(): ReferralUser = ReferralUser(
