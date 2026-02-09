@@ -43,8 +43,8 @@ fun PersonAdditionalDetails.toEntity(person: PersonEntity): PersonAdditionalDeta
   emailAddress = emailAddress,
 )
 
-fun PersonAggregate.toPersonDto(personId: UUID): PersonDto = PersonDto(
-  id = personId,
+fun PersonAggregate.toPersonDto(): PersonDto = PersonDto(
+  id = UUID.randomUUID(),
   personIdentifier = when (person.identifier) {
     is PersonIdentifier.Crn -> person.identifier.value
     is PersonIdentifier.PrisonerNumber -> person.identifier.value

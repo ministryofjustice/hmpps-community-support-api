@@ -30,14 +30,14 @@ class ReferralEventFactory : TestEntityFactory<ReferralEvent>() {
   private var eventType: ReferralEventType = ReferralEventType.CREATED
   private var createdAt: OffsetDateTime = OffsetDateTime.now()
   private var actorType: ActorType = ActorType.AUTH
-  private var actorId: String = "test-user"
+  private var actorId: UUID = UUID.randomUUID()
 
   fun withId(id: UUID) = apply { this.id = id }
   fun withReferral(referral: Referral) = apply { this.referral = referral }
   fun withEventType(eventType: ReferralEventType) = apply { this.eventType = eventType }
   fun withCreatedAt(createdAt: OffsetDateTime) = apply { this.createdAt = createdAt }
   fun withActorType(actorType: ActorType) = apply { this.actorType = actorType }
-  fun withActorId(actorId: String) = apply { this.actorId = actorId }
+  fun withActorId(actorId: UUID) = apply { this.actorId = actorId }
 
   override fun create(): ReferralEvent {
     check(::referral.isInitialized) { "Referral must be set before creating ReferralEvent" }
@@ -53,10 +53,12 @@ class ReferralEventFactory : TestEntityFactory<ReferralEvent>() {
   }
 
   companion object {
+    val DEFAULT_ACTOR_ID = UUID.randomUUID()
+
     /**
      * Creates a SUBMITTED event for a referral.
      */
-    fun aSubmittedEvent(referral: Referral, actorId: String = "test-user"): ReferralEvent = ReferralEventFactory()
+    fun aSubmittedEvent(referral: Referral, actorId: UUID = DEFAULT_ACTOR_ID): ReferralEvent = ReferralEventFactory()
       .withReferral(referral)
       .withEventType(ReferralEventType.SUBMITTED)
       .withActorId(actorId)
@@ -66,7 +68,7 @@ class ReferralEventFactory : TestEntityFactory<ReferralEvent>() {
     /**
      * Creates a CREATED event for a referral.
      */
-    fun aCreatedEvent(referral: Referral, actorId: String = "test-user"): ReferralEvent = ReferralEventFactory()
+    fun aCreatedEvent(referral: Referral, actorId: UUID = DEFAULT_ACTOR_ID): ReferralEvent = ReferralEventFactory()
       .withReferral(referral)
       .withEventType(ReferralEventType.CREATED)
       .withActorId(actorId)
@@ -75,7 +77,7 @@ class ReferralEventFactory : TestEntityFactory<ReferralEvent>() {
     /**
      * Creates an UPDATED event for a referral.
      */
-    fun anUpdatedEvent(referral: Referral, actorId: String = "test-user"): ReferralEvent = ReferralEventFactory()
+    fun anUpdatedEvent(referral: Referral, actorId: UUID = DEFAULT_ACTOR_ID): ReferralEvent = ReferralEventFactory()
       .withReferral(referral)
       .withEventType(ReferralEventType.UPDATED)
       .withActorId(actorId)

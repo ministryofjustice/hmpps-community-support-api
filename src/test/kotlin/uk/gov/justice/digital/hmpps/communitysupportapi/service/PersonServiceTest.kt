@@ -10,13 +10,9 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
-import reactor.core.publisher.Mono
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toAdditionalDetails
-import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toPerson
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
@@ -58,11 +54,7 @@ class PersonServiceTest {
       additionalDetails = deliusPersonDto.toAdditionalDetails(),
     )
 
-    whenever(deliusService.getPersonDetailsByCrn(CRN)).thenReturn(Mono.just(expectedPersonAggregate))
-
-    whenever(personRepository.save(any())).thenAnswer { invocation ->
-      invocation.arguments[0] as Person
-    }
+    whenever(deliusService.getPersonDetailsByCrn(CRN)).thenReturn(expectedPersonAggregate)
 
     val result = personService.getPerson(CRN)
 
@@ -85,14 +77,8 @@ class PersonServiceTest {
       additionalDetails = nomisPersonDto.toAdditionalDetails(),
     )
 
-    val person = personAggregate.toEntity()
-
     whenever(nomisService.getPersonDetailsByPrisonerNumber(PRISONER_NUMBER))
-      .thenReturn(Mono.just(personAggregate))
-
-    whenever(personRepository.save(any())).thenAnswer { invocation ->
-      invocation.arguments[0] as Person
-    }
+      .thenReturn(personAggregate)
 
     val result = personService.getPerson(PRISONER_NUMBER)
 
@@ -121,7 +107,7 @@ class PersonServiceTest {
 
     whenever(personIdentifierValidator.validate(crn)).thenReturn(identifier)
     whenever(deliusService.getPersonDetailsByCrn(crn))
-      .thenReturn(Mono.error(NotFoundException("Person not found in Delius with identifier: $crn")))
+      .thenThrow(NotFoundException("Person not found in Delius with identifier: $crn"))
 
     assertThrows<NotFoundException> {
       personService.getPerson(identifier.value)

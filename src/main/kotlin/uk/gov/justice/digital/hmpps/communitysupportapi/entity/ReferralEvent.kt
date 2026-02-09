@@ -47,5 +47,5 @@ class ReferralEvent(
   val actorType: ActorType,
 
   @Column(name = "actor_id")
-  val actorId: String,
+  val actorId: UUID,
 )

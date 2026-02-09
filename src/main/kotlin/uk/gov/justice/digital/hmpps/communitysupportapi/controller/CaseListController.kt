@@ -7,13 +7,12 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import org.slf4j.LoggerFactory
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCaseListDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ErrorResponse
@@ -51,15 +50,9 @@ class CaseListController(
   )
   @GetMapping("/unassigned")
   fun getUnassignedCases(
-    @RequestParam(defaultValue = "0") page: Int,
-    @RequestParam(defaultValue = "20") size: Int,
-    @RequestParam(defaultValue = "dateReceived") sortBy: String,
-    @RequestParam(defaultValue = "DESC") sortDirection: String,
+    @PageableDefault(page = 0, size = 50, sort = ["dateReceived"]) page: Pageable,
   ): ResponseEntity<List<ReferralCaseListDto>> {
-    val sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy)
-    val pageable = PageRequest.of(page, size, sort)
-
-    val casesPage = caseListService.getUnassignedCases(pageable)
+    val casesPage = caseListService.getUnassignedCases(page)
     val caseList = casesPage.content.map { ReferralCaseListDto.from(it) }
 
     return ResponseEntity.ok(caseList)

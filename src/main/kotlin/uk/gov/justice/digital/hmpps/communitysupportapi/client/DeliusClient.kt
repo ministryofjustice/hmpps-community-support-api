@@ -20,7 +20,7 @@ class DeliusClient(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun getPersonByCrn(crn: String): Mono<DeliusPersonDto> {
+  fun getPersonByCrn(crn: String): DeliusPersonDto {
     log.debug("Calling Delius for CRN: {}", crn)
 
     val requestBody = mapOf("crn" to crn)
@@ -43,5 +43,6 @@ class DeliusClient(
       .next()
       .switchIfEmpty(Mono.error(NotFoundException("Person not found in Delius with CRN: $crn")))
       .doOnError { e -> log.error("Error calling Delius API for CRN $crn", e) }
+      .block()!!
   }
 }

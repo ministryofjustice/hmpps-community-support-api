@@ -19,8 +19,8 @@ class NomisClient(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun getPersonByPrisonerNumber(prisonerNumber: String): Mono<NomisPersonDto> {
-    log.debug("Calling Nomis for Prisoner Number: {}", prisonerNumber)
+  fun getPersonByPrisonerNumber(prisonerNumber: String): NomisPersonDto {
+    log.info("Calling Nomis for Prisoner Number: {}", prisonerNumber)
 
     return webClient.get()
       .uri("/prisoner/$prisonerNumber")
@@ -37,5 +37,6 @@ class NomisClient(
         }
       }
       .doOnError { e -> log.error("Error calling Nomis API for Prisoner Number $prisonerNumber", e) }
+      .block()!!
   }
 }

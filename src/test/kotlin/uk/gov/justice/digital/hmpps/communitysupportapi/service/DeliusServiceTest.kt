@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -8,8 +10,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
-import reactor.core.publisher.Mono
-import reactor.test.StepVerifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.DeliusClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toAdditionalDetails
@@ -39,29 +39,25 @@ class DeliusServiceTest {
       additionalDetails = deliusPersonDto.toAdditionalDetails(),
     )
 
-    whenever(deliusClient.getPersonByCrn(CRN)).thenReturn(Mono.just(deliusPersonDto))
+    whenever(deliusClient.getPersonByCrn(CRN)).thenReturn(deliusPersonDto)
 
     val result = deliusService.getPersonDetailsByCrn(CRN)
 
-    StepVerifier.create(result)
-      .expectNextMatches { it.person.identifier == expectedPersonAggregate.person.identifier }
-      .verifyComplete()
+    assertEquals(expectedPersonAggregate.person.identifier, result.person.identifier)
 
     verify(deliusClient).getPersonByCrn(CRN)
     verifyNoMoreInteractions(deliusClient)
   }
 
   @Test
-  fun `should emit NotFoundException when Delius client returns empty`() {
+  fun `should throw NotFoundException when Delius client fails to find person`() {
     val crn = "X123456"
 
-    whenever(deliusClient.getPersonByCrn(crn)).thenReturn(Mono.empty())
+    whenever(deliusClient.getPersonByCrn(crn)).thenThrow(NotFoundException("Person not found in Delius with CRN: $crn"))
 
-    val result = deliusService.getPersonDetailsByCrn(crn)
-
-    StepVerifier.create(result)
-      .expectErrorMatches { it is NotFoundException && it.message == "Person not found in Delius with identifier: $crn" }
-      .verify()
+    assertThrows(NotFoundException::class.java) {
+      deliusService.getPersonDetailsByCrn(crn)
+    }
 
     verify(deliusClient).getPersonByCrn(crn)
     verifyNoMoreInteractions(deliusClient)
