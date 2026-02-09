@@ -6,4 +6,6 @@ import java.util.UUID
 
 interface ReferralUserRepository : JpaRepository<ReferralUser, UUID> {
   fun findByHmppsAuthId(hmppsAuthId: String): ReferralUser?
+
+  fun findByEmailAddressIgnoreCase(emailAddress: String): ReferralUser?
 }

@@ -51,6 +51,8 @@ class UserMapper(
           hmppsAuthId = userDetails.userId,
           authSource = authSource,
           hmppsAuthUsername = userName!!,
+          fullName = userDetails.name,
+          emailAddress = userDetails.username.trim().lowercase(),
         ),
       )
   }
