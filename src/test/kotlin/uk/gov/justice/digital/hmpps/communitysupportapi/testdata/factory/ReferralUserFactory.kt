@@ -19,7 +19,7 @@ class ReferralUserFactory : TestEntityFactory<ReferralUser>() {
   fun withHmppsAuthUsername(hmppsAuthUsername: String) = apply { this.hmppsAuthUsername = hmppsAuthUsername }
   fun withAuthSource(authSource: String) = apply { this.authSource = authSource }
   fun withFullName(fullName: String) = apply { this.fullName = fullName }
-  fun withEmailAddress(fullName: String) = apply { this.emailAddress = emailAddress }
+  fun withEmailAddress(emailAddress: String) = apply { this.emailAddress = emailAddress }
   fun withLastSyncedAt(lastSyncedAt: LocalDateTime?) = apply { this.lastSyncedAt = lastSyncedAt }
 
   override fun create(): ReferralUser = ReferralUser(

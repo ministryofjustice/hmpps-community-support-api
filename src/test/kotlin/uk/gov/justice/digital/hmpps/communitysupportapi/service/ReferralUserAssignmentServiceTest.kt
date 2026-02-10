@@ -4,21 +4,18 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.UserType
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
-import uk.gov.justice.hmpps.kotlin.auth.AuthSource
-import java.time.LocalDate
-import java.time.OffsetDateTime
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
 import java.util.UUID
 
 class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
@@ -46,9 +43,9 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
 
   @Test
   fun `assignCaseWorker should save case worker assignments`() {
-    val referral: Referral = setUpReferral()
     val assigner: ReferralUser = setupAssigner()
-    val user = setupUser("victoriasmith@email.com")
+    val referral: Referral = setUpReferral(assigner.id)
+    val user: ReferralUser = setupUser("victoriasmith@email.com")
 
     val emailsList = listOf("victoriasmith@email.com")
 
@@ -67,8 +64,8 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
 
   @Test
   fun `assignCaseWorker that could not find a caseworker with that email address`() {
-    val referral: Referral = setUpReferral()
     val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
     val emailsList = listOf("alexsmith@email.com")
 
     val caseWorkers = emailsList
@@ -84,59 +81,49 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.failureList?.get(0)?.reason).isEqualTo("Could not find a caseworker with that email address.")
   }
 
-  private fun setUpReferral(): Referral {
-    val personDetails = Person(
-      id = UUID.randomUUID(),
-      firstName = "John",
-      lastName = "Smith",
-      identifier = "X123456",
-      dateOfBirth = LocalDate.of(1980, 1, 1),
-      gender = "Male",
-      createdAt = OffsetDateTime.now(),
+  private fun setUpReferral(assignerId: UUID): Referral {
+    val person = personRepository.save(
+      PersonFactory()
+        .withFirstName("John")
+        .withLastName("Doe")
+        .withIdentifier("CRN12345")
+        .create(),
     )
 
-    val person = personRepository.saveAndFlush(personDetails)
-    val communityServiceProvider =
-      communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")).get()
-
-    val createReferralRequest = CreateReferralRequest(
-      personId = person.id,
-      communityServiceProviderId = communityServiceProvider.id,
-      crn = "X123456",
+    val savedReferral = referralRepository.save(
+      ReferralFactory()
+        .withPersonId(person.id)
+        .withCrn(person.identifier)
+        .withReferenceNumber("REF-001")
+        .withSubmittedEvent(actorId = assignerId)
+        .create(),
     )
-
-    val result = referralService.createReferral("testUser", createReferralRequest)
-    val savedReferral = result.referral
-
     return savedReferral
   }
 
   private fun setupUser(userName: String): ReferralUser {
     val user = referralUserRepository.findByEmailAddressIgnoreCase(userName)
       ?: referralUserRepository.saveAndFlush(
-        ReferralUser(
-          id = UUID.randomUUID(),
-          hmppsAuthId = "hmppsAuthId",
-          hmppsAuthUsername = userName,
-          authSource = AuthSource.AUTH.source,
-          fullName = "Victoria Smith",
-          emailAddress = userName,
-        ),
+        ReferralUserFactory()
+          .withHmppsAuthId(UUID.randomUUID().toString())
+          .withHmppsAuthUsername(userName)
+          .withFullName("Victoria Smith")
+          .withEmailAddress(userName)
+          .create(),
       )
     return user
   }
 
   private fun setupAssigner(): ReferralUser {
-    val user = referralUserRepository.findByEmailAddressIgnoreCase("testassigner@email.com")
+    val userName = "testassigner@email.com"
+    val user = referralUserRepository.findByEmailAddressIgnoreCase(userName)
       ?: referralUserRepository.saveAndFlush(
-        ReferralUser(
-          id = UUID.randomUUID(),
-          hmppsAuthId = "hmppsAuthId",
-          hmppsAuthUsername = "testassigner@email.com",
-          authSource = AuthSource.AUTH.source,
-          fullName = "Test Assigner",
-          emailAddress = "testassigner@email.com",
-        ),
+        ReferralUserFactory()
+          .withHmppsAuthId(UUID.randomUUID().toString())
+          .withHmppsAuthUsername(userName)
+          .withFullName("Test User")
+          .withEmailAddress(userName)
+          .create(),
       )
     return user
   }
