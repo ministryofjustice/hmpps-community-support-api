@@ -9,78 +9,8 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 interface ReferralUserAssignmentRepository : JpaRepository<ReferralUserAssignment, UUID> {
-  @Query(
-    """
-    SELECT a
-    FROM ReferralUserAssignment a 
-    WHERE a.referral.id = :referralId AND a.user.Id = :userId
-    """,
-  )
-  fun findAllByReferralIdAndUserId(
-    @Param("referralId") referralId: UUID,
-    @Param("userId") userId: UUID,
-  ): List<ReferralUserAssignment>
-
-  @Query(
-    """
-    SELECT a
-    FROM ReferralUserAssignment a 
-    WHERE a.referral.id = :referralId
-    """,
-  )
-  fun findAllByReferralId(
-    @Param("referralId") referralId: UUID,
-  ): List<ReferralUserAssignment>
-
-  @Query(
-    """
-    SELECT a
-    FROM ReferralUserAssignment a 
-    WHERE a.referral.id = :referralId AND a.user.id = :userId
-        AND (a.deletedBy IS NULL or a.deletedAt IS NULL)
-    """,
-  )
-  fun findByReferralIdAndUserId(
-    @Param("referralId") referralId: UUID,
-    @Param("userId") userId: UUID,
-  ): List<ReferralUserAssignment>
-
-  @Query(
-    """
-    SELECT a
-    FROM ReferralUserAssignment a 
-    WHERE a.referral.id = :referralId
-        AND (a.deletedBy IS NULL or a.deletedAt IS NULL)
-    """,
-  )
-  fun findByReferralId(
-    @Param("referralId") referralId: UUID,
-  ): List<ReferralUserAssignment>
-
-  @Query(
-    """
-    SELECT a
-    FROM ReferralUserAssignment a 
-    WHERE a.referral.id = :referralId AND a.user.id = :userId
-        AND a.deletedBy IS NOT NULL AND a.deletedAt IS NOT NULL
-    """,
-  )
-  fun findDeletedByReferralIdAndUserId(
-    @Param("referralId") referralId: UUID,
-    @Param("userId") userId: UUID,
-  ): List<ReferralUserAssignment>
-
-  @Query(
-    """
-    SELECT a
-    FROM ReferralUserAssignment a 
-    WHERE a.referral.id = :referralId
-        AND a.deletedBy IS NOT NULL AND a.deletedAt IS NOT NULL
-    """,
-  )
-  fun findDeletedByReferralId(
-    @Param("referralId") referralId: UUID,
-  ): List<ReferralUserAssignment>
+  fun findAllByReferralId(referralId: UUID): List<ReferralUserAssignment>
+  fun findAllByReferralIdAndUserId(referralId: UUID, userId: UUID): List<ReferralUserAssignment>
 
   @Modifying
   @Query(

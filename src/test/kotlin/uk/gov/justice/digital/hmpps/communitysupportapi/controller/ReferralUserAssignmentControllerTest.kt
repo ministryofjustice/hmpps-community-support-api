@@ -57,7 +57,6 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
     .withHmppsAuthId(UUID.randomUUID().toString())
     .withHmppsAuthUsername("testuser1@email.com")
     .withFullName("Test User 1")
-    .withEmailAddress("testuser1@email.com")
     .create()
 
   // kotlin
@@ -181,7 +180,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
                   userType = UserType.INTERNAL,
                   user.id,
                   fullName = user.fullName,
-                  emailAddress = user.emailAddress,
+                  emailAddress = user.hmppsAuthUsername.trim().lowercase(),
                 ),
               ),
             )
@@ -212,19 +211,18 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
   }
 
   private fun setupUser(userName: String): ReferralUser {
-    val user = referralUserRepository.findByEmailAddressIgnoreCase(userName)
+    val user = referralUserRepository.findByHmppsAuthUsernameIgnoreCase(userName)
       ?: referralUserRepository.saveAndFlush(
         ReferralUserFactory()
           .withHmppsAuthId(UUID.randomUUID().toString())
-          .withHmppsAuthUsername(userName)
-          .withEmailAddress(userName)
+          .withHmppsAuthUsername(userName.trim().lowercase())
           .create(),
       )
     return user
   }
 
   private fun setupAssigner(assigner: ReferralUser): ReferralUser {
-    val user = referralUserRepository.findByEmailAddressIgnoreCase(assigner.emailAddress)
+    val user = referralUserRepository.findByHmppsAuthUsernameIgnoreCase(assigner.hmppsAuthUsername)
       ?: referralUserRepository.saveAndFlush(assigner)
     return user
   }

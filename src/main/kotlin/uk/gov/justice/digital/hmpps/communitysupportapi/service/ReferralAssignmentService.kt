@@ -128,7 +128,7 @@ class ReferralAssignmentService(
       val result: AssignCaseWorkersResult = AssignCaseWorkersResult(
         success = true,
         message = message,
-        succeededList = submittedAssignments.map { CaseWorkerDto(userType = if (it.second.authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL, userId = it.second.id, it.second.fullName, it.second.emailAddress) },
+        succeededList = submittedAssignments.map { CaseWorkerDto(userType = if (it.second.authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL, userId = it.second.id, it.second.fullName, it.second.hmppsAuthUsername) },
       )
       return result
     } else {

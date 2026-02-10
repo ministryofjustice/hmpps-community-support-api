@@ -12,14 +12,13 @@ fun ReferralUser.toDto(): UserDto = UserDto(
   hmppsAuthUsername = hmppsAuthUsername,
   authSource = authSource,
   fullName = fullName,
-  emailAddress = emailAddress,
 )
 
 fun ReferralUser.toCaseWorkerDto(): CaseWorkerDto = CaseWorkerDto(
   userType = if (authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL,
   userId = id,
   fullName = fullName,
-  emailAddress = emailAddress,
+  emailAddress = hmppsAuthUsername,
 )
 
 fun UserDto.toEntity(): ReferralUser = ReferralUser(
@@ -27,6 +26,5 @@ fun UserDto.toEntity(): ReferralUser = ReferralUser(
   hmppsAuthId = hmppsAuthId,
   hmppsAuthUsername = hmppsAuthUsername,
   authSource = if (userType == UserType.INTERNAL) AuthSource.AUTH.source else AuthSource.NONE.source,
-  fullName = fullName.trim(),
-  emailAddress = emailAddress.trim().lowercase(),
+  fullName = fullName,
 )

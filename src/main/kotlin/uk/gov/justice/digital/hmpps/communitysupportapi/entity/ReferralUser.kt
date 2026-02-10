@@ -25,9 +25,6 @@ class ReferralUser(
   @Column(name = "full_name", nullable = false)
   val fullName: String,
 
-  @Column(name = "email_address", nullable = false)
-  val emailAddress: String,
-
   @Column(name = "last_synced_at")
   var lastSyncedAt: LocalDateTime? = null,
 )

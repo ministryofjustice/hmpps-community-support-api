@@ -20,8 +20,6 @@ class UserMapperTest {
       hmppsAuthUsername = "hmppsAuthUsername",
       authSource = AuthSource.AUTH.source,
       fullName = "John Smith",
-      emailAddress = "johnsmith@email.com",
-
     )
 
     val userEntity = userDto.toEntity()
@@ -31,7 +29,6 @@ class UserMapperTest {
     userEntity.hmppsAuthUsername shouldBe "hmppsAuthUsername"
     userEntity.authSource shouldBe AuthSource.AUTH.source
     userEntity.fullName shouldBe "John Smith"
-    userEntity.emailAddress shouldBe "johnsmith@email.com"
   }
 
   @Test
@@ -44,7 +41,6 @@ class UserMapperTest {
       hmppsAuthUsername = "hmppsAuthUsername",
       authSource = AuthSource.AUTH.source,
       fullName = "John Smith",
-      emailAddress = "johnsmith@email.com",
     )
 
     val userEntity = userDto.toEntity()
@@ -53,7 +49,6 @@ class UserMapperTest {
     userEntity.hmppsAuthId shouldBe "hmppsAuthId"
     userEntity.hmppsAuthUsername shouldBe "hmppsAuthUsername"
     userEntity.fullName shouldBe "John Smith"
-    userEntity.emailAddress shouldBe "johnsmith@email.com"
   }
 
   @Test
@@ -66,7 +61,6 @@ class UserMapperTest {
       hmppsAuthUsername = "hmppsAuthUsername",
       authSource = AuthSource.AUTH.source,
       fullName = "John Smith",
-      emailAddress = "johnsmith@email.com",
     )
 
     val userDto = user.toDto()
@@ -75,7 +69,6 @@ class UserMapperTest {
     userDto.hmppsAuthId shouldBe "hmppsAuthId"
     userDto.hmppsAuthUsername shouldBe "hmppsAuthUsername"
     userDto.fullName shouldBe "John Smith"
-    userDto.emailAddress shouldBe "johnsmith@email.com"
     userDto.userType shouldBe UserType.INTERNAL
   }
 
@@ -89,7 +82,6 @@ class UserMapperTest {
       hmppsAuthUsername = "hmppsAuthUsername",
       authSource = AuthSource.AUTH.source,
       fullName = "John Smith",
-      emailAddress = "johnsmith@email.com",
     )
 
     val userDto = user.toDto()
@@ -98,7 +90,6 @@ class UserMapperTest {
     userDto.hmppsAuthId shouldBe "hmppsAuthId"
     userDto.hmppsAuthUsername shouldBe "hmppsAuthUsername"
     userDto.fullName shouldBe "John Smith"
-    userDto.emailAddress shouldBe "johnsmith@email.com"
     userDto.userType shouldBe UserType.INTERNAL
   }
 }

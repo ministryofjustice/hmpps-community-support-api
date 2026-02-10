@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.UserType
+import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import java.util.UUID
 
 data class UserDto(
@@ -9,8 +10,7 @@ data class UserDto(
   val hmppsAuthUsername: String,
   val authSource: String,
   val fullName: String,
-  val emailAddress: String,
 ) {
   val userType: UserType
-    get() = if (authSource == "auth") UserType.INTERNAL else UserType.EXTERNAL
+    get() = if (authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL
 }

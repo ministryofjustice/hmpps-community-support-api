@@ -8,7 +8,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.UserDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
-import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -25,7 +24,7 @@ class UserService(
   fun getUser(emailAddress: String): UserDto? {
     log.info("Received user lookup request for email address: {}", emailAddress)
 
-    val user = referralUserRepository.findByEmailAddressIgnoreCase(emailAddress)
+    val user = referralUserRepository.findByHmppsAuthUsernameIgnoreCase(emailAddress)
 
     if (user != null) {
       log.info("Using local cached user for {}", emailAddress)
@@ -40,10 +39,9 @@ class UserService(
               ReferralUser(
                 id = UUID.randomUUID(),
                 hmppsAuthId = userDetails.userId,
-                hmppsAuthUsername = userDetails.username,
+                hmppsAuthUsername = userDetails.username.trim().lowercase(),
                 authSource = userDetails.authSource,
                 fullName = userDetails.name,
-                emailAddress = userDetails.username.trim().lowercase(),
               ),
             )
           return loadedUser.toDto()
@@ -54,18 +52,6 @@ class UserService(
       return null
     }
   }
-
-  /*
-   * dummy test service, should be removed when actual service was in place
-   */
-  open fun getTestUser(username: String): UserDto? = UserDto(
-    id = UUID.randomUUID(),
-    hmppsAuthId = "hmppsAuthId",
-    hmppsAuthUsername = username,
-    authSource = AuthSource.AUTH.source,
-    fullName = "Test User",
-    emailAddress = username,
-  )
 
   fun recentlySynchronised(user: ReferralUser): Boolean = user.lastSyncedAt?.isAfter(LocalDateTime.now().minusDays(1)) ?: false
 }

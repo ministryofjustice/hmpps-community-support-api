@@ -61,7 +61,7 @@ class ReferralUserAssignmentController(
 
     val emailList = assignCaseWorkersRequest.emails
       .map { email ->
-        CaseWorkerDto(userType = UserType.UNDEFINED, fullName = "", emailAddress = email.trim().lowercase())
+        CaseWorkerDto(userType = UserType.EXTERNAL, fullName = "", emailAddress = email.trim().lowercase())
       }
 
     val result = referralAssignmentService.assignCaseWorkers(user, UUID.fromString(referralId), emailList)

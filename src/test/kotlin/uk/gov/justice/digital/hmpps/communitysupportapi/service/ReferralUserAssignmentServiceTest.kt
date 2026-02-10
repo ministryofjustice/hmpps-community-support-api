@@ -51,7 +51,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
 
     val caseWorkers = emailsList
       .map { email ->
-        CaseWorkerDto(userType = UserType.UNDEFINED, emailAddress = email.trim().lowercase())
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
     val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
@@ -70,7 +70,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
 
     val caseWorkers = emailsList
       .map { email ->
-        CaseWorkerDto(userType = UserType.UNDEFINED, emailAddress = email.trim().lowercase())
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
     val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
@@ -102,13 +102,12 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   private fun setupUser(userName: String): ReferralUser {
-    val user = referralUserRepository.findByEmailAddressIgnoreCase(userName)
+    val user = referralUserRepository.findByHmppsAuthUsernameIgnoreCase(userName)
       ?: referralUserRepository.saveAndFlush(
         ReferralUserFactory()
           .withHmppsAuthId(UUID.randomUUID().toString())
           .withHmppsAuthUsername(userName)
           .withFullName("Victoria Smith")
-          .withEmailAddress(userName)
           .create(),
       )
     return user
@@ -116,13 +115,12 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
 
   private fun setupAssigner(): ReferralUser {
     val userName = "testassigner@email.com"
-    val user = referralUserRepository.findByEmailAddressIgnoreCase(userName)
+    val user = referralUserRepository.findByHmppsAuthUsernameIgnoreCase(userName)
       ?: referralUserRepository.saveAndFlush(
         ReferralUserFactory()
           .withHmppsAuthId(UUID.randomUUID().toString())
           .withHmppsAuthUsername(userName)
           .withFullName("Test User")
-          .withEmailAddress(userName)
           .create(),
       )
     return user
