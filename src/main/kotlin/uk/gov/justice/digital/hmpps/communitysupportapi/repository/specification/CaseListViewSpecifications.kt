@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.repository.specificatio
 import org.springframework.data.jpa.domain.Specification
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CaseListView
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
+import java.time.OffsetDateTime
 import java.util.UUID
 
 object CaseListViewSpecifications {
@@ -17,6 +18,10 @@ object CaseListViewSpecifications {
   }
 
   fun isUnassigned(): Specification<CaseListView> = Specification { root, _, criteriaBuilder ->
-    criteriaBuilder.isNull(root.get<UUID>("assignedUserId"))
+    criteriaBuilder.isNull(root.get<OffsetDateTime>("dateAssigned"))
+  }
+
+  fun isAssigned(): Specification<CaseListView> = Specification { root, _, criteriaBuilder ->
+    criteriaBuilder.isNotNull(root.get<OffsetDateTime>("dateAssigned"))
   }
 }

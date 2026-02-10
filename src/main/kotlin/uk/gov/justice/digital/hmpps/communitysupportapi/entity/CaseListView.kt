@@ -5,6 +5,8 @@ import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.hibernate.annotations.Immutable
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -25,12 +27,16 @@ class CaseListView(
   @Column(name = "date_received")
   val dateReceived: OffsetDateTime,
 
+  @Column(name = "date_assigned")
+  val dateAssigned: OffsetDateTime?,
+
   @Column(name = "community_service_provider_id")
   val communityServiceProviderId: UUID,
 
   @Column(name = "service_provider_id")
   val serviceProviderId: UUID,
 
-  @Column(name = "assigned_user_id")
-  val assignedUserId: UUID? = null,
+  @JdbcTypeCode(SqlTypes.ARRAY)
+  @Column(name = "case_workers", columnDefinition = "text[]")
+  val caseWorkers: List<String> = emptyList(),
 )
