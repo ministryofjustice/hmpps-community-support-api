@@ -6,14 +6,20 @@ CREATE TABLE IF NOT EXISTS referral_user (
     hmpps_auth_id VARCHAR(255) NOT NULL,
     hmpps_auth_username TEXT NOT NULL,
     auth_source TEXT NOT NULL,
+    full_name VARCHAR(400) NOT NULL,
+    email_address VARCHAR(255) NOT NULL,
     last_synced_at TIMESTAMP
 );
+
+CREATE INDEX idx_referral_user_email ON referral_user(email_address);
 
 -- Comments for referral_user table columns
 COMMENT ON COLUMN referral_user.id IS 'Unique identifier for the referral user';
 COMMENT ON COLUMN referral_user.hmpps_auth_id IS 'HMPPS authentication identifier';
 COMMENT ON COLUMN referral_user.hmpps_auth_username IS 'HMPPS authentication username';
 COMMENT ON COLUMN referral_user.auth_source IS 'Source of authentication (e.g., auth, delius)';
+COMMENT ON COLUMN referral_user.full_name IS 'Full name of the user';
+COMMENT ON COLUMN referral_user.email_address IS 'Email address of the user (should be same as hmpps_auth_username';
 COMMENT ON COLUMN referral_user.last_synced_at IS 'Timestamp when the user was last synced';
 
 -- Create referral table
