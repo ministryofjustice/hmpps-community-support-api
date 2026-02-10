@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServ
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
@@ -47,6 +48,9 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralProviderAssignmentRepository: ReferralProviderAssignmentRepository
+
+  @Autowired
+  private lateinit var referralUserRepository: ReferralUserRepository
 
   @Nested
   @DisplayName("GET /bff/case-list/unassigned")
@@ -101,6 +105,8 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
         .withHmppsAuthUsername("test-user")
         .create()
 
+      ensureReferralUser(testUser.id, testUser.hmppsAuthId, testUser.hmppsAuthUsername)
+
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
       val serviceProvider = serviceProviderRepository.findAll().first()
@@ -137,11 +143,14 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return unassigned cases when user has service provider access`() {
       // Given - set up test user
-      val testUserId = UUID.randomUUID().toString()
+      val testUserUUID = UUID.randomUUID()
+      val testUserId = testUserUUID.toString()
       val testUser = ReferralUserFactory()
         .withHmppsAuthId(testUserId)
         .withHmppsAuthUsername("test-user")
         .create()
+
+      ensureReferralUser(testUserUUID, testUserId, testUser.hmppsAuthUsername)
 
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
       val serviceProvider = serviceProviderRepository.findAll().first()
@@ -167,7 +176,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
         .withPersonId(person.id)
         .withCrn(person.identifier)
         .withReferenceNumber("REF-001")
-        .withSubmittedEvent("test-user")
+        .withSubmittedEvent(actorId = testUserUUID)
         .create()
       val savedReferral = referralRepository.save(referral)
 
@@ -208,11 +217,14 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return multiple unassigned cases with pagination`() {
       // Given - set up test user
-      val testUserId = UUID.randomUUID().toString()
+      val testUserUUID = UUID.randomUUID()
+      val testUserId = testUserUUID.toString()
       val testUser = ReferralUserFactory()
         .withHmppsAuthId(testUserId)
         .withHmppsAuthUsername("test-user")
         .create()
+
+      ensureReferralUser(testUserUUID, testUserId, testUser.hmppsAuthUsername)
 
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
@@ -244,7 +256,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
           .withCrn(person.identifier)
           .withReferenceNumber("REF-00${index + 1}")
           .withCreatedAt(OffsetDateTime.now().minusDays(index.toLong()))
-          .withSubmittedEvent("test-user", OffsetDateTime.now().minusDays(index.toLong()))
+          .withSubmittedEvent(testUserUUID, OffsetDateTime.now().minusDays(index.toLong()))
           .create()
         val savedReferral = referralRepository.save(referral)
 
@@ -290,11 +302,14 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return unassigned cases sorted by dateReceived in ascending order`() {
       // Given - set up test user
-      val testUserId = UUID.randomUUID().toString()
+      val testUserUUID = UUID.randomUUID()
+      val testUserId = testUserUUID.toString()
       val testUser = ReferralUserFactory()
         .withHmppsAuthId(testUserId)
         .withHmppsAuthUsername("test-user")
         .create()
+
+      ensureReferralUser(testUserUUID, testUserId, testUser.hmppsAuthUsername)
 
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
@@ -334,7 +349,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
         .withCrn(olderPerson.identifier)
         .withReferenceNumber("REF-OLDER")
         .withCreatedAt(olderReferralTime)
-        .withSubmittedEvent("test-user", olderReferralTime)
+        .withSubmittedEvent(testUserUUID, olderReferralTime)
         .create()
       val savedOlderReferral = referralRepository.save(olderReferral)
       referralProviderAssignmentRepository.save(
@@ -350,7 +365,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
         .withCrn(newerPerson.identifier)
         .withReferenceNumber("REF-NEWER")
         .withCreatedAt(newerReferralTime)
-        .withSubmittedEvent("test-user", newerReferralTime)
+        .withSubmittedEvent(testUserUUID, newerReferralTime)
         .create()
       val savedNewerReferral = referralRepository.save(newerReferral)
       referralProviderAssignmentRepository.save(
@@ -385,6 +400,19 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
       assertThat(response[0].personIdentifier).isEqualTo("CRN_OLDER")
       assertThat(response[1].personIdentifier).isEqualTo("CRN_NEWER")
       assertThat(response[0].dateReceived).isBefore(response[1].dateReceived)
+    }
+  }
+
+  private fun ensureReferralUser(id: UUID, hmppsAuthId: String, username: String) {
+    if (!referralUserRepository.existsById(id)) {
+      referralUserRepository.save(
+        ReferralUserFactory()
+          .withId(id)
+          .withHmppsAuthId(hmppsAuthId)
+          .withHmppsAuthUsername(username)
+          .withAuthSource("auth")
+          .create(),
+      )
     }
   }
 }

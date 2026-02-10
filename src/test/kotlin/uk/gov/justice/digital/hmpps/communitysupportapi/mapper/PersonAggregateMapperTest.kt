@@ -62,7 +62,7 @@ class PersonAggregateMapperTest {
 
     val personId = UUID.randomUUID()
 
-    val personDto = personAggregate.toPersonDto(personId)
+    val personDto = personAggregate.toPersonDto()
 
     personDto.personIdentifier shouldBe "X123456"
     personDto.firstName shouldBe "John"

@@ -88,7 +88,7 @@ class ReferralController(
   @PostMapping("/bff/referral")
   fun createReferral(@RequestBody createReferralRequest: CreateReferralRequest): ResponseEntity<ReferralInformationDto> {
     val user = userMapper.fromToken(authenticationHolder)
-    val result = referralService.createReferral(user.hmppsAuthUsername, createReferralRequest)
+    val result = referralService.createReferral(user.id, createReferralRequest)
     return ResponseEntity.ok(result.toReferralInformationDto())
   }
 
@@ -105,6 +105,6 @@ class ReferralController(
   @PostMapping("/bff/{referralId}/submit-a-referral")
   fun submitReferral(@PathVariable referralId: UUID): ResponseEntity<SubmitReferralResponseDto> {
     val user = userMapper.fromToken(authenticationHolder)
-    return ResponseEntity.ok(referralService.submitReferral(referralId, user.hmppsAuthUsername))
+    return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
   }
 }

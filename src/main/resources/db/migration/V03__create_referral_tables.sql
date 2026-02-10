@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS referral_event (
     event_type TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     actor_type TEXT NOT NULL,
-    actor_id TEXT
+    actor_id UUID REFERENCES referral_user(id)
 );
 
 -- Comments for referral_event table columns

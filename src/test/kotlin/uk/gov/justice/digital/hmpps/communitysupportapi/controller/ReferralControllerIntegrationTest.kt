@@ -11,6 +11,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
@@ -22,6 +23,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServ
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
@@ -45,6 +47,9 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralProviderAssignmentRepository: ReferralProviderAssignmentRepository
+
+  @Autowired
+  private lateinit var referralUserRepository: ReferralUserRepository
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
@@ -166,6 +171,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setup() {
       testDataCleaner.cleanAllTables()
+      ensureTestUser()
     }
 
     @Test
@@ -244,15 +250,23 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return Not Found with invalid referral identifier`() {
-      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      whenever(userMapper.fromToken(any<uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder>())).thenReturn(testUser)
 
       webTestClient.post()
         .uri("/bff/referral")
         .headers(setAuthorisation())
         .bodyValue(
           CreateReferralRequest(
-            personId = "bc852b9d-1997-4ce4-ba7f-cd1759e15d2b".let { UUID.fromString(it) },
-            communityServiceProviderId = "bc852b9d-1997-4ce4-ba7f-cd1759e15d2b".let { UUID.fromString(it) },
+            personDetails = PersonDto(
+              id = UUID.randomUUID(),
+              personIdentifier = "X123456",
+              firstName = "John",
+              lastName = "Smith",
+              dateOfBirth = LocalDate.of(1980, 1, 1),
+              sex = "Male",
+              additionalDetails = null,
+            ),
+            communityServiceProviderId = UUID.randomUUID(),
             crn = "X123456",
           ),
         )
@@ -262,19 +276,22 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     private fun setUpData(): CreateReferralRequest {
-      val person = personRepository.save(
-        PersonFactory()
-          .withFirstName("John")
-          .withLastName("Smith")
-          .withIdentifier("X123456")
-          .create(),
-      )
       val communityServiceProvider =
         communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
           .get()
 
+      val personDto = PersonDto(
+        id = UUID.randomUUID(),
+        personIdentifier = "X123456",
+        firstName = "John",
+        lastName = "Smith",
+        dateOfBirth = LocalDate.of(1980, 1, 1),
+        sex = "Male",
+        additionalDetails = null,
+      )
+
       return CreateReferralRequest(
-        personId = person.id,
+        personDetails = personDto,
         communityServiceProviderId = communityServiceProvider.id,
         crn = "X123456",
       )
@@ -289,6 +306,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setup() {
       testDataCleaner.cleanAllTables()
+      ensureTestUser()
     }
 
     @Test
@@ -529,6 +547,19 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .exchange()
         .expectStatus()
         .isNotFound
+    }
+  }
+
+  private fun ensureTestUser() {
+    if (!referralUserRepository.existsById(testUser.id)) {
+      referralUserRepository.save(
+        ReferralUserFactory()
+          .withId(testUser.id)
+          .withHmppsAuthId(testUser.hmppsAuthId)
+          .withHmppsAuthUsername(testUser.hmppsAuthUsername)
+          .withAuthSource(testUser.authSource)
+          .create(),
+      )
     }
   }
 }

@@ -5,9 +5,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import reactor.test.StepVerifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.nomisPersonJson
@@ -32,15 +32,13 @@ class NomisClientIntegrationTest : IntegrationTestBase() {
         ),
     )
 
-    StepVerifier.create(nomisClient.getPersonByPrisonerNumber(prisonerNumber))
-      .assertNext {
-        assertThat(it.prisonerNumber).isEqualTo(prisonerNumber)
-      }
-      .verifyComplete()
+    val result = nomisClient.getPersonByPrisonerNumber(prisonerNumber)
+
+    assertThat(result.prisonerNumber).isEqualTo(prisonerNumber)
   }
 
   @Test
-  fun `should emit error when Nomis API returns 404`() {
+  fun `should throw error when Nomis API returns 404`() {
     val unknownPrisoner = "UNKNOWN"
 
     stubFor(
@@ -53,10 +51,8 @@ class NomisClientIntegrationTest : IntegrationTestBase() {
         ),
     )
 
-    StepVerifier.create(nomisClient.getPersonByPrisonerNumber(unknownPrisoner))
-      .expectErrorMatches { ex ->
-        ex is NotFoundException && ex.message!!.contains(unknownPrisoner)
-      }
-      .verify()
+    assertThrows(NotFoundException::class.java) {
+      nomisClient.getPersonByPrisonerNumber(unknownPrisoner)
+    }
   }
 }

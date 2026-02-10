@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralEventFactory.Companion.DEFAULT_ACTOR_ID
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -48,7 +49,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
   fun withUpdatedAt(updatedAt: OffsetDateTime?) = apply { this.updatedAt = updatedAt }
   fun withUrgency(urgency: Boolean?) = apply { this.urgency = urgency }
 
-  fun withSubmittedEvent(actorId: String = "test-user", createdAt: OffsetDateTime? = null) = apply {
+  fun withSubmittedEvent(actorId: UUID = DEFAULT_ACTOR_ID, createdAt: OffsetDateTime? = null) = apply {
     events.add { referral ->
       ReferralEventFactory()
         .withReferral(referral)
@@ -94,7 +95,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
       .withCrn(crn)
       .create()
 
-    fun aSubmittedReferral(personId: UUID, crn: String, actorId: String = "test-user"): Referral = ReferralFactory()
+    fun aSubmittedReferral(personId: UUID, crn: String, actorId: UUID = UUID.randomUUID()): Referral = ReferralFactory()
       .withPersonId(personId)
       .withCrn(crn)
       .withSubmittedEvent(actorId)

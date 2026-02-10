@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -8,8 +10,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
-import reactor.core.publisher.Mono
-import reactor.test.StepVerifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.NomisClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toAdditionalDetails
@@ -32,38 +32,32 @@ class NomisServiceTest {
   }
 
   @Test
-  fun `should build correct URI and return person details by Prisoner Number`() {
+  fun `should build correct URI and return person details by prisoner number`() {
     val nomisPersonDto = createNomisPersonDto(PRISONER_NUMBER)
     val expectedAggregate = PersonAggregate(
       person = nomisPersonDto.toPerson(),
       additionalDetails = nomisPersonDto.toAdditionalDetails(),
     )
 
-    whenever(nomisClient.getPersonByPrisonerNumber(PRISONER_NUMBER))
-      .thenReturn(Mono.just(nomisPersonDto))
+    whenever(nomisClient.getPersonByPrisonerNumber(PRISONER_NUMBER)).thenReturn(nomisPersonDto)
 
     val result = nomisService.getPersonDetailsByPrisonerNumber(PRISONER_NUMBER)
 
-    StepVerifier.create(result)
-      .expectNextMatches { it.person.identifier == expectedAggregate.person.identifier }
-      .verifyComplete()
+    assertEquals(expectedAggregate.person.identifier, result.person.identifier)
 
     verify(nomisClient).getPersonByPrisonerNumber(PRISONER_NUMBER)
     verifyNoMoreInteractions(nomisClient)
   }
 
   @Test
-  fun `should emit NotFoundException when Nomis client returns empty`() {
-    val prisonerNumber = "Z9876YX"
+  fun `should throw NotFoundException when Nomis client fails to find person`() {
+    val prisonerNumber = "A1234BC"
 
-    whenever(nomisClient.getPersonByPrisonerNumber(prisonerNumber))
-      .thenReturn(Mono.empty())
+    whenever(nomisClient.getPersonByPrisonerNumber(prisonerNumber)).thenThrow(NotFoundException("Person not found in Nomis with identifier: $prisonerNumber"))
 
-    val result = nomisService.getPersonDetailsByPrisonerNumber(prisonerNumber)
-
-    StepVerifier.create(result)
-      .expectErrorMatches { it is NotFoundException && it.message == "Person not found in Nomis with identifier: $prisonerNumber" }
-      .verify()
+    assertThrows(NotFoundException::class.java) {
+      nomisService.getPersonDetailsByPrisonerNumber(prisonerNumber)
+    }
 
     verify(nomisClient).getPersonByPrisonerNumber(prisonerNumber)
     verifyNoMoreInteractions(nomisClient)

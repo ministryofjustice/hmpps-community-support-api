@@ -5,6 +5,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import java.time.OffsetDateTime
+import java.util.UUID
 
 /**
  * Central access point for all test entity factories.
@@ -75,7 +76,7 @@ object TestEntityFactories {
     firstName: String = "John",
     lastName: String = "Doe",
     identifier: String = "CRN${(100000..999999).random()}",
-    actorId: String = "test-user",
+    actorId: UUID = UUID.randomUUID(),
   ): Pair<Person, Referral> {
     val person = person()
       .withFirstName(firstName)
@@ -101,7 +102,7 @@ object TestEntityFactories {
     firstName: String = "John",
     lastName: String = "Doe",
     identifier: String = "CRN${(100000..999999).random()}",
-    actorId: String = "test-user",
+    actorId: UUID = UUID.randomUUID(),
     referralCreatedAt: OffsetDateTime = OffsetDateTime.now(),
   ): Triple<Person, Referral, ReferralProviderAssignment> {
     val person = person()
@@ -132,7 +133,7 @@ object TestEntityFactories {
   fun createMultipleCases(
     count: Int,
     communityServiceProvider: CommunityServiceProvider,
-    actorId: String = "test-user",
+    actorId: UUID = UUID.randomUUID(),
   ): List<Triple<Person, Referral, ReferralProviderAssignment>> = (1..count).map { index ->
     createCompleteCase(
       communityServiceProvider = communityServiceProvider,
