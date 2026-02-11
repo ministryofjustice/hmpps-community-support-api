@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.kotest.matchers.shouldBe
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -8,12 +9,14 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AssignmentFailureDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.UserType
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AssignCaseWorkersRequest
@@ -27,10 +30,14 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
+import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.LocalDateTime
 import java.util.UUID
 
 class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
+
+  private val testUserId: UUID = UUID.randomUUID()
 
   @Autowired
   private lateinit var referralRepository: ReferralRepository
@@ -152,11 +159,11 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
 
     @Test
     fun `should return OK indicating successful to assign case worker(s)`() {
-      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val assigner = setupAssigner(testUser)
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(assigner)
 
-      var assigner = setupAssigner(testUser)
-      val referral = setUpReferral(assigner.id)
-      val user = setupUser("johnsmith@email.com")
+      val referral: Referral = setUpReferral(assigner.id)
+      val user: ReferralUser = setupUser("johnsmith@email.com")
 
       webTestClient.post()
         .uri("/bff/referral/${referral.id}/assign")
@@ -190,6 +197,35 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
     }
   }
 
+  @Test
+  fun `should return OK and return assigned case worker(s)`() {
+    whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+    var assigner = setupAssigner(testUser)
+    val referral = setUpReferral(assigner.id)
+    val user1 = setupUser("assigntestuser1@email.com")
+    val user2 = setupUser("assigntestuser2@email.com")
+
+    val caseWorkers: List<CaseWorkerDto> = setupAssignments(referral, assigner, listOf(user1, user2))
+
+    val response = webTestClient.get()
+      .uri("/bff/referral-assignments/${referral.id}")
+      .headers(setAuthorisation())
+      .exchange()
+      .expectStatus()
+      .isOk
+      .expectBody(object : ParameterizedTypeReference<List<CaseWorkerDto>>() {})
+      .returnResult().responseBody!!
+
+    assertThat(response).hasSize(2)
+    response.forEach { caseWorkerDto ->
+      assertThat(caseWorkerDto.userId).isNotNull()
+      assertThat(caseWorkerDto.fullName).isNotBlank()
+      assertThat(caseWorkerDto.emailAddress).startsWith("assigntestuser")
+      assertThat(caseWorkerDto.userType).isNotNull()
+    }
+  }
+
   private fun setUpReferral(assignerId: UUID): Referral {
     val person = personRepository.save(
       PersonFactory()
@@ -199,7 +235,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
         .create(),
     )
 
-    val savedReferral = referralRepository.save(
+    val savedReferral = referralRepository.saveAndFlush(
       ReferralFactory()
         .withPersonId(person.id)
         .withCrn(person.identifier)
@@ -225,5 +261,27 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
     val user = referralUserRepository.findByHmppsAuthUsernameIgnoreCase(assigner.hmppsAuthUsername)
       ?: referralUserRepository.saveAndFlush(assigner)
     return user
+  }
+
+  private fun setupAssignments(referral: Referral, assigner: ReferralUser, caseWorkers: List<ReferralUser>): List<CaseWorkerDto> {
+    val results: List<CaseWorkerDto> = caseWorkers.map {
+      referralUserAssignmentRepository.saveAndFlush(
+        ReferralUserAssignment(
+          UUID.randomUUID(),
+          referral,
+          it,
+          LocalDateTime.now(),
+          assigner,
+        ),
+      )
+      CaseWorkerDto(
+        if (it.authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL,
+        it.id,
+        it.fullName,
+        it.hmppsAuthUsername.trim().lowercase(),
+      )
+    }
+
+    return results
   }
 }

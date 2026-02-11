@@ -35,6 +35,25 @@ class ReferralAssignmentService(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
+  fun getAssignedCaseWorkers(referralId: UUID): List<CaseWorkerDto>? {
+    log.info("Get assigned case workers of a referral {}", referralId)
+
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Referral not found") }
+
+    val activeAssignments: List<ReferralUserAssignment> = referralUserAssignmentRepository.findActiveByReferralId(referralId)
+
+    return activeAssignments
+      .map {
+        CaseWorkerDto(
+          if (it.user.authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL,
+          userId = it.user.id,
+          fullName = it.user.fullName,
+          emailAddress = it.user.hmppsAuthUsername,
+        )
+      }
+  }
+
   @Transactional
   fun assignCaseWorkers(assigner: ReferralUser, referralId: UUID, caseWorkers: List<CaseWorkerDto>): AssignCaseWorkersResult? {
     log.info("Assigning case workers to referral {}", referralId)

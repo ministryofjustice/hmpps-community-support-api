@@ -81,6 +81,28 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.failureList?.get(0)?.reason).isEqualTo("Could not find a caseworker with that email address.")
   }
 
+  @Test
+  fun `getAssignedCaseWorkers should return assigned case workers`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assigner.id)
+    val user1: ReferralUser = setupUser("assigntestuser1@email.com")
+    val user2: ReferralUser = setupUser("assigntestuser2@email.com")
+
+    val emailsList = listOf("assigntestuser1@email.com", "assigntestuser2@email.com")
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+
+    assertThat(assignedCaseWorkers?.size).isEqualTo(2)
+    assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(assignedCaseWorkers?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+  }
+
   private fun setUpReferral(assignerId: UUID): Referral {
     val person = personRepository.save(
       PersonFactory()

@@ -12,6 +12,18 @@ interface ReferralUserAssignmentRepository : JpaRepository<ReferralUserAssignmen
   fun findAllByReferralId(referralId: UUID): List<ReferralUserAssignment>
   fun findAllByReferralIdAndUserId(referralId: UUID, userId: UUID): List<ReferralUserAssignment>
 
+  @Query(
+    """
+        SELECT a
+        FROM ReferralUserAssignment a
+        WHERE a.referral.id = :referralId
+          AND a.deletedAt IS NULL or a.deletedBy IS NULL
+    """,
+  )
+  fun findActiveByReferralId(
+    @Param("referralId") referralId: UUID,
+  ): List<ReferralUserAssignment>
+
   @Modifying
   @Query(
     """
