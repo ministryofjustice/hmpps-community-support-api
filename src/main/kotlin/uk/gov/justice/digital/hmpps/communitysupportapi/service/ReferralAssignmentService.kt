@@ -61,35 +61,30 @@ class ReferralAssignmentService(
     val referral = referralRepository.findById(referralId)
       .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Referral not found") }
 
-    val uniqueEmailsCount = caseWorkers
-      .map { it.emailAddress.trim().lowercase() }
-      .filter { it.isNotBlank() }
-      .distinct()
-
-    if (uniqueEmailsCount.size > MAX_CASE_WORKERS) {
-      return AssignCaseWorkersResult(
-        success = false,
-        message = "Cannot assign more than $MAX_CASE_WORKERS emails.",
-      )
-    }
+    inputValidation(caseWorkers)?.let { return it }
 
     val submittedAssignments = mutableListOf<Pair<String, UserDto>>()
     val failures = mutableListOf<AssignmentFailureDto>()
 
-    for (caseWorker in caseWorkers) {
-      if (caseWorker.emailAddress.isBlank()) {
-        failures += AssignmentFailureDto(caseWorker.emailAddress, "Enter the caseworker's email address")
-      }
-      if (!emailPattern.matcher(caseWorker.emailAddress).matches()) {
-        failures += AssignmentFailureDto(caseWorker.emailAddress, "Enter an email address in the correct format, like name@example.com")
-      }
-      val user = userService.getUser(caseWorker.emailAddress)
-      if (user == null) {
-        failures += AssignmentFailureDto(caseWorker.emailAddress, "Could not find a caseworker with that email address.")
+    validateCaseWorkerByEmails(caseWorkers).forEach { (validation, user) ->
+      if (validation.isValid) {
+        user?.let { submittedAssignments += validation.emailAddress to it }
       } else {
-        submittedAssignments += caseWorker.emailAddress to user
+        failures += AssignmentFailureDto(
+          validation.emailAddress,
+          validation.failureReason.orEmpty(),
+        )
       }
     }
+
+    if (failures.isNotEmpty()) {
+      return AssignCaseWorkersResult(
+        success = false,
+        message = "Failed to assign case worker(s)",
+        failureList = failures,
+      )
+    }
+
     val allAssignments = referralUserAssignmentRepository.findAllByReferralId(referral.id)
     val existingAssignments = allAssignments.filter { it.deletedBy != null && it.deletedAt != null }
     val deletedAssignments = allAssignments.filter { it.deletedBy == null || it.deletedAt == null }
@@ -103,53 +98,35 @@ class ReferralAssignmentService(
     val toRemove = existingIds - toAdd
 
     val now = LocalDateTime.now()
-    val savedAssignments: List<Pair<String, UserDto>>?
-    var removedAssignments: List<Pair<String, UserDto>>?
 
     if (failures.isEmpty()) {
-      if (toAdd.isNotEmpty()) {
-        savedAssignments = submittedAssignments
-          .filter { it.second.id in toAdd }
-          .map { (email, user) ->
-            val assignmentId = UUID.randomUUID()
-            val assignment = ReferralUserAssignment(assignmentId, referral, user.toEntity(), now, assigner)
-            referralUserAssignmentRepository.save(assignment)
-            email to user
-          }
+      toAdd.forEach { userIdToAdd ->
+        var user = submittedAssignments.first { it.second.id == userIdToAdd }.second
+        referralUserAssignmentRepository.save(
+          ReferralUserAssignment(UUID.randomUUID(), referral, user.toEntity(), now, assigner),
+        )
       }
-      if (toUpdate.isNotEmpty()) {
-        existingAssignments
-          .filter { it.id in toUpdate }
-          .forEach { assignment ->
-            referralUserAssignmentRepository.updateByReferralIdAndUserId(referral.id, assignment.user.id, assigner.id, now)
-          }
+      toUpdate.forEach { userIdToUpdate ->
+        var user = existingAssignments.first { it.id == userIdToUpdate }
+        referralUserAssignmentRepository.updateByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
       }
-      if (toRemove.isNotEmpty()) {
-        existingAssignments
-          .filter { it.id in toRemove }
-          .forEach { assignment ->
-            referralUserAssignmentRepository.markDeletedByReferralIdAndUserId(referral.id, assignment.user.id, assigner.id, now)
-          }
+      toRemove.forEach { userIdToRemove ->
+        var user = existingAssignments.first { it.id == userIdToRemove }
+        referralUserAssignmentRepository.markDeletedByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
       }
-      val message: String = if (toUpdate.isNotEmpty()) {
-        if (submittedAssignments.size == 1) {
-          "The caseworker assigned to this case has changed."
-        } else {
-          "The caseworkers assigned to this case have changed."
-        }
-      } else {
-        if (submittedAssignments.size == 1) {
-          "The case has been assigned to a caseworker."
-        } else {
-          "The case has been assigned to caseworkers."
-        }
-      }
-      val result: AssignCaseWorkersResult = AssignCaseWorkersResult(
+
+      val isModified = toUpdate.isNotEmpty()
+      val isSingleChange = submittedAssignments.size == 1
+      return AssignCaseWorkersResult(
         success = true,
-        message = message,
+        message = when {
+          isModified && isSingleChange -> "The caseworker assigned to this case has changed."
+          isModified -> "The caseworkers assigned to this case have changed."
+          isSingleChange -> "The case has been assigned to a caseworker."
+          else -> "The case has been assigned to caseworkers."
+        },
         succeededList = submittedAssignments.map { CaseWorkerDto(userType = if (it.second.authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL, userId = it.second.id, it.second.fullName, it.second.hmppsAuthUsername) },
       )
-      return result
     } else {
       val result: AssignCaseWorkersResult = AssignCaseWorkersResult(
         success = false,
@@ -158,6 +135,82 @@ class ReferralAssignmentService(
       )
       return result
     }
+  }
+
+  private data class EmailValidationResult(
+    val emailAddress: String,
+    val failureReason: String? = null,
+  ) {
+    val isValid: Boolean
+      get() = failureReason.isNullOrBlank()
+
+    val hasError: Boolean
+      get() = !isValid
+  }
+
+  private fun validateEmailAddress(emailAddress: String): EmailValidationResult {
+    val trimmedEmailAddress = emailAddress.trim().lowercase()
+
+    return when {
+      trimmedEmailAddress.isBlank() -> {
+        EmailValidationResult(emailAddress, "Enter the caseworker's email address")
+      }
+      !emailPattern.matcher(trimmedEmailAddress).matches() -> {
+        EmailValidationResult(emailAddress, "Enter an email address in the correct format, like name@example.com")
+      }
+      else -> {
+        val user = userService.getUser(trimmedEmailAddress)
+        if (user != null) {
+          EmailValidationResult(emailAddress, null)
+        } else {
+          EmailValidationResult(emailAddress, "Could not find a caseworker with that email address.")
+        }
+      }
+    }
+  }
+
+  private fun inputValidation(caseWorkers: List<CaseWorkerDto>): AssignCaseWorkersResult? {
+    val uniqueEmailsCount = caseWorkers
+      .map { it.emailAddress.trim().lowercase() }
+      .filter { it.isNotBlank() }
+      .distinct()
+
+    if (uniqueEmailsCount.size > MAX_CASE_WORKERS) {
+      return AssignCaseWorkersResult(
+        success = false,
+        message = "Cannot assign more than $MAX_CASE_WORKERS emails.",
+      )
+    } else if (uniqueEmailsCount.isEmpty()) {
+      return AssignCaseWorkersResult(
+        success = false,
+        message = "No email address provided.",
+      )
+    }
+    return null
+  }
+
+  private fun validateCaseWorkerByEmails(caseWorkers: List<CaseWorkerDto>): List<Pair<EmailValidationResult, UserDto?>> {
+    val results = mutableListOf<Pair<EmailValidationResult, UserDto?>>()
+
+    for (caseWorker in caseWorkers) {
+      val validResult = validateEmailAddress(caseWorker.emailAddress)
+      if (validResult.isValid) {
+        val user = userService.getUser(validResult.emailAddress)
+        if (user != null) {
+          results.add(validResult to user)
+        } else {
+          results.add(
+            EmailValidationResult(
+              caseWorker.emailAddress,
+              "Could not find a caseworker with that email address.",
+            ) to null,
+          )
+        }
+      } else {
+        results.add(validResult to null)
+      }
+    }
+    return results
   }
 
   fun recentlySynchronised(user: ReferralUser): Boolean {
