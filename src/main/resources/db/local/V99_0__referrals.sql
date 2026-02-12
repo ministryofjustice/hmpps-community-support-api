@@ -29,12 +29,12 @@ VALUES
     ('6f1e2d3c-4b5a-6978-8c9d-0a1b2c3d4e5f', 'bad19757-7a57-4e8a-b88a-e808a1e167b4', 'A1234BD', 'KY2594AC', '2026-01-06 13:55:00',  '2024-06-18 13:55:00', true);
 
 -- Referral users (sample users for assignments)
-INSERT INTO referral_user (id, hmpps_auth_id, hmpps_auth_username, auth_source, last_synced_at)
+INSERT INTO referral_user (id, hmpps_auth_id, hmpps_auth_username, auth_source, full_name, last_synced_at)
 VALUES
-    ('a0000000-0000-4000-8000-000000000001', 'a1111111-1111-1111-1111-111111111111', 'john.doe@justice.gov.uk', 'auth', '2026-01-15 10:00:00'),
-    ('a0000000-0000-4000-8000-000000000002', 'a2222222-2222-2222-2222-222222222222', 'jane.smith@justice.gov.uk', 'auth', '2026-01-16 11:30:00'),
-    ('a0000000-0000-4000-8000-000000000003', 'a3333333-3333-3333-3333-333333333333', 'mike.wilson@justice.gov.uk', 'auth', '2026-01-17 09:15:00'),
-    ('a0000000-0000-4000-8000-000000000004', 'a4444444-4444-4444-4444-444444444444', 'david.warner@seetec.co.uk', 'delius', '2026-01-17 09:15:00');
+    ('a0000000-0000-4000-8000-000000000001', 'a1111111-1111-1111-1111-111111111111', 'john.doe@justice.gov.uk', 'auth', 'John Doe', '2026-01-15 10:00:00'),
+    ('a0000000-0000-4000-8000-000000000002', 'a2222222-2222-2222-2222-222222222222', 'jane.smith@justice.gov.uk', 'auth', 'Jane Smith', '2026-01-16 11:30:00'),
+    ('a0000000-0000-4000-8000-000000000003', 'a3333333-3333-3333-3333-333333333333', 'mike.wilson@justice.gov.uk', 'auth', 'Mike Wilson', '2026-01-17 09:15:00'),
+    ('a0000000-0000-4000-8000-000000000004', 'a4444444-4444-4444-4444-444444444444', 'david.warner@seetec.co.uk', 'delius', 'David Warner', '2026-01-17 09:15:00');
 
 -- Referral provider assignments (linking referrals to community service providers)
 INSERT INTO referral_provider_assignment (id, referral_id, community_service_provider_id, created_at, created_by)

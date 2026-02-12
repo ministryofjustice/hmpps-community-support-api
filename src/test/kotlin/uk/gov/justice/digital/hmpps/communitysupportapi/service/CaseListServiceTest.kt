@@ -191,11 +191,13 @@ class CaseListServiceTest {
     hmppsAuthId: String = UUID.randomUUID().toString(),
     hmppsAuthUsername: String = "test-user",
     authSource: String = "auth",
+    fullName: String = "Test User",
   ) = ReferralUser(
     id = id,
     hmppsAuthId = hmppsAuthId,
     hmppsAuthUsername = hmppsAuthUsername,
     authSource = authSource,
+    fullName = fullName,
   )
 
   private fun createServiceProvider(

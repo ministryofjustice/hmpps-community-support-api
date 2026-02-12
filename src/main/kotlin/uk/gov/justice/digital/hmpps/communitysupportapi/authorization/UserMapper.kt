@@ -50,7 +50,8 @@ class UserMapper(
           id = UUID.randomUUID(),
           hmppsAuthId = userDetails.userId,
           authSource = authSource,
-          hmppsAuthUsername = userName!!,
+          hmppsAuthUsername = userName!!.trim().lowercase(),
+          fullName = userDetails.name,
         ),
       )
   }
