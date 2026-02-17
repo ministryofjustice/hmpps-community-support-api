@@ -41,7 +41,7 @@ data class ReferralInformationDto(
       communityServiceProviderId = result.communityServiceProvider.id,
       firstName = result.person.firstName,
       lastName = result.person.lastName,
-      sex = result.person.additionalDetails?.sexualOrientation,
+      sex = result.person.gender,
       crn = result.referral.crn,
       communityServiceProviderName = result.communityServiceProvider.name,
       region = result.communityServiceProvider.contractArea.region.name,

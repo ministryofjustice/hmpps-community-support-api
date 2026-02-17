@@ -5,7 +5,7 @@ services:
       - hmpps
     depends_on:
       - auth-db
-    container_name: hmpps-auth-api
+    container_name: hmpps-auth
     ports:
       - "8090:8080"
     healthcheck:
@@ -116,7 +116,7 @@ services:
       - hmpps
     restart: always
     ports:
-      - "9095:8080"
+      - "9091:8080"
     volumes:
       - ./wiremock_mappings:/home/wiremock/mappings
     command: >
