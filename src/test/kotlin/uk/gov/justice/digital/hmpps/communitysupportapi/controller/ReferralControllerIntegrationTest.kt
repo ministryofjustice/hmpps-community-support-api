@@ -250,7 +250,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return Not Found with invalid referral identifier`() {
-      whenever(userMapper.fromToken(any<uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder>())).thenReturn(testUser)
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
       webTestClient.post()
         .uri("/bff/referral")
