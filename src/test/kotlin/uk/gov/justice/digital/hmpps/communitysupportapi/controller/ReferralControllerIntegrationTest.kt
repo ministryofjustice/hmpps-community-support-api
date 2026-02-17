@@ -236,7 +236,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
               personId = referral.personId,
               firstName = person.firstName,
               lastName = person.lastName,
-              sex = person.additionalDetails?.sexualOrientation,
+              sex = person.gender,
               crn = referral.crn,
               communityServiceProviderId = communityServiceProvider.id,
               communityServiceProviderName = communityServiceProvider.name,

@@ -39,7 +39,7 @@ data class PreviousConvictionDto(
 )
 
 data class DisabilityDto(
-  val disabilityId: Int? = null,
+  val disabilityId: Long? = null,
   val disabilityType: CodeDescriptionDto? = null,
   val condition: CodeDescriptionDto? = null,
   val startDate: LocalDate? = null,
@@ -48,7 +48,7 @@ data class DisabilityDto(
 )
 
 data class ProvisionDto(
-  val provisionId: Int? = null,
+  val provisionId: Long? = null,
   val provisionType: CodeDescriptionDto? = null,
   val category: CodeDescriptionDto? = null,
   val startDate: LocalDate? = null,
