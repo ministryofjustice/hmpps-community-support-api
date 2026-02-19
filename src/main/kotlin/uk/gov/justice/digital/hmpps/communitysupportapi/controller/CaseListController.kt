@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import org.slf4j.LoggerFactory
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.ResponseEntity
@@ -15,7 +14,9 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCaseListDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CaseListService
 
@@ -52,9 +53,11 @@ class CaseListController(
   @GetMapping("/unassigned")
   fun getUnassignedCases(
     @PageableDefault(page = 0, size = 50, sort = ["dateReceived"]) pageable: Pageable,
-  ): ResponseEntity<Page<ReferralCaseListDto>> {
+  ): ResponseEntity<PageResponse<ReferralCaseListDto>> {
     val page = caseListService.getUnassignedCases(pageable)
-    return ResponseEntity.ok(page)
+    log.info("Found {} unassigned cases", page.totalElements)
+
+    return ResponseEntity.ok(page.toResponse())
   }
 
   @Operation(summary = "Get in-progress referrals for a community service provider")
@@ -80,8 +83,10 @@ class CaseListController(
   @GetMapping("/in-progress")
   fun getInProgressCases(
     @PageableDefault(page = 0, size = 50, sort = ["dateAssigned"]) pageable: Pageable,
-  ): ResponseEntity<Page<ReferralCaseListDto>> {
+  ): ResponseEntity<PageResponse<ReferralCaseListDto>> {
     val page = caseListService.getInProgressCases(pageable)
-    return ResponseEntity.ok(page)
+    log.info("Found {} in-progress cases", page.totalElements)
+
+    return ResponseEntity.ok(page.toResponse())
   }
 }

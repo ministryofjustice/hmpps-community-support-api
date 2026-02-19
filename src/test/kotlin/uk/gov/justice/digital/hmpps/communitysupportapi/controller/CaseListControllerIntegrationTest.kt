@@ -10,6 +10,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCaseListDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.CaseListTestFixture
@@ -21,7 +22,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ServiceProviderRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.util.RestPageImpl
 import java.time.OffsetDateTime
 
 class CaseListControllerIntegrationTest : IntegrationTestBase() {
@@ -74,14 +74,18 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
   @DisplayName("GET /bff/case-list/unassigned")
   inner class UnassignedCaseListEndpoint {
 
-    fun getUnassignedCases(testUser: ReferralUser, uri: String = "/bff/case-list/unassigned"): RestPageImpl<ReferralCaseListDto> = webTestClient
-      .get()
+    fun getUnassignedCases(testUser: ReferralUser, uri: String = "/bff/case-list/unassigned"): PageResponse<ReferralCaseListDto> = webTestClient.get()
       .uri(uri)
-      .headers(setAuthorisation(username = testUser.hmppsAuthUsername, roles = listOf("ROLE_IPB_FRONTEND_RW")))
+      .headers(
+        setAuthorisation(
+          username = testUser.hmppsAuthUsername,
+          roles = listOf("ROLE_IPB_FRONTEND_RW"),
+        ),
+      )
       .accept(MediaType.APPLICATION_JSON)
       .exchange()
       .expectStatus().isOk
-      .expectBody(object : ParameterizedTypeReference<RestPageImpl<ReferralCaseListDto>>() {})
+      .expectBody(object : ParameterizedTypeReference<PageResponse<ReferralCaseListDto>>() {})
       .returnResult().responseBody!!
 
     @Test
@@ -130,7 +134,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       val response = getUnassignedCases(testUser)
 
-      assertThat(response).isEmpty()
+      assertThat(response.content).isEmpty()
     }
 
     @Test
@@ -149,7 +153,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       val response = getUnassignedCases(testUser)
 
-      assertThat(response).hasSize(1)
+      assertThat(response.content).hasSize(1)
       assertThat(response.content[0].referralId).isEqualTo(referral.id)
       assertThat(response.content[0].personName).isEqualTo("Doe, John")
       assertThat(response.content[0].personIdentifier).isEqualTo("CRN12345")
@@ -184,8 +188,8 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
         "/bff/case-list/unassigned?page=0&size=2",
       )
 
-      assertThat(response).hasSize(2)
-      response.forEach { caseDto ->
+      assertThat(response.content).hasSize(2)
+      response.content.forEach { caseDto ->
         assertThat(caseDto.referralId).isNotNull()
         assertThat(caseDto.personName).isNotBlank()
         assertThat(caseDto.personIdentifier).startsWith("CRN")
@@ -226,7 +230,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
         "/bff/case-list/unassigned?sortBy=dateReceived&sortDirection=ASC",
       )
 
-      assertThat(response).hasSize(2)
+      assertThat(response.content).hasSize(2)
       assertThat(response.content[0].personIdentifier).isEqualTo("CRN_OLDER")
       assertThat(response.content[1].personIdentifier).isEqualTo("CRN_NEWER")
       assertThat(response.content[0].date).isBefore(response.content[1].date)
@@ -237,14 +241,18 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
   @DisplayName("GET /bff/case-list/in-progress")
   inner class InProgressCaseListEndpoint {
 
-    fun getInProgressCases(testUser: ReferralUser, uri: String = "/bff/case-list/in-progress"): RestPageImpl<ReferralCaseListDto> = webTestClient
-      .get()
+    fun getInProgressCases(testUser: ReferralUser, uri: String = "/bff/case-list/in-progress"): PageResponse<ReferralCaseListDto> = webTestClient.get()
       .uri(uri)
-      .headers(setAuthorisation(username = testUser.hmppsAuthUsername, roles = listOf("ROLE_IPB_FRONTEND_RW")))
+      .headers(
+        setAuthorisation(
+          username = testUser.hmppsAuthUsername,
+          roles = listOf("ROLE_IPB_FRONTEND_RW"),
+        ),
+      )
       .accept(MediaType.APPLICATION_JSON)
       .exchange()
       .expectStatus().isOk
-      .expectBody(object : ParameterizedTypeReference<RestPageImpl<ReferralCaseListDto>>() {})
+      .expectBody(object : ParameterizedTypeReference<PageResponse<ReferralCaseListDto>>() {})
       .returnResult().responseBody!!
 
     @Test
@@ -295,7 +303,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       val response = getInProgressCases(testUser)
 
-      assertThat(response).isEmpty()
+      assertThat(response.content).isEmpty()
     }
 
     @Test
@@ -317,7 +325,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       val response = getInProgressCases(testUser)
 
-      assertThat(response).hasSize(1)
+      assertThat(response.content).hasSize(1)
       assertThat(response.content[0].referralId).isEqualTo(referral.id)
       assertThat(response.content[0].personName).isEqualTo("Doe, John")
       assertThat(response.content[0].personIdentifier).isEqualTo("CRN12345")
@@ -355,9 +363,9 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
         "/bff/case-list/in-progress?page=0&size=2",
       )
 
-      assertThat(response).hasSize(2)
+      assertThat(response.content).hasSize(2)
 
-      response.forEach { caseDto ->
+      response.content.forEach { caseDto ->
         assertThat(caseDto.referralId).isNotNull()
         assertThat(caseDto.personName).isNotBlank()
         assertThat(caseDto.personIdentifier).startsWith("CRN")
@@ -406,7 +414,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
         "/bff/case-list/in-progress?sortBy=dateReceived&sortDirection=ASC",
       )
 
-      assertThat(response).hasSize(2)
+      assertThat(response.content).hasSize(2)
       assertThat(response.content[0].personIdentifier).isEqualTo("CRN_OLDER")
       assertThat(response.content[1].personIdentifier).isEqualTo("CRN_NEWER")
       assertThat(response.content[0].date).isBefore(response.content[1].date)
