@@ -6,7 +6,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceP
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
@@ -18,6 +17,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ServiceProvid
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserAssignmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
@@ -124,11 +124,14 @@ class CaseListTestFixture(
   }
 
   fun assignCaseWorkers(referral: Referral, caseWorkers: List<ReferralUser>) {
-    referralUserAssignmentRepository.saveAll(
-      caseWorkers.map {
-        ReferralUserAssignment(referral = referral, user = it)
-      },
-    )
+    caseWorkers.forEach {
+      referralUserAssignmentRepository.save(
+        ReferralUserAssignmentFactory()
+          .withReferral(referral)
+          .withUser(it)
+          .create(),
+      )
+    }
   }
 
   fun assignToCommunityServiceProvider(referral: Referral) {
