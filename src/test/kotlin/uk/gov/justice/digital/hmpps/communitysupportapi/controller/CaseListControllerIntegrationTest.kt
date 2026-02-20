@@ -5,29 +5,24 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCaseListDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.CaseListTestFixture
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ServiceProviderRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
-import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
-import java.util.UUID
 
 class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
@@ -50,17 +45,48 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
   private lateinit var referralProviderAssignmentRepository: ReferralProviderAssignmentRepository
 
   @Autowired
+  private lateinit var referralUserAssignmentRepository: ReferralUserAssignmentRepository
+
+  @Autowired
   private lateinit var referralUserRepository: ReferralUserRepository
+
+  private lateinit var fixture: CaseListTestFixture
+
+  @BeforeEach
+  override fun setup() {
+    fixture = CaseListTestFixture(
+      personRepository,
+      referralRepository,
+      referralProviderAssignmentRepository,
+      referralUserRepository,
+      referralUserAssignmentRepository,
+      serviceProviderRepository,
+      communityServiceProviderRepository,
+      userMapper,
+    )
+    fixture.initialiseProviders()
+
+    testDataCleaner.cleanAllTables()
+    testDataCleaner.refreshMaterializedView()
+  }
 
   @Nested
   @DisplayName("GET /bff/case-list/unassigned")
   inner class UnassignedCaseListEndpoint {
 
-    @BeforeEach
-    fun setup() {
-      testDataCleaner.cleanAllTables()
-      testDataCleaner.refreshMaterializedView()
-    }
+    fun getUnassignedCases(testUser: ReferralUser, uri: String = "/bff/case-list/unassigned"): PageResponse<ReferralCaseListDto> = webTestClient.get()
+      .uri(uri)
+      .headers(
+        setAuthorisation(
+          username = testUser.hmppsAuthUsername,
+          roles = listOf("ROLE_IPB_FRONTEND_RW"),
+        ),
+      )
+      .accept(MediaType.APPLICATION_JSON)
+      .exchange()
+      .expectStatus().isOk
+      .expectBody(object : ParameterizedTypeReference<PageResponse<ReferralCaseListDto>>() {})
+      .returnResult().responseBody!!
 
     @Test
     fun `should return unauthorized if no token`() {
@@ -99,320 +125,299 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return empty list when user has no service provider access`() {
-      val testUserId = UUID.randomUUID().toString()
-      val testUser = ReferralUserFactory()
-        .withHmppsAuthId(testUserId)
-        .withHmppsAuthUsername("test-user")
-        .create()
+      val testUser = fixture.createTestUser()
 
-      ensureReferralUser(testUser.id, testUser.hmppsAuthId, testUser.hmppsAuthUsername)
-
-      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
-
-      val serviceProvider = serviceProviderRepository.findAll().first()
-
-      // Stub ManageUsers API to return service provider group
-      // This allows ServiceProviderAccessScopeMapper to find the provider
       stubManageUsersGetUserGroups(
-        testUserId,
-        listOf(
-          "INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group",
-        ),
+        testUser.hmppsAuthId,
+        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      val response = webTestClient
-        .method(HttpMethod.GET)
-        .uri("/bff/case-list/unassigned")
-        .contentType(MediaType.APPLICATION_JSON)
-        .headers(
-          setAuthorisation(
-            username = "test-user",
-            roles = listOf("ROLE_IPB_FRONTEND_RW"),
-          ),
-        )
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus().isOk
-        .expectBody(object : ParameterizedTypeReference<List<ReferralCaseListDto>>() {})
-        .returnResult().responseBody!!
+      val response = getUnassignedCases(testUser)
 
-      // Then - should return empty list (no cases assigned)
-      assertThat(response).isEmpty()
+      assertThat(response.content).isEmpty()
     }
 
     @Test
     fun `should return unassigned cases when user has service provider access`() {
-      // Given - set up test user
-      val testUserUUID = UUID.randomUUID()
-      val testUserId = testUserUUID.toString()
-      val testUser = ReferralUserFactory()
-        .withHmppsAuthId(testUserId)
-        .withHmppsAuthUsername("test-user")
-        .create()
-
-      ensureReferralUser(testUserUUID, testUserId, testUser.hmppsAuthUsername)
-
-      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
-      val serviceProvider = serviceProviderRepository.findAll().first()
-      val communityServiceProvider = communityServiceProviderRepository.findAll()
-        .first { it.serviceProvider.id == serviceProvider.id }
+      val testUser = fixture.createTestUser()
+      val person = fixture.createPerson(firstName = "John", lastName = "Doe", crn = "CRN12345")
+      val referral = fixture.createReferral(person = person, referenceNumber = "REF-001", submittedBy = testUser)
 
       stubManageUsersGetUserGroups(
-        testUserId,
-        listOf(
-          "INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group",
-        ),
+        testUser.hmppsAuthId,
+        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      val person = personRepository.save(
-        PersonFactory()
-          .withFirstName("John")
-          .withLastName("Doe")
-          .withIdentifier("CRN12345")
-          .create(),
-      )
-
-      val referral = ReferralFactory()
-        .withPersonId(person.id)
-        .withCrn(person.identifier)
-        .withReferenceNumber("REF-001")
-        .withSubmittedEvent(actorId = testUserUUID)
-        .create()
-      val savedReferral = referralRepository.save(referral)
-
-      val providerAssignment = ReferralProviderAssignmentFactory()
-        .withReferral(savedReferral)
-        .withCommunityServiceProvider(communityServiceProvider)
-        .create()
-      referralProviderAssignmentRepository.save(providerAssignment)
-
-      // Refresh materialized view to include new data
+      fixture.assignToCommunityServiceProvider(referral)
       testDataCleaner.refreshMaterializedView()
 
-      // When
-      val response = webTestClient
-        .method(HttpMethod.GET)
-        .uri("/bff/case-list/unassigned")
-        .contentType(MediaType.APPLICATION_JSON)
-        .headers(
-          setAuthorisation(
-            username = "test-user",
-            roles = listOf("ROLE_IPB_FRONTEND_RW"),
-          ),
-        )
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus().isOk
-        .expectBody(object : ParameterizedTypeReference<List<ReferralCaseListDto>>() {})
-        .returnResult().responseBody!!
+      val response = getUnassignedCases(testUser)
 
-      // Then
-      assertThat(response).hasSize(1)
-      assertThat(response[0].referralId).isEqualTo(savedReferral.id)
-      assertThat(response[0].personName).isEqualTo("Doe, John")
-      assertThat(response[0].personIdentifier).isEqualTo("CRN12345")
-      assertThat(response[0].dateReceived).isNotNull()
+      assertThat(response.content).hasSize(1)
+      assertThat(response.content[0].referralId).isEqualTo(referral.id)
+      assertThat(response.content[0].personName).isEqualTo("Doe, John")
+      assertThat(response.content[0].personIdentifier).isEqualTo("CRN12345")
+      assertThat(response.content[0].date).isNotNull()
     }
 
     @Test
     fun `should return multiple unassigned cases with pagination`() {
-      // Given - set up test user
-      val testUserUUID = UUID.randomUUID()
-      val testUserId = testUserUUID.toString()
-      val testUser = ReferralUserFactory()
-        .withHmppsAuthId(testUserId)
-        .withHmppsAuthUsername("test-user")
-        .create()
+      val testUser = fixture.createTestUser()
+      val persons = fixture.createPersons(count = 3)
 
-      ensureReferralUser(testUserUUID, testUserId, testUser.hmppsAuthUsername)
-
-      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
-
-      val serviceProvider = serviceProviderRepository.findAll().first()
-      val communityServiceProvider = communityServiceProviderRepository.findAll()
-        .first { it.serviceProvider.id == serviceProvider.id }
-
-      // Stub ManageUsers API to return service provider group with INT_SP_ prefix
       stubManageUsersGetUserGroups(
-        testUserId,
-        listOf(
-          "INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group",
-        ),
+        testUser.hmppsAuthId,
+        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      val persons = (1..3).map { index ->
-        personRepository.save(
-          PersonFactory()
-            .withFirstName("FirstName$index")
-            .withLastName("LastName$index")
-            .withIdentifier("CRN0000$index")
-            .create(),
+      persons.forEachIndexed { index, person ->
+        val referral = fixture.createReferral(
+          person = person,
+          referenceNumber = "REF-00${index + 1}",
+          submittedBy = testUser,
+          createdAt = OffsetDateTime.now().minusDays(index.toLong()),
         )
+
+        fixture.assignToCommunityServiceProvider(referral)
       }
 
-      persons.mapIndexed { index, person ->
-        val referral = ReferralFactory()
-          .withPersonId(person.id)
-          .withCrn(person.identifier)
-          .withReferenceNumber("REF-00${index + 1}")
-          .withCreatedAt(OffsetDateTime.now().minusDays(index.toLong()))
-          .withSubmittedEvent(testUserUUID, OffsetDateTime.now().minusDays(index.toLong()))
-          .create()
-        val savedReferral = referralRepository.save(referral)
-
-        referralProviderAssignmentRepository.save(
-          ReferralProviderAssignmentFactory()
-            .withReferral(savedReferral)
-            .withCommunityServiceProvider(communityServiceProvider)
-            .create(),
-        )
-        savedReferral
-      }
-
-      // Refresh materialized view to include new data
       testDataCleaner.refreshMaterializedView()
 
-      // When - request first page with size 2
-      val response = webTestClient
-        .method(HttpMethod.GET)
-        .uri("/bff/case-list/unassigned?page=0&size=2")
-        .contentType(MediaType.APPLICATION_JSON)
-        .headers(
-          setAuthorisation(
-            username = "test-user",
-            roles = listOf("ROLE_IPB_FRONTEND_RW"),
-          ),
-        )
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus().isOk
-        .expectBody(object : ParameterizedTypeReference<List<ReferralCaseListDto>>() {})
-        .returnResult().responseBody!!
+      val response = getUnassignedCases(
+        testUser,
+        "/bff/case-list/unassigned?page=0&size=2",
+      )
 
-      // Then
-      assertThat(response).hasSize(2)
-      response.forEach { caseDto ->
+      assertThat(response.content).hasSize(2)
+      response.content.forEach { caseDto ->
         assertThat(caseDto.referralId).isNotNull()
         assertThat(caseDto.personName).isNotBlank()
         assertThat(caseDto.personIdentifier).startsWith("CRN")
-        assertThat(caseDto.dateReceived).isNotNull()
+        assertThat(caseDto.date).isNotNull()
       }
     }
 
     @Test
-    fun `should return unassigned cases sorted by dateReceived in ascending order`() {
-      // Given - set up test user
-      val testUserUUID = UUID.randomUUID()
-      val testUserId = testUserUUID.toString()
-      val testUser = ReferralUserFactory()
-        .withHmppsAuthId(testUserId)
-        .withHmppsAuthUsername("test-user")
-        .create()
+    fun `should return unassigned cases sorted by date received in ascending order`() {
+      val testUser = fixture.createTestUser()
+      val olderPerson = fixture.createPerson("Older", "Person", "CRN_OLDER")
+      val newerPerson = fixture.createPerson("Newer", "Person", "CRN_NEWER")
+      val olderReferral = fixture.createReferral(
+        person = olderPerson,
+        referenceNumber = "REF_OLDER",
+        submittedBy = testUser,
+        createdAt = OffsetDateTime.now().minusDays(5),
+      )
+      val newerReferral = fixture.createReferral(
+        person = newerPerson,
+        referenceNumber = "REF_NEWER",
+        submittedBy = testUser,
+        createdAt = OffsetDateTime.now().minusDays(1),
+      )
 
-      ensureReferralUser(testUserUUID, testUserId, testUser.hmppsAuthUsername)
-
-      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
-
-      val serviceProvider = serviceProviderRepository.findAll().first()
-      val communityServiceProvider = communityServiceProviderRepository.findAll()
-        .first { it.serviceProvider.id == serviceProvider.id }
-
-      // Stub ManageUsers API to return service provider group with INT_SP_ prefix
       stubManageUsersGetUserGroups(
-        testUserId,
-        listOf(
-          "INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group",
-        ),
+        testUser.hmppsAuthId,
+        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      val olderPerson = personRepository.save(
-        PersonFactory()
-          .withFirstName("Older")
-          .withLastName("Person")
-          .withIdentifier("CRN_OLDER")
-          .withGender("Male")
-          .create(),
-      )
+      fixture.assignToCommunityServiceProvider(olderReferral)
+      fixture.assignToCommunityServiceProvider(newerReferral)
 
-      val newerPerson = personRepository.save(
-        PersonFactory()
-          .withFirstName("Newer")
-          .withLastName("Person")
-          .withIdentifier("CRN_NEWER")
-          .withGender("Female")
-          .create(),
-      )
-
-      val olderReferralTime = OffsetDateTime.now().minusDays(5)
-      val olderReferral = ReferralFactory()
-        .withPersonId(olderPerson.id)
-        .withCrn(olderPerson.identifier)
-        .withReferenceNumber("REF-OLDER")
-        .withCreatedAt(olderReferralTime)
-        .withSubmittedEvent(testUserUUID, olderReferralTime)
-        .create()
-      val savedOlderReferral = referralRepository.save(olderReferral)
-      referralProviderAssignmentRepository.save(
-        ReferralProviderAssignmentFactory()
-          .withReferral(savedOlderReferral)
-          .withCommunityServiceProvider(communityServiceProvider)
-          .create(),
-      )
-
-      val newerReferralTime = OffsetDateTime.now().minusDays(1)
-      val newerReferral = ReferralFactory()
-        .withPersonId(newerPerson.id)
-        .withCrn(newerPerson.identifier)
-        .withReferenceNumber("REF-NEWER")
-        .withCreatedAt(newerReferralTime)
-        .withSubmittedEvent(testUserUUID, newerReferralTime)
-        .create()
-      val savedNewerReferral = referralRepository.save(newerReferral)
-      referralProviderAssignmentRepository.save(
-        ReferralProviderAssignmentFactory()
-          .withReferral(savedNewerReferral)
-          .withCommunityServiceProvider(communityServiceProvider)
-          .create(),
-      )
-
-      // Refresh materialized view to include new data
       testDataCleaner.refreshMaterializedView()
 
-      // When - request with ascending sort
-      val response = webTestClient
-        .method(HttpMethod.GET)
-        .uri("/bff/case-list/unassigned?sortBy=dateReceived&sortDirection=ASC")
-        .contentType(MediaType.APPLICATION_JSON)
-        .headers(
-          setAuthorisation(
-            username = "test-user",
-            roles = listOf("ROLE_IPB_FRONTEND_RW"),
-          ),
-        )
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus().isOk
-        .expectBody(object : ParameterizedTypeReference<List<ReferralCaseListDto>>() {})
-        .returnResult().responseBody!!
+      val response = getUnassignedCases(
+        testUser,
+        "/bff/case-list/unassigned?sortBy=dateReceived&sortDirection=ASC",
+      )
 
-      // Then - older referral should come first
-      assertThat(response).hasSize(2)
-      assertThat(response[0].personIdentifier).isEqualTo("CRN_OLDER")
-      assertThat(response[1].personIdentifier).isEqualTo("CRN_NEWER")
-      assertThat(response[0].dateReceived).isBefore(response[1].dateReceived)
+      assertThat(response.content).hasSize(2)
+      assertThat(response.content[0].personIdentifier).isEqualTo("CRN_OLDER")
+      assertThat(response.content[1].personIdentifier).isEqualTo("CRN_NEWER")
+      assertThat(response.content[0].date).isBefore(response.content[1].date)
     }
   }
 
-  private fun ensureReferralUser(id: UUID, hmppsAuthId: String, username: String) {
-    if (!referralUserRepository.existsById(id)) {
-      referralUserRepository.save(
-        ReferralUserFactory()
-          .withId(id)
-          .withHmppsAuthId(hmppsAuthId)
-          .withHmppsAuthUsername(username)
-          .withAuthSource("auth")
-          .create(),
+  @Nested
+  @DisplayName("GET /bff/case-list/in-progress")
+  inner class InProgressCaseListEndpoint {
+
+    fun getInProgressCases(testUser: ReferralUser, uri: String = "/bff/case-list/in-progress"): PageResponse<ReferralCaseListDto> = webTestClient.get()
+      .uri(uri)
+      .headers(
+        setAuthorisation(
+          username = testUser.hmppsAuthUsername,
+          roles = listOf("ROLE_IPB_FRONTEND_RW"),
+        ),
       )
+      .accept(MediaType.APPLICATION_JSON)
+      .exchange()
+      .expectStatus().isOk
+      .expectBody(object : ParameterizedTypeReference<PageResponse<ReferralCaseListDto>>() {})
+      .returnResult().responseBody!!
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      webTestClient.get()
+        .uri("/bff/case-list/in-progress")
+        .exchange()
+        .expectStatus()
+        .isUnauthorized
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      webTestClient.get()
+        .uri("/bff/case-list/in-progress")
+        .headers(
+          setAuthorisation(
+            "AUTH_ADM",
+            listOf(),
+            listOf("read"),
+          ),
+        )
+        .exchange()
+        .expectStatus()
+        .isForbidden
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      webTestClient.get()
+        .uri("/bff/case-list/in-progress")
+        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
+        .exchange()
+        .expectStatus()
+        .isForbidden
+    }
+
+    @Test
+    fun `should return empty in-progress page when user has no service provider access`() {
+      val testUser = fixture.createTestUser()
+
+      stubManageUsersGetUserGroups(
+        testUser.hmppsAuthId,
+        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+      )
+
+      testDataCleaner.refreshMaterializedView()
+
+      val response = getInProgressCases(testUser)
+
+      assertThat(response.content).isEmpty()
+    }
+
+    @Test
+    fun `should return in-progress cases when user has service provider access`() {
+      val testUser = fixture.createTestUser()
+      val person = fixture.createPerson(firstName = "John", lastName = "Doe", crn = "CRN12345")
+      val referral = fixture.createReferral(person = person, referenceNumber = "REF-001", submittedBy = testUser)
+      val caseWorkers = fixture.createCaseWorkers("CaseWorker One", "CaseWorker Two", "CaseWorker Three")
+
+      stubManageUsersGetUserGroups(
+        testUser.hmppsAuthId,
+        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+      )
+
+      fixture.assignToCommunityServiceProvider(referral)
+      fixture.assignCaseWorkers(referral, caseWorkers)
+
+      testDataCleaner.refreshMaterializedView()
+
+      val response = getInProgressCases(testUser)
+
+      assertThat(response.content).hasSize(1)
+      assertThat(response.content[0].referralId).isEqualTo(referral.id)
+      assertThat(response.content[0].personName).isEqualTo("Doe, John")
+      assertThat(response.content[0].personIdentifier).isEqualTo("CRN12345")
+      assertThat(response.content[0].date).isNotNull()
+      assertThat(response.content[0].caseWorkers).containsExactly("CaseWorker One", "CaseWorker Two", "CaseWorker Three")
+    }
+
+    @Test
+    fun `should return multiple in-progress cases with pagination`() {
+      val testUser = fixture.createTestUser()
+      val persons = fixture.createPersons(count = 3)
+      val caseWorkers = fixture.createCaseWorkers("CaseWorker One", "CaseWorker Two")
+
+      stubManageUsersGetUserGroups(
+        testUser.hmppsAuthId,
+        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+      )
+
+      persons.forEachIndexed { index, person ->
+        val createdAt = OffsetDateTime.now().minusDays(index.toLong())
+
+        fixture.createInProgressReferral(
+          person = person,
+          referenceNumber = "REF-00${index + 1}",
+          submittedBy = testUser,
+          caseWorkers = caseWorkers,
+          createdAt = createdAt,
+        )
+      }
+
+      testDataCleaner.refreshMaterializedView()
+
+      val response = getInProgressCases(
+        testUser,
+        "/bff/case-list/in-progress?page=0&size=2",
+      )
+
+      assertThat(response.content).hasSize(2)
+
+      response.content.forEach { caseDto ->
+        assertThat(caseDto.referralId).isNotNull()
+        assertThat(caseDto.personName).isNotBlank()
+        assertThat(caseDto.personIdentifier).startsWith("CRN")
+        assertThat(caseDto.date).isNotNull()
+        assertThat(caseDto.caseWorkers).containsExactly("CaseWorker One", "CaseWorker Two")
+      }
+    }
+
+    @Test
+    fun `should return in-progress cases sorted by date received in ascending order`() {
+      val testUser = fixture.createTestUser()
+      val olderCreatedAt = OffsetDateTime.now().minusDays(5)
+      val newerCreatedAt = OffsetDateTime.now().minusDays(1)
+      val olderPerson = fixture.createPerson(firstName = "Older", lastName = "Person", crn = "CRN_OLDER")
+      val newerPerson = fixture.createPerson(firstName = "Newer", lastName = "Person", crn = "CRN_NEWER")
+      val olderReferral = fixture.createReferral(
+        person = olderPerson,
+        referenceNumber = "REF_OLDER",
+        submittedBy = testUser,
+        createdAt = olderCreatedAt,
+      )
+      val newerReferral = fixture.createReferral(
+        person = newerPerson,
+        referenceNumber = "REF_NEWER",
+        submittedBy = testUser,
+        createdAt = newerCreatedAt,
+      )
+
+      val caseWorkers = fixture.createCaseWorkers("CaseWorker One", "CaseWorker Two")
+
+      stubManageUsersGetUserGroups(
+        testUser.hmppsAuthId,
+        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+      )
+
+      fixture.assignToCommunityServiceProvider(olderReferral)
+      fixture.assignToCommunityServiceProvider(newerReferral)
+
+      fixture.assignCaseWorkers(olderReferral, caseWorkers)
+      fixture.assignCaseWorkers(newerReferral, caseWorkers)
+
+      testDataCleaner.refreshMaterializedView()
+
+      val response = getInProgressCases(
+        testUser,
+        "/bff/case-list/in-progress?sortBy=dateReceived&sortDirection=ASC",
+      )
+
+      assertThat(response.content).hasSize(2)
+      assertThat(response.content[0].personIdentifier).isEqualTo("CRN_OLDER")
+      assertThat(response.content[1].personIdentifier).isEqualTo("CRN_NEWER")
+      assertThat(response.content[0].date).isBefore(response.content[1].date)
     }
   }
 }

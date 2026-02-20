@@ -14,7 +14,9 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCaseListDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CaseListService
 
@@ -50,11 +52,41 @@ class CaseListController(
   )
   @GetMapping("/unassigned")
   fun getUnassignedCases(
-    @PageableDefault(page = 0, size = 50, sort = ["dateReceived"]) page: Pageable,
-  ): ResponseEntity<List<ReferralCaseListDto>> {
-    val casesPage = caseListService.getUnassignedCases(page)
-    val caseList = casesPage.content.map { ReferralCaseListDto.from(it) }
+    @PageableDefault(page = 0, size = 50, sort = ["dateReceived"]) pageable: Pageable,
+  ): ResponseEntity<PageResponse<ReferralCaseListDto>> {
+    val page = caseListService.getUnassignedCases(pageable)
+    log.info("Found {} unassigned cases", page.totalElements)
 
-    return ResponseEntity.ok(caseList)
+    return ResponseEntity.ok(page.toResponse())
+  }
+
+  @Operation(summary = "Get in-progress referrals for a community service provider")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "List of in-progress referrals for the provider",
+        content = [Content(mediaType = "application/json", array = ArraySchema(schema = Schema(implementation = ReferralCaseListDto::class)))],
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "The request was unauthorised",
+        content = [Content(schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Forbidden. The client is not authorised to access the case list.",
+        content = [Content(schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
+  )
+  @GetMapping("/in-progress")
+  fun getInProgressCases(
+    @PageableDefault(page = 0, size = 50, sort = ["dateAssigned"]) pageable: Pageable,
+  ): ResponseEntity<PageResponse<ReferralCaseListDto>> {
+    val page = caseListService.getInProgressCases(pageable)
+    log.info("Found {} in-progress cases", page.totalElements)
+
+    return ResponseEntity.ok(page.toResponse())
   }
 }

@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -48,7 +49,12 @@ class CaseListServiceTest {
 
   @BeforeEach
   fun setUp() {
-    caseListService = CaseListService(caseListViewRepository, authenticationHolder, userMapper, serviceProviderAccessScopeMapper)
+    caseListService = CaseListService(
+      caseListViewRepository,
+      authenticationHolder,
+      userMapper,
+      serviceProviderAccessScopeMapper,
+    )
   }
 
   private val pageable: Pageable = PageRequest.of(0, 10)
@@ -186,6 +192,65 @@ class CaseListServiceTest {
     verify(caseListViewRepository).findAll(any<Specification<CaseListView>>(), eq(pageable))
   }
 
+  @Test
+  fun `getInProgressCases returns mapped page of ReferralCaseListDto`() {
+    val referralUser = createReferralUser()
+    val serviceProvider = createServiceProvider()
+    val accessScope = ServiceProviderAccessScope(setOf(serviceProvider))
+    val caseWorkers = listOf("CaseWorker One", "CaseWorker Two", "CaseWorker Three")
+    val caseListViews = listOf(createCaseListView(serviceProviderId = serviceProvider.id, caseWorkers = caseWorkers))
+
+    val expectedPage: Page<CaseListView> = PageImpl(caseListViews, pageable, caseListViews.size.toLong())
+
+    whenever(authenticationHolder.username).thenReturn("test-user")
+    whenever(userMapper.fromToken(authenticationHolder)).thenReturn(referralUser)
+    whenever(serviceProviderAccessScopeMapper.fromUser(referralUser)).thenReturn(accessScope)
+    whenever(caseListViewRepository.findAll(any<Specification<CaseListView>>(), eq(pageable))).thenReturn(expectedPage)
+
+    val result = caseListService.getInProgressCases(pageable)
+
+    assertThat(result.content).hasSize(1)
+
+    val dto = result.content.first()
+    assertThat(dto.referralId).isEqualTo(caseListViews[0].referralId)
+    assertThat(dto.caseWorkers).isEqualTo(caseWorkers)
+    assertThat(dto.caseWorkers.last()).isEqualTo("CaseWorker Three")
+
+    verify(userMapper).fromToken(authenticationHolder)
+    verify(serviceProviderAccessScopeMapper).fromUser(referralUser)
+    verify(caseListViewRepository).findAll(any<Specification<CaseListView>>(), eq(pageable))
+  }
+
+  @Test
+  fun `getInProgressCases returns empty page when no results`() {
+    val referralUser = createReferralUser()
+    val serviceProvider = createServiceProvider()
+    val accessScope = ServiceProviderAccessScope(setOf(serviceProvider))
+
+    whenever(authenticationHolder.username).thenReturn("test-user")
+    whenever(userMapper.fromToken(authenticationHolder)).thenReturn(referralUser)
+    whenever(serviceProviderAccessScopeMapper.fromUser(referralUser)).thenReturn(accessScope)
+    whenever(caseListViewRepository.findAll(any<Specification<CaseListView>>(), eq(pageable))).thenReturn(Page.empty(pageable))
+
+    val result = caseListService.getInProgressCases(pageable)
+
+    assertTrue(result.isEmpty)
+  }
+
+  @Test
+  fun `should return empty in-progress cases page when user is a Delius user`() {
+    val referralUser = createReferralUser(authSource = "delius")
+    whenever(authenticationHolder.username).thenReturn("delius-user")
+    whenever(userMapper.fromToken(authenticationHolder)).thenReturn(referralUser)
+
+    val result = caseListService.getInProgressCases(pageable)
+
+    assertThat(result.isEmpty).isTrue()
+    verify(userMapper).fromToken(authenticationHolder)
+    verify(serviceProviderAccessScopeMapper, never()).fromUser(any())
+    verify(caseListViewRepository, never()).findAll(any<Specification<CaseListView>>(), any<Pageable>())
+  }
+
   private fun createReferralUser(
     id: UUID = UUID.randomUUID(),
     hmppsAuthId: String = UUID.randomUUID().toString(),
@@ -216,15 +281,17 @@ class CaseListServiceTest {
     personName: String = "Test, Person",
     personIdentifier: String = "X123456",
     dateReceived: OffsetDateTime = OffsetDateTime.now(),
+    dateAssigned: OffsetDateTime = OffsetDateTime.now().plusDays(1),
     communityServiceProviderId: UUID = UUID.randomUUID(),
-    assignedUserId: UUID? = null,
+    caseWorkers: List<String> = emptyList(),
   ) = CaseListView(
     referralId = referralId,
     personName = personName,
     personIdentifier = personIdentifier,
     dateReceived = dateReceived,
+    dateAssigned = dateAssigned,
     communityServiceProviderId = communityServiceProviderId,
     serviceProviderId = serviceProviderId,
-    assignedUserId = assignedUserId,
+    caseWorkers = caseWorkers,
   )
 }

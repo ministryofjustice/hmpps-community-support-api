@@ -8,14 +8,16 @@ data class ReferralCaseListDto(
   val referralId: UUID,
   val personName: String,
   val personIdentifier: String,
-  val dateReceived: OffsetDateTime,
+  val date: OffsetDateTime,
+  val caseWorkers: List<String> = emptyList(),
 ) {
   companion object {
     fun from(caseListView: CaseListView): ReferralCaseListDto = ReferralCaseListDto(
       referralId = caseListView.referralId,
       personName = caseListView.personName,
       personIdentifier = caseListView.personIdentifier,
-      dateReceived = caseListView.dateReceived,
+      date = caseListView.dateAssigned ?: caseListView.dateReceived,
+      caseWorkers = caseListView.caseWorkers,
     )
   }
 }
