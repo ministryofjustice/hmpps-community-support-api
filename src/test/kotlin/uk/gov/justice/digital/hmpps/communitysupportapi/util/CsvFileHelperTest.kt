@@ -13,15 +13,6 @@ data class Record(
 
 class CsvFileHelperTest {
   companion object {
-    private val TEST_CSV_CONTENT = """
-            id,name,address
-            1,name_1,address_1
-            2,name_2,address_2
-            3,name_3,address_3
-            4,name_4,address_4
-            5,name_5,address_5
-    """.trimIndent()
-
     private val MAPPER: (org.apache.commons.csv.CSVRecord) -> Record = { row ->
       Record(
         id = row.get("id")?.toIntOrNull() ?: 0,

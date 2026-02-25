@@ -73,32 +73,4 @@ class ReferenceDataControllerIntegrationTest : IntegrationTestBase() {
       }
     }
   }
-
-  private fun createProbationOffices(): List<ProbationOffice> {
-    val probationOffices: List<ProbationOffice> = listOf(
-      ProbationOffice(
-        1,
-        "Derby: Derwent Centre",
-        "Derwent Centre, 1 Stuart Street, Derby, DE1 2EQ",
-        "F",
-        "https://www.gov.uk/guidance/derby-derwent-centre",
-      ),
-      ProbationOffice(
-        5,
-        "Leicestershire: Coalville Probation Office",
-        "Probation Office, 27 London Road, Coalville, Leicestershire, LE67 3JB",
-        "F",
-        "https://www.gov.uk/guidance/leicestershire-coalville-probation-office",
-        "CRS0086",
-      ),
-      ProbationOffice(
-        probationOfficeId = 128,
-        name = "Warrington: Warrington Probation Office",
-        address = "Units 3 & 4 Bankside, Crosfield Street, Warrington, WA1 1UP",
-        probationRegionId = "B",
-        deliusCRSLocationId = "CRS0328",
-      ),
-    )
-    return probationOffices
-  }
 }
