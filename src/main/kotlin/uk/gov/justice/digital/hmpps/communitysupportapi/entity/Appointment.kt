@@ -9,6 +9,10 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.util.UUID
 
+enum class AppointmentType {
+  ICS,
+}
+
 @Entity
 @Table(name = "appointment")
 class Appointment(
@@ -20,5 +24,5 @@ class Appointment(
   val referral: Referral,
 
   @Column(name = "type", nullable = false)
-  val type: String,
+  val type: AppointmentType,
 )

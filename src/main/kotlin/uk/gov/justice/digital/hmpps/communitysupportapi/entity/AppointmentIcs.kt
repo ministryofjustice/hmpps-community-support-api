@@ -34,8 +34,8 @@ class AppointmentIcs(
   val appointmentDateTime: LocalDateTime,
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "created_by")
-  val createdBy: ReferralUser? = null,
+  @JoinColumn(name = "created_by", nullable = false)
+  val createdBy: ReferralUser,
 
   @JdbcTypeCode(SqlTypes.ARRAY)
   @Column(name = "session_communication", columnDefinition = "text[]")

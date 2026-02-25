@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
@@ -12,6 +13,8 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
 
+data class AppointmentDto(
+  val id: UUID,
 data class CreateAppointmentRequest(
   val date: LocalDate,
   val time: AppointmentTimeRequest,
@@ -100,6 +103,8 @@ data class AppointmentIcsResponse(
   val appointmentIcsId: UUID,
   val appointmentId: UUID,
   val referralId: UUID,
+  val type: AppointmentType,
+)
   val appointmentType: String,
   val appointmentDate: LocalDate,
   val appointmentTime: AppointmentTimeResponse,

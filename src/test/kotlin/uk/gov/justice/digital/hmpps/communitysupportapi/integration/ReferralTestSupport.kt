@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.integration
 
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
+import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
@@ -20,10 +22,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.Referra
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserAssignmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class CaseListTestFixture(
+@Component
+class ReferralTestSupport(
   private val personRepository: PersonRepository,
   private val referralRepository: ReferralRepository,
   private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
@@ -33,51 +37,52 @@ class CaseListTestFixture(
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val userMapper: UserMapper,
 ) {
-  lateinit var serviceProvider: ServiceProvider
-    private set
+  val communityServiceProviderId: UUID = UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
 
-  lateinit var communityServiceProvider: CommunityServiceProvider
-    private set
+  fun getCommunityServiceProvider(): CommunityServiceProvider = communityServiceProviderRepository.findById(communityServiceProviderId).get()
 
-  fun initialiseProviders() {
-    serviceProvider = serviceProviderRepository.findAll().first()
-    communityServiceProvider = communityServiceProviderRepository.findAll().first {
-      it.serviceProvider.id == serviceProvider.id
-    }
+  fun getProviders(): Pair<ServiceProvider, CommunityServiceProvider> {
+    val serviceProvider = serviceProviderRepository.findAll().first()
+    val communityServiceProvider =
+      communityServiceProviderRepository.findAll().first {
+        it.serviceProvider.id == serviceProvider.id
+      }
+
+    return serviceProvider to communityServiceProvider
   }
 
-  fun createTestUser(username: String = "test-user"): ReferralUser {
-    val userId = UUID.randomUUID()
-    val hmppsAuthId = UUID.randomUUID().toString()
-    val testUser = ReferralUserFactory()
-      .withId(userId)
-      .withHmppsAuthId(hmppsAuthId)
-      .withHmppsAuthUsername(username)
-      .withAuthSource("auth")
-      .create()
+  fun createTestUser(
+    id: UUID = UUID.randomUUID(),
+    hmppsAuthId: UUID = UUID.randomUUID(),
+    username: String = "test-user",
+  ): ReferralUser {
+    val testUser = ensureReferralUser(id = id, hmppsAuthId = hmppsAuthId.toString(), username = username)
 
-    ensureReferralUser(userId, hmppsAuthId, testUser.hmppsAuthUsername)
+    whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>()))
+      .thenReturn(testUser)
 
-    whenever(userMapper.fromToken(org.mockito.kotlin.any<HmppsAuthenticationHolder>())).thenReturn(testUser)
     return testUser
   }
 
-  private fun ensureReferralUser(id: UUID, hmppsAuthId: String, username: String) {
-    if (!referralUserRepository.existsById(id)) {
-      referralUserRepository.save(
-        ReferralUserFactory()
-          .withId(id)
-          .withHmppsAuthId(hmppsAuthId)
-          .withHmppsAuthUsername(username)
-          .withAuthSource("auth")
-          .create(),
-      )
-    }
+  fun ensureReferralUser(
+    id: UUID = UUID.randomUUID(),
+    hmppsAuthId: String = "test-auth-id",
+    username: String = "test-user",
+    authSource: String = "auth",
+  ): ReferralUser = referralUserRepository.findById(id).orElseGet {
+    referralUserRepository.save(
+      ReferralUserFactory()
+        .withId(id)
+        .withHmppsAuthId(hmppsAuthId)
+        .withHmppsAuthUsername(username)
+        .withAuthSource(authSource)
+        .create(),
+    )
   }
 
   fun createReferral(
     person: Person,
-    referenceNumber: String,
+    referenceNumber: String = "REF-001",
     submittedBy: ReferralUser,
     createdAt: OffsetDateTime = OffsetDateTime.now(),
   ): Referral = referralRepository.save(
@@ -91,14 +96,19 @@ class CaseListTestFixture(
   )
 
   fun createPerson(
-    firstName: String,
-    lastName: String,
-    crn: String,
+    firstName: String = "John",
+    lastName: String = "Smith",
+    identifier: String = "X123456",
+    dateOfBirth: LocalDate = LocalDate.of(1980, 1, 1),
+    gender: String = "Male",
   ): Person = personRepository.save(
     PersonFactory()
       .withFirstName(firstName)
       .withLastName(lastName)
-      .withIdentifier(crn)
+      .withIdentifier(identifier)
+      .withDateOfBirth(dateOfBirth)
+      .withGender(gender)
+      .withCreatedAt(OffsetDateTime.now())
       .create(),
   )
 
@@ -111,7 +121,7 @@ class CaseListTestFixture(
     createPerson(
       firstName = "$firstNamePrefix$index",
       lastName = "$lastNamePrefix$index",
-      crn = "$crnPrefix$index",
+      identifier = "$crnPrefix$index",
     )
   }
 
@@ -134,7 +144,7 @@ class CaseListTestFixture(
     }
   }
 
-  fun assignToCommunityServiceProvider(referral: Referral) {
+  fun assignToCommunityServiceProvider(referral: Referral, communityServiceProvider: CommunityServiceProvider) {
     referralProviderAssignmentRepository.save(
       ReferralProviderAssignmentFactory()
         .withReferral(referral)
@@ -148,6 +158,7 @@ class CaseListTestFixture(
     referenceNumber: String,
     submittedBy: ReferralUser,
     caseWorkers: List<ReferralUser>,
+    communityServiceProvider: CommunityServiceProvider,
     createdAt: OffsetDateTime,
   ): Referral {
     val referral = createReferral(
@@ -156,7 +167,7 @@ class CaseListTestFixture(
       submittedBy,
       createdAt,
     )
-    assignToCommunityServiceProvider(referral)
+    assignToCommunityServiceProvider(referral, communityServiceProvider = communityServiceProvider)
     assignCaseWorkers(referral, caseWorkers)
     return referral
   }

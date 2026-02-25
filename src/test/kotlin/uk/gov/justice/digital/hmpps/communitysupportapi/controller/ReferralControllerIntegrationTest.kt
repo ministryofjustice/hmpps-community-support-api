@@ -17,10 +17,21 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
+import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
@@ -30,10 +41,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonA
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.Duration
 import java.time.LocalDate
-import java.time.OffsetDateTime
+import java.time.LocalDateTime
 import java.util.UUID
 
 class ReferralControllerIntegrationTest : IntegrationTestBase() {
@@ -53,12 +64,28 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   @Autowired
   private lateinit var referralUserRepository: ReferralUserRepository
 
+  @Autowired
+  private lateinit var appointmentRepository: AppointmentRepository
+
+  @Autowired
+  private lateinit var appointmentIcsRepository: AppointmentIcsRepository
+
+  @Autowired
+  private lateinit var appointmentDeliveryRepository: AppointmentDeliveryRepository
+
+  @Autowired
+  private lateinit var appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository
+
+  @Autowired
+  private lateinit var appointmentHelper: AppointmentTestSupport
+
+  @Autowired
+  private lateinit var referralHelper: ReferralTestSupport
+
   @MockitoBean
   private lateinit var userMapper: UserMapper
 
-  private val testUser = ReferralUserFactory()
-    .withHmppsAuthUsername("test-user")
-    .create()
+  private lateinit var testUser: ReferralUser
 
   @Nested
   @DisplayName("GET /bff/referral-details/{referralId}")
@@ -67,44 +94,32 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setup() {
       testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
     }
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/referral-details/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+      assertUnauthorized(HttpMethod.GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral-details/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-details/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return OK with valid referral information`() {
-      // given some referral data are there
-      val person = personRepository.save(
-        PersonFactory()
-          .withFirstName("John")
-          .withLastName("Smith")
-          .withIdentifier("X123456")
-          .withDateOfBirth(LocalDate.of(1980, 1, 1))
-          .withGender("Male")
-          .withCreatedAt(OffsetDateTime.now())
-          .create(),
-      )
-
-      val savedReferral = referralRepository.save(
-        ReferralFactory()
-          .withPersonId(person.id)
-          .withCrn("X123456")
-          .withReferenceNumber("REF123456")
-          .withCreatedAt(OffsetDateTime.now())
-          .create(),
+      val person = referralHelper.createPerson()
+      val referralUser = referralHelper.ensureReferralUser()
+      val savedReferral = referralHelper.createReferral(
+        person,
+        referenceNumber = "REF123456",
+        submittedBy = referralUser,
       )
 
       val referralDto = ReferralDto(
@@ -129,7 +144,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.referenceNumber shouldBe referralDto.referenceNumber
 
           val nanosDiff =
-            java.time.Duration.between(referralDto.createdDate, body.createdDate).abs().toNanos()
+            Duration.between(referralDto.createdDate, body.createdDate).abs().toNanos()
           // allow up to 1-millisecond difference to avoid nanosecond serialization jitter
           assertThat(nanosDiff).isLessThanOrEqualTo(1_000_000L)
         }
@@ -138,7 +153,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return Not Found with invalid referral identifier`() {
       webTestClient.get()
-        .uri("/bff/referrals/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+        .uri("/bff/referrals/${referralHelper.communityServiceProviderId}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -153,7 +168,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setup() {
       testDataCleaner.cleanAllTables()
-      ensureTestUser()
+      testUser = referralHelper.ensureReferralUser()
     }
 
     @Test
@@ -230,14 +245,11 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           ),
         )
         .exchange()
-        .expectStatus()
-        .isNotFound
+        .expectStatus().isNotFound
     }
 
     private fun setUpData(): CreateReferralRequest {
-      val communityServiceProvider =
-        communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
-          .get()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
       val personDto = PersonDto(
         id = UUID.randomUUID(),
@@ -264,7 +276,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setup() {
       testDataCleaner.cleanAllTables()
-      ensureTestUser()
+      testUser = referralHelper.ensureReferralUser()
     }
 
     @Test
@@ -293,9 +305,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           .withIdentifier("X123456")
           .create(),
       )
-      val communityServiceProvider =
-        communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
-          .get()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
       val referral = ReferralFactory()
         .withPersonId(person.id)
@@ -304,7 +314,6 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val savedReferral = referralRepository.save(referral)
 
-      // Create the provider assignment
       val providerAssignment = ReferralProviderAssignmentFactory()
         .withReferral(savedReferral)
         .withCommunityServiceProvider(communityServiceProvider)
@@ -345,31 +354,23 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/referral-details-page/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+      assertUnauthorized(HttpMethod.GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral-details-page/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-details-page/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return OK with valid referral details page information`() {
-      // given some referral data are there
-      val person = personRepository.save(
-        PersonFactory()
-          .withFirstName("John")
-          .withLastName("Smith")
-          .withIdentifier("X123456")
-          .withDateOfBirth(LocalDate.of(1980, 1, 1))
-          .withGender("Male")
-          .create(),
-      )
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
 
       val additionalDetails = PersonAdditionalDetailsFactory()
         .withPerson(person)
@@ -387,13 +388,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       person.additionalDetails = additionalDetails
       personRepository.save(person)
 
-      val savedReferral = referralRepository.save(
-        ReferralFactory()
-          .withPersonId(person.id)
-          .withCrn("X123456")
-          .withReferenceNumber("REF123456")
-          .create(),
-      )
+      val savedReferral = referralHelper.createReferral(person = person, referenceNumber = "REF123456", submittedBy = testUser)
 
       val personDetailsTable = ReferralDetailsBffResponseDto.PersonDetailsTableDataDto(
         name = "${person.firstName} ${person.lastName}",
@@ -451,7 +446,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.contactDetailsTableData shouldBe referralDetailsDto.contactDetailsTableData
 
           val nanosDiff =
-            java.time.Duration.between(referralDetailsDto.createdDate, body.createdDate).abs().toNanos()
+            Duration.between(referralDetailsDto.createdDate, body.createdDate).abs().toNanos()
           // allow up to 1-millisecond difference to avoid nanosecond serialization jitter
           assertThat(nanosDiff).isLessThanOrEqualTo(1_000_000L)
         }
@@ -460,7 +455,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return Not Found with invalid referral identifier`() {
       webTestClient.get()
-        .uri("/bff/referral-details-page/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
+        .uri("/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -468,16 +463,147 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     }
   }
 
-  private fun ensureTestUser() {
-    if (!referralUserRepository.existsById(testUser.id)) {
-      referralUserRepository.save(
-        ReferralUserFactory()
-          .withId(testUser.id)
-          .withHmppsAuthId(testUser.hmppsAuthId)
-          .withHmppsAuthUsername(testUser.hmppsAuthUsername)
-          .withAuthSource(testUser.authSource)
-          .create(),
+  @Nested
+  @DisplayName("GET /bff/referral-details/{referralId}/progress")
+  inner class ReferralProgressPageEndPoint {
+    val referralId = UUID.randomUUID().toString()
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      webTestClient.get()
+        .uri("/bff/referral-details/$referralId/progress")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      webTestClient.get()
+        .uri("/bff/referral-details/$referralId/progress")
+        .headers(setAuthorisation("AUTH_ADM", listOf(), listOf("read")))
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      webTestClient.get()
+        .uri("/bff/referral-details/$referralId/progress")
+        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `should return 404 when referral does not exist`() {
+      webTestClient.get()
+        .uri("/bff/referral-details/$referralId/progress")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `should return an empty list when no appointments exist for referral`() {
+      val person = referralHelper.createPerson()
+      val referralUser = referralHelper.ensureReferralUser()
+      val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+
+      webTestClient.get()
+        .uri("/bff/referral-details/${referral.id}/progress")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody()
+        .json("[]")
+    }
+
+    @Test
+    fun `should returns 500 when an ICS is missing from referral progress`() {
+      val person = referralHelper.createPerson()
+      val referralUser = referralHelper.ensureReferralUser()
+      val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+
+      appointmentHelper.createAppointment(referral)
+
+      webTestClient.get()
+        .uri("/bff/referral-details/${referral.id}/progress")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().is5xxServerError
+    }
+
+    @Test
+    fun `should return list containing referral progress Dto`() {
+      val oneWeekAgo = LocalDateTime.now().minusWeeks(1)
+      val yesterday = LocalDateTime.now().minusDays(1)
+      val communicationTypes = listOf("EMAIL", "SMS", "LETTER")
+
+      val person = referralHelper.createPerson()
+      val referralUser = referralHelper.ensureReferralUser()
+      val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+      val appointment = appointmentHelper.createAppointment(referral)
+      val delivery = appointmentHelper.createAppointmentDelivery(
+        AppointmentDeliveryMethod.IN_PERSON_PROBATION_OFFICE,
       )
+
+      val ics = appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery = delivery,
+        user = testUser,
+        startDate = yesterday,
+        createdAt = oneWeekAgo,
+        communications = communicationTypes,
+      )
+      val firstStatusHistory = appointmentHelper.createAppointmentStatusHistory(
+        appointment = appointment,
+        status = AppointmentStatusHistoryType.SCHEDULED,
+        createdAt = oneWeekAgo,
+      )
+      val secondStatusHistory = appointmentHelper.createAppointmentStatusHistory(
+        appointment = appointment,
+        status = AppointmentStatusHistoryType.ATTENDED,
+        createdAt = yesterday,
+      )
+      val statusHistory = listOf(firstStatusHistory, secondStatusHistory)
+
+      val expectedReferralProgressDto = ReferralProgressDto(
+        appointment = appointment.toDto(),
+        appointmentIcs = ics.toDto(),
+        appointmentStatusHistory = statusHistory.map { history -> history.toDto() },
+      )
+
+      webTestClient.get()
+        .uri("/bff/referral-details/${referral.id}/progress")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<List<ReferralProgressDto>>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.size shouldBe 1
+
+          body[0].appointment.id shouldBe expectedReferralProgressDto.appointment.id
+          body[0].appointment.referralId shouldBe expectedReferralProgressDto.appointment.referralId
+          body[0].appointment.type shouldBe expectedReferralProgressDto.appointment.type
+
+          body[0].appointmentIcs.startDate shouldBe expectedReferralProgressDto.appointmentIcs.startDate
+          body[0].appointmentIcs.createdAt shouldBe expectedReferralProgressDto.appointmentIcs.createdAt
+          body[0].appointmentIcs.createdBy.fullName shouldBe expectedReferralProgressDto.appointmentIcs.createdBy.fullName
+          body[0].appointmentIcs.appointmentDelivery?.method shouldBe expectedReferralProgressDto.appointmentIcs.appointmentDelivery?.method
+          body[0].appointmentIcs.appointmentDelivery?.methodDetails shouldBe expectedReferralProgressDto.appointmentIcs.appointmentDelivery?.methodDetails
+
+          body[0].appointmentStatusHistory.size shouldBe 2
+          body[0].appointmentStatusHistory[0].status shouldBe expectedReferralProgressDto.appointmentStatusHistory[0].status
+          body[0].appointmentStatusHistory[1].status shouldBe expectedReferralProgressDto.appointmentStatusHistory[1].status
+        }
     }
   }
 }

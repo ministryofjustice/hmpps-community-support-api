@@ -12,11 +12,13 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
@@ -27,6 +29,7 @@ import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
 
 @RestController
+@RequestMapping("/bff")
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class ReferralController(
   private val referralService: ReferralService,
@@ -52,7 +55,7 @@ class ReferralController(
       ),
     ],
   )
-  @GetMapping("/bff/referral-details/{referralId}")
+  @GetMapping("/referral-details/{referralId}")
   fun getReferral(@PathVariable referralId: UUID): ResponseEntity<ReferralDto> = referralService.getReferral(referralId)
     .map { ResponseEntity.ok(it.toDto()) }
     .orElseThrow { NotFoundException("Referral not found for id $referralId") }
@@ -72,7 +75,7 @@ class ReferralController(
       ),
     ],
   )
-  @GetMapping("/bff/referral-details-page/{referralId}")
+  @GetMapping("/referral-details-page/{referralId}")
   fun getReferralDetailsPage(@PathVariable referralId: UUID): ResponseEntity<ReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getReferralDetailsPage(referralId))
 
   @Operation(summary = "Create a referral")
@@ -85,7 +88,7 @@ class ReferralController(
       ),
     ],
   )
-  @PostMapping("/bff/referral")
+  @PostMapping("/referral")
   fun createReferral(@RequestBody createReferralRequest: CreateReferralRequest): ResponseEntity<ReferralInformationDto> {
     val user = userMapper.fromToken(authenticationHolder)
     val result = referralService.createReferral(user.id, createReferralRequest)
@@ -102,9 +105,33 @@ class ReferralController(
       ),
     ],
   )
-  @PostMapping("/bff/{referralId}/submit-a-referral")
+  @PostMapping("/{referralId}/submit-a-referral")
   fun submitReferral(@PathVariable referralId: UUID): ResponseEntity<SubmitReferralResponseDto> {
     val user = userMapper.fromToken(authenticationHolder)
     return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
+  }
+
+  @Operation(summary = "Get referral progress page data")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral Details found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralDetailsBffResponseDto::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/referral-details/{referralId}/progress")
+  fun getReferralProgressDetails(@PathVariable referralId: UUID): ResponseEntity<List<ReferralProgressDto>> {
+    log.info("Fetching referral progress and appointments for referral={}", referralId)
+    val progress = referralService.getReferralProgress(referralId)
+
+    log.info("Referral {} has {} appointments in progress", referralId, progress.size)
+    return ResponseEntity.ok(progress)
   }
 }

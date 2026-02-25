@@ -1,4 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.entity
+
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -19,6 +20,7 @@ enum class AppointmentDeliveryMethod {
 class AppointmentDelivery(
   @Id
   val id: UUID = UUID.randomUUID(),
+
   @Enumerated(EnumType.STRING)
   @Column(name = "method", nullable = false)
   val method: AppointmentDeliveryMethod,

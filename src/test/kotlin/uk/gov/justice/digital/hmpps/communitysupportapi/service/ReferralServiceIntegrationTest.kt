@@ -1,26 +1,38 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
+import org.junit.jupiter.api.assertNull
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 class ReferralServiceIntegrationTest : IntegrationTestBase() {
-
-  private val testUserId: UUID = UUID.randomUUID()
 
   @Autowired
   private lateinit var communityServiceProviderRepository: CommunityServiceProviderRepository
@@ -37,13 +49,34 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Autowired
   private lateinit var referralUserRepository: ReferralUserRepository
 
+  @Autowired
+  private lateinit var referralRepository: ReferralRepository
+
+  @Autowired
+  private lateinit var appointmentRepository: AppointmentRepository
+
+  @Autowired
+  private lateinit var appointmentIcsRepository: AppointmentIcsRepository
+
+  @Autowired
+  private lateinit var appointmentDeliveryRepository: AppointmentDeliveryRepository
+
+  @Autowired
+  private lateinit var appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository
+
+  @Autowired
+  private lateinit var appointmentHelper: AppointmentTestSupport
+
+  @Autowired
+  private lateinit var referralHelper: ReferralTestSupport
+
   @Test
   fun `createReferral should save referral and referral events`() {
-    ensureTestUser()
-    // Given
+    val referralUser = referralHelper.ensureReferralUser()
+
     val createReferralRequest = setUpData()
 
-    val result = referralService.createReferral(testUserId, createReferralRequest)
+    val result = referralService.createReferral(referralUser.id, createReferralRequest)
     val savedReferral = result.referral
 
     assertThat(savedReferral.personId).isEqualTo(result.person.id)
@@ -51,7 +84,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedReferral.referralEvents.size).isEqualTo(1)
     assertThat(savedReferral.referenceNumber).isNull()
 
-    // Check provider assignment was created
     val providerAssignments = referralProviderAssignmentRepository.findByReferralId(savedReferral.id)
     assertThat(providerAssignments).hasSize(1)
     assertThat(providerAssignments[0].communityServiceProvider.id).isEqualTo(createReferralRequest.communityServiceProviderId)
@@ -59,23 +91,20 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val createdEvent = savedReferral.referralEvents.first { it.eventType == ReferralEventType.CREATED }
     assertThat(createdEvent).isNotNull
     assertThat(createdEvent.actorType).isEqualTo(ActorType.AUTH)
-    assertThat(createdEvent.actorId).isEqualTo(testUserId)
+    assertThat(createdEvent.actorId).isEqualTo(referralUser.id)
   }
 
   @Test
   fun `createReferral should update existing person when identifier matches`() {
-    ensureTestUser()
-    val existingPerson = personRepository.save(
-      PersonFactory()
-        .withFirstName("Old")
-        .withLastName("Name")
-        .withIdentifier("X123456")
-        .withDateOfBirth(LocalDate.of(1970, 1, 1))
-        .withGender("Male")
-        .create(),
+    val referralUser = referralHelper.ensureReferralUser()
+
+    val existingPerson = referralHelper.createPerson(
+      firstName = "Old",
+      lastName = "Name",
+      dateOfBirth = LocalDate.of(1970, 1, 1),
     )
 
-    val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")).get()
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
     val updatedPersonDto = PersonDto(
       id = UUID.randomUUID(),
@@ -93,7 +122,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       crn = "X123456",
     )
 
-    val result = referralService.createReferral(testUserId, request)
+    val result = referralService.createReferral(referralUser.id, request)
 
     val persistedPerson = personRepository.findById(existingPerson.id).get()
 
@@ -105,26 +134,27 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `createReferral should update existing person additional details when identifier matches`() {
-    ensureTestUser()
-    val existingPerson = personRepository.save(
-      PersonFactory()
-        .withFirstName("Old")
-        .withLastName("Name")
-        .withIdentifier("X999999")
-        .withDateOfBirth(LocalDate.of(1975, 5, 5))
-        .withGender("Male")
-        .create(),
+    val referralUser = referralHelper.ensureReferralUser()
+
+    val existingPerson = referralHelper.createPerson(
+      firstName = "Old",
+      lastName = "Name",
+      identifier = "X999999",
+      dateOfBirth = LocalDate.of(1975, 5, 5),
     )
+
     val existingDetails = PersonAdditionalDetailsFactory()
       .withPerson(existingPerson)
       .withEthnicity("OldEthnicity")
       .withPreferredLanguage("OldLang")
       .withSexualOrientation("OldOrientation")
       .create()
+
     existingPerson.additionalDetails = existingDetails
+
     personRepository.save(existingPerson)
 
-    val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")).get()
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
     val updatedPersonDto = PersonDto(
       id = UUID.randomUUID(),
@@ -133,7 +163,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       lastName = "NewLast",
       dateOfBirth = LocalDate.of(1985, 6, 6),
       sex = "Male",
-      additionalDetails = uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails(
+      additionalDetails = PersonAdditionalDetails(
         ethnicity = "NewEthnicity",
         preferredLanguage = "NewLang",
         sexualOrientation = "NewOrientation",
@@ -146,7 +176,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       crn = "X999999",
     )
 
-    referralService.createReferral(testUserId, request)
+    referralService.createReferral(referralUser.id, request)
 
     val persistedPerson = personRepository.findById(existingPerson.id).get()
 
@@ -159,8 +189,94 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(persistedPerson.additionalDetails?.id).isEqualTo(existingDetails.id)
   }
 
+  @Test
+  fun `getReferralProgress should throw NotFoundException when referral does not exist`() {
+    val nonExistentReferralId = UUID.randomUUID()
+
+    assertThrows(NotFoundException::class.java) {
+      referralService.getReferralProgress(nonExistentReferralId)
+    }
+  }
+
+  @Test
+  fun `getReferralProgress should return empty list when referral has no appointments`() {
+    val person = referralHelper.createPerson()
+    val referralUser = referralHelper.ensureReferralUser()
+    val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+
+    val result = referralService.getReferralProgress(referral.id)
+
+    assertTrue(result.isEmpty())
+  }
+
+  @Test
+  fun `getReferralProgress should throw an IllegalStateException when ICS missing from appointments`() {
+    val person = referralHelper.createPerson()
+    val referralUser = referralHelper.ensureReferralUser()
+    val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+
+    appointmentHelper.createAppointment(referral)
+
+    assertThrows(IllegalStateException::class.java) {
+      referralService.getReferralProgress(referral.id)
+    }
+  }
+
+  @Test
+  fun `getReferralProgress should return a list containing a referral progress dto`() {
+    val yesterday = LocalDateTime.now().minusDays(1)
+    val today = LocalDateTime.now()
+    val communicationTypes = listOf("EMAIL", "SMS", "LETTER")
+
+    val person = referralHelper.createPerson()
+    val referralUser = referralHelper.ensureReferralUser()
+    val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+    val appointment = appointmentHelper.createAppointment(referral)
+    val delivery = appointmentHelper.createAppointmentDelivery()
+    val ics = appointmentHelper.createAppointmentIcs(
+      appointment = appointment,
+      delivery = delivery,
+      user = referralUser,
+      createdAt = yesterday,
+      startDate = today,
+      communications = communicationTypes,
+    )
+    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED, yesterday)
+    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.ATTENDED, today)
+
+    val result = referralService.getReferralProgress(referral.id)
+
+    assertEquals(1, result.size)
+
+    val referralProgressDto = result.first()
+
+    assertEquals(appointment.id, referralProgressDto.appointment.id)
+    assertEquals(appointment.referral.id, referralProgressDto.appointment.referralId)
+    assertEquals(appointment.type, referralProgressDto.appointment.type)
+
+    assertEquals(delivery.method, referralProgressDto.appointmentIcs.appointmentDelivery?.method)
+    assertEquals(delivery.methodDetails, referralProgressDto.appointmentIcs.appointmentDelivery?.methodDetails)
+    assertNull(delivery.addressLine1)
+    assertNull(delivery.addressLine2)
+    assertNull(delivery.townOrCity)
+    assertNull(delivery.county)
+    assertNull(delivery.postcode)
+
+    assertNotNull(ics.appointmentDelivery?.id)
+    assertEquals(today, referralProgressDto.appointmentIcs.startDate)
+    assertEquals(yesterday, referralProgressDto.appointmentIcs.createdAt)
+    assertEquals(referralUser.fullName, referralProgressDto.appointmentIcs.createdBy.fullName)
+    assertEquals(communicationTypes, referralProgressDto.appointmentIcs.sessionCommunication)
+
+    assertEquals(2, referralProgressDto.appointmentStatusHistory.size)
+    assertEquals(yesterday, referralProgressDto.appointmentStatusHistory[0].createdAt)
+    assertEquals(AppointmentStatusHistoryType.SCHEDULED, referralProgressDto.appointmentStatusHistory[0].status)
+    assertEquals(today, referralProgressDto.appointmentStatusHistory[1].createdAt)
+    assertEquals(AppointmentStatusHistoryType.ATTENDED, referralProgressDto.appointmentStatusHistory[1].status)
+  }
+
   private fun setUpData(): CreateReferralRequest {
-    val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")).get()
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
     val personDto = PersonDto(
       id = UUID.randomUUID(),
@@ -177,18 +293,5 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       communityServiceProviderId = communityServiceProvider.id,
       crn = "X123456",
     )
-  }
-
-  private fun ensureTestUser() {
-    if (!referralUserRepository.existsById(testUserId)) {
-      referralUserRepository.save(
-        ReferralUserFactory()
-          .withId(testUserId)
-          .withHmppsAuthUsername("test-user")
-          .withHmppsAuthId("test-auth-id")
-          .withAuthSource("auth")
-          .create(),
-      )
-    }
   }
 }
