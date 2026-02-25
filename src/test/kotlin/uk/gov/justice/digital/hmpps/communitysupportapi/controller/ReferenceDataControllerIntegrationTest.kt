@@ -55,7 +55,6 @@ class ReferenceDataControllerIntegrationTest : IntegrationTestBase() {
         .uri { uriBuilder ->
           uriBuilder
             .path("/bff/reference-data/probation-offices")
-            .queryParam("refresh", "false")
             .build()
         }
         .headers(setAuthorisation())
