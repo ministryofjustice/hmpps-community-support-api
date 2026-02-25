@@ -44,13 +44,6 @@ object CsvFileHelper {
     return records
   }
 
-  inline fun <reified T : Any> readToDataClassFromClasspath(
-    resourcePath: String,
-    noinline rowToObject: (CSVRecord) -> T = { record ->
-      throw NotImplementedError("Provide your own mapper for ${T::class.simpleName}")
-    },
-  ): List<T> = readFromClasspath(resourcePath, rowToObject)
-
   fun defaultFormat(): CSVFormat = CSVFormat.RFC4180
     .builder()
     .setHeader()

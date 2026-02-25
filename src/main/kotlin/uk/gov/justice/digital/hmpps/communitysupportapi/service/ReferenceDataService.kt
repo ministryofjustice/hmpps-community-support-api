@@ -41,9 +41,7 @@ class ReferenceDataService {
   fun getProbationOffices(forceRefresh: Boolean = false): List<ProbationOffice> {
     if (forceRefresh || cachedProbationOffices == null) {
       synchronized(this) {
-        if (cachedProbationOffices == null) {
-          cachedProbationOffices = loadProbationOffices()
-        }
+        cachedProbationOffices = loadProbationOffices()
       }
     }
     return cachedProbationOffices!!
