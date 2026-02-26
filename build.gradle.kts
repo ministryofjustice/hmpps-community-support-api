@@ -31,6 +31,9 @@ dependencies {
   implementation("org.springframework.security:spring-security-crypto:7.0.2")
   implementation("com.nimbusds:oauth2-oidc-sdk:11.30.1")
 
+  // csv
+  implementation("org.apache.commons:commons-csv:1.14.1")
+
   testImplementation("org.springframework.boot:spring-boot-starter-web")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.boot:spring-boot-test-autoconfigure")

@@ -78,3 +78,6 @@ services:
       auth-user-groups: "/externalusers/{userId}/groups"
       auth-user-details: "/users/{userName}"
 
+reference-data:
+  probation-offices:
+    path: "reference-data/probation-offices-v0.csv"

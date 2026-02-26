@@ -59,3 +59,7 @@ webclient:
 wiremock:
   logging:
     verbose: true
+
+reference-data:
+  probation-offices:
+    path: "test-data/probation-offices-v0.csv"
