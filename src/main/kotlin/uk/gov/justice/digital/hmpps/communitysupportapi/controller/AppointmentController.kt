@@ -52,7 +52,7 @@ class AppointmentController(
     @PathVariable referralId: UUID,
     @RequestBody request: CreateAppointmentRequest,
   ): ResponseEntity<AppointmentIcsResponse> {
-    log.info("POST /bff/referral/{}/appointment/ics", referralId)
+    log.info("POST /bff/referral/{}/ics", referralId)
     val createdBy = userMapper.fromToken(authenticationHolder)
     val response = appointmentService.createIcsAppointment(referralId, request, createdBy)
     return ResponseEntity.status(HttpStatus.CREATED).body(response)
@@ -73,7 +73,7 @@ class AppointmentController(
   fun getIcsAppointments(
     @PathVariable referralId: UUID,
   ): ResponseEntity<List<AppointmentIcsResponse>> {
-    log.info("GET /bff/referral/{}/appointment/ics", referralId)
+    log.info("GET /bff/referral/{}/ics", referralId)
     return ResponseEntity.ok(appointmentService.getIcsAppointmentsByReferral(referralId))
   }
 
@@ -93,7 +93,7 @@ class AppointmentController(
     @PathVariable referralId: UUID,
     @PathVariable icsId: UUID,
   ): ResponseEntity<AppointmentIcsResponse> {
-    log.info("GET /bff/referral/{}/appointment/ics/{}", referralId, icsId)
+    log.info("GET /bff/referral/{}/ics/{}", referralId, icsId)
     return ResponseEntity.ok(appointmentService.getIcsAppointment(icsId))
   }
 }
