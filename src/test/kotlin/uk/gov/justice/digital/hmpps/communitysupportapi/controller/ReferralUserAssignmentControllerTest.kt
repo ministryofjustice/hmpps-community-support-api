@@ -38,8 +38,6 @@ import java.util.UUID
 
 class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
 
-  private val testUserId: UUID = UUID.randomUUID()
-
   @Autowired
   private lateinit var referralRepository: ReferralRepository
 
@@ -126,7 +124,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
     fun `should return 404 indicating failure to assign case worker`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
-      var assigner = setupAssigner(testUser)
+      val assigner = setupAssigner(testUser)
       val referral = setUpReferral(assigner.id)
 
       webTestClient.post()
@@ -202,12 +200,10 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
   fun `should return OK and return assigned case worker(s)`() {
     whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
-    var assigner = setupAssigner(testUser)
+    val assigner = setupAssigner(testUser)
     val referral = setUpReferral(assigner.id)
-    val user1 = setupUser("assigntestuser1@email.com")
-    val user2 = setupUser("assigntestuser2@email.com")
-
-    val caseWorkers: List<CaseWorkerDto> = setupAssignments(referral, assigner, listOf(user1, user2))
+    setupUser("assigntestuser1@email.com")
+    setupUser("assigntestuser2@email.com")
 
     val response = webTestClient.get()
       .uri("/bff/referral-assignments/${referral.id}")
