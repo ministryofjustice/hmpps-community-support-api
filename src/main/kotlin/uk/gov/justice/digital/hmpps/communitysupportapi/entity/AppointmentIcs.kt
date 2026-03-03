@@ -31,7 +31,7 @@ class AppointmentIcs(
   val createdAt: LocalDateTime = LocalDateTime.now(),
 
   @Column(name = "start_date", nullable = false)
-  val startDate: LocalDateTime,
+  val appointmentDateTime: LocalDateTime,
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "created_by")

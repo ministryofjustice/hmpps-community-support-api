@@ -11,6 +11,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AssignmentFailureDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
@@ -36,8 +37,6 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
-
-  private val testUserId: UUID = UUID.randomUUID()
 
   @Autowired
   private lateinit var referralRepository: ReferralRepository
@@ -125,7 +124,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
     fun `should return 404 indicating failure to assign case worker`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
-      var assigner = setupAssigner(testUser)
+      val assigner = setupAssigner(testUser)
       val referral = setUpReferral(assigner.id)
 
       webTestClient.post()
@@ -139,7 +138,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
         .exchange()
         .expectStatus()
         .isBadRequest
-        .expectBody(AssignCaseWorkersResult::class.java)
+        .expectBody<AssignCaseWorkersResult>()
         .consumeWith { response ->
           run {
             val submitReferralResponseDto = AssignCaseWorkersResult(
@@ -176,7 +175,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
         .exchange()
         .expectStatus()
         .isOk
-        .expectBody(AssignCaseWorkersResult::class.java)
+        .expectBody<AssignCaseWorkersResult>()
         .consumeWith { response ->
           run {
             val submitReferralResponseDto = AssignCaseWorkersResult(
@@ -201,12 +200,12 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
   fun `should return OK and return assigned case worker(s)`() {
     whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
-    var assigner = setupAssigner(testUser)
+    val assigner = setupAssigner(testUser)
     val referral = setUpReferral(assigner.id)
     val user1 = setupUser("assigntestuser1@email.com")
     val user2 = setupUser("assigntestuser2@email.com")
 
-    val caseWorkers: List<CaseWorkerDto> = setupAssignments(referral, assigner, listOf(user1, user2))
+    setupAssignments(referral, assigner, listOf(user1, user2))
 
     val response = webTestClient.get()
       .uri("/bff/referral-assignments/${referral.id}")

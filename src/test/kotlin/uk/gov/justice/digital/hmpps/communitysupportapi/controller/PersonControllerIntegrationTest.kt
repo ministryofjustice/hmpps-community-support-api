@@ -9,6 +9,7 @@ import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.http.HttpMethod
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -25,37 +26,17 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      webTestClient.get()
-        .uri("/bff/person/PERSONID")
-        .exchange()
-        .expectStatus()
-        .isUnauthorized
+      assertUnauthorized(HttpMethod.GET, "/bff/person/PERSONID")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      webTestClient.get()
-        .uri("/bff/person/PERSONID")
-        .headers(
-          setAuthorisation(
-            "AUTH_ADM",
-            listOf(),
-            listOf("read"),
-          ),
-        )
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/person/PERSONID")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      webTestClient.get()
-        .uri("/bff/person/PERSONID")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/person/PERSONID")
     }
 
     @Test

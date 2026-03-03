@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
@@ -90,37 +91,17 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      webTestClient.get()
-        .uri("/bff/case-list/unassigned")
-        .exchange()
-        .expectStatus()
-        .isUnauthorized
+      assertUnauthorized(HttpMethod.GET, "/bff/case-list/unassigned")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      webTestClient.get()
-        .uri("/bff/case-list/unassigned")
-        .headers(
-          setAuthorisation(
-            "AUTH_ADM",
-            listOf(),
-            listOf("read"),
-          ),
-        )
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/case-list/unassigned")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      webTestClient.get()
-        .uri("/bff/case-list/unassigned")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/case-list/unassigned")
     }
 
     @Test
@@ -257,37 +238,17 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      webTestClient.get()
-        .uri("/bff/case-list/in-progress")
-        .exchange()
-        .expectStatus()
-        .isUnauthorized
+      assertUnauthorized(HttpMethod.GET, "/bff/case-list/in-progress")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      webTestClient.get()
-        .uri("/bff/case-list/in-progress")
-        .headers(
-          setAuthorisation(
-            "AUTH_ADM",
-            listOf(),
-            listOf("read"),
-          ),
-        )
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/case-list/in-progress")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      webTestClient.get()
-        .uri("/bff/case-list/in-progress")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/case-list/in-progress")
     }
 
     @Test

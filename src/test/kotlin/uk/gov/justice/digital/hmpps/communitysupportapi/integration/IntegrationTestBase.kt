@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDO
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -88,6 +89,71 @@ abstract class IntegrationTestBase {
     roles: List<String> = listOf("ROLE_IPB_FRONTEND_RW"),
     scopes: List<String> = listOf("read"),
   ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisationHeader(username = username, scope = scopes, roles = roles)
+
+  fun assertUnauthorized(method: HttpMethod, uri: String) {
+    webTestClient.method(method)
+      .uri(uri)
+      .exchange()
+      .expectStatus()
+      .isUnauthorized
+  }
+
+  fun assertForbiddenNoRole(method: HttpMethod, uri: String) {
+    webTestClient.method(method)
+      .uri(uri)
+      .headers(setAuthorisation("AUTH_ADM", listOf(), listOf("read")))
+      .exchange()
+      .expectStatus()
+      .isForbidden
+  }
+
+  fun assertForbiddenNoRole(method: HttpMethod, uri: String, body: Any) {
+    webTestClient.method(method)
+      .uri(uri)
+      .headers(setAuthorisation("AUTH_ADM", listOf(), listOf("read")))
+      .bodyValue(body)
+      .exchange()
+      .expectStatus()
+      .isForbidden
+  }
+
+  fun assertForbiddenWrongRole(method: HttpMethod, uri: String) {
+    webTestClient.method(method)
+      .uri(uri)
+      .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
+      .exchange()
+      .expectStatus()
+      .isForbidden
+  }
+
+  fun assertForbiddenWrongRole(method: HttpMethod, uri: String, body: Any) {
+    webTestClient.method(method)
+      .uri(uri)
+      .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
+      .bodyValue(body)
+      .exchange()
+      .expectStatus()
+      .isForbidden
+  }
+
+  fun assertNotFound(method: HttpMethod, uri: String) {
+    webTestClient.method(method)
+      .uri(uri)
+      .headers(setAuthorisation())
+      .exchange()
+      .expectStatus()
+      .isNotFound
+  }
+
+  fun assertNotFound(method: HttpMethod, uri: String, body: Any) {
+    webTestClient.method(method)
+      .uri(uri)
+      .headers(setAuthorisation())
+      .bodyValue(body)
+      .exchange()
+      .expectStatus()
+      .isNotFound
+  }
 
   protected fun stubManageUsersGetUserGroups(userId: String, groups: List<Pair<String, String>>) {
     val groupsJson = groups.joinToString(",") { """{"groupCode":"${it.first}","groupName":"${it.second}"}""" }
