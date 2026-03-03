@@ -75,9 +75,9 @@ sealed class SessionMethod {
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class VirtualAppointment(
-    /** "PHONE" or "VIDEO" */
+  /** "PHONE" or "VIDEO" */
   override val type: String,
-    /** e.g. "Why was this not in person?" */
+  /** e.g. "Why was this not in person?" */
   val whyNotInPersonReason: String? = null,
 ) : SessionMethod()
 
@@ -170,7 +170,6 @@ data class AppointmentTimeResponse(
   val minute: Int,
   val amPm: String,
 )
-
 
 /**
  * Converts the split date/time request fields into a [LocalTime].

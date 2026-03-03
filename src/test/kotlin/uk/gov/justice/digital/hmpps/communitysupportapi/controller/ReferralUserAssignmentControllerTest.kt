@@ -11,6 +11,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AssignmentFailureDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
@@ -34,7 +35,6 @@ import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDateTime
 import java.util.UUID
-import org.springframework.test.web.reactive.server.expectBody
 
 class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
 

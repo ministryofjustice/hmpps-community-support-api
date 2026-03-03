@@ -340,13 +340,13 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   }
 
   private fun buildRequest(
-      date: LocalDate = LocalDate.of(2026, 3, 27),
-      hour: Int = 10,
-      minute: Int? = 0,
-      amPm: String = "am",
-      type: SessionMethodType = SessionMethodType.PHONE,
-      additionalDetails: String? = null,
-      sessionCommunication: List<String> = listOf("Phone call"),
+    date: LocalDate = LocalDate.of(2026, 3, 27),
+    hour: Int = 10,
+    minute: Int? = 0,
+    amPm: String = "am",
+    type: SessionMethodType = SessionMethodType.PHONE,
+    additionalDetails: String? = null,
+    sessionCommunication: List<String> = listOf("Phone call"),
   ) = CreateAppointmentRequest(
     date = date,
     time = AppointmentTimeRequest(hour = hour, minute = minute, amPm = amPm),

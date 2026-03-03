@@ -1,9 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.kotest.matchers.shouldBe
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -40,6 +37,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonF
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
 
 class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
@@ -491,13 +491,13 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   }
 
   private fun buildRequest(
-      date: LocalDate = LocalDate.of(2026, 3, 27),
-      hour: Int = 10,
-      minute: Int? = 0,
-      amPm: String = "am",
-      type: SessionMethodType = SessionMethodType.PHONE,
-      additionalDetails: String? = null,
-      sessionCommunication: List<String> = listOf("Phone call"),
+    date: LocalDate = LocalDate.of(2026, 3, 27),
+    hour: Int = 10,
+    minute: Int? = 0,
+    amPm: String = "am",
+    type: SessionMethodType = SessionMethodType.PHONE,
+    additionalDetails: String? = null,
+    sessionCommunication: List<String> = listOf("Phone call"),
   ) = CreateAppointmentRequest(
     date = date,
     time = AppointmentTimeRequest(hour = hour, minute = minute, amPm = amPm),
