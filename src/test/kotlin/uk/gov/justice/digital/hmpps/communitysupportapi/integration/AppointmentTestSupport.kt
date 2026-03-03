@@ -58,7 +58,7 @@ class AppointmentTestSupport(
     appointment: Appointment,
     delivery: AppointmentDelivery,
     user: ReferralUser,
-    startDate: LocalDateTime = LocalDateTime.now(),
+    appointmentDateTime: LocalDateTime = LocalDateTime.now(),
     createdAt: LocalDateTime = LocalDateTime.now().minusDays(1),
     communications: List<String>,
   ): AppointmentIcs = appointmentIcsRepository.save(
@@ -66,7 +66,7 @@ class AppointmentTestSupport(
       .withAppointment(appointment)
       .withAppointmentDelivery(delivery)
       .withCreatedBy(user)
-      .withStartDate(startDate)
+      .withAppointmentDateTime(appointmentDateTime)
       .withCreatedAt(createdAt)
       .withSessionCommunication(communications)
       .create(),

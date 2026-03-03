@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
@@ -38,7 +39,7 @@ class AppointmentService(
   fun createIcsAppointment(
     referralId: UUID,
     request: CreateAppointmentRequest,
-    createdBy: ReferralUser? = null,
+    createdBy: ReferralUser,
   ): AppointmentIcsResponse {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
@@ -49,7 +50,7 @@ class AppointmentService(
     val appointment = Appointment(
       id = UUID.randomUUID(),
       referral = referral,
-      type = APPOINTMENT_TYPE_ICS,
+      type = AppointmentType.ICS,
     )
     appointmentRepository.save(appointment)
 

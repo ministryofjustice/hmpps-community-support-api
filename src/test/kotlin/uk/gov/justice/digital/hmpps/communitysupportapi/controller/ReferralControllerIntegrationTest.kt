@@ -558,7 +558,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         appointment,
         delivery = delivery,
         user = testUser,
-        startDate = yesterday,
+        appointmentDateTime = yesterday,
         createdAt = oneWeekAgo,
         communications = communicationTypes,
       )
@@ -594,7 +594,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body[0].appointment.referralId shouldBe expectedReferralProgressDto.appointment.referralId
           body[0].appointment.type shouldBe expectedReferralProgressDto.appointment.type
 
-          body[0].appointmentIcs.startDate shouldBe expectedReferralProgressDto.appointmentIcs.startDate
+          body[0].appointmentIcs.appointmentDateTime shouldBe expectedReferralProgressDto.appointmentIcs.appointmentDateTime
           body[0].appointmentIcs.createdAt shouldBe expectedReferralProgressDto.appointmentIcs.createdAt
           body[0].appointmentIcs.createdBy.fullName shouldBe expectedReferralProgressDto.appointmentIcs.createdBy.fullName
           body[0].appointmentIcs.appointmentDelivery?.method shouldBe expectedReferralProgressDto.appointmentIcs.appointmentDelivery?.method

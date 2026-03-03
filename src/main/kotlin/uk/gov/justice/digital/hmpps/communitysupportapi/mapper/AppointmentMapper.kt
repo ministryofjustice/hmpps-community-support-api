@@ -17,7 +17,7 @@ fun Appointment.toDto() = AppointmentDto(
 
 fun AppointmentIcs.toDto() = AppointmentIcsDto(
   appointmentDelivery = appointmentDelivery?.toDto(),
-  startDate = startDate,
+  appointmentDateTime = appointmentDateTime,
   createdAt = createdAt,
   createdBy = createdBy.toDto(),
   sessionCommunication = sessionCommunication,

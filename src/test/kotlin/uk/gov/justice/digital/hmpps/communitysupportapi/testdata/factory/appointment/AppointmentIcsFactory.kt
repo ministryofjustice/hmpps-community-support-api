@@ -14,7 +14,7 @@ class AppointmentIcsFactory : TestEntityFactory<AppointmentIcs>() {
   private var appointment: Appointment = AppointmentFactory().create()
   private var appointmentDelivery: AppointmentDelivery = AppointmentDeliveryFactory().create()
   private var createdAt: LocalDateTime = LocalDateTime.now()
-  private var startDate: LocalDateTime = LocalDateTime.now().plusDays(1)
+  private var appointmentDateTime: LocalDateTime = LocalDateTime.now().plusDays(1)
   private var createdBy: ReferralUser = ReferralUserFactory().create()
   private var sessionCommunication: List<String> = emptyList()
 
@@ -22,7 +22,7 @@ class AppointmentIcsFactory : TestEntityFactory<AppointmentIcs>() {
   fun withAppointment(appointment: Appointment) = apply { this.appointment = appointment }
   fun withAppointmentDelivery(appointmentDelivery: AppointmentDelivery) = apply { this.appointmentDelivery = appointmentDelivery }
   fun withCreatedAt(createdAt: LocalDateTime) = apply { this.createdAt = createdAt }
-  fun withStartDate(startDate: LocalDateTime) = apply { this.startDate = startDate }
+  fun withAppointmentDateTime(appointmentDateTime: LocalDateTime) = apply { this.appointmentDateTime = appointmentDateTime }
   fun withCreatedBy(referralUser: ReferralUser) = apply { this.createdBy = referralUser }
   fun withSessionCommunication(sessionCommunication: List<String>) = apply { this.sessionCommunication = sessionCommunication }
 
@@ -31,7 +31,7 @@ class AppointmentIcsFactory : TestEntityFactory<AppointmentIcs>() {
     appointment = appointment,
     appointmentDelivery = appointmentDelivery,
     createdAt = createdAt,
-    startDate = startDate,
+    appointmentDateTime = appointmentDateTime,
     createdBy = createdBy,
     sessionCommunication = sessionCommunication,
   )

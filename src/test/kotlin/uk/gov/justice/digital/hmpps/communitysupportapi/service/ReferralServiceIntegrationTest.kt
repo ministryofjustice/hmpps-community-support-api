@@ -238,7 +238,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       delivery = delivery,
       user = referralUser,
       createdAt = yesterday,
-      startDate = today,
+      appointmentDateTime = today,
       communications = communicationTypes,
     )
     appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED, yesterday)
@@ -263,7 +263,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertNull(delivery.postcode)
 
     assertNotNull(ics.appointmentDelivery?.id)
-    assertEquals(today, referralProgressDto.appointmentIcs.startDate)
+    assertEquals(today, referralProgressDto.appointmentIcs.appointmentDateTime)
     assertEquals(yesterday, referralProgressDto.appointmentIcs.createdAt)
     assertEquals(referralUser.fullName, referralProgressDto.appointmentIcs.createdBy.fullName)
     assertEquals(communicationTypes, referralProgressDto.appointmentIcs.sessionCommunication)
