@@ -202,8 +202,10 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
 
     val assigner = setupAssigner(testUser)
     val referral = setUpReferral(assigner.id)
-    setupUser("assigntestuser1@email.com")
-    setupUser("assigntestuser2@email.com")
+    val user1 = setupUser("assigntestuser1@email.com")
+    val user2 = setupUser("assigntestuser2@email.com")
+
+    setupAssignments(referral, assigner, listOf(user1, user2))
 
     val response = webTestClient.get()
       .uri("/bff/referral-assignments/${referral.id}")

@@ -92,22 +92,22 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("POST /bff/referral/{referralId}/appointment/ics")
+  @DisplayName("POST /bff/referral/{referralId}/ics")
   inner class CreateIcsAppointmentEndpoint {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(HttpMethod.POST, "/bff/referral/$referralId/appointment/ics")
+      assertUnauthorized(HttpMethod.POST, "/bff/referral/$referralId/ics")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      assertForbiddenNoRole(HttpMethod.POST, "/bff/referral/$referralId/appointment/ics", buildRequest())
+      assertForbiddenNoRole(HttpMethod.POST, "/bff/referral/$referralId/ics", buildRequest())
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      assertForbiddenWrongRole(HttpMethod.POST, "/bff/referral/$referralId/appointment/ics", buildRequest())
+      assertForbiddenWrongRole(HttpMethod.POST, "/bff/referral/$referralId/ics", buildRequest())
     }
 
     @Test
@@ -130,7 +130,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/appointment/ics")
+        .uri("/bff/referral/$referralId/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -167,7 +167,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val request = buildRequest(type = SessionMethodType.VIDEO, additionalDetails = "Car broke down")
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/appointment/ics")
+        .uri("/bff/referral/$referralId/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -195,7 +195,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val request = buildRequest(hour = 1, minute = 0, amPm = "pm")
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/appointment/ics")
+        .uri("/bff/referral/$referralId/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -235,7 +235,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/appointment/ics")
+        .uri("/bff/referral/$referralId/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -257,33 +257,33 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("GET /bff/referral/{referralId}/appointment/ics")
+  @DisplayName("GET /bff/referral/{referralId}/ics")
   inner class GetIcsAppointmentsEndpoint {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/referral/$referralId/appointment/ics")
+      assertUnauthorized(HttpMethod.GET, "/bff/referral/$referralId/ics")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/$referralId/appointment/ics")
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/$referralId/ics")
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/$referralId/appointment/ics")
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/$referralId/ics")
     }
 
     @Test
     fun `should return 404 not found for unknown referral id`() {
-      assertNotFound(HttpMethod.GET, "/bff/referral/${UUID.randomUUID()}/appointment/ics")
+      assertNotFound(HttpMethod.GET, "/bff/referral/${UUID.randomUUID()}/ics")
     }
 
     @Test
     fun `should return 200 with empty list when no appointments exist`() {
       webTestClient.get()
-        .uri("/bff/referral/$referralId/appointment/ics")
+        .uri("/bff/referral/$referralId/ics")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -328,7 +328,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       val result = webTestClient.get()
-        .uri("/bff/referral/$referralId/appointment/ics")
+        .uri("/bff/referral/$referralId/ics")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -380,7 +380,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       val result = webTestClient.get()
-        .uri("/bff/referral/$referralId/appointment/ics")
+        .uri("/bff/referral/$referralId/ics")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -394,22 +394,22 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("GET /bff/referral/{referralId}/appointment/ics/{icsId}")
+  @DisplayName("GET /bff/referral/{referralId}/ics/{icsId}")
   inner class GetSingleIcsAppointmentEndpoint {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/referral/$referralId/appointment/ics/${UUID.randomUUID()}")
+      assertUnauthorized(HttpMethod.GET, "/bff/referral/$referralId/ics/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/$referralId/appointment/ics/${UUID.randomUUID()}")
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/$referralId/ics/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/$referralId/appointment/ics/${UUID.randomUUID()}")
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/$referralId/ics/${UUID.randomUUID()}")
     }
 
     @Test
@@ -438,7 +438,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/bff/referral/$referralId/appointment/ics/${savedIcs.id}")
+        .uri("/bff/referral/$referralId/ics/${savedIcs.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -476,7 +476,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/bff/referral/$referralId/appointment/ics/${savedIcs.id}")
+        .uri("/bff/referral/$referralId/ics/${savedIcs.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
