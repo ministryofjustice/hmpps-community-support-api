@@ -1,6 +1,9 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.kotest.matchers.shouldBe
+import java.time.LocalDate
+import java.time.OffsetDateTime
+import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -9,7 +12,9 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpMethod
 import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
@@ -30,9 +35,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.Referra
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
-import java.time.LocalDate
-import java.time.OffsetDateTime
-import java.util.UUID
 
 class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
@@ -69,37 +71,17 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      webTestClient.get()
-        .uri("/bff/referral-details/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
-        .exchange()
-        .expectStatus()
-        .isUnauthorized
+      assertUnauthorized(HttpMethod.GET, "/bff/referral-details/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      webTestClient.get()
-        .uri("/bff/referral-details/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
-        .headers(
-          setAuthorisation(
-            "AUTH_ADM",
-            listOf(),
-            listOf("read"),
-          ),
-        )
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral-details/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      webTestClient.get()
-        .uri("/bff/referral-details/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-details/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
     }
 
     @Test
@@ -138,7 +120,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .exchange()
         .expectStatus()
         .isOk
-        .expectBody(ReferralDto::class.java)
+        .expectBody<ReferralDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
           // compare fields individually and allow a tiny tolerance for createdDate
@@ -176,40 +158,17 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      webTestClient.post()
-        .uri("/bff/referral")
-        .bodyValue(setUpData())
-        .exchange()
-        .expectStatus()
-        .isUnauthorized
+      assertUnauthorized(HttpMethod.POST, "/bff/referral")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      webTestClient.post()
-        .uri("/bff/referral")
-        .headers(
-          setAuthorisation(
-            "AUTH_ADM",
-            listOf(),
-            listOf("read"),
-          ),
-        )
-        .bodyValue(setUpData())
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenNoRole(HttpMethod.POST, "/bff/referral", setUpData())
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      webTestClient.post()
-        .uri("/bff/referral")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .bodyValue(setUpData())
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenWrongRole(HttpMethod.POST, "/bff/referral", setUpData())
     }
 
     @Test
@@ -223,7 +182,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .exchange()
         .expectStatus()
         .isOk
-        .expectBody(ReferralInformationDto::class.java)
+        .expectBody<ReferralInformationDto>()
         .consumeWith { response ->
           run {
             val referral = referralRepository.findAll().firstOrNull()!!
@@ -298,7 +257,6 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     }
   }
 
-  // kotlin
   @Nested
   @DisplayName("POST /bff/{referralId}/submit-a-referral")
   inner class SubmitReferral {
@@ -311,37 +269,17 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      webTestClient.post()
-        .uri("/bff/${UUID.randomUUID()}/submit-a-referral")
-        .exchange()
-        .expectStatus()
-        .isUnauthorized
+      assertUnauthorized(HttpMethod.POST, "/bff/${UUID.randomUUID()}/submit-a-referral")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      webTestClient.post()
-        .uri("/bff/${UUID.randomUUID()}/submit-a-referral")
-        .headers(
-          setAuthorisation(
-            "AUTH_ADM",
-            listOf(),
-            listOf("read"),
-          ),
-        )
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenNoRole(HttpMethod.POST, "/bff/${UUID.randomUUID()}/submit-a-referral")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      webTestClient.post()
-        .uri("/bff/${UUID.randomUUID()}/submit-a-referral")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenWrongRole(HttpMethod.POST, "/bff/${UUID.randomUUID()}/submit-a-referral")
     }
 
     @Test
@@ -379,7 +317,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .exchange()
         .expectStatus()
         .isOk
-        .expectBody(SubmitReferralResponseDto::class.java)
+        .expectBody<SubmitReferralResponseDto>()
         .consumeWith { response ->
           run {
             val updatedReferral = referralRepository.findById(savedReferral.id).get()
@@ -407,37 +345,17 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      webTestClient.get()
-        .uri("/bff/referral-details-page/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
-        .exchange()
-        .expectStatus()
-        .isUnauthorized
+      assertUnauthorized(HttpMethod.GET, "/bff/referral-details-page/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      webTestClient.get()
-        .uri("/bff/referral-details-page/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
-        .headers(
-          setAuthorisation(
-            "AUTH_ADM",
-            listOf(),
-            listOf("read"),
-          ),
-        )
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral-details-page/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      webTestClient.get()
-        .uri("/bff/referral-details-page/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-details-page/bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
     }
 
     @Test
@@ -522,7 +440,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .exchange()
         .expectStatus()
         .isOk
-        .expectBody(ReferralDetailsBffResponseDto::class.java)
+        .expectBody<ReferralDetailsBffResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
           // compare fields individually and allow a tiny tolerance for createdDate

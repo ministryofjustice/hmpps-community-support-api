@@ -44,26 +44,12 @@ class CommunityServiceProviderIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `should return 401 when no auth header`() {
-    webTestClient
-      .method(HttpMethod.GET)
-      .uri("/bff/referral-select-a-service?personDetailsId=1234567890123456")
-      .accept(MediaType.APPLICATION_JSON)
-      .exchange()
-      .expectStatus()
-      .isUnauthorized
+    assertUnauthorized(HttpMethod.GET, "/bff/referral-select-a-service?personDetailsId=1234567890123456")
   }
 
   @Test
   fun `should return 403 when user has no required role`() {
-    webTestClient
-      .method(HttpMethod.GET)
-      .uri("/bff/referral-select-a-service?personDetailsId=1234567890123456")
-      .contentType(MediaType.APPLICATION_JSON)
-      .headers(setAuthorisation(roles = listOf("ROLE_SOME_OTHER")))
-      .accept(MediaType.APPLICATION_JSON)
-      .exchange()
-      .expectStatus()
-      .isForbidden
+    assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-select-a-service?personDetailsId=1234567890123456")
   }
 
   @Test

@@ -34,6 +34,7 @@ import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDateTime
 import java.util.UUID
+import org.springframework.test.web.reactive.server.expectBody
 
 class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
 
@@ -139,7 +140,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
         .exchange()
         .expectStatus()
         .isBadRequest
-        .expectBody(AssignCaseWorkersResult::class.java)
+        .expectBody<AssignCaseWorkersResult>()
         .consumeWith { response ->
           run {
             val submitReferralResponseDto = AssignCaseWorkersResult(
@@ -176,7 +177,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
         .exchange()
         .expectStatus()
         .isOk
-        .expectBody(AssignCaseWorkersResult::class.java)
+        .expectBody<AssignCaseWorkersResult>()
         .consumeWith { response ->
           run {
             val submitReferralResponseDto = AssignCaseWorkersResult(
