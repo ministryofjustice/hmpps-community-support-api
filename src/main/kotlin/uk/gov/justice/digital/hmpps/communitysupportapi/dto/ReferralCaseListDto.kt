@@ -1,22 +1,25 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CaseListView
-import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.UUID
 
 data class ReferralCaseListDto(
   val referralId: UUID,
   val personName: String,
   val personIdentifier: String,
-  val date: OffsetDateTime,
+  val date: String,
   val caseWorkers: List<String> = emptyList(),
 ) {
   companion object {
+    private val DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
+
     fun from(caseListView: CaseListView): ReferralCaseListDto = ReferralCaseListDto(
       referralId = caseListView.referralId,
       personName = caseListView.personName,
       personIdentifier = caseListView.personIdentifier,
-      date = caseListView.dateAssigned ?: caseListView.dateReceived,
+      date = caseListView.dateReceived.format(DATE_FORMATTER),
       caseWorkers = caseListView.caseWorkers,
     )
   }
