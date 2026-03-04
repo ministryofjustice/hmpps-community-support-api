@@ -256,6 +256,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertNull(delivery.postcode)
 
     assertNotNull(ics.appointmentDelivery?.id)
+    assertEquals(ics.id, referralProgressDto.appointmentIcs.id)
     assertEquals(appointmentDateTime, referralProgressDto.appointmentIcs.appointmentDateTime)
     assertEquals(yesterday, referralProgressDto.appointmentIcs.createdAt)
     assertEquals(referralUser.fullName, referralProgressDto.appointmentIcs.createdBy.fullName)

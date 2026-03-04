@@ -588,11 +588,11 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
           body.size shouldBe 1
-
           body[0].appointment.id shouldBe expectedReferralProgressDto.appointment.id
           body[0].appointment.referralId shouldBe expectedReferralProgressDto.appointment.referralId
           body[0].appointment.type shouldBe expectedReferralProgressDto.appointment.type
 
+          body[0].appointmentIcs.id shouldBe expectedReferralProgressDto.appointmentIcs.id
           body[0].appointmentIcs.appointmentDateTime shouldBe expectedReferralProgressDto.appointmentIcs.appointmentDateTime
           body[0].appointmentIcs.createdAt shouldBe expectedReferralProgressDto.appointmentIcs.createdAt
           body[0].appointmentIcs.createdBy.fullName shouldBe expectedReferralProgressDto.appointmentIcs.createdBy.fullName
