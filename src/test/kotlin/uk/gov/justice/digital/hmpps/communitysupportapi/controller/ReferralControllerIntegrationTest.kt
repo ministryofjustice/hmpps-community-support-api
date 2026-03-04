@@ -94,7 +94,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setup() {
       testDataCleaner.cleanAllTables()
-      testUser = referralHelper.ensureReferralUser()
+      testUser = referralHelper.createReferralUser()
     }
 
     @Test
@@ -115,11 +115,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return OK with valid referral information`() {
       val person = referralHelper.createPerson()
-      val referralUser = referralHelper.ensureReferralUser()
       val savedReferral = referralHelper.createReferral(
         person,
         referenceNumber = "REF123456",
-        submittedBy = referralUser,
+        submittedBy = testUser,
       )
 
       val referralDto = ReferralDto(
@@ -168,7 +167,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setup() {
       testDataCleaner.cleanAllTables()
-      testUser = referralHelper.ensureReferralUser()
+      testUser = referralHelper.createReferralUser()
     }
 
     @Test
@@ -276,7 +275,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setup() {
       testDataCleaner.cleanAllTables()
-      testUser = referralHelper.ensureReferralUser()
+      testUser = referralHelper.createReferralUser()
     }
 
     @Test
@@ -471,7 +470,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setup() {
       testDataCleaner.cleanAllTables()
-      testUser = referralHelper.ensureReferralUser()
+      testUser = referralHelper.createReferralUser()
     }
 
     @Test
@@ -512,7 +511,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return an empty list when no appointments exist for referral`() {
       val person = referralHelper.createPerson()
-      val referralUser = referralHelper.ensureReferralUser()
+      val referralUser = referralHelper.createReferralUser()
       val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
       webTestClient.get()
@@ -528,7 +527,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should returns 500 when an ICS is missing from referral progress`() {
       val person = referralHelper.createPerson()
-      val referralUser = referralHelper.ensureReferralUser()
+      val referralUser = referralHelper.createReferralUser()
       val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
       appointmentHelper.createAppointment(referral)
@@ -547,7 +546,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       val communicationTypes = listOf("EMAIL", "SMS", "LETTER")
 
       val person = referralHelper.createPerson()
-      val referralUser = referralHelper.ensureReferralUser()
+      val referralUser = referralHelper.createReferralUser()
       val referral = referralHelper.createReferral(person, submittedBy = referralUser)
       val appointment = appointmentHelper.createAppointment(referral)
       val delivery = appointmentHelper.createAppointmentDelivery(

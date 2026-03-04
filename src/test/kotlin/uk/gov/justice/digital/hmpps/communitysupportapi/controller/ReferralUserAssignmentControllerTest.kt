@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.kotest.matchers.shouldBe
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -10,6 +9,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.http.HttpMethod.POST
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
@@ -65,59 +65,33 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
     .withFullName("Test User 1")
     .create()
 
-  // kotlin
   @Nested
   @DisplayName("POST /bff/referral/{referralId}/assign")
   inner class AssignCaseWorkers {
 
-    @BeforeEach
-    fun setup() {
-//      testDataCleaner.cleanAllTables()
-    }
-
     @Test
     fun `should return unauthorized if no token`() {
-      webTestClient.post()
-        .uri("/bff/referral/${UUID.randomUUID()}/assign")
-        .exchange()
-        .expectStatus()
-        .isUnauthorized
+      assertUnauthorized(POST, "/bff/referral/${UUID.randomUUID()}/assign")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      webTestClient.post()
-        .uri("/bff/referral/${UUID.randomUUID()}/assign")
-        .headers(
-          setAuthorisation(
-            "AUTH_ADM",
-            listOf(),
-            listOf("read"),
-          ),
-        )
-        .bodyValue(
-          AssignCaseWorkersRequest(
-            emails = listOf("alexsmith@email.com"),
-          ),
-        )
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenNoRole(
+        POST,
+        uri = "/bff/referral/${UUID.randomUUID()}/assign",
+        body = AssignCaseWorkersRequest(
+          emails = listOf("alexsmith@email.com"),
+        ),
+      )
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      webTestClient.post()
-        .uri("/bff/referral/${UUID.randomUUID()}/assign")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .bodyValue(
-          AssignCaseWorkersRequest(
-            emails = listOf("alexsmith@email.com"),
-          ),
-        )
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenWrongRole(
+        POST,
+        "/bff/referral/${UUID.randomUUID()}/assign",
+        AssignCaseWorkersRequest(emails = listOf("alexsmith@email.com")),
+      )
     }
 
     @Test

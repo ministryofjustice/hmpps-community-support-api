@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
@@ -16,6 +17,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ServiceProviderRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
@@ -56,7 +58,7 @@ class ReferralTestSupport(
     hmppsAuthId: UUID = UUID.randomUUID(),
     username: String = "test-user",
   ): ReferralUser {
-    val testUser = ensureReferralUser(id = id, hmppsAuthId = hmppsAuthId.toString(), username = username)
+    val testUser = createReferralUser(userId = id, hmppsAuthId = hmppsAuthId.toString(), username = username)
 
     whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>()))
       .thenReturn(testUser)
@@ -64,17 +66,19 @@ class ReferralTestSupport(
     return testUser
   }
 
-  fun ensureReferralUser(
-    id: UUID = UUID.randomUUID(),
+  fun createReferralUser(
+    userId: UUID = UUID.randomUUID(),
     hmppsAuthId: String = "test-auth-id",
     username: String = "test-user",
+    fullName: String = "fullname",
     authSource: String = "auth",
-  ): ReferralUser = referralUserRepository.findById(id).orElseGet {
+  ): ReferralUser = referralUserRepository.findById(userId).orElseGet {
     referralUserRepository.save(
       ReferralUserFactory()
-        .withId(id)
+        .withId(userId)
         .withHmppsAuthId(hmppsAuthId)
         .withHmppsAuthUsername(username)
+        .withFullName(fullName)
         .withAuthSource(authSource)
         .create(),
     )
@@ -111,6 +115,18 @@ class ReferralTestSupport(
       .withCreatedAt(OffsetDateTime.now())
       .create(),
   )
+
+  fun createPersonAdditionalDetails(
+    person: Person,
+    ethnicity: String = "OldEthnicity",
+    preferredLanguage: String = "OldLang",
+    sexualOrientation: String = "OldOrientation",
+  ): PersonAdditionalDetails = PersonAdditionalDetailsFactory()
+    .withPerson(person)
+    .withEthnicity(ethnicity)
+    .withPreferredLanguage(preferredLanguage)
+    .withSexualOrientation(sexualOrientation)
+    .create()
 
   fun createPersons(
     count: Int = 3,
@@ -161,14 +177,10 @@ class ReferralTestSupport(
     communityServiceProvider: CommunityServiceProvider,
     createdAt: OffsetDateTime,
   ): Referral {
-    val referral = createReferral(
-      person,
-      referenceNumber,
-      submittedBy,
-      createdAt,
-    )
+    val referral = createReferral(person, referenceNumber, submittedBy, createdAt)
     assignToCommunityServiceProvider(referral, communityServiceProvider = communityServiceProvider)
     assignCaseWorkers(referral, caseWorkers)
+
     return referral
   }
 }

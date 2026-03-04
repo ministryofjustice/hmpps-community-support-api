@@ -27,7 +27,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -72,8 +71,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `createReferral should save referral and referral events`() {
-    val referralUser = referralHelper.ensureReferralUser()
-
+    val referralUser = referralHelper.createReferralUser()
     val createReferralRequest = setUpData()
 
     val result = referralService.createReferral(referralUser.id, createReferralRequest)
@@ -96,7 +94,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `createReferral should update existing person when identifier matches`() {
-    val referralUser = referralHelper.ensureReferralUser()
+    val referralUser = referralHelper.createReferralUser()
 
     val existingPerson = referralHelper.createPerson(
       firstName = "Old",
@@ -134,7 +132,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `createReferral should update existing person additional details when identifier matches`() {
-    val referralUser = referralHelper.ensureReferralUser()
+    val referralUser = referralHelper.createReferralUser()
 
     val existingPerson = referralHelper.createPerson(
       firstName = "Old",
@@ -143,12 +141,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       dateOfBirth = LocalDate.of(1975, 5, 5),
     )
 
-    val existingDetails = PersonAdditionalDetailsFactory()
-      .withPerson(existingPerson)
-      .withEthnicity("OldEthnicity")
-      .withPreferredLanguage("OldLang")
-      .withSexualOrientation("OldOrientation")
-      .create()
+    val existingDetails = referralHelper.createPersonAdditionalDetails(existingPerson)
 
     existingPerson.additionalDetails = existingDetails
 
@@ -201,7 +194,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `getReferralProgress should return empty list when referral has no appointments`() {
     val person = referralHelper.createPerson()
-    val referralUser = referralHelper.ensureReferralUser()
+    val referralUser = referralHelper.createReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
     val result = referralService.getReferralProgress(referral.id)
@@ -212,7 +205,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `getReferralProgress should throw an IllegalStateException when ICS missing from appointments`() {
     val person = referralHelper.createPerson()
-    val referralUser = referralHelper.ensureReferralUser()
+    val referralUser = referralHelper.createReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
     appointmentHelper.createAppointment(referral)
@@ -229,7 +222,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val communicationTypes = listOf("EMAIL", "SMS", "LETTER")
 
     val person = referralHelper.createPerson()
-    val referralUser = referralHelper.ensureReferralUser()
+    val referralUser = referralHelper.createReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
     val appointment = appointmentHelper.createAppointment(referral)
     val delivery = appointmentHelper.createAppointmentDelivery()

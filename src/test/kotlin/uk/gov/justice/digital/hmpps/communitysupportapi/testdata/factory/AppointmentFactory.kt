@@ -4,6 +4,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import java.time.LocalDateTime
@@ -13,11 +14,11 @@ class AppointmentFactory : TestEntityFactory<Appointment>() {
 
   private var id: UUID = UUID.randomUUID()
   private var referral: Referral? = null
-  private var type: String = "ICS"
+  private var type: AppointmentType = AppointmentType.ICS
 
   fun withId(id: UUID) = apply { this.id = id }
   fun withReferral(referral: Referral) = apply { this.referral = referral }
-  fun withType(type: String) = apply { this.type = type }
+  fun withType(type: AppointmentType) = apply { this.type = type }
 
   override fun create(): Appointment = Appointment(
     id = id,
@@ -64,24 +65,24 @@ class AppointmentIcsFactory : TestEntityFactory<AppointmentIcs>() {
   private var appointment: Appointment? = null
   private var appointmentDelivery: AppointmentDelivery? = null
   private var createdAt: LocalDateTime = LocalDateTime.now()
-  private var startDate: LocalDateTime = LocalDateTime.now().plusDays(7)
-  private var createdBy: ReferralUser? = null
+  private var appointmentDateTime: LocalDateTime = LocalDateTime.now().plusDays(7)
+  private var createdBy: ReferralUser = ReferralUserFactory().create()
   private var sessionCommunication: List<String> = emptyList()
 
   fun withId(id: UUID) = apply { this.id = id }
   fun withAppointment(appointment: Appointment) = apply { this.appointment = appointment }
   fun withAppointmentDelivery(appointmentDelivery: AppointmentDelivery?) = apply { this.appointmentDelivery = appointmentDelivery }
   fun withCreatedAt(createdAt: LocalDateTime) = apply { this.createdAt = createdAt }
-  fun withStartDate(startDate: LocalDateTime) = apply { this.startDate = startDate }
-  fun withCreatedBy(createdBy: ReferralUser?) = apply { this.createdBy = createdBy }
+  fun withAppointmentDateTime(appointmentDateTime: LocalDateTime) = apply { this.appointmentDateTime = appointmentDateTime }
+  fun withCreatedBy(createdBy: ReferralUser) = apply { this.createdBy = createdBy }
   fun withSessionCommunication(sessionCommunication: List<String>) = apply { this.sessionCommunication = sessionCommunication }
 
   override fun create(): AppointmentIcs = AppointmentIcs(
     id = id,
     appointment = appointment ?: error("Appointment must be provided"),
     appointmentDelivery = appointmentDelivery,
+    appointmentDateTime = appointmentDateTime,
     createdAt = createdAt,
-    appointmentDateTime = startDate,
     createdBy = createdBy,
     sessionCommunication = sessionCommunication,
   )

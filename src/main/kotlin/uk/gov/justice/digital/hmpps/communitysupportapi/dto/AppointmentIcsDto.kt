@@ -1,8 +1,10 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import java.time.LocalDateTime
+import java.util.UUID
 
 data class AppointmentIcsDto(
+  val appointmentId: UUID,
   val appointmentDelivery: AppointmentDeliveryDto?,
   val appointmentDateTime: LocalDateTime,
   val createdAt: LocalDateTime,

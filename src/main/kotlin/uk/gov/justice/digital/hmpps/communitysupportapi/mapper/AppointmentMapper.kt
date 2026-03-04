@@ -16,6 +16,7 @@ fun Appointment.toDto() = AppointmentDto(
 )
 
 fun AppointmentIcs.toDto() = AppointmentIcsDto(
+  appointmentId = appointment.id,
   appointmentDelivery = appointmentDelivery?.toDto(),
   appointmentDateTime = appointmentDateTime,
   createdAt = createdAt,
@@ -24,6 +25,7 @@ fun AppointmentIcs.toDto() = AppointmentIcsDto(
 )
 
 fun AppointmentDelivery.toDto() = AppointmentDeliveryDto(
+  id = id,
   method = method,
   methodDetails = methodDetails,
   addressLine1 = addressLine1,

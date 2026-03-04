@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpMethod
+import org.springframework.http.HttpMethod.GET
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
@@ -100,17 +100,17 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/case-list/unassigned")
+      assertUnauthorized(GET, "/bff/case-list/unassigned")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/case-list/unassigned")
+      assertForbiddenNoRole(GET, "/bff/case-list/unassigned")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/case-list/unassigned")
+      assertForbiddenWrongRole(GET, "/bff/case-list/unassigned")
     }
 
     @Test
@@ -249,17 +249,17 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/case-list/in-progress")
+      assertUnauthorized(GET, "/bff/case-list/in-progress")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/case-list/in-progress")
+      assertForbiddenNoRole(GET, "/bff/case-list/in-progress")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/case-list/in-progress")
+      assertForbiddenWrongRole(GET, "/bff/case-list/in-progress")
     }
 
     @Test

@@ -16,6 +16,7 @@ import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
+import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -153,6 +154,27 @@ abstract class IntegrationTestBase {
       .exchange()
       .expectStatus()
       .isNotFound
+  }
+
+  fun assertBadRequest(method: HttpMethod, uri: String) {
+    webTestClient.method(method)
+      .uri(uri)
+      .headers(setAuthorisation())
+      .exchange()
+      .expectStatus()
+      .isBadRequest
+  }
+
+  fun assertServerError(method: HttpMethod, uri: String) {
+    webTestClient
+      .method(method)
+      .uri(uri)
+      .contentType(MediaType.APPLICATION_JSON)
+      .headers(setAuthorisation(roles = listOf("ROLE_IPB_FRONTEND_RW")))
+      .accept(MediaType.APPLICATION_JSON)
+      .exchange()
+      .expectStatus()
+      .is5xxServerError
   }
 
   protected fun stubManageUsersGetUserGroups(userId: String, groups: List<Pair<String, String>>) {

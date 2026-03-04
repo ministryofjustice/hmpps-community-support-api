@@ -10,6 +10,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpMethod.POST
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
@@ -23,19 +24,17 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentDeliveryFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentIcsFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -61,34 +60,28 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   @Autowired
   private lateinit var referralUserRepository: ReferralUserRepository
 
+  @Autowired
+  private lateinit var referralHelper: ReferralTestSupport
+
+  @Autowired
+  private lateinit var appointmentHelper: AppointmentTestSupport
+
   @MockitoBean
   private lateinit var userMapper: UserMapper
 
-  private val testUser = ReferralUserFactory()
-    .withHmppsAuthUsername("test-user")
-    .withHmppsAuthId("test-auth-id")
-    .withAuthSource("auth")
-    .create()
-
   private lateinit var referralId: UUID
+
+  private lateinit var testUser: ReferralUser
 
   @BeforeEach
   fun setUpReferral() {
-    val person = personRepository.save(
-      PersonFactory()
-        .withFirstName("Alex")
-        .withLastName("Jones")
-        .withIdentifier("X654321")
-        .create(),
-    )
-    val referral = referralRepository.save(
-      ReferralFactory()
-        .withPersonId(person.id)
-        .withCrn("X654321")
-        .create(),
-    )
+    val person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
+
+    testUser = referralHelper.createReferralUser()
+
+    val referral = referralHelper.createReferral(person, submittedBy = testUser)
+
     referralId = referral.id
-    ensureTestUser()
   }
 
   @Nested
@@ -97,23 +90,23 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(HttpMethod.POST, "/bff/referral/$referralId/ics")
+      assertUnauthorized(POST, "/bff/referral/$referralId/ics")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      assertForbiddenNoRole(HttpMethod.POST, "/bff/referral/$referralId/ics", buildRequest())
+      assertForbiddenNoRole(POST, "/bff/referral/$referralId/ics", buildRequest())
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      assertForbiddenWrongRole(HttpMethod.POST, "/bff/referral/$referralId/ics", buildRequest())
+      assertForbiddenWrongRole(POST, "/bff/referral/$referralId/ics", buildRequest())
     }
 
     @Test
     fun `should return 404 not found for unknown referral id`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
-      assertNotFound(HttpMethod.POST, "/bff/referral/${UUID.randomUUID()}/appointment/ics", buildRequest())
+      assertNotFound(POST, "/bff/referral/${UUID.randomUUID()}/appointment/ics", buildRequest())
     }
 
     @Test
@@ -141,7 +134,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { result ->
           val body = result.responseBody!!
           assertThat(body.referralId).isEqualTo(referralId)
-          assertThat(body.appointmentType).isEqualTo("ICS")
+          assertThat(body.appointmentType).isEqualTo(AppointmentType.ICS)
           assertThat(body.appointmentDate).isEqualTo(LocalDate.of(2026, 3, 27))
           assertThat(body.appointmentTime.hour).isEqualTo(10)
           assertThat(body.appointmentTime.minute).isEqualTo(30)
@@ -296,35 +289,33 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
     fun `should return 200 with all ics appointments for the referral`() {
       val referral = referralRepository.findById(referralId).orElseThrow()
 
-      val delivery1 = appointmentDeliveryRepository.save(
-        AppointmentDeliveryFactory()
-          .withMethod(AppointmentDeliveryMethod.PHONE_CALL)
-          .create(),
-      )
-      val delivery2 = appointmentDeliveryRepository.save(
-        AppointmentDeliveryFactory()
-          .withMethod(AppointmentDeliveryMethod.VIDEO_CALL)
-          .create(),
-      )
+      val firstDelivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL)
+      val secondDelivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL)
 
-      val appointment1 = appointmentRepository.save(AppointmentFactory().withReferral(referral).create())
-      val appointment2 = appointmentRepository.save(AppointmentFactory().withReferral(referral).create())
+      val firstAppointment = appointmentHelper.createAppointment(referral)
+      val secondAppointment = appointmentHelper.createAppointment(referral)
 
-      appointmentIcsRepository.save(
-        AppointmentIcsFactory()
-          .withAppointment(appointment1)
-          .withAppointmentDelivery(delivery1)
-          .withStartDate(LocalDateTime.of(2026, 3, 27, 10, 0))
-          .withSessionCommunication(listOf("Phone call"))
-          .create(),
+      val firstAppointmentDateTime = LocalDateTime.of(2026, 3, 27, 10, 0)
+      val firstCreatedAt = firstAppointmentDateTime.minusDays(1)
+
+      val secondAppointmentDateTime = LocalDateTime.of(2026, 4, 5, 14, 30)
+      val secondCreatedAt = secondAppointmentDateTime.minusDays(1)
+
+      appointmentHelper.createAppointmentIcs(
+        firstAppointment,
+        firstDelivery,
+        testUser,
+        firstAppointmentDateTime,
+        firstCreatedAt,
+        listOf("Phone call"),
       )
-      appointmentIcsRepository.save(
-        AppointmentIcsFactory()
-          .withAppointment(appointment2)
-          .withAppointmentDelivery(delivery2)
-          .withStartDate(LocalDateTime.of(2026, 4, 5, 14, 30))
-          .withSessionCommunication(listOf("Email", "Text message"))
-          .create(),
+      appointmentHelper.createAppointmentIcs(
+        secondAppointment,
+        secondDelivery,
+        testUser,
+        secondAppointmentDateTime,
+        secondCreatedAt,
+        listOf("Email", "Text message"),
       )
 
       val result = webTestClient.get()
@@ -359,24 +350,37 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should not return appointments from a different referral`() {
-      val referral = referralRepository.findById(referralId).orElseThrow()
+      val firstReferral = referralRepository.findById(referralId).orElseThrow()
+      val person = referralHelper.createPerson(identifier = "Y888888")
 
-      val anotherPerson = personRepository.save(PersonFactory().withIdentifier("Y888888").create())
-      val anotherReferral = referralRepository.save(
-        ReferralFactory().withPersonId(anotherPerson.id).withCrn("Y888888").create(),
+      val secondReferral = referralHelper.createReferral(person, submittedBy = testUser)
+
+      val firstAppointment = appointmentHelper.createAppointment(firstReferral)
+      val secondAppointment = appointmentHelper.createAppointment(secondReferral)
+
+      val firstAppointmentDateTime = LocalDateTime.of(2026, 3, 27, 10, 0)
+      val firstCreatedAt = firstAppointmentDateTime.minusDays(1)
+
+      val secondAppointmentDateTime = LocalDateTime.of(2026, 3, 28, 9, 0)
+      val secondCreatedAt = secondAppointmentDateTime.minusDays(1)
+
+      val delivery = appointmentHelper.createAppointmentDelivery()
+
+      appointmentHelper.createAppointmentIcs(
+        firstAppointment,
+        delivery,
+        testUser,
+        firstAppointmentDateTime,
+        firstCreatedAt,
+        listOf("Phone call"),
       )
-
-      val delivery = appointmentDeliveryRepository.save(AppointmentDeliveryFactory().create())
-      val appointment = appointmentRepository.save(AppointmentFactory().withReferral(referral).create())
-      val appointmentOther = appointmentRepository.save(AppointmentFactory().withReferral(anotherReferral).create())
-
-      appointmentIcsRepository.save(
-        AppointmentIcsFactory().withAppointment(appointment).withAppointmentDelivery(delivery)
-          .withStartDate(LocalDateTime.of(2026, 3, 27, 10, 0)).create(),
-      )
-      appointmentIcsRepository.save(
-        AppointmentIcsFactory().withAppointment(appointmentOther).withAppointmentDelivery(delivery)
-          .withStartDate(LocalDateTime.of(2026, 3, 28, 9, 0)).create(),
+      appointmentHelper.createAppointmentIcs(
+        secondAppointment,
+        delivery,
+        testUser,
+        secondAppointmentDateTime,
+        secondCreatedAt,
+        listOf("Email", "Text message"),
       )
 
       val result = webTestClient.get()
@@ -420,21 +424,20 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return 200 with correct appointment details`() {
       val referral = referralRepository.findById(referralId).orElseThrow()
-
-      val delivery = appointmentDeliveryRepository.save(
-        AppointmentDeliveryFactory()
-          .withMethod(AppointmentDeliveryMethod.VIDEO_CALL)
-          .withMethodDetails("Zoom link")
-          .create(),
+      val appointment = appointmentHelper.createAppointment(referral)
+      val appointmentDateTime = LocalDateTime.of(2026, 3, 27, 15, 0)
+      val createdAt = appointmentDateTime.minusDays(1)
+      val delivery = appointmentHelper.createAppointmentDelivery(
+        AppointmentDeliveryMethod.VIDEO_CALL,
+        "Zoom link",
       )
-      val appointment = appointmentRepository.save(AppointmentFactory().withReferral(referral).create())
-      val savedIcs = appointmentIcsRepository.save(
-        AppointmentIcsFactory()
-          .withAppointment(appointment)
-          .withAppointmentDelivery(delivery)
-          .withStartDate(LocalDateTime.of(2026, 3, 27, 15, 0))
-          .withSessionCommunication(listOf("Email", "Phone call"))
-          .create(),
+      val savedIcs = appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        appointmentDateTime,
+        createdAt,
+        listOf("Email", "Phone call"),
       )
 
       webTestClient.get()
@@ -448,7 +451,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           val body = result.responseBody!!
           body.appointmentIcsId shouldBe savedIcs.id
           body.referralId shouldBe referralId
-          body.appointmentType shouldBe "ICS"
+          body.appointmentType shouldBe AppointmentType.ICS
           body.appointmentDate shouldBe LocalDate.of(2026, 3, 27)
           body.appointmentTime.hour shouldBe 3
           body.appointmentTime.amPm shouldBe "pm"
@@ -465,14 +468,17 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return 200 and correctly represent 12am midnight in response`() {
       val referral = referralRepository.findById(referralId).orElseThrow()
-      val delivery = appointmentDeliveryRepository.save(AppointmentDeliveryFactory().create())
-      val appointment = appointmentRepository.save(AppointmentFactory().withReferral(referral).create())
-      val savedIcs = appointmentIcsRepository.save(
-        AppointmentIcsFactory()
-          .withAppointment(appointment)
-          .withAppointmentDelivery(delivery)
-          .withStartDate(LocalDateTime.of(2026, 3, 27, 0, 0)) // midnight
-          .create(),
+      val delivery = appointmentHelper.createAppointmentDelivery()
+      val appointment = appointmentHelper.createAppointment(referral)
+      val appointmentDateTime = LocalDateTime.of(2026, 3, 27, 0, 0) // midnight
+      val createdAt = appointmentDateTime.minusDays(1)
+      val savedIcs = appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        appointmentDateTime,
+        createdAt,
+        listOf("Email", "Phone call"),
       )
 
       webTestClient.get()
@@ -504,17 +510,4 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
     sessionMethodRequest = SessionMethodRequest(type = type, additionalDetails = additionalDetails),
     sessionCommunication = sessionCommunication,
   )
-
-  private fun ensureTestUser() {
-    if (!referralUserRepository.existsById(testUser.id)) {
-      referralUserRepository.save(
-        ReferralUserFactory()
-          .withId(testUser.id)
-          .withHmppsAuthId(testUser.hmppsAuthId)
-          .withHmppsAuthUsername(testUser.hmppsAuthUsername)
-          .withAuthSource(testUser.authSource)
-          .create(),
-      )
-    }
-  }
 }

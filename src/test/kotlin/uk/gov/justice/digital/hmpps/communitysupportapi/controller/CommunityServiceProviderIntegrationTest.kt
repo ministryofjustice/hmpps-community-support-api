@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.whenever
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpMethod
+import org.springframework.http.HttpMethod.GET
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
@@ -21,7 +21,7 @@ class CommunityServiceProviderIntegrationTest : IntegrationTestBase() {
   @Test
   fun `should return community service providers`() {
     val response = webTestClient
-      .method(HttpMethod.GET)
+      .method(GET)
       .uri("/bff/referral-select-a-service?personDetailsId=1234567890123456")
       .contentType(MediaType.APPLICATION_JSON)
       .headers(setAuthorisation(roles = listOf("ROLE_IPB_FRONTEND_RW")))
@@ -44,25 +44,18 @@ class CommunityServiceProviderIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `should return 401 when no auth header`() {
-    assertUnauthorized(HttpMethod.GET, "/bff/referral-select-a-service?personDetailsId=1234567890123456")
+    assertUnauthorized(GET, "/bff/referral-select-a-service?personDetailsId=1234567890123456")
   }
 
   @Test
   fun `should return 403 when user has no required role`() {
-    assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-select-a-service?personDetailsId=1234567890123456")
+    assertForbiddenWrongRole(GET, "/bff/referral-select-a-service?personDetailsId=1234567890123456")
   }
 
   @Test
   fun `should return 500 when repository throws`() {
     doThrow(RuntimeException("error when calling community service provider data")).whenever(communityServiceProviderRepository).findAll()
-    webTestClient
-      .method(HttpMethod.GET)
-      .uri("/bff/referral-select-a-service?personDetailsId=1234567890123456")
-      .contentType(MediaType.APPLICATION_JSON)
-      .headers(setAuthorisation(roles = listOf("ROLE_IPB_FRONTEND_RW")))
-      .accept(MediaType.APPLICATION_JSON)
-      .exchange()
-      .expectStatus()
-      .is5xxServerError
+
+    assertServerError(GET, "/bff/referral-select-a-service?personDetailsId=1234567890123456")
   }
 }

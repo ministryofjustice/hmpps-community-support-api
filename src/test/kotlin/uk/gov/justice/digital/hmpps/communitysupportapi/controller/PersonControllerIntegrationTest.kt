@@ -9,7 +9,7 @@ import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.springframework.http.HttpMethod
+import org.springframework.http.HttpMethod.GET
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -26,17 +26,22 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/person/PERSONID")
+      assertUnauthorized(GET, "/bff/person/PERSONID")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/person/PERSONID")
+      assertForbiddenNoRole(GET, "/bff/person/PERSONID")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/person/PERSONID")
+      assertForbiddenWrongRole(GET, "/bff/person/PERSONID")
+    }
+
+    @Test
+    fun `should return Bad Request with invalid person identifier`() {
+      assertBadRequest(GET, "/bff/person/AA")
     }
 
     @Test
@@ -70,15 +75,6 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return Bad Request with invalid person identifier`() {
-      webTestClient.get()
-        .uri("/bff/person/A")
-        .headers(setAuthorisation())
-        .exchange()
-        .expectStatus().isBadRequest
-    }
-
-    @Test
     fun `should return Not Found for valid person identifier that does not exist`() {
       val unknownPrisonerNumber = "Z9786YX"
 
@@ -90,11 +86,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
           ),
       )
 
-      webTestClient.get()
-        .uri("/bff/person/$unknownPrisonerNumber")
-        .headers(setAuthorisation())
-        .exchange()
-        .expectStatus().isNotFound
+      assertNotFound(GET, "/bff/person/$unknownPrisonerNumber")
     }
   }
 }
