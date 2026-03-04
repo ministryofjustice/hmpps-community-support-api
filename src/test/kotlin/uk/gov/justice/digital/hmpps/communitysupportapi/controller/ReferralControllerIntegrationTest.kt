@@ -541,8 +541,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return list containing referral progress Dto`() {
-      val oneWeekAgo = LocalDateTime.now().minusWeeks(1)
-      val yesterday = LocalDateTime.now().minusDays(1)
+      val appointmentDateTime = LocalDateTime.of(2026, 3, 4, 15, 30)
+      val oneWeekAgo = appointmentDateTime.minusWeeks(1)
       val communicationTypes = listOf("EMAIL", "SMS", "LETTER")
 
       val person = referralHelper.createPerson()
@@ -557,7 +557,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         appointment,
         delivery = delivery,
         user = testUser,
-        appointmentDateTime = yesterday,
+        appointmentDateTime = appointmentDateTime,
         createdAt = oneWeekAgo,
         communications = communicationTypes,
       )
@@ -569,7 +569,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       val secondStatusHistory = appointmentHelper.createAppointmentStatusHistory(
         appointment = appointment,
         status = AppointmentStatusHistoryType.ATTENDED,
-        createdAt = yesterday,
+        createdAt = appointmentDateTime,
       )
       val statusHistory = listOf(firstStatusHistory, secondStatusHistory)
 

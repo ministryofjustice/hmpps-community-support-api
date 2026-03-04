@@ -217,8 +217,8 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `getReferralProgress should return a list containing a referral progress dto`() {
-    val yesterday = LocalDateTime.now().minusDays(1)
-    val today = LocalDateTime.now()
+    val appointmentDateTime = LocalDateTime.of(2026, 3, 4, 15, 30)
+    val yesterday = appointmentDateTime.minusDays(1)
     val communicationTypes = listOf("EMAIL", "SMS", "LETTER")
 
     val person = referralHelper.createPerson()
@@ -231,11 +231,11 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       delivery = delivery,
       user = referralUser,
       createdAt = yesterday,
-      appointmentDateTime = today,
+      appointmentDateTime = appointmentDateTime,
       communications = communicationTypes,
     )
     appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED, yesterday)
-    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.ATTENDED, today)
+    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.ATTENDED, appointmentDateTime)
 
     val result = referralService.getReferralProgress(referral.id)
 
@@ -256,7 +256,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertNull(delivery.postcode)
 
     assertNotNull(ics.appointmentDelivery?.id)
-    assertEquals(today, referralProgressDto.appointmentIcs.appointmentDateTime)
+    assertEquals(appointmentDateTime, referralProgressDto.appointmentIcs.appointmentDateTime)
     assertEquals(yesterday, referralProgressDto.appointmentIcs.createdAt)
     assertEquals(referralUser.fullName, referralProgressDto.appointmentIcs.createdBy.fullName)
     assertEquals(communicationTypes, referralProgressDto.appointmentIcs.sessionCommunication)
@@ -264,7 +264,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertEquals(2, referralProgressDto.appointmentStatusHistory.size)
     assertEquals(yesterday, referralProgressDto.appointmentStatusHistory[0].createdAt)
     assertEquals(AppointmentStatusHistoryType.SCHEDULED, referralProgressDto.appointmentStatusHistory[0].status)
-    assertEquals(today, referralProgressDto.appointmentStatusHistory[1].createdAt)
+    assertEquals(appointmentDateTime, referralProgressDto.appointmentStatusHistory[1].createdAt)
     assertEquals(AppointmentStatusHistoryType.ATTENDED, referralProgressDto.appointmentStatusHistory[1].status)
   }
 
