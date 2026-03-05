@@ -74,7 +74,7 @@ class AppointmentTestSupport(
 
   fun createAppointmentStatusHistory(
     appointment: Appointment,
-    status: AppointmentStatusHistoryType,
+    status: AppointmentStatusHistoryType = AppointmentStatusHistoryType.SCHEDULED,
     createdAt: LocalDateTime = LocalDateTime.now(),
   ): AppointmentStatusHistory = appointmentStatusHistoryRepository.save(
     AppointmentStatusHistoryFactory()

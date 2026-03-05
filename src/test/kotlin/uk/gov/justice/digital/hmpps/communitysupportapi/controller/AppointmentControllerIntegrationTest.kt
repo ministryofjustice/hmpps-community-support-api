@@ -318,6 +318,9 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         listOf("Email", "Text message"),
       )
 
+      appointmentHelper.createAppointmentStatusHistory(firstAppointment)
+      appointmentHelper.createAppointmentStatusHistory(secondAppointment)
+
       val result = webTestClient.get()
         .uri("/bff/referral/$referralId/ics")
         .headers(setAuthorisation())
@@ -383,6 +386,9 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         listOf("Email", "Text message"),
       )
 
+      appointmentHelper.createAppointmentStatusHistory(firstAppointment)
+      appointmentHelper.createAppointmentStatusHistory(secondAppointment)
+
       val result = webTestClient.get()
         .uri("/bff/referral/$referralId/ics")
         .headers(setAuthorisation())
@@ -439,6 +445,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         createdAt,
         listOf("Email", "Phone call"),
       )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
 
       webTestClient.get()
         .uri("/bff/referral/$referralId/ics/${savedIcs.id}")
@@ -480,6 +487,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         createdAt,
         listOf("Email", "Phone call"),
       )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
 
       webTestClient.get()
         .uri("/bff/referral/$referralId/ics/${savedIcs.id}")

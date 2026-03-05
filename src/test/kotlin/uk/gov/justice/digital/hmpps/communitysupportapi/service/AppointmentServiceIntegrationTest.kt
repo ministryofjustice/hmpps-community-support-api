@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
@@ -22,6 +23,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
@@ -50,6 +52,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var appointmentIcsRepository: AppointmentIcsRepository
+
+  @Autowired
+  private lateinit var appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository
 
   @Autowired
   private lateinit var referralUserRepository: ReferralUserRepository
@@ -93,6 +98,12 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       val savedAppointment = appointmentRepository.findById(response.appointmentId).orElseThrow()
       assertThat(savedAppointment.referral.id).isEqualTo(referralId)
       assertThat(savedAppointment.type).isEqualTo(AppointmentType.ICS)
+
+      // Status History persisted
+      val savedAppointmentStatusHistory =
+        appointmentStatusHistoryRepository.findTopByAppointmentIdOrderByCreatedAtDesc(response.appointmentId)
+      assertThat(savedAppointmentStatusHistory?.appointment?.id).isEqualTo(savedAppointment.id)
+      assertThat(savedAppointmentStatusHistory?.status).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
 
       // Delivery persisted
       val savedIcs = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()

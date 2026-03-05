@@ -7,4 +7,5 @@ import java.util.UUID
 
 interface AppointmentStatusHistoryRepository : JpaRepository<AppointmentStatusHistory, AppointmentStatusHistoryId> {
   fun findAllByAppointmentIdIn(appointmentIds: List<UUID>): List<AppointmentStatusHistory>
+  fun findTopByAppointmentIdOrderByCreatedAtDesc(appointmentId: UUID): AppointmentStatusHistory?
 }
