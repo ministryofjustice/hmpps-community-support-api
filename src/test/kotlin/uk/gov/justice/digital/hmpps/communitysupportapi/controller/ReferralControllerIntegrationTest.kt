@@ -19,14 +19,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
-import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
@@ -543,40 +541,30 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     fun `should return list containing referral progress Dto`() {
       val appointmentDateTime = LocalDateTime.of(2026, 3, 4, 15, 30)
       val oneWeekAgo = appointmentDateTime.minusWeeks(1)
-      val communicationTypes = listOf("EMAIL", "SMS", "LETTER")
 
       val person = referralHelper.createPerson()
       val referralUser = referralHelper.createReferralUser()
       val referral = referralHelper.createReferral(person, submittedBy = referralUser)
       val appointment = appointmentHelper.createAppointment(referral)
-      val delivery = appointmentHelper.createAppointmentDelivery(
-        AppointmentDeliveryMethod.IN_PERSON_PROBATION_OFFICE,
+
+      appointmentHelper.createAppointmentStatusHistory(
+        appointment,
+        AppointmentStatusHistoryType.SCHEDULED,
+        oneWeekAgo,
+      )
+      appointmentHelper.createAppointmentStatusHistory(
+        appointment,
+        AppointmentStatusHistoryType.ATTENDED,
+        appointmentDateTime,
       )
 
-      val ics = appointmentHelper.createAppointmentIcs(
+      appointmentHelper.createAppointmentIcs(
         appointment,
-        delivery = delivery,
-        user = testUser,
+        delivery = appointmentHelper.createAppointmentDelivery(),
+        user = referralUser,
         appointmentDateTime = appointmentDateTime,
         createdAt = oneWeekAgo,
-        communications = communicationTypes,
-      )
-      val firstStatusHistory = appointmentHelper.createAppointmentStatusHistory(
-        appointment = appointment,
-        status = AppointmentStatusHistoryType.SCHEDULED,
-        createdAt = oneWeekAgo,
-      )
-      val secondStatusHistory = appointmentHelper.createAppointmentStatusHistory(
-        appointment = appointment,
-        status = AppointmentStatusHistoryType.ATTENDED,
-        createdAt = appointmentDateTime,
-      )
-      val statusHistory = listOf(firstStatusHistory, secondStatusHistory)
-
-      val expectedReferralProgressDto = ReferralProgressDto(
-        appointment = appointment.toDto(),
-        appointmentIcs = ics.toDto(),
-        appointmentStatusHistory = statusHistory.map { history -> history.toDto() },
+        communications = listOf("EMAIL", "SMS", "LETTER"),
       )
 
       webTestClient.get()
@@ -588,20 +576,13 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
           body.size shouldBe 1
-          body[0].appointment.id shouldBe expectedReferralProgressDto.appointment.id
-          body[0].appointment.referralId shouldBe expectedReferralProgressDto.appointment.referralId
-          body[0].appointment.type shouldBe expectedReferralProgressDto.appointment.type
 
-          body[0].appointmentIcs.id shouldBe expectedReferralProgressDto.appointmentIcs.id
-          body[0].appointmentIcs.appointmentDateTime shouldBe expectedReferralProgressDto.appointmentIcs.appointmentDateTime
-          body[0].appointmentIcs.createdAt shouldBe expectedReferralProgressDto.appointmentIcs.createdAt
-          body[0].appointmentIcs.createdBy.fullName shouldBe expectedReferralProgressDto.appointmentIcs.createdBy.fullName
-          body[0].appointmentIcs.appointmentDelivery?.method shouldBe expectedReferralProgressDto.appointmentIcs.appointmentDelivery?.method
-          body[0].appointmentIcs.appointmentDelivery?.methodDetails shouldBe expectedReferralProgressDto.appointmentIcs.appointmentDelivery?.methodDetails
+          val referralProgressDto = body.first()
 
-          body[0].appointmentStatusHistory.size shouldBe 2
-          body[0].appointmentStatusHistory[0].status shouldBe expectedReferralProgressDto.appointmentStatusHistory[0].status
-          body[0].appointmentStatusHistory[1].status shouldBe expectedReferralProgressDto.appointmentStatusHistory[1].status
+          referralProgressDto.referralId shouldBe referral.id
+          referralProgressDto.appointmentId shouldBe appointment.id
+          referralProgressDto.appointmentDateTime shouldBe appointmentDateTime
+          referralProgressDto.status shouldBe AppointmentStatusHistoryType.ATTENDED
         }
     }
   }

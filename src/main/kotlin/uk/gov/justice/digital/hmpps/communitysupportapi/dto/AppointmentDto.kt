@@ -13,12 +13,6 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
 
-data class AppointmentDto(
-  val id: UUID,
-  val referralId: UUID,
-  val type: AppointmentType,
-)
-
 data class CreateAppointmentRequest(
   val date: LocalDate,
   val time: AppointmentTimeRequest,

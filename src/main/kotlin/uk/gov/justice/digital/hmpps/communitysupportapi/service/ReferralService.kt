@@ -16,7 +16,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
-import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
@@ -139,9 +138,8 @@ class ReferralService(
       .findAllByAppointmentIdIn(appointmentIds)
       .associateBy { it.appointment.id }
 
-    val missingIcsAppointments = appointmentIds - icsByAppointment.keys
-    if (missingIcsAppointments.isNotEmpty()) {
-      throw IllegalStateException("Missing ICS for appointments: $missingIcsAppointments")
+    check(appointmentIds.all { it in icsByAppointment }) {
+      "Missing ICS for appointments: ${appointmentIds - icsByAppointment.keys}"
     }
 
     val statusHistoryByAppointment = appointmentStatusHistoryRepository
@@ -151,10 +149,17 @@ class ReferralService(
     return appointments.map { appointment ->
       val ics = icsByAppointment.getValue(appointment.id)
 
+      val latestStatus = statusHistoryByAppointment[appointment.id]
+        ?.maxByOrNull { it.createdAt }
+        ?.status
+        ?: error("No status history for appointment ${appointment.id}")
+
       ReferralProgressDto(
-        appointment = appointment.toDto(),
-        appointmentIcs = ics.toDto(),
-        appointmentStatusHistory = statusHistoryByAppointment[appointment.id].orEmpty().map { it.toDto() },
+        referralId = referralId,
+        appointmentId = appointment.id,
+        appointmentType = appointment.type,
+        appointmentDateTime = ics.appointmentDateTime,
+        status = latestStatus,
       )
     }
   }

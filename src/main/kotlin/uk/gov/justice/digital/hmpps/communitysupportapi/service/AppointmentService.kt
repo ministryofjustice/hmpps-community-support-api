@@ -30,9 +30,6 @@ class AppointmentService(
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
-
-    /** The appointment type string used for ICS (Initial Contact Session) appointments. */
-    const val APPOINTMENT_TYPE_ICS = "ICS"
   }
 
   @Transactional

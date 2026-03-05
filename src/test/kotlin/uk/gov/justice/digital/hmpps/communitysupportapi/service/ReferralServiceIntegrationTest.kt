@@ -5,8 +5,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertNotNull
-import org.junit.jupiter.api.assertNull
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
@@ -219,23 +217,23 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   fun `getReferralProgress should return a list containing a referral progress dto`() {
     val appointmentDateTime = LocalDateTime.of(2026, 3, 4, 15, 30)
     val yesterday = appointmentDateTime.minusDays(1)
-    val communicationTypes = listOf("EMAIL", "SMS", "LETTER")
 
     val person = referralHelper.createPerson()
     val referralUser = referralHelper.createReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
     val appointment = appointmentHelper.createAppointment(referral)
-    val delivery = appointmentHelper.createAppointmentDelivery()
-    val ics = appointmentHelper.createAppointmentIcs(
+
+    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED, yesterday)
+    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.ATTENDED, appointmentDateTime)
+
+    appointmentHelper.createAppointmentIcs(
       appointment = appointment,
-      delivery = delivery,
+      delivery = appointmentHelper.createAppointmentDelivery(),
       user = referralUser,
       createdAt = yesterday,
       appointmentDateTime = appointmentDateTime,
-      communications = communicationTypes,
+      communications = listOf("EMAIL", "SMS", "LETTER"),
     )
-    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED, yesterday)
-    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.ATTENDED, appointmentDateTime)
 
     val result = referralService.getReferralProgress(referral.id)
 
@@ -243,30 +241,10 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     val referralProgressDto = result.first()
 
-    assertEquals(appointment.id, referralProgressDto.appointment.id)
-    assertEquals(appointment.referral.id, referralProgressDto.appointment.referralId)
-    assertEquals(appointment.type, referralProgressDto.appointment.type)
-
-    assertEquals(delivery.method, referralProgressDto.appointmentIcs.appointmentDelivery?.method)
-    assertEquals(delivery.methodDetails, referralProgressDto.appointmentIcs.appointmentDelivery?.methodDetails)
-    assertNull(delivery.addressLine1)
-    assertNull(delivery.addressLine2)
-    assertNull(delivery.townOrCity)
-    assertNull(delivery.county)
-    assertNull(delivery.postcode)
-
-    assertNotNull(ics.appointmentDelivery?.id)
-    assertEquals(ics.id, referralProgressDto.appointmentIcs.id)
-    assertEquals(appointmentDateTime, referralProgressDto.appointmentIcs.appointmentDateTime)
-    assertEquals(yesterday, referralProgressDto.appointmentIcs.createdAt)
-    assertEquals(referralUser.fullName, referralProgressDto.appointmentIcs.createdBy.fullName)
-    assertEquals(communicationTypes, referralProgressDto.appointmentIcs.sessionCommunication)
-
-    assertEquals(2, referralProgressDto.appointmentStatusHistory.size)
-    assertEquals(yesterday, referralProgressDto.appointmentStatusHistory[0].createdAt)
-    assertEquals(AppointmentStatusHistoryType.SCHEDULED, referralProgressDto.appointmentStatusHistory[0].status)
-    assertEquals(appointmentDateTime, referralProgressDto.appointmentStatusHistory[1].createdAt)
-    assertEquals(AppointmentStatusHistoryType.ATTENDED, referralProgressDto.appointmentStatusHistory[1].status)
+    assertEquals(referral.id, referralProgressDto.referralId)
+    assertEquals(appointment.id, referralProgressDto.appointmentId)
+    assertEquals(appointmentDateTime, referralProgressDto.appointmentDateTime)
+    assertEquals(AppointmentStatusHistoryType.ATTENDED, referralProgressDto.status)
   }
 
   private fun setUpData(): CreateReferralRequest {

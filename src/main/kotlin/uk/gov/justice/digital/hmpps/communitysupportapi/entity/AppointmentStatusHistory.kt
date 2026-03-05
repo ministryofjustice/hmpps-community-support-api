@@ -19,9 +19,7 @@ data class AppointmentStatusHistoryId(
 
 enum class AppointmentStatusHistoryType {
   SCHEDULED,
-  RESCHEDULED,
   ATTENDED,
-  UNATTENDED,
 }
 
 @Entity
