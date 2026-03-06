@@ -14,10 +14,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDe
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.appointment.AppointmentDeliveryFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.appointment.AppointmentFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.appointment.AppointmentIcsFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.appointment.AppointmentStatusHistoryFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentDeliveryFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentIcsFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentStatusHistoryFactory
 import java.time.LocalDateTime
 
 @Component
@@ -27,7 +27,10 @@ class AppointmentTestSupport(
   private val appointmentDeliveryRepository: AppointmentDeliveryRepository,
   private val appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository,
 ) {
-  fun createAppointment(referral: Referral, type: AppointmentType = AppointmentType.ICS): Appointment = appointmentRepository.save(
+  fun createAppointment(
+    referral: Referral,
+    type: AppointmentType = AppointmentType.ICS,
+  ): Appointment = appointmentRepository.save(
     AppointmentFactory()
       .withReferral(referral)
       .withType(type)
@@ -74,7 +77,7 @@ class AppointmentTestSupport(
 
   fun createAppointmentStatusHistory(
     appointment: Appointment,
-    status: AppointmentStatusHistoryType = AppointmentStatusHistoryType.SCHEDULED,
+    status: AppointmentStatusHistoryType = AppointmentStatusHistoryType.SCHEDULED, // remove default
     createdAt: LocalDateTime = LocalDateTime.now(),
   ): AppointmentStatusHistory = appointmentStatusHistoryRepository.save(
     AppointmentStatusHistoryFactory()

@@ -69,7 +69,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `createReferral should save referral and referral events`() {
-    val referralUser = referralHelper.createReferralUser()
+    val referralUser = referralHelper.ensureReferralUser()
     val createReferralRequest = setUpData()
 
     val result = referralService.createReferral(referralUser.id, createReferralRequest)
@@ -92,7 +92,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `createReferral should update existing person when identifier matches`() {
-    val referralUser = referralHelper.createReferralUser()
+    val referralUser = referralHelper.ensureReferralUser()
 
     val existingPerson = referralHelper.createPerson(
       firstName = "Old",
@@ -130,7 +130,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `createReferral should update existing person additional details when identifier matches`() {
-    val referralUser = referralHelper.createReferralUser()
+    val referralUser = referralHelper.ensureReferralUser()
 
     val existingPerson = referralHelper.createPerson(
       firstName = "Old",
@@ -192,7 +192,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `getReferralProgress should return empty list when referral has no appointments`() {
     val person = referralHelper.createPerson()
-    val referralUser = referralHelper.createReferralUser()
+    val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
     val result = referralService.getReferralProgress(referral.id)
@@ -203,7 +203,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `getReferralProgress should throw an IllegalStateException when ICS missing from appointments`() {
     val person = referralHelper.createPerson()
-    val referralUser = referralHelper.createReferralUser()
+    val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
     appointmentHelper.createAppointment(referral)
@@ -219,7 +219,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val yesterday = appointmentDateTime.minusDays(1)
 
     val person = referralHelper.createPerson()
-    val referralUser = referralHelper.createReferralUser()
+    val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
     val appointment = appointmentHelper.createAppointment(referral)
 

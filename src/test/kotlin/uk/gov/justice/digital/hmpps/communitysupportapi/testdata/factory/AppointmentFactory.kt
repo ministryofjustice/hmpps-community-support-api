@@ -4,6 +4,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistory
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
@@ -85,5 +87,23 @@ class AppointmentIcsFactory : TestEntityFactory<AppointmentIcs>() {
     createdAt = createdAt,
     createdBy = createdBy,
     sessionCommunication = sessionCommunication,
+  )
+}
+
+class AppointmentStatusHistoryFactory : TestEntityFactory<AppointmentStatusHistory>() {
+  private var id: UUID = UUID.randomUUID()
+  private var appointment: Appointment? = null
+  private var createdAt: LocalDateTime = LocalDateTime.now()
+  private var status: AppointmentStatusHistoryType? = null
+
+  fun withId(id: UUID) = apply { this.id = id }
+  fun withAppointment(appointment: Appointment) = apply { this.appointment = appointment }
+  fun withCreatedAt(createdAt: LocalDateTime) = apply { this.createdAt = createdAt }
+  fun withStatus(status: AppointmentStatusHistoryType) = apply { this.status = status }
+
+  override fun create(): AppointmentStatusHistory = AppointmentStatusHistory(
+    appointment = appointment ?: error("Appointment must be provided"),
+    status = status ?: error("Appointment Status must be provided"),
+    createdAt = createdAt,
   )
 }

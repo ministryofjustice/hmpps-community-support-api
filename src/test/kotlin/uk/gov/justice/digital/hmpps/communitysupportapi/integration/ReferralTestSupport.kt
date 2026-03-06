@@ -58,7 +58,7 @@ class ReferralTestSupport(
     hmppsAuthId: UUID = UUID.randomUUID(),
     username: String = "test-user",
   ): ReferralUser {
-    val testUser = createReferralUser(userId = id, hmppsAuthId = hmppsAuthId.toString(), username = username)
+    val testUser = ensureReferralUser(userId = id, hmppsAuthId = hmppsAuthId.toString(), username = username)
 
     whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>()))
       .thenReturn(testUser)
@@ -66,7 +66,7 @@ class ReferralTestSupport(
     return testUser
   }
 
-  fun createReferralUser(
+  fun ensureReferralUser(
     userId: UUID = UUID.randomUUID(),
     hmppsAuthId: String = "test-auth-id",
     username: String = "test-user",

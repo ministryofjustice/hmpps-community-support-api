@@ -70,7 +70,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   fun setUpReferral() {
     val person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
 
-    testUser = referralHelper.createReferralUser()
+    testUser = referralHelper.ensureReferralUser()
 
     val referral = referralHelper.createReferral(person, submittedBy = testUser)
 
