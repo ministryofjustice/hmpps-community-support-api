@@ -7,15 +7,17 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpMethod
+import org.springframework.http.HttpMethod.GET
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCaseListDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
-import uk.gov.justice.digital.hmpps.communitysupportapi.integration.CaseListTestFixture
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
@@ -51,11 +53,15 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
   @Autowired
   private lateinit var referralUserRepository: ReferralUserRepository
 
-  private lateinit var fixture: CaseListTestFixture
+  private lateinit var referralHelper: ReferralTestSupport
+
+  private lateinit var serviceProvider: ServiceProvider
+
+  private lateinit var communityServiceProvider: CommunityServiceProvider
 
   @BeforeEach
   override fun setup() {
-    fixture = CaseListTestFixture(
+    referralHelper = ReferralTestSupport(
       personRepository,
       referralRepository,
       referralProviderAssignmentRepository,
@@ -65,7 +71,10 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
       communityServiceProviderRepository,
       userMapper,
     )
-    fixture.initialiseProviders()
+
+    val providers = referralHelper.getProviders()
+    serviceProvider = providers.first
+    communityServiceProvider = providers.second
 
     testDataCleaner.cleanAllTables()
     testDataCleaner.refreshMaterializedView()
@@ -91,26 +100,26 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/case-list/unassigned")
+      assertUnauthorized(GET, "/bff/case-list/unassigned")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/case-list/unassigned")
+      assertForbiddenNoRole(GET, "/bff/case-list/unassigned")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/case-list/unassigned")
+      assertForbiddenWrongRole(GET, "/bff/case-list/unassigned")
     }
 
     @Test
     fun `should return empty list when user has no service provider access`() {
-      val testUser = fixture.createTestUser()
+      val testUser = referralHelper.createTestUser()
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
       val response = getUnassignedCases(testUser)
@@ -120,46 +129,47 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unassigned cases when user has service provider access`() {
-      val testUser = fixture.createTestUser()
-      val person = fixture.createPerson(firstName = "John", lastName = "Doe", crn = "CRN12345")
-      val referral = fixture.createReferral(person = person, referenceNumber = "REF-001", submittedBy = testUser)
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val referral = referralHelper.createReferral(person = person, referenceNumber = "REF-001", submittedBy = testUser)
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      fixture.assignToCommunityServiceProvider(referral)
+      referralHelper.assignToCommunityServiceProvider(referral, communityServiceProvider)
+
       testDataCleaner.refreshMaterializedView()
 
       val response = getUnassignedCases(testUser)
 
       assertThat(response.content).hasSize(1)
       assertThat(response.content[0].referralId).isEqualTo(referral.id)
-      assertThat(response.content[0].personName).isEqualTo("Doe, John")
+      assertThat(response.content[0].personName).isEqualTo("Smith, John")
       assertThat(response.content[0].personIdentifier).isEqualTo("CRN12345")
       assertThat(response.content[0].date).isNotNull()
     }
 
     @Test
     fun `should return multiple unassigned cases with pagination`() {
-      val testUser = fixture.createTestUser()
-      val persons = fixture.createPersons(count = 3)
+      val testUser = referralHelper.createTestUser()
+      val persons = referralHelper.createPersons(count = 3)
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
       persons.forEachIndexed { index, person ->
-        val referral = fixture.createReferral(
+        val referral = referralHelper.createReferral(
           person = person,
           referenceNumber = "REF-00${index + 1}",
           submittedBy = testUser,
           createdAt = OffsetDateTime.now().minusDays(index.toLong()),
         )
 
-        fixture.assignToCommunityServiceProvider(referral)
+        referralHelper.assignToCommunityServiceProvider(referral, communityServiceProvider)
       }
 
       testDataCleaner.refreshMaterializedView()
@@ -180,16 +190,16 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unassigned cases sorted by date received in ascending order`() {
-      val testUser = fixture.createTestUser()
-      val olderPerson = fixture.createPerson("Older", "Person", "CRN_OLDER")
-      val newerPerson = fixture.createPerson("Newer", "Person", "CRN_NEWER")
-      val olderReferral = fixture.createReferral(
+      val testUser = referralHelper.createTestUser()
+      val olderPerson = referralHelper.createPerson("Older", "Person", "CRN_OLDER")
+      val newerPerson = referralHelper.createPerson("Newer", "Person", "CRN_NEWER")
+      val olderReferral = referralHelper.createReferral(
         person = olderPerson,
         referenceNumber = "REF_OLDER",
         submittedBy = testUser,
         createdAt = OffsetDateTime.now().minusDays(5),
       )
-      val newerReferral = fixture.createReferral(
+      val newerReferral = referralHelper.createReferral(
         person = newerPerson,
         referenceNumber = "REF_NEWER",
         submittedBy = testUser,
@@ -198,11 +208,11 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      fixture.assignToCommunityServiceProvider(olderReferral)
-      fixture.assignToCommunityServiceProvider(newerReferral)
+      referralHelper.assignToCommunityServiceProvider(olderReferral, communityServiceProvider)
+      referralHelper.assignToCommunityServiceProvider(newerReferral, communityServiceProvider)
 
       testDataCleaner.refreshMaterializedView()
 
@@ -239,26 +249,26 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/case-list/in-progress")
+      assertUnauthorized(GET, "/bff/case-list/in-progress")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/case-list/in-progress")
+      assertForbiddenNoRole(GET, "/bff/case-list/in-progress")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/case-list/in-progress")
+      assertForbiddenWrongRole(GET, "/bff/case-list/in-progress")
     }
 
     @Test
     fun `should return empty in-progress page when user has no service provider access`() {
-      val testUser = fixture.createTestUser()
+      val testUser = referralHelper.createTestUser()
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
       testDataCleaner.refreshMaterializedView()
@@ -270,18 +280,18 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return in-progress cases when user has service provider access`() {
-      val testUser = fixture.createTestUser()
-      val person = fixture.createPerson(firstName = "John", lastName = "Doe", crn = "CRN12345")
-      val referral = fixture.createReferral(person = person, referenceNumber = "REF-001", submittedBy = testUser)
-      val caseWorkers = fixture.createCaseWorkers("CaseWorker One", "CaseWorker Two", "CaseWorker Three")
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val referral = referralHelper.createReferral(person = person, referenceNumber = "REF-001", submittedBy = testUser)
+      val caseWorkers = referralHelper.createCaseWorkers("CaseWorker One", "CaseWorker Two", "CaseWorker Three")
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      fixture.assignToCommunityServiceProvider(referral)
-      fixture.assignCaseWorkers(referral, caseWorkers)
+      referralHelper.assignToCommunityServiceProvider(referral, communityServiceProvider)
+      referralHelper.assignCaseWorkers(referral, caseWorkers)
 
       testDataCleaner.refreshMaterializedView()
 
@@ -289,7 +299,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       assertThat(response.content).hasSize(1)
       assertThat(response.content[0].referralId).isEqualTo(referral.id)
-      assertThat(response.content[0].personName).isEqualTo("Doe, John")
+      assertThat(response.content[0].personName).isEqualTo("Smith, John")
       assertThat(response.content[0].personIdentifier).isEqualTo("CRN12345")
       assertThat(response.content[0].date).isNotNull()
       assertThat(response.content[0].caseWorkers).containsExactly("CaseWorker One", "CaseWorker Two", "CaseWorker Three")
@@ -297,23 +307,24 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return multiple in-progress cases with pagination`() {
-      val testUser = fixture.createTestUser()
-      val persons = fixture.createPersons(count = 3)
-      val caseWorkers = fixture.createCaseWorkers("CaseWorker One", "CaseWorker Two")
+      val testUser = referralHelper.createTestUser()
+      val persons = referralHelper.createPersons(count = 3)
+      val caseWorkers = referralHelper.createCaseWorkers("CaseWorker One", "CaseWorker Two")
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
       persons.forEachIndexed { index, person ->
         val createdAt = OffsetDateTime.now().minusDays(index.toLong())
 
-        fixture.createInProgressReferral(
+        referralHelper.createInProgressReferral(
           person = person,
           referenceNumber = "REF-00${index + 1}",
           submittedBy = testUser,
           caseWorkers = caseWorkers,
+          communityServiceProvider = communityServiceProvider,
           createdAt = createdAt,
         )
       }
@@ -338,36 +349,36 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return in-progress cases sorted by date received in ascending order`() {
-      val testUser = fixture.createTestUser()
+      val testUser = referralHelper.createTestUser()
       val olderCreatedAt = OffsetDateTime.now().minusDays(5)
       val newerCreatedAt = OffsetDateTime.now().minusDays(1)
-      val olderPerson = fixture.createPerson(firstName = "Older", lastName = "Person", crn = "CRN_OLDER")
-      val newerPerson = fixture.createPerson(firstName = "Newer", lastName = "Person", crn = "CRN_NEWER")
-      val olderReferral = fixture.createReferral(
+      val olderPerson = referralHelper.createPerson(firstName = "Older", lastName = "Person", identifier = "CRN_OLDER")
+      val newerPerson = referralHelper.createPerson(firstName = "Newer", lastName = "Person", identifier = "CRN_NEWER")
+      val olderReferral = referralHelper.createReferral(
         person = olderPerson,
         referenceNumber = "REF_OLDER",
         submittedBy = testUser,
         createdAt = olderCreatedAt,
       )
-      val newerReferral = fixture.createReferral(
+      val newerReferral = referralHelper.createReferral(
         person = newerPerson,
         referenceNumber = "REF_NEWER",
         submittedBy = testUser,
         createdAt = newerCreatedAt,
       )
 
-      val caseWorkers = fixture.createCaseWorkers("CaseWorker One", "CaseWorker Two")
+      val caseWorkers = referralHelper.createCaseWorkers("CaseWorker One", "CaseWorker Two")
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${fixture.serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      fixture.assignToCommunityServiceProvider(olderReferral)
-      fixture.assignToCommunityServiceProvider(newerReferral)
+      referralHelper.assignToCommunityServiceProvider(olderReferral, communityServiceProvider)
+      referralHelper.assignToCommunityServiceProvider(newerReferral, communityServiceProvider)
 
-      fixture.assignCaseWorkers(olderReferral, caseWorkers)
-      fixture.assignCaseWorkers(newerReferral, caseWorkers)
+      referralHelper.assignCaseWorkers(olderReferral, caseWorkers)
+      referralHelper.assignCaseWorkers(newerReferral, caseWorkers)
 
       testDataCleaner.refreshMaterializedView()
 

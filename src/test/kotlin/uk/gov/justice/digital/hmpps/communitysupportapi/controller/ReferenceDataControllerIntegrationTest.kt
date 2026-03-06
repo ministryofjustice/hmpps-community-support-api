@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.http.HttpMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOffice
 
@@ -16,37 +17,17 @@ class ReferenceDataControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      webTestClient.get()
-        .uri("/bff/reference-data/probation-offices")
-        .exchange()
-        .expectStatus()
-        .isUnauthorized
+      assertUnauthorized(HttpMethod.GET, "/bff/reference-data/probation-offices")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      webTestClient.get()
-        .uri("/bff/reference-data/probation-offices")
-        .headers(
-          setAuthorisation(
-            "AUTH_ADM",
-            listOf(),
-            listOf("read"),
-          ),
-        )
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/reference-data/probation-offices")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      webTestClient.get()
-        .uri("/bff/reference-data/probation-offices")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .exchange()
-        .expectStatus()
-        .isForbidden
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/reference-data/probation-offices")
     }
 
     @Test

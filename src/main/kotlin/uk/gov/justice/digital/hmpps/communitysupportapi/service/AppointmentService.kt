@@ -11,11 +11,15 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistory
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import java.time.LocalDateTime
 import java.util.UUID
@@ -26,19 +30,17 @@ class AppointmentService(
   private val appointmentRepository: AppointmentRepository,
   private val appointmentDeliveryRepository: AppointmentDeliveryRepository,
   private val appointmentIcsRepository: AppointmentIcsRepository,
+  private val appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
-
-    /** The appointment type string used for ICS (Initial Contact Session) appointments. */
-    const val APPOINTMENT_TYPE_ICS = "ICS"
   }
 
   @Transactional
   fun createIcsAppointment(
     referralId: UUID,
     request: CreateAppointmentRequest,
-    createdBy: ReferralUser? = null,
+    createdBy: ReferralUser,
   ): AppointmentIcsResponse {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
@@ -49,11 +51,18 @@ class AppointmentService(
     val appointment = Appointment(
       id = UUID.randomUUID(),
       referral = referral,
-      type = APPOINTMENT_TYPE_ICS,
+      type = AppointmentType.ICS,
     )
     appointmentRepository.save(appointment)
 
-    // 2. Delivery method
+    // 2. Status History
+    val appointmentHistory = AppointmentStatusHistory(
+      appointment = appointment,
+      status = AppointmentStatusHistoryType.SCHEDULED,
+    )
+    appointmentStatusHistoryRepository.save(appointmentHistory)
+
+    // 3. Delivery method
     val deliveryMethod = request.sessionMethodRequest.type.toDeliveryMethod()
     val appointmentDelivery = AppointmentDelivery(
       id = UUID.randomUUID(),
@@ -68,11 +77,11 @@ class AppointmentService(
     )
     appointmentDeliveryRepository.save(appointmentDelivery)
 
-    // 3. Combine date + time
+    // 4. Combine date + time
     val localTime = request.time.toLocalTime()
     val startDateTime = LocalDateTime.of(request.date, localTime)
 
-    // 4. ICS record
+    // 5. ICS record
     val ics = AppointmentIcs(
       id = UUID.randomUUID(),
       appointment = appointment,
@@ -84,7 +93,7 @@ class AppointmentService(
     val savedIcs = appointmentIcsRepository.save(ics)
 
     log.info("ICS appointment created with id {}", savedIcs.id)
-    return AppointmentIcsResponse.from(savedIcs)
+    return AppointmentIcsResponse.from(savedIcs, appointmentHistory.status)
   }
 
   /**
@@ -97,7 +106,12 @@ class AppointmentService(
       throw NotFoundException("Referral not found for id $referralId")
     }
     return appointmentIcsRepository.findByAppointmentReferralId(referralId)
-      .map { AppointmentIcsResponse.from(it) }
+      .map { ics ->
+        AppointmentIcsResponse.from(
+          ics,
+          getLatestAppointmentStatus(ics.appointment.id),
+        )
+      }
   }
 
   /**
@@ -107,6 +121,11 @@ class AppointmentService(
   fun getIcsAppointment(icsId: UUID): AppointmentIcsResponse {
     val ics = appointmentIcsRepository.findById(icsId)
       .orElseThrow { NotFoundException("Appointment ICS not found for id $icsId") }
-    return AppointmentIcsResponse.from(ics)
+    return AppointmentIcsResponse.from(ics, getLatestAppointmentStatus(ics.appointment.id))
   }
+
+  private fun getLatestAppointmentStatus(appointmentId: UUID): AppointmentStatusHistoryType = appointmentStatusHistoryRepository
+    .findTopByAppointmentIdOrderByCreatedAtDesc(appointmentId)
+    ?.status
+    ?: throw IllegalStateException("No status history for appointment $appointmentId")
 }

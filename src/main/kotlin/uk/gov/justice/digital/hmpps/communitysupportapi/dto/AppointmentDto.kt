@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.OffsetDateTime
@@ -100,16 +102,17 @@ data class AppointmentIcsResponse(
   val appointmentIcsId: UUID,
   val appointmentId: UUID,
   val referralId: UUID,
-  val appointmentType: String,
+  val appointmentType: AppointmentType,
   val appointmentDate: LocalDate,
   val appointmentTime: AppointmentTimeResponse,
+  val appointmentStatus: AppointmentStatusHistoryType,
   val sessionMethod: SessionMethod,
   val sessionCommunications: List<String>,
   val createdAt: OffsetDateTime,
 ) {
 
   companion object {
-    fun from(ics: AppointmentIcs): AppointmentIcsResponse {
+    fun from(ics: AppointmentIcs, status: AppointmentStatusHistoryType): AppointmentIcsResponse {
       val appointmentDateTime = ics.appointmentDateTime
       val hour24 = appointmentDateTime.hour
       val amPm = if (hour24 < 12) "am" else "pm"
@@ -129,6 +132,7 @@ data class AppointmentIcsResponse(
           minute = appointmentDateTime.minute,
           amPm = amPm,
         ),
+        appointmentStatus = status,
         sessionMethod = buildSessionMethod(ics.appointmentDelivery),
         sessionCommunications = ics.sessionCommunication,
         createdAt = ics.createdAt.atOffset(ZoneOffset.UTC),

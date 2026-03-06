@@ -17,6 +17,11 @@ data class AppointmentStatusHistoryId(
   val createdAt: LocalDateTime? = null,
 ) : Serializable
 
+enum class AppointmentStatusHistoryType {
+  SCHEDULED,
+  ATTENDED,
+}
+
 @Entity
 @Table(name = "appointment_status_history")
 @IdClass(AppointmentStatusHistoryId::class)
@@ -31,5 +36,5 @@ class AppointmentStatusHistory(
   val createdAt: LocalDateTime = LocalDateTime.now(),
 
   @Column(name = "status", nullable = false)
-  val status: String,
+  val status: AppointmentStatusHistoryType,
 )

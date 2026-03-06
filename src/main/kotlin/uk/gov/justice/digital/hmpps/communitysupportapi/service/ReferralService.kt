@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
@@ -17,6 +18,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderA
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
@@ -29,6 +33,9 @@ import java.util.UUID
 class ReferralService(
   private val referralRepository: ReferralRepository,
   private val personRepository: PersonRepository,
+  private val appointmentRepository: AppointmentRepository,
+  private val appointmentIcsRepository: AppointmentIcsRepository,
+  private val appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository,
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
   private val referenceGenerator: ReferralReferenceGenerator,
@@ -75,7 +82,6 @@ class ReferralService(
     referral.addEvent(referralEvent)
     val savedReferral = referralRepository.save(referral)
 
-    // Create the provider assignment
     val providerAssignment = ReferralProviderAssignment(
       id = UUID.randomUUID(),
       referral = savedReferral,
@@ -116,6 +122,46 @@ class ReferralService(
       referralId = savedReferral.id,
       referenceNumber = savedReferral.referenceNumber,
     )
+  }
+
+  fun getReferralProgress(referralId: UUID): List<ReferralProgressDto> {
+    if (!referralRepository.existsById(referralId)) {
+      throw NotFoundException("Referral not found for id $referralId")
+    }
+
+    val appointments = appointmentRepository.findAllByReferralId(referralId).orEmpty()
+    if (appointments.isEmpty()) return emptyList()
+
+    val appointmentIds = appointments.map { it.id }
+
+    val icsByAppointment = appointmentIcsRepository
+      .findAllByAppointmentIdIn(appointmentIds)
+      .associateBy { it.appointment.id }
+
+    check(appointmentIds.all { it in icsByAppointment }) {
+      "Missing ICS for appointments: ${appointmentIds - icsByAppointment.keys}"
+    }
+
+    val statusHistoryByAppointment = appointmentStatusHistoryRepository
+      .findAllByAppointmentIdIn(appointmentIds)
+      .groupBy { it.appointment.id }
+
+    return appointments.map { appointment ->
+      val ics = icsByAppointment.getValue(appointment.id)
+
+      val latestStatus = statusHistoryByAppointment[appointment.id]
+        ?.maxByOrNull { it.createdAt }
+        ?.status
+        ?: error("No status history for appointment ${appointment.id}")
+
+      ReferralProgressDto(
+        referralId = referralId,
+        appointmentId = appointment.id,
+        appointmentType = appointment.type,
+        appointmentDateTime = ics.appointmentDateTime,
+        status = latestStatus,
+      )
+    }
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
