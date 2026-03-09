@@ -66,19 +66,19 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
     .create()
 
   @Nested
-  @DisplayName("POST /bff/referral/{referralId}/assign")
+  @DisplayName("POST /referral/{referralId}/assign")
   inner class AssignCaseWorkers {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(POST, "/bff/referral/${UUID.randomUUID()}/assign")
+      assertUnauthorized(POST, "/referral/${UUID.randomUUID()}/assign")
     }
 
     @Test
     fun `should return forbidden if no role`() {
       assertForbiddenNoRole(
         POST,
-        uri = "/bff/referral/${UUID.randomUUID()}/assign",
+        uri = "/referral/${UUID.randomUUID()}/assign",
         body = AssignCaseWorkersRequest(
           emails = listOf("alexsmith@email.com"),
         ),
@@ -89,7 +89,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
     fun `should return forbidden if wrong role`() {
       assertForbiddenWrongRole(
         POST,
-        "/bff/referral/${UUID.randomUUID()}/assign",
+        "/referral/${UUID.randomUUID()}/assign",
         AssignCaseWorkersRequest(emails = listOf("alexsmith@email.com")),
       )
     }
@@ -102,7 +102,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
       val referral = setUpReferral(assigner.id)
 
       webTestClient.post()
-        .uri("/bff/referral/${referral.id}/assign")
+        .uri("/referral/${referral.id}/assign")
         .headers(setAuthorisation())
         .bodyValue(
           AssignCaseWorkersRequest(
@@ -139,7 +139,7 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
       val user: ReferralUser = setupUser("johnsmith@email.com")
 
       webTestClient.post()
-        .uri("/bff/referral/${referral.id}/assign")
+        .uri("/referral/${referral.id}/assign")
         .headers(setAuthorisation())
         .bodyValue(
           AssignCaseWorkersRequest(

@@ -57,7 +57,7 @@ class ReferralUserAssignmentController(
       ),
     ],
   )
-  @PostMapping("/bff/referral/{referralId}/assign")
+  @PostMapping("/referral/{referralId}/assign")
   fun assignCaseWorkers(@PathVariable referralId: String, @RequestBody assignCaseWorkersRequest: AssignCaseWorkersRequest, authentication: JwtAuthenticationToken): ResponseEntity<AssignCaseWorkersResult> {
     val user = userMapper.fromToken(authenticationHolder)
 
