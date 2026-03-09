@@ -6,10 +6,8 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
-import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -21,22 +19,16 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.UserType
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AssignCaseWorkersRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AssignCaseWorkersResult
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralAssignmentService
-import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
 
 @RestController
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class ReferralUserAssignmentController(
-  private val referralService: ReferralService,
   private val referralAssignmentService: ReferralAssignmentService,
   private val authenticationHolder: HmppsAuthenticationHolder,
   private val userMapper: UserMapper,
 ) {
-  companion object {
-    private val log = LoggerFactory.getLogger(this::class.java)
-  }
-
   @Operation(summary = "Assign case workers to a referral")
   @ApiResponses(
     value = [
@@ -58,7 +50,7 @@ class ReferralUserAssignmentController(
     ],
   )
   @PostMapping("/referral/{referralId}/assign")
-  fun assignCaseWorkers(@PathVariable referralId: String, @RequestBody assignCaseWorkersRequest: AssignCaseWorkersRequest, authentication: JwtAuthenticationToken): ResponseEntity<AssignCaseWorkersResult> {
+  fun assignCaseWorkers(@PathVariable referralId: String, @RequestBody assignCaseWorkersRequest: AssignCaseWorkersRequest): ResponseEntity<AssignCaseWorkersResult> {
     val user = userMapper.fromToken(authenticationHolder)
 
     val emailList = assignCaseWorkersRequest.emails
