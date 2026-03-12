@@ -82,6 +82,27 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  fun `blank email and invalid email address inputs submitted`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val emailsList = listOf("", "testuseremail.com")
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isFalse()
+    assertThat(result?.message).isEqualTo("Failed to assign case worker(s)")
+    assertThat(result?.succeededList).isEmpty()
+    assertThat(result?.failureList?.get(0)?.emailAddress).isEqualTo("")
+    assertThat(result?.failureList?.get(0)?.reason).isEqualTo("Enter the caseworker's email address")
+    assertThat(result?.failureList?.get(1)?.emailAddress).isEqualTo("testuseremail.com")
+    assertThat(result?.failureList?.get(1)?.reason).isEqualTo("Enter an email address in the correct format, like name@example.com")
+  }
+
+  @Test
   fun `getAssignedCaseWorkers should return assigned case workers`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assigner.id)

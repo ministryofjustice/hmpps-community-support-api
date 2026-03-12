@@ -68,7 +68,13 @@ class ReferralAssignmentService(
 
     validateCaseWorkerByEmails(caseWorkers).forEach { (validation, user) ->
       if (validation.isValid) {
-        user?.let { submittedAssignments += validation.emailAddress to it }
+        user?.let {
+          submittedAssignments += validation.emailAddress to it
+          failures += AssignmentFailureDto(
+            validation.emailAddress,
+            validation.failureReason.orEmpty(),
+          )
+        }
       } else {
         failures += AssignmentFailureDto(
           validation.emailAddress,
@@ -77,7 +83,7 @@ class ReferralAssignmentService(
       }
     }
 
-    if (failures.isNotEmpty()) {
+    if (failures.any { it.reason.isNotEmpty() }) {
       return AssignCaseWorkersResult(
         success = false,
         message = "Failed to assign case worker(s)",
@@ -99,7 +105,7 @@ class ReferralAssignmentService(
 
     val now = LocalDateTime.now()
 
-    if (failures.isEmpty()) {
+    if (failures.all { it.reason.isNullOrEmpty() }) {
       toAdd.forEach { userIdToAdd ->
         var user = submittedAssignments.first { it.second.id == userIdToAdd }.second
         referralUserAssignmentRepository.save(
