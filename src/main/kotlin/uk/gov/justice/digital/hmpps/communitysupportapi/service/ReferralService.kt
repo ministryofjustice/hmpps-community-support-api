@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServ
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -38,6 +39,7 @@ class ReferralService(
   private val appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository,
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
+  private val referralUserAssignmentRepository: ReferralUserAssignmentRepository,
   private val referenceGenerator: ReferralReferenceGenerator,
 ) {
   companion object {
@@ -50,7 +52,8 @@ class ReferralService(
   fun getReferralDetailsPage(referralId: UUID): ReferralDetailsBffResponseDto {
     val referral = referralRepository.findById(referralId).orElseThrow { NotFoundException("Referral not found for id $referralId") }
     val person = personRepository.findById(referral.personId).orElseThrow { NotFoundException("Person not found for referral ${referral.id}") }
-    return ReferralDetailsBffResponseDto.from(referral, person)
+    val referralAssignments = referralUserAssignmentRepository.findActiveByReferralId(referralId)
+    return ReferralDetailsBffResponseDto.from(referral, person, referralAssignments)
   }
 
   fun createReferral(userId: UUID, createReferralRequest: CreateReferralRequest): ReferralCreationResult {

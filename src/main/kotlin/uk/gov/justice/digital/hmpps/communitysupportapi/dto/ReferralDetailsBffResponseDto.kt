@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -15,14 +16,14 @@ data class ReferralDetailsBffResponseDto(
   val referralDetailsTableData: ReferralDetailsTableDataDto,
 ) {
   companion object {
-    fun from(referral: Referral, person: Person): ReferralDetailsBffResponseDto = ReferralDetailsBffResponseDto(
+    fun from(referral: Referral, person: Person, referralAssignments: List<ReferralUserAssignment>): ReferralDetailsBffResponseDto = ReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
       createdDate = referral.createdAt,
       personDetailsTableData = PersonDetailsTableDataDto.from(person, referral),
       equalityDetailsTableData = EqualityDetailsTableDataDto.from(person),
       contactDetailsTableData = ContactDetailsTableDataDto.from(person),
-      referralDetailsTableData = ReferralDetailsTableDataDto.from(referral),
+      referralDetailsTableData = ReferralDetailsTableDataDto.from(referral, referralAssignments),
     )
   }
 
@@ -85,9 +86,9 @@ data class ReferralDetailsBffResponseDto(
     val assignedTo: List<String>,
   ) {
     companion object {
-      fun from(referral: Referral): ReferralDetailsTableDataDto = ReferralDetailsTableDataDto(
+      fun from(referral: Referral, referralAssignments: List<ReferralUserAssignment>): ReferralDetailsTableDataDto = ReferralDetailsTableDataDto(
         referralDate = referral.createdAt.toString(),
-        assignedTo = emptyList(),
+        assignedTo = referralAssignments.map { it.user.fullName },
       )
     }
   }
