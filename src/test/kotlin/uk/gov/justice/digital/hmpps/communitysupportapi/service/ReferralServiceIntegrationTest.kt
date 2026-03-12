@@ -62,6 +62,9 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   private lateinit var appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository
 
   @Autowired
+  private lateinit var referralAssignmentService: ReferralAssignmentService
+
+  @Autowired
   private lateinit var appointmentHelper: AppointmentTestSupport
 
   @Autowired
@@ -211,6 +214,21 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThrows(IllegalStateException::class.java) {
       referralService.getReferralProgress(referral.id)
     }
+  }
+
+  @Test
+  fun `view referral detail page bff should return referral details`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val person = referralHelper.createPerson()
+    val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+
+    referralHelper.assignCaseWorkers(referral, listOf(referralUser))
+
+    val result = referralService.getReferralDetailsPage(referral.id)
+
+    assertEquals(referral.id, result.id)
+    assertEquals(referral.crn, result.personDetailsTableData.CRN)
+    assertEquals(referralUser.fullName, result.referralDetailsTableData.assignedTo.first())
   }
 
   @Test
