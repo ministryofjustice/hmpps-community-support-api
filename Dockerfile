@@ -25,7 +25,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=build --chown=appuser:appgroup /app/build/libs/hmpps-arns-coordinator-api*.jar /app/app.jar
+COPY --from=build --chown=appuser:appgroup /app/build/libs/hmpps-community-support-api*.jar /app/app.jar
 COPY --from=build --chown=appuser:appgroup /app/build/libs/applicationinsights-agent*.jar /app/agent.jar
 COPY --from=build --chown=appuser:appgroup /app/applicationinsights.json /app
 COPY --from=build --chown=appuser:appgroup /app/applicationinsights.dev.json /app
