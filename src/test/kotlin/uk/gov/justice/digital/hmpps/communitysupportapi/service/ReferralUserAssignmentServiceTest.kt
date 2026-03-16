@@ -186,6 +186,10 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.succeededList?.size).isEqualTo(1)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
+
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(assignedCaseWorkers?.size).isEqualTo(1)
+    assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
   }
 
   @Test
@@ -309,8 +313,13 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
       }
 
     val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
-    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
+    assertThat(result?.succeededList?.size).isEqualTo(2)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
 
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
     assertThat(assignedCaseWorkers?.size).isEqualTo(2)
     assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(assignedCaseWorkers?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)

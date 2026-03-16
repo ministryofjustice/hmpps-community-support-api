@@ -15,7 +15,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AssignCaseWorkersResult
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import java.time.LocalDateTime
 import java.util.*
@@ -23,7 +22,6 @@ import java.util.regex.Pattern
 
 @Service
 class ReferralAssignmentService(
-  private val referralUserRepository: ReferralUserRepository,
   private val referralRepository: ReferralRepository,
   private val referralUserAssignmentRepository: ReferralUserAssignmentRepository,
   private val userService: UserService,
@@ -40,7 +38,7 @@ class ReferralAssignmentService(
     val referral = referralRepository.findById(referralId)
       .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Referral not found") }
 
-    val activeAssignments: List<ReferralUserAssignment> = referralUserAssignmentRepository.findActiveByReferralId(referralId)
+    val activeAssignments: List<ReferralUserAssignment> = referralUserAssignmentRepository.findActiveByReferralId(referral.id)
 
     return activeAssignments
       .map {
@@ -108,17 +106,17 @@ class ReferralAssignmentService(
 
     if (failures.all { it.reason.isNullOrEmpty() }) {
       toAdd.forEach { userIdToAdd ->
-        var user = submittedAssignments.first { it.second.id == userIdToAdd }.second
+        val user = submittedAssignments.first { it.second.id == userIdToAdd }.second
         referralUserAssignmentRepository.save(
           ReferralUserAssignment(UUID.randomUUID(), referral, user.toEntity(), now, assigner),
         )
       }
       toUpdate.forEach { userIdToUpdate ->
-        var user = existingAssignments.first { it.id == userIdToUpdate }
+        val user = existingAssignments.first { it.id == userIdToUpdate }
         referralUserAssignmentRepository.updateByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
       }
       toRemove.forEach { userIdToRemove ->
-        var user = existingAssignments.first { it.id == userIdToRemove }
+        val user = existingAssignments.first { it.id == userIdToRemove }
         referralUserAssignmentRepository.markDeletedByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
       }
 
@@ -135,7 +133,7 @@ class ReferralAssignmentService(
         succeededList = submittedAssignments.map { CaseWorkerDto(userType = if (it.second.authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL, userId = it.second.id, it.second.fullName, it.second.hmppsAuthUsername) },
       )
     } else {
-      val result: AssignCaseWorkersResult = AssignCaseWorkersResult(
+      val result = AssignCaseWorkersResult(
         success = false,
         message = "Failed to assign case worker(s)",
         failureList = failures,
