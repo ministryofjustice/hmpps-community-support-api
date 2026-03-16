@@ -16,10 +16,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AssignCaseWorkersR
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.service.UserService
 import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 import java.util.regex.Pattern
 
 @Service
