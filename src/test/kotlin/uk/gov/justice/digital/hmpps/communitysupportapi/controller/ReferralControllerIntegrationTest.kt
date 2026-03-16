@@ -389,7 +389,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val personDetailsTable = ReferralDetailsBffResponseDto.PersonDetailsTableDataDto(
         name = "${person.firstName} ${person.lastName}",
-        CRN = savedReferral.crn,
+        crn = savedReferral.crn,
         dateOfBirth = person.dateOfBirth.toString(),
         preferredLanguage = person.additionalDetails?.preferredLanguage.toString(),
         disabilities = "",
@@ -405,10 +405,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
 
       val contactDetailsTable = ReferralDetailsBffResponseDto.ContactDetailsTableDataDto(
-        phoneNumber = person.additionalDetails?.phoneNumber.toString(),
-        mobileNumber = "",
-        email = person.additionalDetails?.emailAddress.toString(),
-        address = person.additionalDetails?.address.toString(),
+        phoneNumber = person.additionalDetails?.phoneNumber,
+        mobileNumber = null,
+        email = person.additionalDetails?.emailAddress,
+        address = person.additionalDetails?.address,
       )
 
       val referralDetailsTable = ReferralDetailsBffResponseDto.ReferralDetailsTableDataDto(
