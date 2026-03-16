@@ -66,7 +66,9 @@ class ReferralAssignmentService(
     val submittedAssignments = mutableListOf<Pair<String, UserDto>>()
     val failures = mutableListOf<AssignmentFailureDto>()
 
-    validateCaseWorkerByEmails(caseWorkers).forEach { (validation, user) ->
+    val uniqueCaseworkers = caseWorkers.distinctBy { it.emailAddress }
+
+    validateCaseWorkerByEmails(uniqueCaseworkers).forEach { (validation, user) ->
       if (validation.isValid) {
         user?.let {
           submittedAssignments += validation.emailAddress to it
@@ -122,7 +124,7 @@ class ReferralAssignmentService(
       }
 
       val isModified = toUpdate.isNotEmpty()
-      val isSingleChange = submittedAssignments.size == 1
+      val isSingleChange = (toAdd.size + toUpdate.size == 1)
       return AssignCaseWorkersResult(
         success = true,
         message = when {
@@ -184,7 +186,7 @@ class ReferralAssignmentService(
     if (uniqueEmailsCount.size > MAX_CASE_WORKERS) {
       return AssignCaseWorkersResult(
         success = false,
-        message = "Cannot assign more than $MAX_CASE_WORKERS emails.",
+        message = "Cannot assign more than $MAX_CASE_WORKERS caseworkers.",
       )
     } else if (uniqueEmailsCount.isEmpty()) {
       return AssignCaseWorkersResult(
