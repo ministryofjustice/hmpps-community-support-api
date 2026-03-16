@@ -75,8 +75,8 @@ class ReferralController(
       ),
     ],
   )
-  @GetMapping("/referral-details-page/{referralId}")
-  fun getReferralDetailsPage(@PathVariable referralId: UUID): ResponseEntity<ReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getReferralDetailsPage(referralId))
+  @GetMapping("/referral-details-page/{caseIdentifier}")
+  fun getReferralDetailsPage(@PathVariable caseIdentifier: String): ResponseEntity<ReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getReferralDetailsPage(caseIdentifier))
 
   @Operation(summary = "Create a referral")
   @ApiResponses(

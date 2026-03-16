@@ -6,4 +6,5 @@ import java.util.UUID
 
 interface ReferralRepository : JpaRepository<Referral, UUID> {
   fun existsByReferenceNumber(reference: String): Boolean
+  fun findByReferenceNumber(referenceNumber: String): MutableList<Referral>
 }

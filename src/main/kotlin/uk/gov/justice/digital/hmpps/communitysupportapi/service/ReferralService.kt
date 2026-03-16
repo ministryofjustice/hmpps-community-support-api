@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CaseIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -26,6 +27,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.CaseIdentifierValidator
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -44,16 +46,22 @@ class ReferralService(
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
+    private val identifierValidator: CaseIdentifierValidator = CaseIdentifierValidator()
     private const val MAX_REFERENCE_NUMBER_TRIES = 10
   }
 
   fun getReferral(referralId: UUID) = referralRepository.findById(referralId)
 
-  fun getReferralDetailsPage(referralId: UUID): ReferralDetailsBffResponseDto {
-    val referral = referralRepository.findById(referralId).orElseThrow { NotFoundException("Referral not found for id $referralId") }
-    val person = personRepository.findById(referral.personId).orElseThrow { NotFoundException("Person not found for referral ${referral.id}") }
-    val referralAssignments = referralUserAssignmentRepository.findActiveByReferralId(referralId)
-    return ReferralDetailsBffResponseDto.from(referral, person, referralAssignments)
+  fun getReferralDetailsPage(caseIdentifier: String?): ReferralDetailsBffResponseDto {
+    val foundReferral = when (val identifier = identifierValidator.validate(caseIdentifier)) {
+      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
+        .orElseThrow { NotFoundException("Referral not found for id $identifier.value") }
+
+      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value).first()
+    }
+    val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral?.personId}") }
+    val referralAssignments = referralUserAssignmentRepository.findActiveByReferralId(foundReferral.id)
+    return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
   }
 
   fun createReferral(userId: UUID, createReferralRequest: CreateReferralRequest): ReferralCreationResult {
