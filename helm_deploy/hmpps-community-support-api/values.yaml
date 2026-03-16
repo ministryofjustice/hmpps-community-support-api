@@ -43,8 +43,6 @@ generic-service:
   allowlist:
     groups:
       - internal
-      - cp4hyhqbkc
-      - ADxmlED7gToxfRsL
 
 generic-prometheus-alerts:
   targetApplication: hmpps-community-support-api
