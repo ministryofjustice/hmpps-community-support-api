@@ -217,14 +217,29 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   }
 
   @Test
-  fun `view referral detail page bff should return referral details`() {
+  fun `view referral detail page bff should return referral details with uuid`() {
     val referralUser = referralHelper.ensureReferralUser()
     val person = referralHelper.createPerson()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
     referralHelper.assignCaseWorkers(referral, listOf(referralUser))
 
-    val result = referralService.getReferralDetailsPage(referral.id)
+    val result = referralService.getReferralDetailsPage(referral.id.toString())
+
+    assertEquals(referral.id, result.id)
+    assertEquals(referral.crn, result.personDetailsTableData.CRN)
+    assertEquals(referralUser.fullName, result.referralDetailsTableData.assignedTo.first())
+  }
+
+  @Test
+  fun `view referral detail page bff should return referral details with case id`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val person = referralHelper.createPerson()
+    val referral = referralHelper.createReferral(person, submittedBy = referralUser, referenceNumber = "AA1234BB")
+
+    referralHelper.assignCaseWorkers(referral, listOf(referralUser))
+
+    val result = referralService.getReferralDetailsPage(referral.referenceNumber)
 
     assertEquals(referral.id, result.id)
     assertEquals(referral.crn, result.personDetailsTableData.CRN)
