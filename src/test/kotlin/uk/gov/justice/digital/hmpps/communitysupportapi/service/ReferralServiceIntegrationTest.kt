@@ -227,7 +227,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val result = referralService.getReferralDetailsPage(referral.id)
 
     assertEquals(referral.id, result.id)
-    assertEquals(referral.crn, result.personDetailsTableData.CRN)
+    assertEquals(referral.crn, result.personDetailsTableData.crn)
     assertEquals(referralUser.fullName, result.referralDetailsTableData.assignedTo.first())
   }
 

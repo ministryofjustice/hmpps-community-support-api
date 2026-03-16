@@ -29,7 +29,7 @@ data class ReferralDetailsBffResponseDto(
 
   data class PersonDetailsTableDataDto(
     val name: String,
-    val CRN: String,
+    val crn: String,
     val dateOfBirth: String,
     val preferredLanguage: String,
     val disabilities: String,
@@ -37,7 +37,7 @@ data class ReferralDetailsBffResponseDto(
     companion object {
       fun from(person: Person, referral: Referral): PersonDetailsTableDataDto = PersonDetailsTableDataDto(
         name = "${person.firstName} ${person.lastName}",
-        CRN = referral.crn,
+        crn = referral.crn,
         dateOfBirth = person.dateOfBirth.toString(),
         preferredLanguage = person.additionalDetails?.preferredLanguage ?: "",
         disabilities = "",
@@ -66,17 +66,17 @@ data class ReferralDetailsBffResponseDto(
   }
 
   data class ContactDetailsTableDataDto(
-    val phoneNumber: String,
-    val mobileNumber: String,
-    val email: String,
-    val address: String,
+    val phoneNumber: String?,
+    val mobileNumber: String?,
+    val email: String?,
+    val address: String?,
   ) {
     companion object {
       fun from(person: Person): ContactDetailsTableDataDto = ContactDetailsTableDataDto(
-        phoneNumber = person.additionalDetails?.phoneNumber.toString(),
-        mobileNumber = "",
-        email = person.additionalDetails?.emailAddress.toString(),
-        address = person.additionalDetails?.address.toString(),
+        phoneNumber = person.additionalDetails?.phoneNumber,
+        mobileNumber = null,
+        email = person.additionalDetails?.emailAddress,
+        address = person.additionalDetails?.address,
       )
     }
   }
