@@ -160,6 +160,7 @@ class CaseListServiceTest {
     // Then
     assertThat(result.totalElements).isEqualTo(1)
     assertThat(result.content[0].referralId).isEqualTo(caseListViews[0].referralId)
+    assertThat(result.content[0].referenceNumber).isEqualTo(caseListViews[0].referenceNumber)
     verify(userMapper).fromToken(authenticationHolder)
     verify(serviceProviderAccessScopeMapper).fromUser(referralUser)
     verify(caseListViewRepository).findAll(any<Specification<CaseListView>>(), eq(pageable))
@@ -213,6 +214,7 @@ class CaseListServiceTest {
 
     val dto = result.content.first()
     assertThat(dto.referralId).isEqualTo(caseListViews[0].referralId)
+    assertThat(dto.referenceNumber).isEqualTo(caseListViews[0].referenceNumber)
     assertThat(dto.caseWorkers).isEqualTo(caseWorkers)
     assertThat(dto.caseWorkers.last()).isEqualTo("CaseWorker Three")
 
@@ -278,6 +280,7 @@ class CaseListServiceTest {
   private fun createCaseListView(
     serviceProviderId: UUID,
     referralId: UUID = UUID.randomUUID(),
+    referenceNumber: String = "AA1234BB",
     personName: String = "Test, Person",
     personIdentifier: String = "X123456",
     dateReceived: OffsetDateTime = OffsetDateTime.now(),
@@ -286,6 +289,7 @@ class CaseListServiceTest {
     caseWorkers: List<String> = emptyList(),
   ) = CaseListView(
     referralId = referralId,
+    referenceNumber = referenceNumber,
     personName = personName,
     personIdentifier = personIdentifier,
     dateReceived = dateReceived,
