@@ -15,8 +15,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AssignCaseWorkersResult
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.service.UserService
 import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import java.time.LocalDateTime
 import java.util.UUID
@@ -24,7 +22,6 @@ import java.util.regex.Pattern
 
 @Service
 class ReferralAssignmentService(
-  private val referralUserRepository: ReferralUserRepository,
   private val referralRepository: ReferralRepository,
   private val referralUserAssignmentRepository: ReferralUserAssignmentRepository,
   private val userService: UserService,
@@ -41,7 +38,7 @@ class ReferralAssignmentService(
     val referral = referralRepository.findById(referralId)
       .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Referral not found") }
 
-    val activeAssignments: List<ReferralUserAssignment> = referralUserAssignmentRepository.findActiveByReferralId(referralId)
+    val activeAssignments: List<ReferralUserAssignment> = referralUserAssignmentRepository.findActiveByReferralId(referral.id)
 
     return activeAssignments
       .map {
@@ -66,7 +63,9 @@ class ReferralAssignmentService(
     val submittedAssignments = mutableListOf<Pair<String, UserDto>>()
     val failures = mutableListOf<AssignmentFailureDto>()
 
-    validateCaseWorkerByEmails(caseWorkers).forEach { (validation, user) ->
+    val uniqueCaseworkers = caseWorkers.distinctBy { it.emailAddress }
+
+    validateCaseWorkerByEmails(uniqueCaseworkers).forEach { (validation, user) ->
       if (validation.isValid) {
         user?.let {
           submittedAssignments += validation.emailAddress to it
@@ -107,22 +106,22 @@ class ReferralAssignmentService(
 
     if (failures.all { it.reason.isNullOrEmpty() }) {
       toAdd.forEach { userIdToAdd ->
-        var user = submittedAssignments.first { it.second.id == userIdToAdd }.second
+        val user = submittedAssignments.first { it.second.id == userIdToAdd }.second
         referralUserAssignmentRepository.save(
           ReferralUserAssignment(UUID.randomUUID(), referral, user.toEntity(), now, assigner),
         )
       }
       toUpdate.forEach { userIdToUpdate ->
-        var user = existingAssignments.first { it.id == userIdToUpdate }
+        val user = existingAssignments.first { it.id == userIdToUpdate }
         referralUserAssignmentRepository.updateByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
       }
       toRemove.forEach { userIdToRemove ->
-        var user = existingAssignments.first { it.id == userIdToRemove }
+        val user = existingAssignments.first { it.id == userIdToRemove }
         referralUserAssignmentRepository.markDeletedByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
       }
 
       val isModified = toUpdate.isNotEmpty()
-      val isSingleChange = submittedAssignments.size == 1
+      val isSingleChange = (toAdd.size + toUpdate.size == 1)
       return AssignCaseWorkersResult(
         success = true,
         message = when {
@@ -134,7 +133,7 @@ class ReferralAssignmentService(
         succeededList = submittedAssignments.map { CaseWorkerDto(userType = if (it.second.authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL, userId = it.second.id, it.second.fullName, it.second.hmppsAuthUsername) },
       )
     } else {
-      val result: AssignCaseWorkersResult = AssignCaseWorkersResult(
+      val result = AssignCaseWorkersResult(
         success = false,
         message = "Failed to assign case worker(s)",
         failureList = failures,
@@ -184,7 +183,7 @@ class ReferralAssignmentService(
     if (uniqueEmailsCount.size > MAX_CASE_WORKERS) {
       return AssignCaseWorkersResult(
         success = false,
-        message = "Cannot assign more than $MAX_CASE_WORKERS emails.",
+        message = "Cannot assign more than $MAX_CASE_WORKERS caseworkers.",
       )
     } else if (uniqueEmailsCount.isEmpty()) {
       return AssignCaseWorkersResult(

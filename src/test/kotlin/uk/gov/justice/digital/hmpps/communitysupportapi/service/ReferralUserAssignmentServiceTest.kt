@@ -42,10 +42,10 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   private lateinit var referralAssignmentService: ReferralAssignmentService
 
   @Test
-  fun `assignCaseWorker should save case worker assignments`() {
+  fun `assignCaseWorker should save a case worker assignment`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assigner.id)
-    val user: ReferralUser = setupUser("victoriasmith@email.com")
+    val user: ReferralUser = setupUser("victoriasmith@email.com", "Victor Smith")
 
     val emailsList = listOf("victoriasmith@email.com")
 
@@ -58,8 +58,67 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to a caseworker.")
     assertThat(result?.succeededList?.size).isEqualTo(1)
-    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo("victoriasmith@email.com")
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
+  }
+
+  @Test
+  fun `assignCaseWorker should save case worker assignments`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    val user2: ReferralUser = setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+    val user3: ReferralUser = setupUser("caseworker3@email.com", "Caseworker 3 Full Name")
+
+    val emailsList = listOf(
+      "caseworker1@email.com",
+      "caseworker2@email.com",
+      "caseworker3@email.com",
+    )
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
+    assertThat(result?.succeededList?.size).isEqualTo(3)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+  }
+
+  @Test
+  fun `assignCaseWorker with more than 5 assignments`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assigner.id)
+    setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+    setupUser("caseworker3@email.com", "Caseworker 3 Full Name")
+    setupUser("caseworker4@email.com", "Caseworker 4 Full Name")
+    setupUser("caseworker5@email.com", "Caseworker 5 Full Name")
+    setupUser("caseworker6@email.com", "Caseworker 6 Full Name")
+
+    val emailsList = listOf(
+      "caseworker1@email.com",
+      "caseworker2@email.com",
+      "caseworker3@email.com",
+      "caseworker4@email.com",
+      "caseworker5@email.com",
+      "caseworker6@email.com",
+    )
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isFalse()
+    assertThat(result?.message).isEqualTo("Cannot assign more than 5 caseworkers.")
   }
 
   @Test
@@ -103,13 +162,18 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
-  fun `getAssignedCaseWorkers should return assigned case workers`() {
+  fun `inputs with 5 same email addresses submitted - all the sames`() {
     val assigner: ReferralUser = setupAssigner()
-    val referral: Referral = setUpReferral(assigner.id)
-    val user1: ReferralUser = setupUser("assigntestuser1@email.com")
-    val user2: ReferralUser = setupUser("assigntestuser2@email.com")
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
 
-    val emailsList = listOf("assigntestuser1@email.com", "assigntestuser2@email.com")
+    val emailsList = listOf(
+      "caseworker1@email.com",
+      "caseworker1@email.com",
+      "caseworker1@email.com",
+      "caseworker1@email.com",
+      "caseworker1@email.com",
+    )
 
     val caseWorkers = emailsList
       .map { email ->
@@ -117,8 +181,145 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
       }
 
     val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
-    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to a caseworker.")
+    assertThat(result?.succeededList?.size).isEqualTo(1)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
 
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(assignedCaseWorkers?.size).isEqualTo(1)
+    assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+  }
+
+  @Test
+  fun `inputs with same email addresses submitted but not all the sames`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    val user2: ReferralUser = setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+    val user3: ReferralUser = setupUser("caseworker3@email.com", "Caseworker 3 Full Name")
+
+    val emailsList = listOf(
+      "caseworker1@email.com",
+      "caseworker2@email.com",
+      "caseworker2@email.com",
+      "caseworker1@email.com",
+      "caseworker3@email.com",
+    )
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
+    assertThat(result?.succeededList?.size).isEqualTo(3)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(assignedCaseWorkers?.size).isEqualTo(3)
+    assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(assignedCaseWorkers?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(assignedCaseWorkers?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+  }
+
+  @Test
+  fun `inputs with same email addresses submitted with invalid email address - partial the sames`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    val user2: ReferralUser = setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+    val user3: ReferralUser = setupUser("caseworker3@email.com", "Caseworker 3 Full Name")
+
+    val emailsList = listOf(
+      "caseworker1@email.com",
+      "caseworker2@email.com",
+      "caseworker2@email.com",
+      "caseworkeremail.com",
+      "caseworker3@email.com",
+    )
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isFalse()
+    assertThat(result?.message).isEqualTo("Failed to assign case worker(s)")
+    assertThat(result?.succeededList).isEmpty()
+    assertThat(result?.failureList?.size).isEqualTo(4)
+    assertThat(result?.failureList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.failureList?.get(0)?.reason).isEqualTo("")
+    assertThat(result?.failureList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(result?.failureList?.get(1)?.reason).isEqualTo("")
+    assertThat(result?.failureList?.get(2)?.emailAddress).isEqualTo("caseworkeremail.com")
+    assertThat(result?.failureList?.get(2)?.reason).isEqualTo("Enter an email address in the correct format, like name@example.com")
+    assertThat(result?.failureList?.get(3)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.failureList?.get(3)?.reason).isEqualTo("")
+  }
+
+  @Test
+  fun `inputs with same email addresses submitted and an unknown user`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    val user2: ReferralUser = setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+
+    val emailsList = listOf(
+      "caseworker1@email.com",
+      "caseworker2@email.com",
+      "caseworker7@email.com",
+      "caseworker2@email.com",
+      "caseworker1@email.com",
+    )
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isFalse()
+    assertThat(result?.message).isEqualTo("Failed to assign case worker(s)")
+    assertThat(result?.succeededList).isEmpty()
+    assertThat(result?.failureList?.size).isEqualTo(3)
+    assertThat(result?.failureList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.failureList?.get(0)?.reason).isEqualTo("")
+    assertThat(result?.failureList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(result?.failureList?.get(1)?.reason).isEqualTo("")
+    assertThat(result?.failureList?.get(2)?.emailAddress).isEqualTo("caseworker7@email.com")
+    assertThat(result?.failureList?.get(2)?.reason).isEqualTo("Could not find a caseworker with that email address.")
+  }
+
+  @Test
+  fun `getAssignedCaseWorkers should return assigned case workers`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    val user2: ReferralUser = setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+
+    val emailsList = listOf("caseworker1@email.com", "caseworker2@email.com")
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
+    assertThat(result?.succeededList?.size).isEqualTo(2)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
     assertThat(assignedCaseWorkers?.size).isEqualTo(2)
     assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(assignedCaseWorkers?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
@@ -144,13 +345,13 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     return savedReferral
   }
 
-  private fun setupUser(userName: String): ReferralUser {
+  private fun setupUser(userName: String, fullName: String): ReferralUser {
     val user = referralUserRepository.findByHmppsAuthUsernameIgnoreCase(userName)
       ?: referralUserRepository.saveAndFlush(
         ReferralUserFactory()
           .withHmppsAuthId(UUID.randomUUID().toString())
           .withHmppsAuthUsername(userName)
-          .withFullName("Victoria Smith")
+          .withFullName(fullName)
           .create(),
       )
     return user
