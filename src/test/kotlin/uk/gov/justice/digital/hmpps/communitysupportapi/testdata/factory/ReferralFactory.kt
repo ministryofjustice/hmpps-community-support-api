@@ -35,7 +35,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
   private var id: UUID = UUID.randomUUID()
   private var personId: UUID = UUID.randomUUID()
   private var crn: String = "CRN${(100000..999999).random()}"
-  private var referenceNumber: String? = "REF-${(1000..9999).random()}"
+  private var referenceNumber: String? = "AA${(1000..9999).random()}BB"
   private var createdAt: OffsetDateTime = OffsetDateTime.now()
   private var updatedAt: OffsetDateTime? = OffsetDateTime.now()
   private var urgency: Boolean? = null

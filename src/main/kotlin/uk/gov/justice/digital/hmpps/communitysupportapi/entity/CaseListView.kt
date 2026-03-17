@@ -39,4 +39,7 @@ class CaseListView(
   @JdbcTypeCode(SqlTypes.ARRAY)
   @Column(name = "case_workers", columnDefinition = "text[]")
   val caseWorkers: List<String> = emptyList(),
+
+  @Column(name = "reference_number")
+  val referenceNumber: String,
 )

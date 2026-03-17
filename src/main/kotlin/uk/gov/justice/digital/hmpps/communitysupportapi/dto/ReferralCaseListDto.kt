@@ -7,6 +7,7 @@ import java.util.UUID
 
 data class ReferralCaseListDto(
   val referralId: UUID,
+  val referenceNumber: String,
   val personName: String,
   val personIdentifier: String,
   val date: String,
@@ -21,6 +22,7 @@ data class ReferralCaseListDto(
       personIdentifier = caseListView.personIdentifier,
       date = caseListView.dateReceived.format(DATE_FORMATTER),
       caseWorkers = caseListView.caseWorkers,
+      referenceNumber = caseListView.referenceNumber,
     )
   }
 }
