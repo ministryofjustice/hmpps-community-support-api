@@ -554,7 +554,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
       appointmentHelper.createAppointmentStatusHistory(
         appointment,
-        AppointmentStatusHistoryType.ATTENDED,
+        AppointmentStatusHistoryType.NEEDS_FEEDBACK,
         appointmentDateTime,
       )
 
@@ -580,9 +580,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           val referralProgressDto = body.first()
 
           referralProgressDto.referralId shouldBe referral.id
+          referralProgressDto.personName shouldBe person.firstName + " " + person.lastName
           referralProgressDto.appointmentId shouldBe appointment.id
           referralProgressDto.appointmentDateTime shouldBe appointmentDateTime
-          referralProgressDto.status shouldBe AppointmentStatusHistoryType.ATTENDED
+          referralProgressDto.status shouldBe AppointmentStatusHistoryType.NEEDS_FEEDBACK
         }
     }
   }
