@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -116,8 +117,13 @@ class ReferralController(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "Referral Details found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralDetailsBffResponseDto::class))],
+        description = "Referral progress details",
+        content = [
+          Content(
+            mediaType = "application/json",
+            array = ArraySchema(schema = Schema(implementation = ReferralProgressDto::class)),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "404",

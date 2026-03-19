@@ -136,9 +136,12 @@ class ReferralService(
   }
 
   fun getReferralProgress(referralId: UUID): List<ReferralProgressDto> {
-    if (!referralRepository.existsById(referralId)) {
-      throw NotFoundException("Referral not found for id $referralId")
-    }
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val personName = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+      .let { "${it.firstName} ${it.lastName}" }
 
     val appointments = appointmentRepository.findAllByReferralId(referralId).orEmpty()
     if (appointments.isEmpty()) return emptyList()
@@ -167,6 +170,7 @@ class ReferralService(
 
       ReferralProgressDto(
         referralId = referralId,
+        personName = personName,
         appointmentId = appointment.id,
         appointmentType = appointment.type,
         appointmentDateTime = ics.appointmentDateTime,

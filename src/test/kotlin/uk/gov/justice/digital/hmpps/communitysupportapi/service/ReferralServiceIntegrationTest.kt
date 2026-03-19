@@ -257,7 +257,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val appointment = appointmentHelper.createAppointment(referral)
 
     appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED, yesterday)
-    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.ATTENDED, appointmentDateTime)
+    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.NEEDS_FEEDBACK, appointmentDateTime)
 
     appointmentHelper.createAppointmentIcs(
       appointment = appointment,
@@ -275,9 +275,10 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val referralProgressDto = result.first()
 
     assertEquals(referral.id, referralProgressDto.referralId)
+    assertEquals(person.firstName + " " + person.lastName, referralProgressDto.personName)
     assertEquals(appointment.id, referralProgressDto.appointmentId)
     assertEquals(appointmentDateTime, referralProgressDto.appointmentDateTime)
-    assertEquals(AppointmentStatusHistoryType.ATTENDED, referralProgressDto.status)
+    assertEquals(AppointmentStatusHistoryType.NEEDS_FEEDBACK, referralProgressDto.status)
   }
 
   private fun setUpData(): CreateReferralRequest {

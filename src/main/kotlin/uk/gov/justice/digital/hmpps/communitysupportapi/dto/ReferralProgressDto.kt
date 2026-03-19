@@ -7,6 +7,7 @@ import java.util.UUID
 
 data class ReferralProgressDto(
   val referralId: UUID,
+  val personName: String,
   val appointmentId: UUID,
   val appointmentType: AppointmentType,
   val appointmentDateTime: LocalDateTime,
