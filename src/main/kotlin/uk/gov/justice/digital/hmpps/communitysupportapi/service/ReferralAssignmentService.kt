@@ -91,8 +91,8 @@ class ReferralAssignmentService(
     }
 
     val allAssignments = referralUserAssignmentRepository.findAllByReferralId(referral.id)
-    val existingAssignments = allAssignments.filter { it.deletedBy != null && it.deletedAt != null }
-    val deletedAssignments = allAssignments.filter { it.deletedBy == null || it.deletedAt == null }
+    val existingAssignments = allAssignments.filter { it.deletedBy == null && it.deletedAt == null }
+    val deletedAssignments = allAssignments.filter { it.deletedBy != null || it.deletedAt != null } //???
 
     val submittedIds = submittedAssignments.map { (email, user) -> user.id }.toSet()
     val existingIds = existingAssignments.map { it.id }.toSet()
@@ -116,8 +116,7 @@ class ReferralAssignmentService(
         referralUserAssignmentRepository.updateByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
       }
       toRemove.forEach { userIdToRemove ->
-        val user = existingAssignments.first { it.id == userIdToRemove }
-        referralUserAssignmentRepository.markDeletedByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
+        referralUserAssignmentRepository.deleteById(userIdToRemove)
       }
 
       val isModified = toUpdate.isNotEmpty()

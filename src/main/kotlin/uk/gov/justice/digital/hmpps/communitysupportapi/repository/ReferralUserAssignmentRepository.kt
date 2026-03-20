@@ -37,6 +37,8 @@ interface ReferralUserAssignmentRepository : JpaRepository<ReferralUserAssignmen
     @Param("userId") userId: UUID,
     @Param("createdBy") createdBy: UUID,
     @Param("createdAt") createdAt: LocalDateTime,
+    @Param("deletedBy") deletedBy: UUID?,
+    @Param("deletedAt") deletedAt: LocalDateTime?,
   ): List<ReferralUserAssignment>
 
   @Modifying
