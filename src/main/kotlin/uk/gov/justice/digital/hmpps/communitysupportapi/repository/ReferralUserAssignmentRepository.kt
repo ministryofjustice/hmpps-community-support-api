@@ -28,7 +28,7 @@ interface ReferralUserAssignmentRepository : JpaRepository<ReferralUserAssignmen
   @Query(
     """
     UPDATE ReferralUserAssignment a
-    SET a.createdBy = :createdBy, a.createdAt = :createdAt, a.deletedBy = null, a.deletedAt = null
+    SET a.createdBy.id = :createdBy, a.createdAt = :createdAt, a.deletedBy = null, a.deletedAt = null
     WHERE a.referral.id = :referralId AND a.user.id = :userId
     """,
   )
@@ -37,15 +37,25 @@ interface ReferralUserAssignmentRepository : JpaRepository<ReferralUserAssignmen
     @Param("userId") userId: UUID,
     @Param("createdBy") createdBy: UUID,
     @Param("createdAt") createdAt: LocalDateTime,
-    @Param("deletedBy") deletedBy: UUID?,
-    @Param("deletedAt") deletedAt: LocalDateTime?,
-  ): List<ReferralUserAssignment>
+  ): Int
+
+  @Modifying
+  @Query(
+    """
+    DELETE FROM ReferralUserAssignment a
+    WHERE a.referral.id = :referralId AND a.user.id = :userId
+    """,
+  )
+  fun deleteByReferralIdAndUserId(
+    @Param("referralId") referralId: UUID,
+    @Param("userId") userId: UUID,
+  ): Int
 
   @Modifying
   @Query(
     """
     UPDATE ReferralUserAssignment a
-    SET a.deletedBy = :deletedBy, a.deletedAt = :deletedAt
+    SET a.deletedBy.id = :deletedBy, a.deletedAt = :deletedAt
     WHERE a.referral.id = :referralId AND a.user.id = :userId
     """,
   )
@@ -54,5 +64,5 @@ interface ReferralUserAssignmentRepository : JpaRepository<ReferralUserAssignmen
     @Param("userId") userId: UUID,
     @Param("deletedBy") deletedBy: UUID,
     @Param("deletedAt") deletedAt: LocalDateTime,
-  ): List<ReferralUserAssignment>
+  ): Int
 }
