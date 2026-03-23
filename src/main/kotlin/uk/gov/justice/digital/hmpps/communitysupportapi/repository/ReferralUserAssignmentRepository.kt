@@ -39,13 +39,6 @@ interface ReferralUserAssignmentRepository : JpaRepository<ReferralUserAssignmen
     @Param("createdAt") createdAt: LocalDateTime,
   ): Int
 
-  @Modifying
-  @Query(
-    """
-    DELETE FROM ReferralUserAssignment a
-    WHERE a.referral.id = :referralId AND a.user.id = :userId
-    """,
-  )
   fun deleteByReferralIdAndUserId(
     @Param("referralId") referralId: UUID,
     @Param("userId") userId: UUID,
