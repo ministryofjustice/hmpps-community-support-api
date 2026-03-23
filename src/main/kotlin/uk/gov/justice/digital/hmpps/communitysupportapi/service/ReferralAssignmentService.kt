@@ -91,16 +91,18 @@ class ReferralAssignmentService(
     }
 
     val allAssignments = referralUserAssignmentRepository.findAllByReferralId(referral.id)
-    val existingAssignments = allAssignments.filter { it.deletedBy != null && it.deletedAt != null }
-    val deletedAssignments = allAssignments.filter { it.deletedBy == null || it.deletedAt == null }
+    val existingAssignments = allAssignments.filter { it.deletedBy == null && it.deletedAt == null }
+    val deletedAssignments = allAssignments.filter { it.deletedBy != null || it.deletedAt != null }
 
     val submittedIds = submittedAssignments.map { (email, user) -> user.id }.toSet()
-    val existingIds = existingAssignments.map { it.id }.toSet()
-    val deletedIds = deletedAssignments.map { it.id }.toSet()
+    val existingIds = existingAssignments.map { it.user.id }.toSet()
+    val deletedIds = deletedAssignments.map { it.user.id }.toSet()
 
-    val toUpdate = submittedIds intersect deletedIds
-    val toAdd = submittedIds - existingIds - deletedIds
-    val toRemove = existingIds - toAdd
+    val toRevertDelete = submittedIds intersect deletedIds // from delete back to normal stage
+    val unchanged = submittedIds intersect existingIds
+    val toUpdate = unchanged + toRevertDelete
+    val toAdd = submittedIds - existingIds - deletedIds // new entity never exists in db
+    val toRemove = existingIds - toAdd - toUpdate
 
     val now = LocalDateTime.now()
 
@@ -112,15 +114,15 @@ class ReferralAssignmentService(
         )
       }
       toUpdate.forEach { userIdToUpdate ->
-        val user = existingAssignments.first { it.id == userIdToUpdate }
+        val user = existingAssignments.first { it.user.id == userIdToUpdate }.user
         referralUserAssignmentRepository.updateByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
       }
       toRemove.forEach { userIdToRemove ->
-        val user = existingAssignments.first { it.id == userIdToRemove }
+        val user = existingAssignments.first { it.user.id == userIdToRemove }.user
         referralUserAssignmentRepository.markDeletedByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
       }
 
-      val isModified = toUpdate.isNotEmpty()
+      val isModified = toUpdate.isNotEmpty() || toRemove.isNotEmpty()
       val isSingleChange = (toAdd.size + toUpdate.size == 1)
       return AssignCaseWorkersResult(
         success = true,

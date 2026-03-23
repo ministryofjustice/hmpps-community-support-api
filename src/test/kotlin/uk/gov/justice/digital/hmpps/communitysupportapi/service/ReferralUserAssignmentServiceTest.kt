@@ -275,7 +275,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     val emailsList = listOf(
       "caseworker1@email.com",
       "caseworker2@email.com",
-      "caseworker7@email.com",
+      "caseworker9@email.com",
       "caseworker2@email.com",
       "caseworker1@email.com",
     )
@@ -294,8 +294,288 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.failureList?.get(0)?.reason).isEqualTo("")
     assertThat(result?.failureList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
     assertThat(result?.failureList?.get(1)?.reason).isEqualTo("")
-    assertThat(result?.failureList?.get(2)?.emailAddress).isEqualTo("caseworker7@email.com")
+    assertThat(result?.failureList?.get(2)?.emailAddress).isEqualTo("caseworker9@email.com")
     assertThat(result?.failureList?.get(2)?.reason).isEqualTo("Could not find a caseworker with that email address.")
+  }
+
+  @Test
+  fun `assigns the same caseworker twice`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+
+    val emailsList = listOf(
+      "caseworker1@email.com",
+    )
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to a caseworker.")
+    assertThat(result?.succeededList?.size).isEqualTo(1)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The caseworker assigned to this case has changed.")
+    assertThat(result?.succeededList?.size).isEqualTo(1)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(assignedCaseWorkers?.size).isEqualTo(1)
+    assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+  }
+
+  @Test
+  fun `assigns two caseworkers and then remove the 1st caseworker`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    val user2: ReferralUser = setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+
+    val caseWorkers = mutableListOf(
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker1@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker2@email.com"),
+    )
+
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
+    assertThat(result?.succeededList?.size).isEqualTo(2)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    caseWorkers.removeIf { it.emailAddress == "caseworker1@email.com" }
+
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The caseworker assigned to this case has changed.")
+    assertThat(result?.succeededList?.size).isEqualTo(1)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(assignedCaseWorkers?.size).isEqualTo(1)
+    assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+  }
+
+  @Test
+  fun `assigns five caseworkers and then remove the 2nd and 4th caseworkers`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    val user2: ReferralUser = setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+    val user3: ReferralUser = setupUser("caseworker3@email.com", "Caseworker 3 Full Name")
+    val user4: ReferralUser = setupUser("caseworker4@email.com", "Caseworker 4 Full Name")
+    val user5: ReferralUser = setupUser("caseworker5@email.com", "Caseworker 5 Full Name")
+
+    val caseWorkers = mutableListOf(
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker1@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker2@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker3@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker4@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker5@email.com"),
+    )
+
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
+    assertThat(result?.succeededList?.size).isEqualTo(5)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(3)?.emailAddress).isEqualTo(user4.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(4)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    caseWorkers.removeIf { it.emailAddress == "caseworker2@email.com" }
+    caseWorkers.removeIf { it.emailAddress == "caseworker4@email.com" }
+
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The caseworkers assigned to this case have changed.")
+    assertThat(result?.succeededList?.size).isEqualTo(3)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(result?.succeededList?.size).isEqualTo(3)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
+  }
+
+  @Test
+  fun `assigns five caseworkers and then replace another two new casworkers in the 2nd and 4th entries`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    val user2: ReferralUser = setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+    val user3: ReferralUser = setupUser("caseworker3@email.com", "Caseworker 3 Full Name")
+    val user4: ReferralUser = setupUser("caseworker4@email.com", "Caseworker 4 Full Name")
+    val user5: ReferralUser = setupUser("caseworker5@email.com", "Caseworker 5 Full Name")
+    val user6: ReferralUser = setupUser("caseworker6@email.com", "Caseworker 6 Full Name")
+    val user7: ReferralUser = setupUser("caseworker7@email.com", "Caseworker 7 Full Name")
+
+    val caseWorkers = mutableListOf(
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker1@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker2@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker3@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker4@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker5@email.com"),
+    )
+
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
+    assertThat(result?.succeededList?.size).isEqualTo(5)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(3)?.emailAddress).isEqualTo(user4.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(4)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    val newCaseWorkers = mutableListOf(
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker1@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker6@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker3@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker7@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker5@email.com"),
+    )
+
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, newCaseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The caseworkers assigned to this case have changed.")
+    assertThat(result?.succeededList?.size).isEqualTo(5)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user6.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(3)?.emailAddress).isEqualTo(user7.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(4)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(result?.succeededList?.size).isEqualTo(5)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user6.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(3)?.emailAddress).isEqualTo(user7.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(4)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
+  }
+
+  @Test
+  fun `assigns three caseworkers and then replace all with new caseworkers`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    val user2: ReferralUser = setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+    val user3: ReferralUser = setupUser("caseworker3@email.com", "Caseworker 3 Full Name")
+    val user4: ReferralUser = setupUser("caseworker4@email.com", "Caseworker 4 Full Name")
+    val user5: ReferralUser = setupUser("caseworker5@email.com", "Caseworker 5 Full Name")
+    val user6: ReferralUser = setupUser("caseworker6@email.com", "Caseworker 6 Full Name")
+
+    val caseWorkers = mutableListOf(
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker1@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker2@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker3@email.com"),
+    )
+
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
+    assertThat(result?.succeededList?.size).isEqualTo(3)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    val newCaseWorkers = mutableListOf(
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker4@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker5@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker6@email.com"),
+    )
+
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, newCaseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The caseworkers assigned to this case have changed.")
+    assertThat(result?.succeededList?.size).isEqualTo(3)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user4.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user6.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(result?.succeededList?.size).isEqualTo(3)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user4.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user6.hmppsAuthUsername)
+  }
+
+  @Test
+  fun `assigns four caseworkers and then replace another two and add one more caseworkers`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assignerId = assigner.id)
+    val user1: ReferralUser = setupUser("caseworker1@email.com", "Caseworker 1 Full Name")
+    val user2: ReferralUser = setupUser("caseworker2@email.com", "Caseworker 2 Full Name")
+    val user3: ReferralUser = setupUser("caseworker3@email.com", "Caseworker 3 Full Name")
+    val user4: ReferralUser = setupUser("caseworker4@email.com", "Caseworker 4 Full Name")
+    val user5: ReferralUser = setupUser("caseworker5@email.com", "Caseworker 5 Full Name")
+    val user6: ReferralUser = setupUser("caseworker6@email.com", "Caseworker 6 Full Name")
+    val user7: ReferralUser = setupUser("caseworker7@email.com", "Caseworker 7 Full Name")
+
+    val caseWorkers = mutableListOf(
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker1@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker2@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker3@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker4@email.com"),
+    )
+
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
+    assertThat(result?.succeededList?.size).isEqualTo(4)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(3)?.emailAddress).isEqualTo(user4.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    val newCaseWorkers = mutableListOf(
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker7@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker6@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker3@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker5@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker1@email.com"),
+    )
+
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, newCaseWorkers)
+    assertThat(result?.success).isTrue()
+    assertThat(result?.message).isEqualTo("The caseworkers assigned to this case have changed.")
+    assertThat(result?.succeededList?.size).isEqualTo(5)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user7.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user6.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(3)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(4)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
+    assertThat(result?.failureList).isEmpty()
+
+    referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    assertThat(result?.succeededList?.size).isEqualTo(5)
+    assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user7.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user6.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(3)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
+    assertThat(result?.succeededList?.get(4)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
   }
 
   @Test
