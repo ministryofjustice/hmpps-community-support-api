@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
@@ -23,6 +25,7 @@ class Appointment(
   @JoinColumn(name = "referral_id", nullable = false)
   val referral: Referral,
 
+  @Enumerated(EnumType.STRING)
   @Column(name = "type", nullable = false)
   val type: AppointmentType,
 )

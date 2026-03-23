@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.IdClass
@@ -21,6 +23,8 @@ enum class AppointmentStatusHistoryType {
   SCHEDULED,
   NEEDS_FEEDBACK,
   COMPLETED,
+  RESCHEDULED,
+  DID_NOT_ATTEND,
 }
 
 @Entity
@@ -36,6 +40,7 @@ class AppointmentStatusHistory(
   @Column(name = "created_at", nullable = false)
   val createdAt: LocalDateTime = LocalDateTime.now(),
 
+  @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false)
   val status: AppointmentStatusHistoryType,
 )
