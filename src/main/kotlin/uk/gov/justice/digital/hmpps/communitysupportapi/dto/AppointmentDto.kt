@@ -118,11 +118,13 @@ data class AppointmentIcsResponse(
   val appointmentStatus: AppointmentStatusHistoryType,
   val sessionMethod: SessionMethod,
   val sessionCommunications: List<String>,
+  val referralFirstName: String,
+  val referralLastName: String,
   val createdAt: OffsetDateTime,
 ) {
 
   companion object {
-    fun from(ics: AppointmentIcs, status: AppointmentStatusHistoryType): AppointmentIcsResponse {
+    fun from(ics: AppointmentIcs, status: AppointmentStatusHistoryType, referralName: String): AppointmentIcsResponse {
       val appointmentDateTime = ics.appointmentDateTime
       val hour24 = appointmentDateTime.hour
       val amPm = if (hour24 < 12) "am" else "pm"
@@ -145,6 +147,8 @@ data class AppointmentIcsResponse(
         appointmentStatus = status,
         sessionMethod = buildSessionMethod(ics.appointmentDelivery),
         sessionCommunications = ics.sessionCommunication,
+        referralFirstName = referralName.substringBefore(" "),
+        referralLastName = referralName.substringAfter(" ", missingDelimiterValue = ""),
         createdAt = ics.createdAt.atOffset(ZoneOffset.UTC),
       )
     }
