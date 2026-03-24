@@ -341,6 +341,8 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       assertThat(first.sessionMethod).isInstanceOf(VirtualAppointment::class.java)
       assertThat(first.sessionMethod.type).isEqualTo("PHONE")
       assertThat(first.sessionCommunications).containsExactly("Phone call")
+      assertThat(first.referralFirstName).isEqualTo("Alex")
+      assertThat(first.referralLastName).isEqualTo("Jones")
 
       val second = items[1]
       assertThat(second.appointmentDate).isEqualTo(LocalDate.of(2026, 4, 5))
@@ -349,6 +351,8 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       assertThat(second.sessionMethod).isInstanceOf(VirtualAppointment::class.java)
       assertThat(second.sessionMethod.type).isEqualTo("VIDEO")
       assertThat(second.sessionCommunications).containsExactly("Email", "Text message")
+      assertThat(second.referralFirstName).isEqualTo("Alex")
+      assertThat(second.referralLastName).isEqualTo("Jones")
     }
 
     @Test
