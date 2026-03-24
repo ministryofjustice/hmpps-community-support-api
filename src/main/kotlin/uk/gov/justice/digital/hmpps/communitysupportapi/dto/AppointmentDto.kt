@@ -3,6 +3,8 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping
+import io.swagger.v3.oas.annotations.media.Schema
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
@@ -70,6 +72,14 @@ enum class SessionMethodType {
 @JsonSubTypes(
   JsonSubTypes.Type(value = VirtualAppointment::class, name = "VIRTUAL"),
   JsonSubTypes.Type(value = InPersonAppointment::class, name = "IN_PERSON"),
+)
+@Schema(
+  discriminatorProperty = "appointmentCategory",
+  oneOf = [VirtualAppointment::class, InPersonAppointment::class],
+  discriminatorMapping = [
+    DiscriminatorMapping(value = "VIRTUAL", schema = VirtualAppointment::class),
+    DiscriminatorMapping(value = "IN_PERSON", schema = InPersonAppointment::class),
+  ],
 )
 sealed class SessionMethod {
   abstract val type: String
