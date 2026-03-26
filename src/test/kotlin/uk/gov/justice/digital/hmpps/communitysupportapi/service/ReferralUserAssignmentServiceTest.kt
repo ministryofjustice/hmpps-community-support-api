@@ -310,7 +310,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
 
     val caseWorkers = emailsList
       .map { email ->
-        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase(), userId = user1.id)
       }
 
     var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
@@ -485,9 +485,9 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     val user6: ReferralUser = setupUser("caseworker6@email.com", "Caseworker 6 Full Name")
 
     val caseWorkers = mutableListOf(
-      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker1@email.com"),
-      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker2@email.com"),
-      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker3@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker1@email.com", userId = UUID.randomUUID()),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker2@email.com", userId = UUID.randomUUID()),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker3@email.com", userId = UUID.randomUUID()),
     )
 
     var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
@@ -500,9 +500,9 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.failureList).isEmpty()
 
     val newCaseWorkers = mutableListOf(
-      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker4@email.com"),
-      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker5@email.com"),
-      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker6@email.com"),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker4@email.com", userId = UUID.randomUUID()),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker5@email.com", userId = UUID.randomUUID()),
+      CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker6@email.com", userId = UUID.randomUUID()),
     )
 
     result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, newCaseWorkers)
@@ -629,6 +629,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     val user = referralUserRepository.findByHmppsAuthUsernameIgnoreCase(userName)
       ?: referralUserRepository.saveAndFlush(
         ReferralUserFactory()
+          .withId(UUID.randomUUID())
           .withHmppsAuthId(UUID.randomUUID().toString())
           .withHmppsAuthUsername(userName)
           .withFullName(fullName)
