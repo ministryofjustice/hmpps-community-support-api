@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import com.nimbusds.oauth2.sdk.util.date.DateWithTimeZoneOffset
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -8,6 +9,9 @@ import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AssignmentFailureDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.UserDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.UserType
@@ -17,6 +21,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.OffsetTime
 import java.util.UUID
 import java.util.regex.Pattern
 
@@ -63,7 +69,7 @@ class ReferralAssignmentService(
     val submittedAssignments = mutableListOf<Pair<String, UserDto>>()
     val failures = mutableListOf<AssignmentFailureDto>()
 
-    val uniqueCaseworkers = caseWorkers.distinctBy { it.emailAddress }
+    val uniqueCaseworkers = caseWorkers.distinctBy { Pair(it.emailAddress, it.userId) }
 
     validateCaseWorkerByEmails(uniqueCaseworkers).forEach { (validation, user) ->
       if (validation.isValid) {
@@ -92,55 +98,42 @@ class ReferralAssignmentService(
 
     val allAssignments = referralUserAssignmentRepository.findAllByReferralId(referral.id)
     val existingAssignments = allAssignments.filter { it.deletedBy == null && it.deletedAt == null }
-    val deletedAssignments = allAssignments.filter { it.deletedBy != null || it.deletedAt != null }
 
-    val submittedIds = submittedAssignments.map { (email, user) -> user.id }.toSet()
-    val existingIds = existingAssignments.map { it.user.id }.toSet()
-    val deletedIds = deletedAssignments.map { it.user.id }.toSet()
-
-    val toRevertDelete = submittedIds intersect deletedIds // from delete back to normal stage
-    val unchanged = submittedIds intersect existingIds
-    val toUpdate = unchanged + toRevertDelete
-    val toAdd = submittedIds - existingIds - deletedIds // new entity never exists in db
-    val toRemove = existingIds - toAdd - toUpdate
+    val submittedIds = submittedAssignments.map { (_, user) -> user.id }.toSet()
 
     val now = LocalDateTime.now()
 
-    if (failures.all { it.reason.isNullOrEmpty() }) {
-      toAdd.forEach { userIdToAdd ->
+    if (failures.all { it.reason.isEmpty() }) {
+      referralUserAssignmentRepository.deleteAllByReferralId(referral.id)
+
+      submittedIds.forEach { userIdToAdd ->
         val user = submittedAssignments.first { it.second.id == userIdToAdd }.second
         referralUserAssignmentRepository.save(
           ReferralUserAssignment(UUID.randomUUID(), referral, user.toEntity(), now, assigner),
         )
       }
-      toUpdate.forEach { userIdToUpdate ->
-        val user = existingAssignments.first { it.user.id == userIdToUpdate }.user
-        referralUserAssignmentRepository.updateByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
-      }
-      toRemove.forEach { userIdToRemove ->
-        val user = existingAssignments.first { it.user.id == userIdToRemove }.user
-        referralUserAssignmentRepository.markDeletedByReferralIdAndUserId(referral.id, user.id, assigner.id, now)
-      }
 
-      val isModified = toUpdate.isNotEmpty() || toRemove.isNotEmpty()
-      val isSingleChange = (toAdd.size + toUpdate.size == 1)
-      return AssignCaseWorkersResult(
+      val isModified = submittedAssignments.isNotEmpty() || existingAssignments.isNotEmpty()
+      val isNotInProgress = existingAssignments.isEmpty()
+      val isSingleCaseWorkerAssigned = submittedIds.size == 1
+      val result = AssignCaseWorkersResult(
         success = true,
         message = when {
-          isModified && isSingleChange -> "The caseworker assigned to this case has changed."
-          isModified -> "The caseworkers assigned to this case have changed."
-          isSingleChange -> "The case has been assigned to a caseworker."
+          isModified && isSingleCaseWorkerAssigned && !isNotInProgress-> "The caseworker assigned to this case has changed."
+          isSingleCaseWorkerAssigned  -> "The case has been assigned to a caseworker."
+          isModified && !isNotInProgress -> "The caseworkers assigned to this case have changed."
           else -> "The case has been assigned to caseworkers."
         },
         succeededList = submittedAssignments.map { CaseWorkerDto(userType = if (it.second.authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL, userId = it.second.id, it.second.fullName, it.second.hmppsAuthUsername) },
       )
+      log.info("Caseworkers assigned to referral {}: {}", referralId, result)
+      return result
     } else {
-      val result = AssignCaseWorkersResult(
+      return AssignCaseWorkersResult(
         success = false,
         message = "Failed to assign case worker(s)",
         failureList = failures,
       )
-      return result
     }
   }
 

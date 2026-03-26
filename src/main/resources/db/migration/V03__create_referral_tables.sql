@@ -72,10 +72,6 @@ CREATE TABLE IF NOT EXISTS referral_user_assignment (
     deleted_by UUID REFERENCES referral_user(id)
 );
 
-CREATE UNIQUE INDEX idx_referral_user_assignment_unique_active
-    ON referral_user_assignment (referral_id, user_id)
-    WHERE deleted_at IS NULL;
-
 -- Comments for referral_user_assignment table columns
 COMMENT ON COLUMN referral_user_assignment.id IS 'Unique identifier for the referral user assignment';
 COMMENT ON COLUMN referral_user_assignment.referral_id IS 'Foreign key reference to the referral table';
