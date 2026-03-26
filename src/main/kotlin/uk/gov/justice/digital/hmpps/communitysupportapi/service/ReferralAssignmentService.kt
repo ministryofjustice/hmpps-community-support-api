@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
-import com.nimbusds.oauth2.sdk.util.date.DateWithTimeZoneOffset
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -9,9 +8,6 @@ import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AssignmentFailureDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.UserDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.UserType
@@ -21,8 +17,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.OffsetTime
 import java.util.UUID
 import java.util.regex.Pattern
 
@@ -119,8 +113,8 @@ class ReferralAssignmentService(
       val result = AssignCaseWorkersResult(
         success = true,
         message = when {
-          isModified && isSingleCaseWorkerAssigned && !isNotInProgress-> "The caseworker assigned to this case has changed."
-          isSingleCaseWorkerAssigned  -> "The case has been assigned to a caseworker."
+          isModified && isSingleCaseWorkerAssigned && !isNotInProgress -> "The caseworker assigned to this case has changed."
+          isSingleCaseWorkerAssigned -> "The case has been assigned to a caseworker."
           isModified && !isNotInProgress -> "The caseworkers assigned to this case have changed."
           else -> "The case has been assigned to caseworkers."
         },

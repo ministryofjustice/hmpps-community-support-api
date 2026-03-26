@@ -45,7 +45,7 @@ interface ReferralUserAssignmentRepository : JpaRepository<ReferralUserAssignmen
   ): Int
 
   fun deleteAllByReferralId(
-    @Param(value = "referralId") referralId: UUID
+    @Param(value = "referralId") referralId: UUID,
   ): Int
 
   @Modifying
