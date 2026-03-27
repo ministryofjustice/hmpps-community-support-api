@@ -507,7 +507,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return an empty list when no appointments exist for referral`() {
+    fun `should return an Referrral Progress object with an empty appointments list when no appointments exist for referral`() {
       val person = referralHelper.createPerson()
       val referralUser = referralHelper.ensureReferralUser()
       val referral = referralHelper.createReferral(person, submittedBy = referralUser)
@@ -516,10 +516,15 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .uri("/bff/referral-details/${referral.id}/progress")
         .headers(setAuthorisation())
         .exchange()
-        .expectStatus()
-        .isOk
-        .expectBody()
-        .json("[]")
+        .expectStatus().isOk
+        .expectBody<ReferralProgressDto>()
+        .consumeWith { response ->
+          val referralProgressDto = response.responseBody!!
+
+          referralProgressDto.referralId shouldBe referral.id
+          referralProgressDto.fullName shouldBe person.firstName + " " + person.lastName
+          referralProgressDto.appointments.size shouldBe 0
+        }
     }
 
     @Test
@@ -572,18 +577,16 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
-        .expectBody<List<ReferralProgressDto>>()
+        .expectBody<ReferralProgressDto>()
         .consumeWith { response ->
-          val body = response.responseBody!!
-          body.size shouldBe 1
-
-          val referralProgressDto = body.first()
+          val referralProgressDto = response.responseBody!!
 
           referralProgressDto.referralId shouldBe referral.id
-          referralProgressDto.personName shouldBe person.firstName + " " + person.lastName
-          referralProgressDto.appointmentId shouldBe appointment.id
-          referralProgressDto.appointmentDateTime shouldBe appointmentDateTime
-          referralProgressDto.status shouldBe AppointmentStatusHistoryType.NEEDS_FEEDBACK
+          referralProgressDto.fullName shouldBe person.firstName + " " + person.lastName
+          referralProgressDto.appointments.size shouldBe 1
+          referralProgressDto.appointments[0].appointmentId shouldBe appointment.id
+          referralProgressDto.appointments[0].dateTime shouldBe appointmentDateTime
+          referralProgressDto.appointments[0].status shouldBe AppointmentStatusHistoryType.NEEDS_FEEDBACK
         }
     }
   }

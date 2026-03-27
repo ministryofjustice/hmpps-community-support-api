@@ -193,14 +193,16 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   }
 
   @Test
-  fun `getReferralProgress should return empty list when referral has no appointments`() {
+  fun `getReferralProgress should return dto with an empty appointments list when referral has no appointments`() {
     val person = referralHelper.createPerson()
     val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
     val result = referralService.getReferralProgress(referral.id)
 
-    assertTrue(result.isEmpty())
+    assertEquals(referral.id, result.referralId)
+    assertEquals(person.firstName + " " + person.lastName, result.fullName)
+    assertTrue(result.appointments.isEmpty())
   }
 
   @Test
@@ -270,15 +272,13 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     val result = referralService.getReferralProgress(referral.id)
 
-    assertEquals(1, result.size)
+    assertEquals(referral.id, result.referralId)
+    assertEquals(person.firstName + " " + person.lastName, result.fullName)
 
-    val referralProgressDto = result.first()
-
-    assertEquals(referral.id, referralProgressDto.referralId)
-    assertEquals(person.firstName + " " + person.lastName, referralProgressDto.personName)
-    assertEquals(appointment.id, referralProgressDto.appointmentId)
-    assertEquals(appointmentDateTime, referralProgressDto.appointmentDateTime)
-    assertEquals(AppointmentStatusHistoryType.NEEDS_FEEDBACK, referralProgressDto.status)
+    assertEquals(1, result.appointments.size)
+    assertEquals(appointment.id, result.appointments[0].appointmentId)
+    assertEquals(appointmentDateTime, result.appointments[0].dateTime)
+    assertEquals(AppointmentStatusHistoryType.NEEDS_FEEDBACK, result.appointments[0].status)
   }
 
   private fun setUpData(): CreateReferralRequest {

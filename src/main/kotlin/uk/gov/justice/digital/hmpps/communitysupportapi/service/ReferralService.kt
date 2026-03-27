@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
@@ -135,7 +136,7 @@ class ReferralService(
     )
   }
 
-  fun getReferralProgress(referralId: UUID): List<ReferralProgressDto> {
+  fun getReferralProgress(referralId: UUID): ReferralProgressDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
@@ -144,7 +145,10 @@ class ReferralService(
       .let { "${it.firstName} ${it.lastName}" }
 
     val appointments = appointmentRepository.findAllByReferralId(referralId).orEmpty()
-    if (appointments.isEmpty()) return emptyList()
+
+    if (appointments.isEmpty()) {
+      return ReferralProgressDto(referralId = referralId, fullName = personName, appointments = emptyList())
+    }
 
     val appointmentIds = appointments.map { it.id }
 
@@ -160,7 +164,7 @@ class ReferralService(
       .findAllByAppointmentIdIn(appointmentIds)
       .groupBy { it.appointment.id }
 
-    return appointments.map { appointment ->
+    val appointmentHistory = appointments.map { appointment ->
       val ics = icsByAppointment.getValue(appointment.id)
 
       val latestStatus = statusHistoryByAppointment[appointment.id]
@@ -168,15 +172,15 @@ class ReferralService(
         ?.status
         ?: error("No status history for appointment ${appointment.id}")
 
-      ReferralProgressDto(
-        referralId = referralId,
-        personName = personName,
+      ReferralAppointmentHistoryDto(
         appointmentId = appointment.id,
-        appointmentType = appointment.type,
-        appointmentDateTime = ics.appointmentDateTime,
+        type = appointment.type,
+        dateTime = ics.appointmentDateTime,
         status = latestStatus,
       )
     }
+
+    return ReferralProgressDto(referralId = referralId, fullName = personName, appointments = appointmentHistory)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
