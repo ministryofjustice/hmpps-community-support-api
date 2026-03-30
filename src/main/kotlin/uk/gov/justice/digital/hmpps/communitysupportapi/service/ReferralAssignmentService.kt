@@ -40,7 +40,7 @@ class ReferralAssignmentService(
     val referral = referralRepository.findById(referralId)
       .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Referral not found") }
 
-    val activeAssignments: List<ReferralUserAssignment> = referralUserAssignmentRepository.findActiveByReferralId(referral.id)
+    val activeAssignments: List<ReferralUserAssignment> = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(referral.id)
 
     return activeAssignments
       .map {

@@ -17,10 +17,10 @@ interface ReferralUserAssignmentRepository : JpaRepository<ReferralUserAssignmen
         SELECT a
         FROM ReferralUserAssignment a
         WHERE a.referral.id = :referralId
-          AND a.deletedAt IS NULL or a.deletedBy IS NULL
+          AND (a.deletedAt IS NULL or a.deletedBy IS NULL)
     """,
   )
-  fun findActiveByReferralId(
+  fun findAllByReferralIdAndNotDeleted(
     @Param("referralId") referralId: UUID,
   ): List<ReferralUserAssignment>
 

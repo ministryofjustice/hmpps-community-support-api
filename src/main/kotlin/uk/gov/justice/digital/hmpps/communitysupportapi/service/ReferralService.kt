@@ -61,7 +61,7 @@ class ReferralService(
       is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value).first()
     }
     val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral?.personId}") }
-    val referralAssignments = referralUserAssignmentRepository.findActiveByReferralId(foundReferral.id)
+    val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(foundReferral.id)
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
   }
 
