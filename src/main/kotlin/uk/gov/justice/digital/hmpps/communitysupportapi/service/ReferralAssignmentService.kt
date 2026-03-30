@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -25,6 +26,7 @@ class ReferralAssignmentService(
   private val referralRepository: ReferralRepository,
   private val referralUserAssignmentRepository: ReferralUserAssignmentRepository,
   private val userService: UserService,
+  private val entityManager: EntityManager,
 ) {
   companion object {
     private const val MAX_CASE_WORKERS = 5
@@ -99,6 +101,7 @@ class ReferralAssignmentService(
 
     if (failures.all { it.reason.isEmpty() }) {
       referralUserAssignmentRepository.deleteAllByReferralId(referral.id)
+      entityManager.flush()
 
       submittedIds.forEach { userIdToAdd ->
         val user = submittedAssignments.first { it.second.id == userIdToAdd }.second

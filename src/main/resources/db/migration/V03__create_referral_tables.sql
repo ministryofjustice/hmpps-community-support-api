@@ -69,7 +69,8 @@ CREATE TABLE IF NOT EXISTS referral_user_assignment (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by UUID REFERENCES referral_user(id),
     deleted_at TIMESTAMP,
-    deleted_by UUID REFERENCES referral_user(id)
+    deleted_by UUID REFERENCES referral_user(id),
+    UNIQUE (referral_id, user_id)
 );
 
 -- Comments for referral_user_assignment table columns
