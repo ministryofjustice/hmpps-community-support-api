@@ -136,18 +136,22 @@ class ReferralService(
     )
   }
 
-  fun getReferralProgress(referralId: UUID): ReferralProgressDto {
-    val referral = referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+  fun getReferralProgress(referralIdentifier: String): ReferralProgressDto {
+    val referral = when (val identifier = identifierValidator.validate(referralIdentifier)) {
+      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
+        .orElseThrow { NotFoundException("Referral not found for id $identifier.value") }
+
+      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value).first()
+    }
 
     val personName = personRepository.findById(referral.personId)
-      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+      .orElseThrow { NotFoundException("Person not found for referral $referralIdentifier") }
       .let { "${it.firstName} ${it.lastName}" }
 
-    val appointments = appointmentRepository.findAllByReferralId(referralId).orEmpty()
+    val appointments = appointmentRepository.findAllByReferralId(referral.id).orEmpty()
 
     if (appointments.isEmpty()) {
-      return ReferralProgressDto(referralId = referralId, fullName = personName, appointments = emptyList())
+      return ReferralProgressDto(referralId = referral.id, fullName = personName, appointments = emptyList())
     }
 
     val appointmentIds = appointments.map { it.id }
@@ -180,7 +184,7 @@ class ReferralService(
       )
     }
 
-    return ReferralProgressDto(referralId = referralId, fullName = personName, appointments = appointmentHistory)
+    return ReferralProgressDto(referralId = referral.id, fullName = personName, appointments = appointmentHistory)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {

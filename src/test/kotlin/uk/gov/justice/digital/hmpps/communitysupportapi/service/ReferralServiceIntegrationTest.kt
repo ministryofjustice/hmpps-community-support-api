@@ -188,7 +188,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val nonExistentReferralId = UUID.randomUUID()
 
     assertThrows(NotFoundException::class.java) {
-      referralService.getReferralProgress(nonExistentReferralId)
+      referralService.getReferralProgress(nonExistentReferralId.toString())
     }
   }
 
@@ -198,7 +198,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
-    val result = referralService.getReferralProgress(referral.id)
+    val result = referralService.getReferralProgress(referral.id.toString())
 
     assertEquals(referral.id, result.referralId)
     assertEquals(person.firstName + " " + person.lastName, result.fullName)
@@ -214,7 +214,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     appointmentHelper.createAppointment(referral)
 
     assertThrows(IllegalStateException::class.java) {
-      referralService.getReferralProgress(referral.id)
+      referralService.getReferralProgress(referral.id.toString())
     }
   }
 
@@ -270,7 +270,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       communications = listOf("EMAIL", "SMS", "LETTER"),
     )
 
-    val result = referralService.getReferralProgress(referral.id)
+    val result = referralService.getReferralProgress(referral.id.toString())
 
     assertEquals(referral.id, result.referralId)
     assertEquals(person.firstName + " " + person.lastName, result.fullName)
