@@ -464,6 +464,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   @DisplayName("GET /bff/referral-details/{referralId}/progress")
   inner class ReferralProgressPageEndPoint {
     val referralId = UUID.randomUUID().toString()
+    val referralCaseRef = "AA1234DD"
 
     @BeforeEach
     fun setup() {
@@ -514,6 +515,27 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
       webTestClient.get()
         .uri("/bff/referral-details/${referral.id}/progress")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ReferralProgressDto>()
+        .consumeWith { response ->
+          val referralProgressDto = response.responseBody!!
+
+          referralProgressDto.referralId shouldBe referral.id
+          referralProgressDto.fullName shouldBe person.firstName + " " + person.lastName
+          referralProgressDto.appointments.size shouldBe 0
+        }
+    }
+
+    @Test
+    fun `should return a referral Progress object when given a case reference`() {
+      val person = referralHelper.createPerson()
+      val referralUser = referralHelper.ensureReferralUser()
+      val referral = referralHelper.createReferral(person, submittedBy = referralUser, referenceNumber = referralCaseRef)
+
+      webTestClient.get()
+        .uri("/bff/referral-details/$referralCaseRef/progress")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk

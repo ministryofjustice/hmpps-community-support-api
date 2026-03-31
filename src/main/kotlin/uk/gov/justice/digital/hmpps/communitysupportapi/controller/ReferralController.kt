@@ -132,12 +132,12 @@ class ReferralController(
       ),
     ],
   )
-  @GetMapping("/referral-details/{referralId}/progress")
-  fun getReferralProgressDetails(@PathVariable referralId: UUID): ResponseEntity<ReferralProgressDto> {
-    log.info("Fetching referral progress and appointments for referral={}", referralId)
-    val progress = referralService.getReferralProgress(referralId)
+  @GetMapping("/referral-details/{referralIdentifier}/progress")
+  fun getReferralProgressDetails(@PathVariable referralIdentifier: String): ResponseEntity<ReferralProgressDto> {
+    log.info("Fetching referral progress and appointments for referral={}", referralIdentifier)
+    val progress = referralService.getReferralProgress(referralIdentifier)
 
-    log.info("Referral {} has {} appointments in progress", referralId, progress.appointments.size)
+    log.info("Referral {} has {} appointments in progress", referralIdentifier, progress.appointments.size)
     return ResponseEntity.ok(progress)
   }
 }
