@@ -21,7 +21,7 @@ jobs:
 
           if [[ ! "$BRANCH_NAME" =~ $PATTERN ]]; then
             echo "❌ Branch name '$BRANCH_NAME' is invalid."
-            echo "Allowed format: feature/<name>, bugfix/<name>, hotfix/<name>, release/<name>"
+            echo "Allowed format: no-ticket/NAME or IPB-[JIRANUMBER]/name"
             exit 1
           fi
 
