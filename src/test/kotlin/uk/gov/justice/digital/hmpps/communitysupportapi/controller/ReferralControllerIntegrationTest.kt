@@ -154,12 +154,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return Not Found with invalid referral identifier`() {
-      webTestClient.get()
-        .uri("/bff/referrals/${referralHelper.communityServiceProviderId}")
-        .headers(setAuthorisation())
-        .exchange()
-        .expectStatus()
-        .isNotFound
+      assertNotFound(GET, "/bff/referrals/${referralHelper.communityServiceProviderId}")
     }
   }
 
@@ -356,17 +351,17 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
+      assertUnauthorized(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
+      assertForbiddenNoRole(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
+      assertForbiddenWrongRole(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
@@ -456,12 +451,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return Not Found with invalid referral identifier`() {
-      webTestClient.get()
-        .uri("/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
-        .headers(setAuthorisation())
-        .exchange()
-        .expectStatus()
-        .isNotFound
+      assertNotFound(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
     }
   }
 
@@ -479,41 +469,26 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      webTestClient.get()
-        .uri("/bff/referral-details/$referralId/progress")
-        .exchange()
-        .expectStatus().isUnauthorized
+      assertUnauthorized(GET, "/bff/referral-details/$referralId/progress")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      webTestClient.get()
-        .uri("/bff/referral-details/$referralId/progress")
-        .headers(setAuthorisation("AUTH_ADM", listOf(), listOf("read")))
-        .exchange()
-        .expectStatus().isForbidden
+      assertForbiddenNoRole(GET, "/bff/referral-details/$referralId/progress")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      webTestClient.get()
-        .uri("/bff/referral-details/$referralId/progress")
-        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
-        .exchange()
-        .expectStatus().isForbidden
+      assertForbiddenWrongRole(GET, "/bff/referral-details/$referralId/progress")
     }
 
     @Test
     fun `should return 404 when referral does not exist`() {
-      webTestClient.get()
-        .uri("/bff/referral-details/$referralId/progress")
-        .headers(setAuthorisation())
-        .exchange()
-        .expectStatus().isNotFound
+      assertNotFound(GET, "/bff/referral-details/$referralId/progress")
     }
 
     @Test
-    fun `should return an Referrral Progress object with an empty appointments list when no appointments exist for referral`() {
+    fun `should return an Referral Progress object with an empty appointments list when no appointments exist for referral`() {
       val person = referralHelper.createPerson()
       val referralUser = referralHelper.ensureReferralUser()
       val referral = referralHelper.createReferral(person, submittedBy = referralUser)

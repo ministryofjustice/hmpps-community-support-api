@@ -31,7 +31,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserA
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.CaseIdentifierValidator
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
-import java.util.Optional
 import java.util.UUID
 
 @Service
