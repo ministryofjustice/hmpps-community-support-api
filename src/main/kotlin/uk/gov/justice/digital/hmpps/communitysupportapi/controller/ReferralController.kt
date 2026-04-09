@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
@@ -23,8 +24,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
@@ -34,6 +37,7 @@ import java.util.UUID
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class ReferralController(
   private val referralService: ReferralService,
+  private val appointmentService: AppointmentService,
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
 ) {
@@ -139,5 +143,42 @@ class ReferralController(
 
     log.info("Referral {} has {} appointments in progress", referralIdentifier, progress.appointments.size)
     return ResponseEntity.ok(progress)
+  }
+
+  @Operation(summary = "Get ICS Details")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "ICS details found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            array = ArraySchema(schema = Schema(implementation = AppointmentIcsResponse::class)),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "ICS details not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/referral-details/{caseReference}/ics")
+  fun getICSDetails(@PathVariable caseReference: String): ResponseEntity<AppointmentIcsResponse> {
+    val referral = try {
+      referralService.getReferralDetailsPage(caseReference)
+    } catch (e: RuntimeException) {
+      log.warn("Referral not found for case reference={}", caseReference, e)
+      return ResponseEntity.notFound().build()
+    }
+
+    val icsAppointmentDetails = appointmentService.getIcsAppointmentsByReferral(referral.id)
+    val latestIcsDetail = icsAppointmentDetails
+      .filter { it.appointmentType == AppointmentType.ICS }
+      .maxByOrNull(AppointmentIcsResponse::appointmentDate)
+
+    return latestIcsDetail?.let { ResponseEntity.ok(it) } ?: ResponseEntity.notFound().build()
   }
 }
