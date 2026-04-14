@@ -1,5 +1,14 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IssuesAndConcernsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NextStepsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDetailsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionFeedbackRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
@@ -105,5 +114,68 @@ class AppointmentStatusHistoryFactory : TestEntityFactory<AppointmentStatusHisto
     appointment = appointment ?: error("Appointment must be provided"),
     status = status ?: error("Appointment Status must be provided"),
     createdAt = createdAt,
+  )
+}
+
+class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackRequest>() {
+
+  // Section 1 – Record session attendance
+  private var didSessionHappen: Boolean = true
+  private var howSessionTookPlace: SessionMethodRequest? = SessionMethodRequest(type = SessionMethodType.PHONE)
+
+  // Section 2 – Session details
+  private var wasPersonLate: Boolean? = false
+  private var lateReason: String? = null
+  private var duration: SessionDurationRequest? = SessionDurationRequest(hours = 1, minutes = 0)
+
+  // Section 3 – Session feedback
+  private var whatHappened: String? = "Discussed reintegration goals"
+  private var behaviour: String? = "Engaged and positive"
+  private var strengthsIdentified: String? = "Strong family support"
+
+  // Section 4 – Issues or concerns
+  private var issuesConcernsIdentified: String? = null
+  private var notifyProbationPractitioner: Boolean? = false
+
+  // Section 5 – Next steps
+  private var plannedForNextSession: String? = "Continue with action plan"
+  private var actionsBeforeNextSession: String? = "Complete CV template"
+
+  fun withDidSessionHappen(value: Boolean) = apply { didSessionHappen = value }
+  fun withHowSessionTookPlace(value: SessionMethodRequest?) = apply { howSessionTookPlace = value }
+  fun withWasPersonLate(value: Boolean?) = apply { wasPersonLate = value }
+  fun withLateReason(value: String?) = apply { lateReason = value }
+  fun withDuration(value: SessionDurationRequest?) = apply { duration = value }
+  fun withWhatHappened(value: String?) = apply { whatHappened = value }
+  fun withBehaviour(value: String?) = apply { behaviour = value }
+  fun withStrengthsIdentified(value: String?) = apply { strengthsIdentified = value }
+  fun withIssuesConcernsIdentified(value: String?) = apply { issuesConcernsIdentified = value }
+  fun withNotifyProbationPractitioner(value: Boolean?) = apply { notifyProbationPractitioner = value }
+  fun withPlannedForNextSession(value: String?) = apply { plannedForNextSession = value }
+  fun withActionsBeforeNextSession(value: String?) = apply { actionsBeforeNextSession = value }
+
+  override fun create(): CreateIcsFeedbackRequest = CreateIcsFeedbackRequest(
+    record = RecordSessionRequest(
+      didSessionHappen = didSessionHappen,
+      howSessionTookPlace = howSessionTookPlace,
+    ),
+    sessionDetails = SessionDetailsRequest(
+      wasPersonLate = wasPersonLate,
+      lateReason = lateReason,
+      duration = duration,
+    ),
+    sessionFeedback = SessionFeedbackRequest(
+      whatHappened = whatHappened,
+      behaviour = behaviour,
+      strengthsIdentified = strengthsIdentified,
+    ),
+    issuesAndConcerns = IssuesAndConcernsRequest(
+      identified = issuesConcernsIdentified,
+      notifyProbationPractitioner = notifyProbationPractitioner,
+    ),
+    nextSteps = NextStepsRequest(
+      plannedForNextSession = plannedForNextSession,
+      actionsBeforeNextSession = actionsBeforeNextSession,
+    ),
   )
 }

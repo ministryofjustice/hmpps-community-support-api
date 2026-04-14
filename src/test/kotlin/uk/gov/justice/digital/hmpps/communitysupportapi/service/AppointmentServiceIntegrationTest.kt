@@ -9,24 +9,32 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.InPersonAppointment
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.CreateIcsFeedbackRequestFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import java.time.LocalDate
@@ -55,6 +63,12 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository
+
+  @Autowired
+  private lateinit var appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository
+
+  @Autowired
+  private lateinit var referralEventRepository: ReferralEventRepository
 
   @Autowired
   private lateinit var referralUserRepository: ReferralUserRepository
@@ -365,4 +379,229 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     sessionMethodRequest = SessionMethodRequest(type = type, additionalDetails = additionalDetails),
     sessionCommunication = sessionCommunication,
   )
+
+  /** Creates an ICS appointment and returns its id, ready to receive feedback. */
+  private fun createIcsAndGetId(): UUID = appointmentService.createIcsAppointment(referralId, buildRequest(), testUser).appointmentIcsId
+
+  private fun buildFeedbackRequest(
+    didSessionHappen: Boolean = true,
+    howSessionTookPlace: SessionMethodRequest? = SessionMethodRequest(type = SessionMethodType.PHONE),
+    wasPersonLate: Boolean? = false,
+    lateReason: String? = null,
+    duration: SessionDurationRequest? = SessionDurationRequest(hours = 1, minutes = 45),
+    whatHappened: String? = "Reviewed progress on employment goals",
+    behaviour: String? = "Engaged and motivated",
+    strengthsIdentified: String? = "Good communication",
+    issuesConcernsIdentified: String? = null,
+    notifyProbationPractitioner: Boolean? = false,
+    plannedForNextSession: String? = "Continue with action plan",
+    actionsBeforeNextSession: String? = "Complete referral details",
+  ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
+    .withDidSessionHappen(didSessionHappen)
+    .withHowSessionTookPlace(howSessionTookPlace)
+    .withWasPersonLate(wasPersonLate)
+    .withLateReason(lateReason)
+    .withDuration(duration)
+    .withWhatHappened(whatHappened)
+    .withBehaviour(behaviour)
+    .withStrengthsIdentified(strengthsIdentified)
+    .withIssuesConcernsIdentified(issuesConcernsIdentified)
+    .withNotifyProbationPractitioner(notifyProbationPractitioner)
+    .withPlannedForNextSession(plannedForNextSession)
+    .withActionsBeforeNextSession(actionsBeforeNextSession)
+    .create()
+
+  @Nested
+  @DisplayName("createIcsFeedback")
+  inner class CreateIcsFeedback {
+
+    @Test
+    fun `should persist all feedback fields and return correct response`() {
+      val icsId = createIcsAndGetId()
+      val request = buildFeedbackRequest(
+        didSessionHappen = true,
+        howSessionTookPlace = SessionMethodRequest(
+          type = SessionMethodType.PHONE,
+          additionalDetails = "Client preferred phone",
+        ),
+        wasPersonLate = true,
+        lateReason = "Car trouble",
+        duration = SessionDurationRequest(hours = 1, minutes = 45),
+        whatHappened = "Reviewed employment goals",
+        behaviour = "Engaged and motivated",
+        strengthsIdentified = "Excellent communication",
+        issuesConcernsIdentified = "Risk of housing loss",
+        notifyProbationPractitioner = true,
+        plannedForNextSession = "Review housing options",
+        actionsBeforeNextSession = "Contact housing officer",
+      )
+
+      val response = appointmentService.createIcsFeedback(referralId, icsId, request, testUser)
+
+      // Verify DB persistence
+      val saved = appointmentIcsFeedbackRepository.findById(response.id).orElseThrow()
+      assertThat(saved.appointmentIcs.id).isEqualTo(icsId)
+      assertThat(saved.recordSessionDidSessionHappen).isTrue()
+      assertThat(saved.recordSessionHowSessionTookPlace).isEqualTo("Phone call")
+      assertThat(saved.recordSessionNotInPersonReason).isEqualTo("Client preferred phone")
+      assertThat(saved.sessionDetailsWasPersonLate).isTrue()
+      assertThat(saved.sessionDetailsLateReason).isEqualTo("Car trouble")
+      assertThat(saved.sessionDetailsDuration).isEqualTo("1 hour and 45 minutes")
+      assertThat(saved.sessionFeedbackWhatHappened).isEqualTo("Reviewed employment goals")
+      assertThat(saved.sessionFeedbackBehaviour).isEqualTo("Engaged and motivated")
+      assertThat(saved.sessionFeedbackStrengthsIdentified).isEqualTo("Excellent communication")
+      assertThat(saved.issuesConcernsIdentified).isEqualTo("Risk of housing loss")
+      assertThat(saved.issuesConcernsNotifyProbationPractitioner).isTrue()
+      assertThat(saved.nextStepsPlannedForNextSession).isEqualTo("Review housing options")
+      assertThat(saved.nextStepsActionsBeforeNextSession).isEqualTo("Contact housing officer")
+
+      // Verify audit event created
+      val events = referralEventRepository.findAll().filter { it.eventType == ReferralEventType.APPOINTMENT_FEEDBACK_SENT }
+      assertThat(events).hasSize(1)
+      assertThat(events.first().referral.id).isEqualTo(referralId)
+      assertThat(events.first().actorType).isEqualTo(ActorType.EXTERNAL)
+      assertThat(events.first().actorId).isEqualTo(testUser.id)
+    }
+
+    @Test
+    fun `should persist createdBy as the submitting user`() {
+      val icsId = createIcsAndGetId()
+      val response = appointmentService.createIcsFeedback(referralId, icsId, buildFeedbackRequest(), testUser)
+
+      val saved = appointmentIcsFeedbackRepository.findById(response.id).orElseThrow()
+      assertThat(saved.createdBy?.id).isEqualTo(testUser.id)
+      assertThat(response.createdBy).isEqualTo(testUser.id)
+    }
+
+    @Test
+    fun `should persist only the required field when all optional fields are null`() {
+      val icsId = createIcsAndGetId()
+      val minimalRequest = CreateIcsFeedbackRequest(record = RecordSessionRequest(didSessionHappen = false))
+
+      val response = appointmentService.createIcsFeedback(referralId, icsId, minimalRequest, testUser)
+
+      assertThat(response.recordSessionDidSessionHappen).isFalse()
+      assertThat(response.recordSessionHowSessionTookPlace).isNull()
+      assertThat(response.recordSessionNotInPersonReason).isNull()
+      assertThat(response.sessionDetailsWasPersonLate).isNull()
+      assertThat(response.sessionDetailsLateReason).isNull()
+      assertThat(response.sessionDetailsDuration).isNull()
+      assertThat(response.sessionFeedbackWhatHappened).isNull()
+      assertThat(response.sessionFeedbackBehaviour).isNull()
+      assertThat(response.sessionFeedbackStrengthsIdentified).isNull()
+      assertThat(response.issuesOrConcernsIdentified).isNull()
+      assertThat(response.issuesOrConcernsNotifyProbationPractitioner).isNull()
+      assertThat(response.nextStepsPlannedForNextSession).isNull()
+      assertThat(response.nextStepsActionsBeforeNextSession).isNull()
+    }
+
+    @Test
+    fun `should format 2 hours and 30 minutes correctly`() {
+      val icsId = createIcsAndGetId()
+      val request = buildFeedbackRequest(duration = SessionDurationRequest(hours = 2, minutes = 30))
+
+      val response = appointmentService.createIcsFeedback(referralId, icsId, request, testUser)
+
+      assertThat(response.sessionDetailsDuration).isEqualTo("2 hours and 30 minutes")
+      val saved = appointmentIcsFeedbackRepository.findById(response.id).orElseThrow()
+      assertThat(saved.sessionDetailsDuration).isEqualTo("2 hours and 30 minutes")
+    }
+
+    @Test
+    fun `should throw NotFoundException when ics appointment does not exist`() {
+      val unknownIcsId = UUID.randomUUID()
+
+      val ex = assertThrows<NotFoundException> {
+        appointmentService.createIcsFeedback(referralId, unknownIcsId, buildFeedbackRequest(), testUser)
+      }
+      assertThat(ex.message).isEqualTo("ICS appointment not found for id $unknownIcsId")
+    }
+
+    @Test
+    fun `should throw NotFoundException when ics appointment belongs to a different referral`() {
+      val otherPerson = personRepository.save(PersonFactory().withIdentifier("Z777777").create())
+      val otherReferral = referralRepository.save(
+        ReferralFactory().withPersonId(otherPerson.id).withCrn("Z777777").create(),
+      )
+      val otherIcsId = appointmentService.createIcsAppointment(otherReferral.id, buildRequest(), testUser).appointmentIcsId
+
+      val ex = assertThrows<NotFoundException> {
+        appointmentService.createIcsFeedback(referralId, otherIcsId, buildFeedbackRequest(), testUser)
+      }
+      assertThat(ex.message).contains("does not belong to referral")
+    }
+
+    @Test
+    fun `should persist pdu when session happened at probation office`() {
+      val icsId = createIcsAndGetId()
+      val request = buildFeedbackRequest(
+        howSessionTookPlace = SessionMethodRequest(
+          type = SessionMethodType.PROBATION_OFFICE,
+          pdu = "PDU-South-East",
+        ),
+      )
+
+      val response = appointmentService.createIcsFeedback(referralId, icsId, request, testUser)
+
+      val saved = appointmentIcsFeedbackRepository.findById(response.id).orElseThrow()
+      assertThat(saved.recordSessionHowSessionTookPlace).isEqualTo("In person (probation office)")
+      assertThat(saved.recordSessionPdu).isEqualTo("PDU-South-East")
+      assertThat(saved.recordSessionNotInPersonReason).isNull()
+      assertThat(saved.recordSessionAddressLine1).isNull()
+      assertThat(response.recordSessionPdu).isEqualTo("PDU-South-East")
+    }
+
+    @Test
+    fun `should persist address when session happened at other location`() {
+      val icsId = createIcsAndGetId()
+      val request = buildFeedbackRequest(
+        howSessionTookPlace = SessionMethodRequest(
+          type = SessionMethodType.OTHER_LOCATION,
+          addressLine1 = "10 Downing Street",
+          townOrCity = "London",
+          postcode = "SW1A 2AA",
+        ),
+      )
+
+      val response = appointmentService.createIcsFeedback(referralId, icsId, request, testUser)
+
+      val saved = appointmentIcsFeedbackRepository.findById(response.id).orElseThrow()
+      assertThat(saved.recordSessionHowSessionTookPlace).isEqualTo("In person (other location)")
+      assertThat(saved.recordSessionAddressLine1).isEqualTo("10 Downing Street")
+      assertThat(saved.recordSessionTownOrCity).isEqualTo("London")
+      assertThat(saved.recordSessionPostcode).isEqualTo("SW1A 2AA")
+      assertThat(saved.recordSessionPdu).isNull()
+    }
+
+    @Test
+    fun `should create APPOINTMENT_FEEDBACK_SENT referral event after saving feedback`() {
+      val icsId = createIcsAndGetId()
+
+      appointmentService.createIcsFeedback(referralId, icsId, buildFeedbackRequest(), testUser)
+
+      val events = referralEventRepository.findAll()
+        .filter { it.eventType == ReferralEventType.APPOINTMENT_FEEDBACK_SENT }
+      assertThat(events).hasSize(1)
+      with(events.first()) {
+        assertThat(referral.id).isEqualTo(referralId)
+        assertThat(actorType).isEqualTo(ActorType.EXTERNAL)
+        assertThat(actorId).isEqualTo(testUser.id)
+        assertThat(createdAt).isNotNull()
+      }
+    }
+
+    @Test
+    fun `should create one audit event per feedback submission`() {
+      val icsId1 = createIcsAndGetId()
+      val icsId2 = createIcsAndGetId()
+
+      appointmentService.createIcsFeedback(referralId, icsId1, buildFeedbackRequest(), testUser)
+      appointmentService.createIcsFeedback(referralId, icsId2, buildFeedbackRequest(), testUser)
+
+      val events = referralEventRepository.findAll()
+        .filter { it.eventType == ReferralEventType.APPOINTMENT_FEEDBACK_SENT }
+      assertThat(events).hasSize(2)
+      assertThat(events.all { it.referral.id == referralId }).isTrue()
+    }
+  }
 }

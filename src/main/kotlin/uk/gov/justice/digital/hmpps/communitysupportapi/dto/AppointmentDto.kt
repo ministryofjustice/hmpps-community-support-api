@@ -38,6 +38,8 @@ data class SessionMethodRequest(
    */
   val type: SessionMethodType,
   val additionalDetails: String? = null,
+  // PDU – only relevant when type is PROBATION_OFFICE
+  val pdu: String? = null,
   // Address fields – only relevant when type is IN_PERSON_OTHER_LOCATION
   val addressLine1: String? = null,
   val addressLine2: String? = null,
@@ -211,4 +213,15 @@ fun SessionMethodType.toDeliveryMethod(): AppointmentDeliveryMethod = when (this
   SessionMethodType.VIDEO -> AppointmentDeliveryMethod.VIDEO_CALL
   SessionMethodType.PROBATION_OFFICE -> AppointmentDeliveryMethod.IN_PERSON_PROBATION_OFFICE
   SessionMethodType.OTHER_LOCATION -> AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION
+}
+
+/**
+ * Returns a human-readable label for the session method type, used when persisting
+ * feedback for how a session took place.
+ */
+fun SessionMethodType.toSessionDisplayString(): String = when (this) {
+  SessionMethodType.PHONE -> "Phone call"
+  SessionMethodType.VIDEO -> "Video call"
+  SessionMethodType.PROBATION_OFFICE -> "In person (probation office)"
+  SessionMethodType.OTHER_LOCATION -> "In person (other location)"
 }
