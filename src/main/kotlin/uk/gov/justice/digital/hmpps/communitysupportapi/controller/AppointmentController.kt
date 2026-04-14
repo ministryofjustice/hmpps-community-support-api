@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
-import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -24,6 +23,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReq
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.util.UUID
 
 @RestController
 @RequestMapping("/bff/referral/{referralId}/")
