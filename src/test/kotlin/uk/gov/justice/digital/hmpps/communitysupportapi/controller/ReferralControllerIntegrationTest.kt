@@ -679,4 +679,64 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         }
     }
   }
+
+  @Nested
+  @DisplayName("GET /bff/referral-information/{caseReference}")
+  inner class ReferralInformationEndPoint {
+    val caseReference = "AA1234DD"
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/referral-information/$caseReference")
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(GET, "/bff/referral-information/$caseReference")
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(GET, "/bff/referral-information/$caseReference")
+    }
+
+    @Test
+    fun `should return 404 when referral does not exist`() {
+      assertNotFound(GET, "/bff/referral-information/$caseReference")
+    }
+
+    @Test
+    fun `should return 200 when referral information exists`() {
+      val person = referralHelper.createPerson()
+      val referralUser = referralHelper.ensureReferralUser()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+
+      val providerAssignment = ReferralProviderAssignmentFactory()
+        .withReferral(referral)
+        .withCommunityServiceProvider(communityServiceProvider)
+        .create()
+      referralProviderAssignmentRepository.save(providerAssignment)
+
+      webTestClient.get()
+        .uri("/bff/referral-information/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ReferralInformationDto>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          body.referralId shouldBe referral.id
+          body.crn shouldBe referral.crn
+          body.firstName shouldBe person.firstName
+          body.lastName shouldBe person.lastName
+        }
+    }
+  }
 }
