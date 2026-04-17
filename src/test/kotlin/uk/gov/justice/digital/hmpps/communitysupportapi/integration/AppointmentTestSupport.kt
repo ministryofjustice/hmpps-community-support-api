@@ -1,6 +1,10 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.integration
 
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
@@ -18,6 +22,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.Appoint
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentIcsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentStatusHistoryFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.CreateIcsFeedbackRequestFactory
 import java.time.LocalDateTime
 
 @Component
@@ -77,7 +82,7 @@ class AppointmentTestSupport(
 
   fun createAppointmentStatusHistory(
     appointment: Appointment,
-    status: AppointmentStatusHistoryType = AppointmentStatusHistoryType.SCHEDULED, // remove default
+    status: AppointmentStatusHistoryType = AppointmentStatusHistoryType.SCHEDULED,
     createdAt: LocalDateTime = LocalDateTime.now(),
   ): AppointmentStatusHistory = appointmentStatusHistoryRepository.save(
     AppointmentStatusHistoryFactory()
@@ -86,4 +91,36 @@ class AppointmentTestSupport(
       .withCreatedAt(createdAt)
       .create(),
   )
+
+  /**
+   * Builds a [CreateIcsFeedbackRequest] via [CreateIcsFeedbackRequestFactory].
+   * All fields have sensible defaults; override only what the test needs.
+   */
+  fun buildIcsFeedbackRequest(
+    didSessionHappen: Boolean = true,
+    howSessionTookPlace: SessionMethodRequest? = SessionMethodRequest(type = SessionMethodType.PHONE),
+    wasPersonLate: Boolean? = false,
+    lateReason: String? = null,
+    duration: SessionDurationRequest? = SessionDurationRequest(hours = 1, minutes = 0),
+    whatHappened: String? = "Discussed reintegration goals",
+    behaviour: String? = "Engaged and positive",
+    strengthsIdentified: String? = "Strong family support",
+    issuesConcernsIdentified: String? = null,
+    notifyProbationPractitioner: Boolean? = false,
+    plannedForNextSession: String? = "Continue with action plan",
+    actionsBeforeNextSession: String? = "Complete CV template",
+  ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
+    .withDidSessionHappen(didSessionHappen)
+    .withHowSessionTookPlace(howSessionTookPlace)
+    .withWasPersonLate(wasPersonLate)
+    .withLateReason(lateReason)
+    .withDuration(duration)
+    .withWhatHappened(whatHappened)
+    .withBehaviour(behaviour)
+    .withStrengthsIdentified(strengthsIdentified)
+    .withIssuesConcernsIdentified(issuesConcernsIdentified)
+    .withNotifyProbationPractitioner(notifyProbationPractitioner)
+    .withPlannedForNextSession(plannedForNextSession)
+    .withActionsBeforeNextSession(actionsBeforeNextSession)
+    .create()
 }

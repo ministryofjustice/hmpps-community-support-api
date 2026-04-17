@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
@@ -95,5 +97,29 @@ class AppointmentController(
   ): ResponseEntity<AppointmentIcsResponse> {
     log.info("GET /bff/referral/{}/ics/{}", referralId, icsId)
     return ResponseEntity.ok(appointmentService.getIcsAppointment(icsId))
+  }
+
+  @Operation(summary = "Submit feedback for an ICS appointment")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "201",
+        description = "ICS Appointment feedback submitted successfully",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = AppointmentIcsFeedbackResponse::class))],
+      ),
+      ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content(mediaType = "application/json")]),
+      ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @PostMapping("/ics/{icsId}/feedback")
+  fun submitIcsFeedback(
+    @PathVariable referralId: UUID,
+    @PathVariable icsId: UUID,
+    @RequestBody request: CreateIcsFeedbackRequest,
+  ): ResponseEntity<AppointmentIcsFeedbackResponse> {
+    log.info("POST /bff/referral/{}/ics/{}/feedback", referralId, icsId)
+    val submittedBy = userMapper.fromToken(authenticationHolder)
+    val response = appointmentService.createIcsFeedback(referralId, icsId, request, submittedBy)
+    return ResponseEntity.status(HttpStatus.CREATED).body(response)
   }
 }

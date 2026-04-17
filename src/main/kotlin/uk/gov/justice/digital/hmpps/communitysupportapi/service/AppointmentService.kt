@@ -3,26 +3,37 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayString
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toLocalTime
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toSessionDisplayString
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcsFeedback
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Service
@@ -32,6 +43,7 @@ class AppointmentService(
   private val appointmentDeliveryRepository: AppointmentDeliveryRepository,
   private val appointmentIcsRepository: AppointmentIcsRepository,
   private val appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository,
+  private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
   private val personRepository: PersonRepository,
 ) {
   companion object {
@@ -133,4 +145,72 @@ class AppointmentService(
     ?: throw IllegalStateException("No status history for appointment $appointmentId")
 
   private fun getReferralName(appointment: Appointment) = personRepository.findById(appointment.referral.personId).map { it.firstName + " " + it.lastName }.get()
+
+  /**
+   * Creates and persists feedback for the given ICS appointment.
+   * Verifies that the ICS appointment exists and belongs to the specified referral.
+   */
+  @Transactional
+  fun createIcsFeedback(
+    referralId: UUID,
+    icsAppointmentId: UUID,
+    request: CreateIcsFeedbackRequest,
+    submittedBy: ReferralUser,
+  ): AppointmentIcsFeedbackResponse {
+    val ics = appointmentIcsRepository.findById(icsAppointmentId)
+      .orElseThrow { NotFoundException("ICS appointment not found for id $icsAppointmentId") }
+
+    if (ics.appointment.referral.id != referralId) {
+      throw NotFoundException("ICS appointment $icsAppointmentId does not belong to referral $referralId")
+    }
+
+    log.info("Creating ICS feedback for ics appointment {}", icsAppointmentId)
+
+    val sessionMethod = request.record.howSessionTookPlace
+    val isOtherLocation = sessionMethod?.type == SessionMethodType.OTHER_LOCATION
+
+    val feedback = AppointmentIcsFeedback(
+      appointmentIcs = ics,
+      recordSessionDidSessionHappen = request.record.didSessionHappen,
+      recordSessionHowSessionTookPlace = sessionMethod?.type?.toSessionDisplayString(),
+      recordSessionNotInPersonReason = sessionMethod?.additionalDetails,
+      recordSessionPdu = sessionMethod?.pdu,
+      recordSessionAddressLine1 = sessionMethod?.addressLine1.takeIf { isOtherLocation },
+      recordSessionAddressLine2 = sessionMethod?.addressLine2.takeIf { isOtherLocation },
+      recordSessionTownOrCity = sessionMethod?.townOrCity.takeIf { isOtherLocation },
+      recordSessionCounty = sessionMethod?.county.takeIf { isOtherLocation },
+      recordSessionPostcode = sessionMethod?.postcode.takeIf { isOtherLocation },
+      sessionDetailsWasPersonLate = request.sessionDetails?.wasPersonLate,
+      sessionDetailsLateReason = request.sessionDetails?.lateReason,
+      sessionDetailsDuration = request.sessionDetails?.duration?.toDisplayString(),
+      sessionFeedbackWhatHappened = request.sessionFeedback?.whatHappened,
+      sessionFeedbackBehaviour = request.sessionFeedback?.behaviour,
+      sessionFeedbackStrengthsIdentified = request.sessionFeedback?.strengthsIdentified,
+      issuesConcernsIdentified = request.issuesAndConcerns?.identified,
+      issuesConcernsNotifyProbationPractitioner = request.issuesAndConcerns?.notifyProbationPractitioner,
+      nextStepsPlannedForNextSession = request.nextSteps?.plannedForNextSession,
+      nextStepsActionsBeforeNextSession = request.nextSteps?.actionsBeforeNextSession,
+      createdBy = submittedBy,
+    )
+
+    val saved = appointmentIcsFeedbackRepository.save(feedback)
+    log.info("ICS feedback created with id {} for ics appointment {}", saved.id, icsAppointmentId)
+
+    // Audit: record APPOINTMENT_FEEDBACK_SENT event on the referral
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+    val feedbackEvent = ReferralEvent(
+      id = UUID.randomUUID(),
+      referral = referral,
+      eventType = ReferralEventType.APPOINTMENT_FEEDBACK_SENT,
+      createdAt = OffsetDateTime.now(),
+      actorType = ActorType.EXTERNAL,
+      actorId = submittedBy.id,
+    )
+    referral.addEvent(feedbackEvent)
+    referralRepository.save(referral)
+    log.info("Referral event APPOINTMENT_FEEDBACK_SENT recorded for referral {}", referralId)
+
+    return AppointmentIcsFeedbackResponse.from(saved)
+  }
 }
