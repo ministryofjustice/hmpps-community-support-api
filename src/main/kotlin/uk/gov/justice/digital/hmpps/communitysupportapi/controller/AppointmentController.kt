@@ -114,7 +114,7 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @PostMapping("/ics/{icsId}/feedback")
+  @PostMapping("/referral/{referralId}/ics/{icsId}/feedback")
   fun submitIcsFeedback(
     @PathVariable referralId: UUID,
     @PathVariable icsId: UUID,
