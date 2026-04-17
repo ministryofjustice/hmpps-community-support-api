@@ -385,7 +385,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       person.additionalDetails = additionalDetails
       personRepository.save(person)
 
-      val savedReferral = referralHelper.createReferral(person = person, referenceNumber = "REF123456", submittedBy = testUser)
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
 
       val personDetailsTable = ReferralDetailsBffResponseDto.PersonDetailsTableDataDto(
         name = "${person.firstName} ${person.lastName}",
