@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.InPersonAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
@@ -71,17 +72,19 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
   private lateinit var referralId: UUID
 
+  private lateinit var caseReference: String
+
   private lateinit var testUser: ReferralUser
 
   @BeforeEach
   fun setUpReferral() {
     val person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
-
     testUser = referralHelper.ensureReferralUser()
 
-    val referral = referralHelper.createReferral(person, submittedBy = testUser)
+    val referral = referralHelper.createReferral(person, "AA1234DD", submittedBy = testUser)
 
     referralId = referral.id
+    caseReference = referral.referenceNumber.toString()
   }
 
   @Nested
@@ -504,6 +507,66 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           val body = result.responseBody!!
           body.appointmentTime.hour shouldBe 12
           body.appointmentTime.amPm shouldBe "am"
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/referral/{caseReference}/ics_appointment_feedback_details")
+  inner class GetIcsFeedbackSessionDetailsEndpoint {
+
+    @Test
+    fun `should return 401 unauthorized when no token provided`() {
+      assertUnauthorized(HttpMethod.GET, "/bff/referral/$caseReference/ics_appointment_feedback_details")
+    }
+
+    @Test
+    fun `should return 403 forbidden when no roles provided`() {
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/$caseReference/ics_appointment_feedback_details")
+    }
+
+    @Test
+    fun `should return 403 forbidden when wrong role provided`() {
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/$caseReference/ics_appointment_feedback_details")
+    }
+
+    @Test
+    fun `should return 404 when referral case reference is not found`() {
+      assertNotFound(HttpMethod.GET, "/bff/referral/$caseReference/ics_appointment_feedback_details")
+    }
+
+    @Test
+    fun `should return 200 with correct ICS feedback session details`() {
+      val referral = referralRepository.findById(referralId).orElseThrow()
+      val appointment = appointmentHelper.createAppointment(referral)
+      val appointmentDateTime = LocalDateTime.of(2026, 3, 27, 15, 0)
+      val createdAt = appointmentDateTime.minusDays(1)
+      val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL, "Zoom link")
+
+      appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        appointmentDateTime,
+        createdAt,
+        listOf("Email", "Phone call"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      webTestClient.get()
+        .uri("/bff/referral/$caseReference/ics_appointment_feedback_details")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<IcsFeedbackSessionDto>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          body.fullName shouldBe "Alex Jones"
+          body.appointmentDetails?.method shouldBe AppointmentDeliveryMethod.VIDEO_CALL
+          body.appointmentDetails?.date shouldBe "27/03/2026"
+          body.appointmentDetails?.time shouldBe "15:00"
+          body.otherAppointmentMethods shouldBe listOf("Email", "Phone call")
         }
     }
   }

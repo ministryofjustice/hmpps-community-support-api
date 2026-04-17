@@ -4,10 +4,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayString
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toLocalTime
@@ -23,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatus
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
@@ -34,6 +37,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 @Service
@@ -137,6 +141,37 @@ class AppointmentService(
     val ics = appointmentIcsRepository.findById(icsId)
       .orElseThrow { NotFoundException("Appointment ICS not found for id $icsId") }
     return AppointmentIcsResponse.from(ics, getLatestAppointmentStatus(ics.appointment.id), getReferralName(ics.appointment))
+  }
+
+  /**
+   * Returns ICS appointment session details by a referral.
+   */
+  @Transactional(readOnly = true)
+  fun getIcsFeedbackSessionDetails(referral: Referral): IcsFeedbackSessionDto {
+    val personName = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }
+      .let { "${it.firstName} ${it.lastName}" }
+
+    val latestIcsAppointment = appointmentIcsRepository
+      .findByAppointmentReferralId(referral.id)
+      .filter { it.appointment.type == AppointmentType.ICS }
+      .maxWithOrNull(
+        compareBy<AppointmentIcs> { it.appointmentDateTime }
+          .thenBy { it.createdAt },
+      )
+      ?: throw NotFoundException("ICS appointment not found for referral reference number: ${referral.referenceNumber}")
+
+    val appointmentDetails = AppointmentDetailsDto(
+      method = latestIcsAppointment.appointmentDelivery?.method,
+      date = latestIcsAppointment.appointmentDateTime.toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+      time = latestIcsAppointment.appointmentDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+    )
+
+    return IcsFeedbackSessionDto(
+      fullName = personName,
+      appointmentDetails = appointmentDetails,
+      otherAppointmentMethods = latestIcsAppointment.sessionCommunication,
+    )
   }
 
   private fun getLatestAppointmentStatus(appointmentId: UUID): AppointmentStatusHistoryType = appointmentStatusHistoryRepository

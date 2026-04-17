@@ -54,15 +54,17 @@ class ReferralService(
 
   fun getReferral(referralId: UUID) = referralRepository.findById(referralId)
 
-  fun getReferralDetailsPage(caseIdentifier: String?): ReferralDetailsBffResponseDto {
-    val foundReferral = when (val identifier = identifierValidator.validate(caseIdentifier)) {
-      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
-        .orElseThrow { NotFoundException("Referral not found for id $identifier.value") }
+  fun getReferralByCaseIdentifier(caseIdentifier: String?): Referral = when (val identifier = identifierValidator.validate(caseIdentifier)) {
+    is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
+      .orElseThrow { NotFoundException("Referral not found for id $identifier.value") }
 
-      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value)
-        .firstOrNull() ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
-    }
-    val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral?.personId}") }
+    is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value)
+      .firstOrNull() ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
+  }
+
+  fun getReferralDetailsPage(caseIdentifier: String?): ReferralDetailsBffResponseDto {
+    val foundReferral = getReferralByCaseIdentifier(caseIdentifier)
+    val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral.personId}") }
     val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(foundReferral.id)
 
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)

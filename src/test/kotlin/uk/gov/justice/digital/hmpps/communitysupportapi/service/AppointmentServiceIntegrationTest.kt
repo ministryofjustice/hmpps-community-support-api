@@ -21,8 +21,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelive
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
@@ -38,6 +40,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.CreateI
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.UUID
 
@@ -71,23 +74,27 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   private lateinit var referralEventRepository: ReferralEventRepository
 
   @Autowired
+  private lateinit var appointmentHelper: AppointmentTestSupport
+
+  @Autowired
   private lateinit var referralUserRepository: ReferralUserRepository
 
   @Autowired
   private lateinit var referralHelper: ReferralTestSupport
 
+  private lateinit var referral: Referral
+
   private lateinit var referralId: UUID
 
   private lateinit var testUser: ReferralUser
 
+  private lateinit var person: uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
+
   @BeforeEach
   fun setUpReferral() {
-    val person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
-
     testUser = referralHelper.ensureReferralUser()
-
-    val referral = referralHelper.createReferral(person, submittedBy = testUser)
-
+    person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
+    referral = referralHelper.createReferral(person, submittedBy = testUser)
     referralId = referral.id
   }
 
@@ -362,6 +369,126 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       val sessionMethod = fetched.sessionMethod
       assertThat(sessionMethod).isInstanceOf(InPersonAppointment::class.java)
       assertThat(sessionMethod.type).isEqualTo("IN_PERSON_PROBATION_OFFICE")
+    }
+  }
+
+  @Nested
+  @DisplayName("getIcsAppointmentsByReferral")
+  inner class GetIcsFeedbackSessionDetails {
+
+    @Test
+    fun `should throw NotFoundException if no appointment exists`() {
+      assertThrows<NotFoundException> {
+        appointmentService.getIcsFeedbackSessionDetails(referral)
+      }
+    }
+
+    @Test
+    fun `should return ICS Feedback session details if no appointment delivery method was provided`() {
+      val appointment = appointmentHelper.createAppointment(referral)
+      val appointmentDateTime = LocalDateTime.of(2026, 4, 5, 14, 30)
+      val createdAt = appointmentDateTime.minusDays(1)
+
+      appointmentHelper.createAppointmentIcs(
+        appointment,
+        null,
+        testUser,
+        appointmentDateTime,
+        createdAt,
+        listOf("Email"),
+      )
+
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      val result = appointmentService.getIcsFeedbackSessionDetails(referral)
+
+      assertThat(result.fullName).isEqualTo("Alex Jones")
+      assertThat(result.appointmentDetails?.method).isNull()
+      assertThat(result.appointmentDetails?.date).isEqualTo("05/04/2026")
+      assertThat(result.appointmentDetails?.time).isEqualTo("14:30")
+    }
+
+    @Test
+    fun `should return ICS feedback session details for appointment with latest appointmentDateTime`() {
+      val firstAppointment = appointmentHelper.createAppointment(referral)
+      val firstDelivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL)
+      val firstAppointmentDateTime = LocalDateTime.of(2026, 3, 27, 10, 0)
+      val firstCreatedAt = firstAppointmentDateTime.minusDays(1)
+
+      val secondAppointment = appointmentHelper.createAppointment(referral)
+      val secondDelivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL)
+      val secondAppointmentDateTime = LocalDateTime.of(2026, 4, 5, 14, 30)
+      val secondCreatedAt = secondAppointmentDateTime.minusDays(1)
+
+      appointmentHelper.createAppointmentIcs(
+        firstAppointment,
+        firstDelivery,
+        testUser,
+        firstAppointmentDateTime,
+        firstCreatedAt,
+        listOf("Phone call"),
+      )
+      appointmentHelper.createAppointmentIcs(
+        secondAppointment,
+        secondDelivery,
+        testUser,
+        secondAppointmentDateTime,
+        secondCreatedAt,
+        listOf("Email", "Text message"),
+      )
+
+      appointmentHelper.createAppointmentStatusHistory(firstAppointment)
+      appointmentHelper.createAppointmentStatusHistory(secondAppointment)
+
+      val result = appointmentService.getIcsFeedbackSessionDetails(referral)
+
+      assertThat(result.fullName).isEqualTo("Alex Jones")
+      assertThat(result.appointmentDetails?.method).isEqualTo(AppointmentDeliveryMethod.VIDEO_CALL)
+      assertThat(result.appointmentDetails?.date).isEqualTo("05/04/2026")
+      assertThat(result.appointmentDetails?.time).isEqualTo("14:30")
+      assertThat(result.otherAppointmentMethods).isEqualTo(listOf("Email", "Text message"))
+    }
+
+    @Test
+    fun `should return ICS Feedback session details for latest created ICS appointment when appointmentDateTime is identical`() {
+      val appointment1 = appointmentHelper.createAppointment(referral)
+      val delivery1 =
+        appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL)
+
+      val appointment2 = appointmentHelper.createAppointment(referral)
+      val delivery2 =
+        appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL)
+
+      val sharedDateTime = LocalDateTime.of(2026, 4, 17, 17, 30)
+
+      appointmentHelper.createAppointmentIcs(
+        appointment1,
+        delivery1,
+        testUser,
+        sharedDateTime,
+        sharedDateTime.minusDays(2),
+        listOf("Email"),
+      )
+
+      appointmentHelper.createAppointmentIcs(
+        appointment2,
+        delivery2,
+        testUser,
+        sharedDateTime,
+        sharedDateTime.minusDays(1),
+        listOf("Text message"),
+      )
+
+      appointmentHelper.createAppointmentStatusHistory(appointment1)
+      appointmentHelper.createAppointmentStatusHistory(appointment2)
+
+      val result = appointmentService.getIcsFeedbackSessionDetails(referral)
+
+      assertThat(result.fullName).isEqualTo("Alex Jones")
+      assertThat(result.appointmentDetails?.method).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
+      assertThat(result.appointmentDetails?.date).isEqualTo("17/04/2026")
+      assertThat(result.appointmentDetails?.time).isEqualTo("17:30")
+      assertThat(result.otherAppointmentMethods).isEqualTo(listOf("Text message"))
     }
   }
 

@@ -64,7 +64,7 @@ class AppointmentTestSupport(
 
   fun createAppointmentIcs(
     appointment: Appointment,
-    delivery: AppointmentDelivery,
+    delivery: AppointmentDelivery? = null,
     user: ReferralUser,
     appointmentDateTime: LocalDateTime = LocalDateTime.now(),
     createdAt: LocalDateTime = LocalDateTime.now().minusDays(1),
