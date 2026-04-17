@@ -181,4 +181,30 @@ class ReferralController(
 
     return latestIcsDetail?.let { ResponseEntity.ok(it) } ?: ResponseEntity.notFound().build()
   }
+
+  @Operation(summary = "Get referral information")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral information found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralInformationDto::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/referral-information/{caseIdentifier}")
+  fun getReferralInformation(@PathVariable caseIdentifier: String): ResponseEntity<ReferralInformationDto> {
+    val result = try {
+      referralService.getReferralInformation(caseIdentifier)
+    } catch (e: RuntimeException) {
+      log.warn("Referral not found for case reference={}", caseIdentifier, e)
+      return ResponseEntity.notFound().build()
+    }
+    return ResponseEntity.ok(result)
+  }
 }

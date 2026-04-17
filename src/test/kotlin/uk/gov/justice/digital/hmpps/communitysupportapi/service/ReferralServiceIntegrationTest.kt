@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -279,6 +280,28 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertEquals(appointment.id, result.appointments[0].appointmentId)
     assertEquals(appointmentDateTime, result.appointments[0].dateTime)
     assertEquals(AppointmentStatusHistoryType.NEEDS_FEEDBACK, result.appointments[0].status)
+  }
+
+  @Test
+  fun `referral information bff should return referral information`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val person = referralHelper.createPerson()
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+    val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+
+    val providerAssignment = ReferralProviderAssignmentFactory()
+      .withReferral(referral)
+      .withCommunityServiceProvider(communityServiceProvider)
+      .create()
+    referralProviderAssignmentRepository.save(providerAssignment)
+
+    val referralInformation = referralService.getReferralInformation(referral.id.toString())
+
+    assertEquals(referral.id, referralInformation.referralId)
+    assertEquals(referral.crn, referralInformation.crn)
+    assertEquals(person.firstName, referralInformation.firstName)
+    assertEquals(person.lastName, referralInformation.lastName)
+    assertEquals(communityServiceProvider.id, referralInformation.communityServiceProviderId)
   }
 
   private fun setUpData(): CreateReferralRequest {

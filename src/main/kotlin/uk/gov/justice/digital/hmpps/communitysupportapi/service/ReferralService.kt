@@ -6,6 +6,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
@@ -187,6 +188,26 @@ class ReferralService(
     }
 
     return ReferralProgressDto(referralId = referral.id, fullName = personName, appointments = appointmentHistory)
+  }
+
+  fun getReferralInformation(caseIdentifier: String?): ReferralInformationDto {
+    val foundReferral = when (val identifier = identifierValidator.validate(caseIdentifier)) {
+      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
+        .orElseThrow { NotFoundException("Referral not found for id $identifier.value") }
+      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value)
+        .firstOrNull() ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
+    }
+    val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral?.personId}") }
+
+    val providerAssignment = referralProviderAssignmentRepository.findByReferralId(foundReferral.id)
+      .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $foundReferral.id")
+
+    val referralResult = ReferralCreationResult(
+      foundReferral,
+      person,
+      providerAssignment.communityServiceProvider,
+    )
+    return ReferralInformationDto.from(referralResult)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
