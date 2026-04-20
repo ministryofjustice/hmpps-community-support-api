@@ -212,7 +212,6 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
       ReferralFactory()
         .withPersonId(person.id)
         .withCrn(person.identifier)
-        .withReferenceNumber("REF-001")
         .withSubmittedEvent(actorId = assignerId)
         .create(),
     )

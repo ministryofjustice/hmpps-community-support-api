@@ -86,7 +86,7 @@ class ReferralTestSupport(
 
   fun createReferral(
     person: Person,
-    referenceNumber: String = "REF-001",
+    referenceNumber: String = "AB1234CD",
     submittedBy: ReferralUser,
     createdAt: OffsetDateTime = OffsetDateTime.now(),
   ): Referral = referralRepository.save(

@@ -24,7 +24,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
@@ -166,20 +165,18 @@ class ReferralController(
     ],
   )
   @GetMapping("/referral-details/{caseReference}/ics")
-  fun getICSDetails(@PathVariable caseReference: String): ResponseEntity<AppointmentIcsResponse> {
-    val referral = try {
-      referralService.getReferralDetailsPage(caseReference)
-    } catch (e: RuntimeException) {
-      log.warn("Referral not found for case reference={}", caseReference, e)
-      return ResponseEntity.notFound().build()
-    }
+  fun getICSDetails(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<AppointmentIcsResponse> {
+    log.info("GET ICS details for caseReference={}", caseReference)
 
+    val referral = referralService.getReferralDetailsPage(caseReference)
     val icsAppointmentDetails = appointmentService.getIcsAppointmentsByReferral(referral.id)
-    val latestIcsDetail = icsAppointmentDetails
-      .filter { it.appointmentType == AppointmentType.ICS }
+    val appointmentIcsResponse = icsAppointmentDetails
       .maxByOrNull(AppointmentIcsResponse::appointmentDate)
+      ?: throw NotFoundException("ICS appointment not found for referral $caseReference")
 
-    return latestIcsDetail?.let { ResponseEntity.ok(it) } ?: ResponseEntity.notFound().build()
+    return ResponseEntity.ok(appointmentIcsResponse)
   }
 
   @Operation(summary = "Get referral information")

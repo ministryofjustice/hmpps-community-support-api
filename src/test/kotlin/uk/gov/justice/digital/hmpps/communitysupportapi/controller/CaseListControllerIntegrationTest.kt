@@ -131,7 +131,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
     fun `should return unassigned cases when user has service provider access`() {
       val testUser = referralHelper.createTestUser()
       val person = referralHelper.createPerson(identifier = "CRN12345")
-      val referral = referralHelper.createReferral(person = person, referenceNumber = "REF-001", submittedBy = testUser)
+      val referral = referralHelper.createReferral(person = person, submittedBy = testUser)
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
@@ -164,7 +164,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
       persons.forEachIndexed { index, person ->
         val referral = referralHelper.createReferral(
           person = person,
-          referenceNumber = "REF-00${index + 1}",
+          referenceNumber = "AB123${index + 1}CD",
           submittedBy = testUser,
           createdAt = OffsetDateTime.now().minusDays(index.toLong()),
         )
@@ -282,7 +282,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
     fun `should return in-progress cases when user has service provider access`() {
       val testUser = referralHelper.createTestUser()
       val person = referralHelper.createPerson(identifier = "CRN12345")
-      val referral = referralHelper.createReferral(person = person, referenceNumber = "REF-001", submittedBy = testUser)
+      val referral = referralHelper.createReferral(person = person, submittedBy = testUser)
       val caseWorkers = referralHelper.createCaseWorkers("CaseWorker One", "CaseWorker Two", "CaseWorker Three")
 
       stubManageUsersGetUserGroups(
@@ -321,7 +321,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
         referralHelper.createInProgressReferral(
           person = person,
-          referenceNumber = "REF-00${index + 1}",
+          referenceNumber = "AB123${index + 1}CD",
           submittedBy = testUser,
           caseWorkers = caseWorkers,
           communityServiceProvider = communityServiceProvider,

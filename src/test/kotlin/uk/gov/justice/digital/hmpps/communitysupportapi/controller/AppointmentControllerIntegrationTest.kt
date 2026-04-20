@@ -19,12 +19,14 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.InPersonAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -69,19 +71,17 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   @MockitoBean
   private lateinit var userMapper: UserMapper
 
-  private lateinit var referralId: UUID
+  private lateinit var referral: Referral
 
   private lateinit var testUser: ReferralUser
 
+  private lateinit var person: uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
+
   @BeforeEach
   fun setUpReferral() {
-    val person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
-
     testUser = referralHelper.ensureReferralUser()
-
-    val referral = referralHelper.createReferral(person, submittedBy = testUser)
-
-    referralId = referral.id
+    person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
+    referral = referralHelper.createReferral(person, "AA1234DD", submittedBy = testUser)
   }
 
   @Nested
@@ -90,17 +90,17 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(POST, "/bff/referral/$referralId/ics")
+      assertUnauthorized(POST, "/bff/referral/${referral.id}/ics")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      assertForbiddenNoRole(POST, "/bff/referral/$referralId/ics", buildRequest())
+      assertForbiddenNoRole(POST, "/bff/referral/${referral.id}/ics", buildRequest())
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      assertForbiddenWrongRole(POST, "/bff/referral/$referralId/ics", buildRequest())
+      assertForbiddenWrongRole(POST, "/bff/referral/${referral.id}/ics", buildRequest())
     }
 
     @Test
@@ -123,7 +123,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/ics")
+        .uri("/bff/referral/${referral.id}/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -133,7 +133,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<AppointmentIcsResponse>()
         .consumeWith { result ->
           val body = result.responseBody!!
-          assertThat(body.referralId).isEqualTo(referralId)
+          assertThat(body.referralId).isEqualTo(referral.id)
           assertThat(body.appointmentType).isEqualTo(AppointmentType.ICS)
           assertThat(body.appointmentDate).isEqualTo(LocalDate.of(2026, 3, 27))
           assertThat(body.appointmentTime.hour).isEqualTo(10)
@@ -160,7 +160,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val request = buildRequest(type = SessionMethodType.VIDEO, additionalDetails = "Car broke down")
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/ics")
+        .uri("/bff/referral/${referral.id}/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -188,7 +188,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val request = buildRequest(hour = 1, minute = 0, amPm = "pm")
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/ics")
+        .uri("/bff/referral/${referral.id}/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -228,7 +228,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/ics")
+        .uri("/bff/referral/${referral.id}/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -255,17 +255,17 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/referral/$referralId/ics")
+      assertUnauthorized(HttpMethod.GET, "/bff/referral/${referral.id}/ics")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/$referralId/ics")
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/${referral.id}/ics")
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/$referralId/ics")
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/${referral.id}/ics")
     }
 
     @Test
@@ -276,7 +276,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return 200 with empty list when no appointments exist`() {
       webTestClient.get()
-        .uri("/bff/referral/$referralId/ics")
+        .uri("/bff/referral/${referral.id}/ics")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -287,7 +287,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return 200 with all ics appointments for the referral`() {
-      val referral = referralRepository.findById(referralId).orElseThrow()
+      val referral = referralRepository.findById(referral.id).orElseThrow()
 
       val firstDelivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL)
       val secondDelivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL)
@@ -322,7 +322,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       appointmentHelper.createAppointmentStatusHistory(secondAppointment)
 
       val result = webTestClient.get()
-        .uri("/bff/referral/$referralId/ics")
+        .uri("/bff/referral/${referral.id}/ics")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -334,7 +334,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val items = result.responseBody!!.sortedBy { it.appointmentDate }
 
       val first = items[0]
-      assertThat(first.referralId).isEqualTo(referralId)
+      assertThat(first.referralId).isEqualTo(referral.id)
       assertThat(first.appointmentDate).isEqualTo(LocalDate.of(2026, 3, 27))
       assertThat(first.appointmentTime.hour).isEqualTo(10)
       assertThat(first.appointmentTime.amPm).isEqualTo("am")
@@ -357,7 +357,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should not return appointments from a different referral`() {
-      val firstReferral = referralRepository.findById(referralId).orElseThrow()
+      val firstReferral = referralRepository.findById(referral.id).orElseThrow()
       val person = referralHelper.createPerson(identifier = "Y888888")
 
       val secondReferral = referralHelper.createReferral(person, submittedBy = testUser)
@@ -394,7 +394,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       appointmentHelper.createAppointmentStatusHistory(secondAppointment)
 
       val result = webTestClient.get()
-        .uri("/bff/referral/$referralId/ics")
+        .uri("/bff/referral/${referral.id}/ics")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -403,7 +403,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         .hasSize(1)
         .returnResult()
 
-      assertThat(result.responseBody!!.first().referralId).isEqualTo(referralId)
+      assertThat(result.responseBody!!.first().referralId).isEqualTo(referral.id)
     }
   }
 
@@ -413,27 +413,27 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/referral/$referralId/ics/${UUID.randomUUID()}")
+      assertUnauthorized(HttpMethod.GET, "/bff/referral/${referral.id}/ics/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/$referralId/ics/${UUID.randomUUID()}")
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/${referral.id}/ics/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/$referralId/ics/${UUID.randomUUID()}")
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/${referral.id}/ics/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return 404 not found for unknown ics id`() {
-      assertNotFound(HttpMethod.GET, "/bff/referral/$referralId/appointment/ics/${UUID.randomUUID()}")
+      assertNotFound(HttpMethod.GET, "/bff/referral/${referral.id}/appointment/ics/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return 200 with correct appointment details`() {
-      val referral = referralRepository.findById(referralId).orElseThrow()
+      val referral = referralRepository.findById(referral.id).orElseThrow()
       val appointment = appointmentHelper.createAppointment(referral)
       val appointmentDateTime = LocalDateTime.of(2026, 3, 27, 15, 0)
       val createdAt = appointmentDateTime.minusDays(1)
@@ -452,7 +452,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       appointmentHelper.createAppointmentStatusHistory(appointment)
 
       webTestClient.get()
-        .uri("/bff/referral/$referralId/ics/${savedIcs.id}")
+        .uri("/bff/referral/${referral.id}/ics/${savedIcs.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -461,7 +461,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { result ->
           val body = result.responseBody!!
           body.appointmentIcsId shouldBe savedIcs.id
-          body.referralId shouldBe referralId
+          body.referralId shouldBe referral.id
           body.appointmentType shouldBe AppointmentType.ICS
           body.appointmentDate shouldBe LocalDate.of(2026, 3, 27)
           body.appointmentTime.hour shouldBe 3
@@ -478,7 +478,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return 200 and correctly represent 12am midnight in response`() {
-      val referral = referralRepository.findById(referralId).orElseThrow()
+      val referral = referralRepository.findById(referral.id).orElseThrow()
       val delivery = appointmentHelper.createAppointmentDelivery()
       val appointment = appointmentHelper.createAppointment(referral)
       val appointmentDateTime = LocalDateTime.of(2026, 3, 27, 0, 0) // midnight
@@ -494,7 +494,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       appointmentHelper.createAppointmentStatusHistory(appointment)
 
       webTestClient.get()
-        .uri("/bff/referral/$referralId/ics/${savedIcs.id}")
+        .uri("/bff/referral/${referral.id}/ics/${savedIcs.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -504,6 +504,66 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           val body = result.responseBody!!
           body.appointmentTime.hour shouldBe 12
           body.appointmentTime.amPm shouldBe "am"
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/referral/{caseReference}/ics_appointment_feedback_details")
+  inner class GetIcsFeedbackSessionDetailsEndpoint {
+
+    @Test
+    fun `should return 401 unauthorized when no token provided`() {
+      assertUnauthorized(HttpMethod.GET, "/bff/referral/${referral.referenceNumber}/ics_appointment_feedback_details")
+    }
+
+    @Test
+    fun `should return 403 forbidden when no roles provided`() {
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/${referral.referenceNumber}/ics_appointment_feedback_details")
+    }
+
+    @Test
+    fun `should return 403 forbidden when wrong role provided`() {
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/${referral.referenceNumber}/ics_appointment_feedback_details")
+    }
+
+    @Test
+    fun `should return 404 when referral case reference is not found`() {
+      assertNotFound(HttpMethod.GET, "/bff/referral/${referral.referenceNumber}/ics_appointment_feedback_details")
+    }
+
+    @Test
+    fun `should return 200 with correct ICS feedback session details`() {
+      val referral = referralRepository.findById(referral.id).orElseThrow()
+      val appointment = appointmentHelper.createAppointment(referral)
+      val appointmentDateTime = LocalDateTime.of(2026, 3, 27, 15, 0)
+      val createdAt = appointmentDateTime.minusDays(1)
+      val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL, "Zoom link")
+
+      appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        appointmentDateTime,
+        createdAt,
+        listOf("Email", "Phone call"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      webTestClient.get()
+        .uri("/bff/referral/${referral.referenceNumber}/ics_appointment_feedback_details")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<IcsFeedbackSessionDto>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          body.fullName shouldBe "Alex Jones"
+          body.appointmentDetails?.method shouldBe AppointmentDeliveryMethod.VIDEO_CALL
+          body.appointmentDetails?.date shouldBe "27/03/2026"
+          body.appointmentDetails?.time shouldBe "15:00"
+          body.otherAppointmentMethods shouldBe listOf("Email", "Phone call")
         }
     }
   }

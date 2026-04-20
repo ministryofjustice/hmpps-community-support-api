@@ -21,15 +21,18 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedba
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
+import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
 
 @RestController
-@RequestMapping("/bff/referral/{referralId}/")
+@RequestMapping("/bff")
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class AppointmentController(
   private val appointmentService: AppointmentService,
+  private val referralService: ReferralService,
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
 ) {
@@ -49,7 +52,7 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @PostMapping("/ics")
+  @PostMapping("/referral/{referralId}/ics")
   fun createIcsAppointment(
     @PathVariable referralId: UUID,
     @RequestBody request: CreateAppointmentRequest,
@@ -71,7 +74,7 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @GetMapping("/ics")
+  @GetMapping("/referral/{referralId}/ics")
   fun getIcsAppointments(
     @PathVariable referralId: UUID,
   ): ResponseEntity<List<AppointmentIcsResponse>> {
@@ -90,7 +93,7 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "Appointment not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @GetMapping("/ics/{icsId}")
+  @GetMapping("/referral/{referralId}/ics/{icsId}")
   fun getIcsAppointment(
     @PathVariable referralId: UUID,
     @PathVariable icsId: UUID,
@@ -111,7 +114,7 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @PostMapping("/ics/{icsId}/feedback")
+  @PostMapping("/referral/{referralId}/ics/{icsId}/feedback")
   fun submitIcsFeedback(
     @PathVariable referralId: UUID,
     @PathVariable icsId: UUID,
@@ -121,5 +124,33 @@ class AppointmentController(
     val submittedBy = userMapper.fromToken(authenticationHolder)
     val response = appointmentService.createIcsFeedback(referralId, icsId, request, submittedBy)
     return ResponseEntity.status(HttpStatus.CREATED).body(response)
+  }
+
+  @Operation(summary = "Get ICS feedback session details")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "ICS feedback session details found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackSessionDto::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "ICS feedback session details not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/referral/{caseReference}/ics_appointment_feedback_details")
+  fun getIcsFeedbackSession(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsFeedbackSessionDto> {
+    log.info("GET /bff/referral/{}/ics_appointment_feedback_details", caseReference)
+
+    val referral = referralService.getReferralByCaseIdentifier(caseReference)
+
+    return ResponseEntity.ok(
+      appointmentService.getIcsFeedbackSessionDetails(referral),
+    )
   }
 }

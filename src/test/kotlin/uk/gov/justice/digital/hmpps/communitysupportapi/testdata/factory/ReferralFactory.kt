@@ -20,7 +20,7 @@ import java.util.UUID
  * val referral = ReferralFactory()
  *     .withPersonId(person.id)
  *     .withCrn("CRN123456")
- *     .withReferenceNumber("REF-001")
+ *     .withReferenceNumber("AB1234CD")
  *     .create()
  *
  * // Create with a submitted event
