@@ -241,7 +241,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       val notFoundException = assertThrows<NotFoundException> {
         appointmentService.createIcsAppointment(referralId.toString(), request, testUser)
       }
-      assertThat(notFoundException.message).isEqualTo("Referral not found for id ${referralId}")
+      assertThat(notFoundException.message).isEqualTo("Referral not found for id $referralId")
     }
 
     @Test

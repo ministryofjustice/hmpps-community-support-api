@@ -116,7 +116,7 @@ class ReferralService(
 
   fun submitReferral(referralId: UUID, userId: UUID): SubmitReferralResponseDto {
     val referral = referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id ${referralId}") }
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
     val providerAssignment = referralProviderAssignmentRepository.findByReferralId(referralId)
       .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $referralId")
