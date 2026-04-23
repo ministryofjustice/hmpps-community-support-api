@@ -56,7 +56,7 @@ class ReferralService(
 
   fun getReferralByCaseIdentifier(caseIdentifier: String?): Referral = when (val identifier = identifierValidator.validate(caseIdentifier)) {
     is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
-      .orElseThrow { NotFoundException("Referral not found for id $identifier.value") }
+      .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
 
     is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value)
       .firstOrNull() ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
@@ -144,7 +144,7 @@ class ReferralService(
   fun getReferralProgress(referralIdentifier: String): ReferralProgressDto {
     val referral = when (val identifier = identifierValidator.validate(referralIdentifier)) {
       is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
-        .orElseThrow { NotFoundException("Referral not found for id $identifier.value") }
+        .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
 
       is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value).first()
     }
@@ -195,7 +195,7 @@ class ReferralService(
   fun getReferralInformation(caseIdentifier: String?): ReferralInformationDto {
     val foundReferral = when (val identifier = identifierValidator.validate(caseIdentifier)) {
       is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
-        .orElseThrow { NotFoundException("Referral not found for id $identifier.value") }
+        .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
       is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value)
         .firstOrNull() ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
     }

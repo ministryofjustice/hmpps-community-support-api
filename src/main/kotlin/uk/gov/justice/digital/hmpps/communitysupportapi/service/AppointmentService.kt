@@ -28,6 +28,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CaseIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
@@ -35,6 +36,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.CaseIdentifierValidator
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -52,18 +54,23 @@ class AppointmentService(
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
+    private val identifierValidator: CaseIdentifierValidator = CaseIdentifierValidator()
   }
 
   @Transactional
   fun createIcsAppointment(
-    referralId: UUID,
+    caseIdentifier: String,
     request: CreateAppointmentRequest,
     createdBy: ReferralUser,
   ): AppointmentIcsResponse {
-    val referral = referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+    val referral = when (val identifier = identifierValidator.validate(caseIdentifier)) {
+      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
+        .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
+      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value)
+        .firstOrNull() ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
+    }
 
-    log.info("Creating ICS appointment for referral {}", referralId)
+    log.info("Creating ICS appointment for referral {}", caseIdentifier)
 
     // 1. Appointment (parent record)
     val appointment = Appointment(

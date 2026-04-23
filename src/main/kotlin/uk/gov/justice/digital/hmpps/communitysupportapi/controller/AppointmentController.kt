@@ -52,14 +52,14 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @PostMapping("/referral/{referralId}/ics")
+  @PostMapping("/referral/{caseIdentifier}/ics")
   fun createIcsAppointment(
-    @PathVariable referralId: UUID,
+    @PathVariable caseIdentifier: String,
     @RequestBody request: CreateAppointmentRequest,
   ): ResponseEntity<AppointmentIcsResponse> {
-    log.info("POST /bff/referral/{}/ics", referralId)
+    log.info("POST /bff/referral/{}/ics", caseIdentifier)
     val createdBy = userMapper.fromToken(authenticationHolder)
-    val response = appointmentService.createIcsAppointment(referralId, request, createdBy)
+    val response = appointmentService.createIcsAppointment(caseIdentifier, request, createdBy)
     return ResponseEntity.status(HttpStatus.CREATED).body(response)
   }
 
