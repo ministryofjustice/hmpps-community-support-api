@@ -74,12 +74,13 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @GetMapping("/referral/{referralId}/ics")
+  @GetMapping("/referral/{caseReference}/ics")
   fun getIcsAppointments(
-    @PathVariable referralId: UUID,
+    @PathVariable caseReference: String,
   ): ResponseEntity<List<AppointmentIcsResponse>> {
-    log.info("GET /bff/referral/{}/ics", referralId)
-    return ResponseEntity.ok(appointmentService.getIcsAppointmentsByReferral(referralId))
+    log.info("GET /bff/referral/{}/ics", caseReference)
+    val referral = referralService.getReferralByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(appointmentService.getIcsAppointmentsByReferral(referral.id))
   }
 
   @Operation(summary = "Get a single ICS appointment by ID")
@@ -93,12 +94,12 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "Appointment not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @GetMapping("/referral/{referralId}/ics/{icsId}")
+  @GetMapping("/referral/{caseReference}/ics/{icsId}")
   fun getIcsAppointment(
-    @PathVariable referralId: UUID,
+    @PathVariable caseReference: String,
     @PathVariable icsId: UUID,
   ): ResponseEntity<AppointmentIcsResponse> {
-    log.info("GET /bff/referral/{}/ics/{}", referralId, icsId)
+    log.info("GET /bff/referral/{}/ics/{}", caseReference, icsId)
     return ResponseEntity.ok(appointmentService.getIcsAppointment(icsId))
   }
 
@@ -114,15 +115,16 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @PostMapping("/referral/{referralId}/ics/{icsId}/feedback")
+  @PostMapping("/referral/{caseReference}/ics/{icsId}/feedback")
   fun submitIcsFeedback(
-    @PathVariable referralId: UUID,
+    @PathVariable caseReference: String,
     @PathVariable icsId: UUID,
     @RequestBody request: CreateIcsFeedbackRequest,
   ): ResponseEntity<AppointmentIcsFeedbackResponse> {
-    log.info("POST /bff/referral/{}/ics/{}/feedback", referralId, icsId)
+    log.info("POST /bff/referral/{}/ics/{}/feedback", caseReference, icsId)
     val submittedBy = userMapper.fromToken(authenticationHolder)
-    val response = appointmentService.createIcsFeedback(referralId, icsId, request, submittedBy)
+    val referral = referralService.getReferralByCaseIdentifier(caseReference)
+    val response = appointmentService.createIcsFeedback(referral.id, icsId, request, submittedBy)
     return ResponseEntity.status(HttpStatus.CREATED).body(response)
   }
 
