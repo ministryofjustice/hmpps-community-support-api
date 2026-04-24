@@ -58,6 +58,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
   private lateinit var userMapper: UserMapper
 
   private lateinit var referralId: UUID
+  private lateinit var referralCaseReference: String
   private lateinit var testUser: ReferralUser
 
   @BeforeEach
@@ -66,6 +67,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
     testUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = testUser)
     referralId = referral.id
+    referralCaseReference = referral.referenceNumber!!
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -89,19 +91,19 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
   // ── Tests ─────────────────────────────────────────────────────────────────
 
   @Nested
-  @DisplayName("POST /bff/referral/{referralId}/ics/{icsAppointmentId}/feedback")
+  @DisplayName("POST /bff/referral/{caseReference}/ics/{icsAppointmentId}/feedback")
   inner class SubmitIcsFeedbackEndpoint {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(POST, "/bff/referral/$referralId/ics/${UUID.randomUUID()}/feedback")
+      assertUnauthorized(POST, "/bff/referral/$referralCaseReference/ics/${UUID.randomUUID()}/feedback")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
       assertForbiddenNoRole(
         POST,
-        "/bff/referral/$referralId/ics/${UUID.randomUUID()}/feedback",
+        "/bff/referral/$referralCaseReference/ics/${UUID.randomUUID()}/feedback",
         appointmentHelper.buildIcsFeedbackRequest(),
       )
     }
@@ -110,7 +112,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
     fun `should return 403 forbidden when wrong role provided`() {
       assertForbiddenWrongRole(
         POST,
-        "/bff/referral/$referralId/ics/${UUID.randomUUID()}/feedback",
+        "/bff/referral/$referralCaseReference/ics/${UUID.randomUUID()}/feedback",
         appointmentHelper.buildIcsFeedbackRequest(),
       )
     }
@@ -120,7 +122,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
       assertNotFound(
         POST,
-        "/bff/referral/${UUID.randomUUID()}/ics/${UUID.randomUUID()}/feedback",
+        "/bff/referral/ZZ9999ZZ/ics/${UUID.randomUUID()}/feedback",
         appointmentHelper.buildIcsFeedbackRequest(),
       )
     }
@@ -130,7 +132,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
       assertNotFound(
         POST,
-        "/bff/referral/$referralId/ics/${UUID.randomUUID()}/feedback",
+        "/bff/referral/$referralCaseReference/ics/${UUID.randomUUID()}/feedback",
         appointmentHelper.buildIcsFeedbackRequest(),
       )
     }
@@ -155,7 +157,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
 
       assertNotFound(
         POST,
-        "/bff/referral/$referralId/ics/${otherIcs.id}/feedback",
+        "/bff/referral/$referralCaseReference/ics/${otherIcs.id}/feedback",
         appointmentHelper.buildIcsFeedbackRequest(),
       )
     }
@@ -184,7 +186,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/ics/$icsId/feedback")
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -232,7 +234,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
       val request = CreateIcsFeedbackRequest(record = RecordSessionRequest(didSessionHappen = false))
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/ics/$icsId/feedback")
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -255,7 +257,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
       val icsId = createIcsAppointmentId()
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/ics/$icsId/feedback")
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(appointmentHelper.buildIcsFeedbackRequest(wasPersonLate = false, lateReason = null))
@@ -275,7 +277,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
       val icsId = createIcsAppointmentId()
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/ics/$icsId/feedback")
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(
@@ -307,7 +309,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/ics/$icsId/feedback")
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -332,7 +334,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
       val icsId = createIcsAppointmentId()
 
       webTestClient.post()
-        .uri("/bff/referral/$referralId/ics/$icsId/feedback")
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(appointmentHelper.buildIcsFeedbackRequest())
