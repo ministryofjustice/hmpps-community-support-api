@@ -5,6 +5,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackReq
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReasonRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
@@ -99,6 +100,9 @@ class AppointmentTestSupport(
   fun buildIcsFeedbackRequest(
     didSessionHappen: Boolean = true,
     howSessionTookPlace: SessionMethodRequest? = SessionMethodRequest(type = SessionMethodType.PHONE),
+    didPersonAttend: Boolean? = null,
+    sessionNotHappenReason: SessionNotHappenReasonRequest? = null,
+    noAttendanceInformation: String? = null,
     wasPersonLate: Boolean? = false,
     lateReason: String? = null,
     duration: SessionDurationRequest? = SessionDurationRequest(hours = 1, minutes = 0),
@@ -112,6 +116,9 @@ class AppointmentTestSupport(
   ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
     .withDidSessionHappen(didSessionHappen)
     .withHowSessionTookPlace(howSessionTookPlace)
+    .withDidPersonAttend(didPersonAttend)
+    .withSessionNotHappenReason(sessionNotHappenReason)
+    .withNoAttendanceInformation(noAttendanceInformation)
     .withWasPersonLate(wasPersonLate)
     .withLateReason(lateReason)
     .withDuration(duration)

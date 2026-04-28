@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationReque
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReasonRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
@@ -122,6 +123,9 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   // Section 1 – Record session attendance
   private var didSessionHappen: Boolean = true
   private var howSessionTookPlace: SessionMethodRequest? = SessionMethodRequest(type = SessionMethodType.PHONE)
+  private var didPersonAttend: Boolean? = null
+  private var sessionNotHappenReason: SessionNotHappenReasonRequest? = null
+  private var noAttendanceInformation: String? = null
 
   // Section 2 – Session details
   private var wasPersonLate: Boolean? = false
@@ -143,6 +147,9 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
 
   fun withDidSessionHappen(value: Boolean) = apply { didSessionHappen = value }
   fun withHowSessionTookPlace(value: SessionMethodRequest?) = apply { howSessionTookPlace = value }
+  fun withDidPersonAttend(value: Boolean?) = apply { didPersonAttend = value }
+  fun withSessionNotHappenReason(value: SessionNotHappenReasonRequest?) = apply { sessionNotHappenReason = value }
+  fun withNoAttendanceInformation(value: String?) = apply { noAttendanceInformation = value }
   fun withWasPersonLate(value: Boolean?) = apply { wasPersonLate = value }
   fun withLateReason(value: String?) = apply { lateReason = value }
   fun withDuration(value: SessionDurationRequest?) = apply { duration = value }
@@ -158,6 +165,9 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
     record = RecordSessionRequest(
       didSessionHappen = didSessionHappen,
       howSessionTookPlace = howSessionTookPlace,
+      didPersonAttend = didPersonAttend,
+      sessionNotHappenReason = sessionNotHappenReason,
+      noAttendanceInformation = noAttendanceInformation,
     ),
     sessionDetails = SessionDetailsRequest(
       wasPersonLate = wasPersonLate,
