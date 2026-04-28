@@ -19,6 +19,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReason
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReasonRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
@@ -350,6 +352,139 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
         assertThat(actorId).isEqualTo(testUser.id)
         assertThat(createdAt).isNotNull()
       }
+    }
+
+    @Test
+    fun `should return 201 and persist didPersonAttend and no attendance information when person did not come`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val icsId = createIcsAppointmentId()
+
+      val request = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = false,
+          noAttendanceInformation = "Called twice on 26 April, no answer. Left a voicemail.",
+        ),
+      )
+
+      webTestClient.post()
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isCreated
+        .expectBody<AppointmentIcsFeedbackResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.recordSessionDidSessionHappen).isFalse()
+          assertThat(body.recordSessionDidPersonAttend).isFalse()
+          assertThat(body.recordSessionNoAttendanceInformation).isEqualTo("Called twice on 26 April, no answer. Left a voicemail.")
+          assertThat(body.recordSessionNotHappenReason).isNull()
+          assertThat(body.recordSessionNotHappenReasonDetails).isNull()
+          val saved = appointmentIcsFeedbackRepository.findById(body.id).orElseThrow()
+          assertThat(saved.recordSessionDidPersonAttend).isFalse()
+          assertThat(saved.recordSessionNoAttendanceInformation).isEqualTo("Called twice on 26 April, no answer. Left a voicemail.")
+        }
+    }
+
+    @Test
+    fun `should return 201 and persist session not happen reason SERVICE_PROVIDER_ISSUE when person attended`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val icsId = createIcsAppointmentId()
+
+      val request = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = true,
+          sessionNotHappenReason = SessionNotHappenReasonRequest(
+            reason = SessionNotHappenReason.SERVICE_PROVIDER_ISSUE,
+            details = "Room booking was cancelled due to a fire alarm.",
+          ),
+        ),
+      )
+
+      webTestClient.post()
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isCreated
+        .expectBody<AppointmentIcsFeedbackResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.recordSessionDidSessionHappen).isFalse()
+          assertThat(body.recordSessionDidPersonAttend).isTrue()
+          assertThat(body.recordSessionNotHappenReason).isEqualTo("SERVICE_PROVIDER_ISSUE")
+          assertThat(body.recordSessionNotHappenReasonDetails).isEqualTo("Room booking was cancelled due to a fire alarm.")
+          assertThat(body.recordSessionNoAttendanceInformation).isNull()
+          val saved = appointmentIcsFeedbackRepository.findById(body.id).orElseThrow()
+          assertThat(saved.recordSessionNotHappenReason).isEqualTo("SERVICE_PROVIDER_ISSUE")
+          assertThat(saved.recordSessionNotHappenReasonDetails).isEqualTo("Room booking was cancelled due to a fire alarm.")
+        }
+    }
+
+    @Test
+    fun `should return 201 and persist session not happen reason PERSON_COULD_NOT_TAKE_PART when person attended`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val icsId = createIcsAppointmentId()
+
+      val request = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = true,
+          sessionNotHappenReason = SessionNotHappenReasonRequest(
+            reason = SessionNotHappenReason.REFERRAL_COULD_NOT_TAKE_PART,
+            details = "Alex was in crisis and unable to engage.",
+          ),
+        ),
+      )
+
+      webTestClient.post()
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isCreated
+        .expectBody<AppointmentIcsFeedbackResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.recordSessionNotHappenReason).isEqualTo("REFERRAL_COULD_NOT_TAKE_PART")
+          assertThat(body.recordSessionNotHappenReasonDetails).isEqualTo("Alex was in crisis and unable to engage.")
+        }
+    }
+
+    @Test
+    fun `should return 201 and persist session not happen reason PERSON_DID_NOT_COMPLY when person attended`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val icsId = createIcsAppointmentId()
+
+      val request = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = true,
+          sessionNotHappenReason = SessionNotHappenReasonRequest(
+            reason = SessionNotHappenReason.REFERRAL_DID_NOT_COMPLY,
+            details = "Alex was disruptive and refused to engage with the session.",
+          ),
+        ),
+      )
+
+      webTestClient.post()
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isCreated
+        .expectBody<AppointmentIcsFeedbackResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.recordSessionNotHappenReason).isEqualTo("REFERRAL_DID_NOT_COMPLY")
+          assertThat(body.recordSessionNotHappenReasonDetails).isEqualTo("Alex was disruptive and refused to engage with the session.")
+        }
     }
   }
 }

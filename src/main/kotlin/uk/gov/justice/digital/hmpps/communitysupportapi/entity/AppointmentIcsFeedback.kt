@@ -51,6 +51,18 @@ class AppointmentIcsFeedback(
   @Column(name = "record_session_postcode")
   val recordSessionPostcode: String? = null,
 
+  @Column(name = "record_session_did_person_attend")
+  val recordSessionDidPersonAttend: Boolean? = null,
+
+  @Column(name = "record_session_not_happen_reason")
+  val recordSessionNotHappenReason: String? = null,
+
+  @Column(name = "record_session_not_happen_reason_details", columnDefinition = "TEXT")
+  val recordSessionNotHappenReasonDetails: String? = null,
+
+  @Column(name = "record_session_no_attendance_information", columnDefinition = "TEXT")
+  val recordSessionNoAttendanceInformation: String? = null,
+
   @Column(name = "session_details_was_person_late")
   val sessionDetailsWasPersonLate: Boolean? = null,
 

@@ -30,9 +30,25 @@ fun SessionDurationRequest.toDisplayString(): String {
   return listOfNotNull(hoursText, minutesText).joinToString(" and ").ifBlank { "0 minutes" }
 }
 
+enum class SessionNotHappenReason {
+  SERVICE_PROVIDER_ISSUE,
+  REFERRAL_COULD_NOT_TAKE_PART,
+  REFERRAL_DID_NOT_COMPLY,
+}
+
+data class SessionNotHappenReasonRequest(
+  val reason: SessionNotHappenReason,
+  val details: String? = null,
+)
+
 data class RecordSessionRequest(
   val didSessionHappen: Boolean,
   val howSessionTookPlace: SessionMethodRequest? = null,
+  val didPersonAttend: Boolean? = null,
+  // Only relevant when didSessionHappen = false and didPersonAttend = true
+  val sessionNotHappenReason: SessionNotHappenReasonRequest? = null,
+  // Only relevant when didSessionHappen = false and didPersonAttend = false
+  val noAttendanceInformation: String? = null,
 )
 
 data class SessionDetailsRequest(
@@ -82,6 +98,10 @@ data class AppointmentIcsFeedbackResponse(
   val recordSessionTownOrCity: String?,
   val recordSessionCounty: String?,
   val recordSessionPostcode: String?,
+  val recordSessionDidPersonAttend: Boolean?,
+  val recordSessionNotHappenReason: String?,
+  val recordSessionNotHappenReasonDetails: String?,
+  val recordSessionNoAttendanceInformation: String?,
 
   // Section 2 – Session details
   val sessionDetailsWasPersonLate: Boolean?,
@@ -118,6 +138,10 @@ data class AppointmentIcsFeedbackResponse(
       recordSessionTownOrCity = feedback.recordSessionTownOrCity,
       recordSessionCounty = feedback.recordSessionCounty,
       recordSessionPostcode = feedback.recordSessionPostcode,
+      recordSessionDidPersonAttend = feedback.recordSessionDidPersonAttend,
+      recordSessionNotHappenReason = feedback.recordSessionNotHappenReason,
+      recordSessionNotHappenReasonDetails = feedback.recordSessionNotHappenReasonDetails,
+      recordSessionNoAttendanceInformation = feedback.recordSessionNoAttendanceInformation,
       sessionDetailsWasPersonLate = feedback.sessionDetailsWasPersonLate,
       sessionDetailsLateReason = feedback.sessionDetailsLateReason,
       sessionDetailsDuration = feedback.sessionDetailsDuration,
