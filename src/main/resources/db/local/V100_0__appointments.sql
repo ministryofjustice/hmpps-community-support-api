@@ -155,11 +155,13 @@ VALUES
     ('61707704-3ea5-4707-b71a-22c276e7c4db', 'SCHEDULED',  '2026-01-14 10:00:00'),
     ('61707704-3ea5-4707-b71a-22c276e7c4db', 'COMPLETED',  '2026-02-14 16:00:00'),
 
-    -- Fiona: scheduled only (upcoming)
+    -- Fiona: scheduled, then completed (session did not happen – service provider issue)
     ('b1e8a0cf-6b7f-4d3a-bef6-eb6822c59f2c', 'SCHEDULED',  '2026-01-15 09:00:00'),
+    ('b1e8a0cf-6b7f-4d3a-bef6-eb6822c59f2c', 'COMPLETED',  '2026-02-18 11:00:00'),
 
-    -- Luka: scheduled only (upcoming)
-    ('5838a444-2ed5-4e70-850e-aada3f9eaaf3', 'SCHEDULED',  '2026-01-16 13:00:00');
+    -- Luka: scheduled, then completed (session did not happen – person did not comply)
+    ('5838a444-2ed5-4e70-850e-aada3f9eaaf3', 'SCHEDULED',  '2026-01-16 13:00:00'),
+    ('5838a444-2ed5-4e70-850e-aada3f9eaaf3', 'COMPLETED',  '2026-02-20 13:45:00');
 
 -- Appointment ICS feedback records
 -- d0000000-* UUIDs are used for appointment_ics_feedback rows
@@ -176,6 +178,11 @@ INSERT INTO appointment_ics_feedback (
     record_session_town_or_city,
     record_session_county,
     record_session_postcode,
+    -- New non-attendance / session-not-happen fields
+    record_session_did_person_attend,
+    record_session_not_happen_reason,
+    record_session_not_happen_reason_details,
+    record_session_no_attendance_information,
     session_details_was_person_late,
     session_details_late_reason,
     session_details_duration,
@@ -190,7 +197,7 @@ INSERT INTO appointment_ics_feedback (
     created_by
 )
 VALUES
-    -- Alice: session completed via phone call, no PDU, no address, no issues
+    -- Alice: session happened via phone call; no attendance-related fields
     (
         'd0000000-0000-4000-8000-000000000001',
         'b0000000-0000-4000-8000-000000000001',
@@ -199,6 +206,7 @@ VALUES
         NULL,
         NULL,  -- record_session_pdu
         NULL, NULL, NULL, NULL, NULL,  -- address fields
+        NULL, NULL, NULL, NULL,        -- non-attendance / session-not-happen fields
         false,
         NULL,
         '1 hour and 0 minutes',
@@ -212,7 +220,7 @@ VALUES
         '2026-02-01 11:15:00',
         'a0000000-0000-4000-8000-000000000001'
     ),
-    -- Bob: session completed via video call; person arrived late; concern raised with probation practitioner
+    -- Bob: session happened via video call; person arrived late; concern raised with probation practitioner
     (
         'd0000000-0000-4000-8000-000000000002',
         'b0000000-0000-4000-8000-000000000002',
@@ -221,6 +229,7 @@ VALUES
         NULL,
         NULL,  -- record_session_pdu
         NULL, NULL, NULL, NULL, NULL,  -- address fields
+        NULL, NULL, NULL, NULL,        -- non-attendance / session-not-happen fields
         true,
         'Technical issues connecting to the video call platform.',
         '45 minutes',
@@ -234,7 +243,7 @@ VALUES
         '2026-02-05 15:30:00',
         'a0000000-0000-4000-8000-000000000002'
     ),
-    -- Carlos: session completed at probation office; PDU recorded; no issues
+    -- Carlos: session happened at probation office; PDU recorded; no issues
     (
         'd0000000-0000-4000-8000-000000000003',
         'b0000000-0000-4000-8000-000000000003',
@@ -243,6 +252,7 @@ VALUES
         NULL,
         'PDU-South-East',  -- record_session_pdu
         NULL, NULL, NULL, NULL, NULL,  -- address fields (not applicable for probation office)
+        NULL, NULL, NULL, NULL,        -- non-attendance / session-not-happen fields
         false,
         NULL,
         '1 hour and 30 minutes',
@@ -256,29 +266,30 @@ VALUES
         '2026-02-10 10:45:00',
         'a0000000-0000-4000-8000-000000000001'
     ),
-    -- Dana: session did not happen – no answer on phone call; probation practitioner notified
+    -- Dana: session did not happen; person did NOT attend (did not answer phone)
+    --       record_session_did_person_attend = false → noAttendanceInformation populated
     (
         'd0000000-0000-4000-8000-000000000004',
         'b0000000-0000-4000-8000-000000000004',
         false,
         NULL,
-        'Dana did not answer the phone despite two call attempts. No response to voicemail.',
-        NULL,  -- record_session_pdu
+        NULL,          -- record_session_not_in_person_reason (n/a – session did not happen)
+        NULL,          -- record_session_pdu
         NULL, NULL, NULL, NULL, NULL,  -- address fields
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        'Unable to make contact. Pattern of non-attendance may indicate additional needs or barriers.',
+        false,         -- record_session_did_person_attend
+        NULL,          -- record_session_not_happen_reason (n/a – person did not attend)
+        NULL,          -- record_session_not_happen_reason_details
+        'Called twice on the day of the appointment – no answer either time. Left a voicemail after each attempt. Sent a follow-up text message the following morning but received no response.',
+        NULL, NULL, NULL,  -- session details (n/a)
+        NULL, NULL, NULL,  -- session feedback (n/a)
+        'Unable to make contact with Dana. Pattern of non-attendance may indicate additional needs or barriers to engagement.',
         true,
         'Attempt re-engagement via alternative contact method and reschedule session.',
         'Practitioner to send letter and attempt contact via text before rescheduling.',
         '2026-02-12 11:45:00',
         'a0000000-0000-4000-8000-000000000002'
     ),
-    -- Evan: session completed via video call; minor financial concern noted, no probation notification needed
+    -- Evan: session happened via video call; minor financial concern noted, no probation notification needed
     (
         'd0000000-0000-4000-8000-000000000005',
         'b0000000-0000-4000-8000-000000000005',
@@ -287,6 +298,7 @@ VALUES
         NULL,
         NULL,  -- record_session_pdu
         NULL, NULL, NULL, NULL, NULL,  -- address fields
+        NULL, NULL, NULL, NULL,        -- non-attendance / session-not-happen fields
         false,
         NULL,
         '1 hour and 15 minutes',
@@ -299,5 +311,52 @@ VALUES
         'Evan to attend initial meeting with financial support advisor before next session.',
         '2026-02-14 16:20:00',
         'a0000000-0000-4000-8000-000000000003'
+    ),
+    -- Fiona: session did not happen; person DID attend but session could not proceed – SERVICE_PROVIDER_ISSUE
+    --        (room booking cancelled due to fire alarm drill)
+    --        Add a COMPLETED status for Fiona so this feedback row is valid
+    (
+        'd0000000-0000-4000-8000-000000000006',
+        'b0000000-0000-4000-8000-000000000006',
+        false,
+        NULL,
+        NULL,          -- record_session_not_in_person_reason
+        NULL,          -- record_session_pdu
+        NULL, NULL, NULL, NULL, NULL,  -- address fields
+        true,          -- record_session_did_person_attend
+        'SERVICE_PROVIDER_ISSUE',
+        'The room booking had been cancelled without notice due to a fire alarm drill that ran over time. A replacement room was not available at short notice.',
+        NULL,          -- record_session_no_attendance_information (n/a – person attended)
+        NULL, NULL, NULL,  -- session details (n/a)
+        NULL, NULL, NULL,  -- session feedback (n/a)
+        NULL,
+        false,
+        'Reschedule and confirm room availability in advance.',
+        'Practitioner to arrange a new appointment date and confirm the venue with Fiona.',
+        '2026-02-18 11:00:00',
+        'a0000000-0000-4000-8000-000000000003'
+    ),
+    -- Luka: session did not happen; person DID attend but did not comply (disruptive behaviour)
+    --       record_session_did_person_attend = true, reason = PERSON_DID_NOT_COMPLY
+    (
+        'd0000000-0000-4000-8000-000000000007',
+        'b0000000-0000-4000-8000-000000000007',
+        false,
+        NULL,
+        NULL,          -- record_session_not_in_person_reason
+        NULL,          -- record_session_pdu
+        NULL, NULL, NULL, NULL, NULL,  -- address fields
+        true,          -- record_session_did_person_attend
+        'PERSON_DID_NOT_COMPLY',
+        'Luka attended the appointment but became disruptive during the introduction, refusing to engage with the session structure and using disrespectful language. The session was ended early for safeguarding reasons.',
+        NULL,          -- record_session_no_attendance_information (n/a – person attended)
+        NULL, NULL, NULL,  -- session details (n/a)
+        NULL, NULL, NULL,  -- session feedback (n/a)
+        'Disruptive behaviour resulted in early termination of the session. Safeguarding considerations noted.',
+        true,
+        'Review engagement approach and discuss incident with probation officer before rescheduling.',
+        'Practitioner to complete incident report and share with probation officer.',
+        '2026-02-20 13:45:00',
+        'a0000000-0000-4000-8000-000000000001'
     );
 
