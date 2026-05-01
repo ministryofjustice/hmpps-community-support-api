@@ -25,6 +25,7 @@ enum class AppointmentStatusHistoryType {
   COMPLETED,
   RESCHEDULED,
   DID_NOT_ATTEND,
+  DID_NOT_HAPPEN,
 }
 
 @Entity

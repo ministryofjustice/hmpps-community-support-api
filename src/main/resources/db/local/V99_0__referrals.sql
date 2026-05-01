@@ -8,7 +8,10 @@ VALUES
     ('1c35e4ab-de5f-4b6b-9a1f-31859584fce0', 'CRN0004', 'Dana',   'Lee',     '2002-05-12', 'Male',  '2024-04-10 16:20:00','2024-04-12 16:20:00' ),
     ('9383489a-bc44-4a02-b4e4-0bab703b3d80', 'A1234BC', 'Evan',   'Brown',   '1989-09-09', 'Female','2024-05-01 11:10:00','2024-05-05 11:10:00' ),
     ('bad19757-7a57-4e8a-b88a-e808a1e167b4', 'A1234BD', 'Fiona',  'Ng',      '1994-02-28', 'Male',  '2024-06-18 13:55:00','2024-06-20 13:55:00' ),
-    ('17ea3de3-a6f1-4b9a-b49c-5563ce2bba78', 'CRN0005', 'Luka',  'Cross',      '1979-08-02', 'Male',  '2024-03-24 11:30:00','2024-06-20 11:30:00' );
+    ('17ea3de3-a6f1-4b9a-b49c-5563ce2bba78', 'CRN0005', 'Luka',  'Cross',      '1979-08-02', 'Male',  '2024-03-24 11:30:00','2024-06-20 11:30:00' ),
+    ('0d7f9ccf-9637-4965-8d30-f1ac35169e7e', 'CRN0006', 'Gloria',  'Green',      '1977-06-19', 'Female',  '2024-07-15 11:30:00','2024-07-18 14:30:00' ),
+    ('a0b9e6be-e239-4ff1-96e4-a10d6ba74ee3', 'CRN0007', 'Harry',  'Helton',      '1966-06-06', 'Male',  '2024-10-26 11:30:00','2024-10-31 13:33:00' ),
+    ('7910f5af-006b-43da-ba30-9f7c5beaef38', 'CRN0008', 'Imran',  'Indigo',      '1982-11-16', 'Male',  '2024-08-02 11:30:00','2024-08-29 10:14:00' );
 
 INSERT INTO person_additional_details (id, person_id, ethnicity, preferred_language, neurodiverse_conditions, religion_or_belief, transgender, sexual_orientation, address, phone_number, email_address)
 VALUES
@@ -18,7 +21,10 @@ VALUES
     ('ad000000-0000-4000-8000-000000000004', '1c35e4ab-de5f-4b6b-9a1f-31859584fce0', 'Asian British', 'English', NULL, 'Hinduism', 'No', 'Heterosexual', 'Flat 5, 1 River Lane',    '0207 000 0004', 'dana.lee@example.com'),
     ('ad000000-0000-4000-8000-000000000005', '9383489a-bc44-4a02-b4e4-0bab703b3d80', 'Mixed White and Black Caribbean', 'English', NULL, 'None', 'No', 'Heterosexual', '9 Oak Avenue','0207 000 0005', 'evan.brown@example.com'),
     ('ad000000-0000-4000-8000-000000000006', 'bad19757-7a57-4e8a-b88a-e808a1e167b4', 'Chinese', 'English', NULL, 'Buddhism', 'No', 'Heterosexual', '3 Cherry Close',          '0207 000 0006', 'fiona.ng@example.com'),
-    ('ad000000-0000-4000-8000-000000000007', '17ea3de3-a6f1-4b9a-b49c-5563ce2bba78', 'Mixed White and Black African', 'English', NULL, 'None', 'No', 'Heterosexual', 'Flat 6, 7 Testaville Road',          '0207 000 0007', 'luka.cross@example.com');
+    ('ad000000-0000-4000-8000-000000000007', '17ea3de3-a6f1-4b9a-b49c-5563ce2bba78', 'Mixed White and Black African', 'English', NULL, 'None', 'No', 'Heterosexual', 'Flat 6, 7 Testaville Road',          '0207 000 0007', 'luka.cross@example.com'),
+    ('ad000000-0000-4000-8000-000000000008', '0d7f9ccf-9637-4965-8d30-f1ac35169e7e', 'White British', 'English', NULL, 'None', 'No', 'Heterosexual', '9 Greenfield Lane', '0207 000 0008', 'gloria.green@example.com'),
+    ('ad000000-0000-4000-8000-000000000009', 'a0b9e6be-e239-4ff1-96e4-a10d6ba74ee3', 'Mixed White and Black Caribbean', 'English', NULL, 'None', 'No', 'Heterosexual', '11 Hellington Avenue', '0207 000 0009', 'harry.helton@example.com'),
+    ('ad000000-0000-4000-8000-000000000010', '7910f5af-006b-43da-ba30-9f7c5beaef38', 'Asian British', 'English', NULL, 'Islam', 'No', 'Heterosexual', '49 Purple Boulevard', '0207 000 0010', 'imran.indigo@example.com');
 
 -- Referrals (reference person_id instead of embedding person fields)
 INSERT INTO referral (id, person_id, person_identifier, reference_number, created_at, updated_at, urgency)
@@ -29,7 +35,10 @@ VALUES
     ('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', '1c35e4ab-de5f-4b6b-9a1f-31859584fce0', 'CRN0004', 'ZW4199AC', '2026-01-04 16:20:00', '2026-01-09 16:20:00', false),
     ('123e4567-e89b-12d3-a456-426614174000', '9383489a-bc44-4a02-b4e4-0bab703b3d80', 'A1234BC', 'CC3019ED', '2026-01-05 11:10:00', '2026-01-11 11:10:00', false),
     ('6f1e2d3c-4b5a-6978-8c9d-0a1b2c3d4e5f', 'bad19757-7a57-4e8a-b88a-e808a1e167b4', 'A1234BD', 'KY2594AC', '2026-01-06 13:55:00',  '2024-06-18 13:55:00', true),
-    ('5bfb6628-8d7e-4eab-8f70-b27e166ea73c', '17ea3de3-a6f1-4b9a-b49c-5563ce2bba78', 'CRN0005', 'BD2044AC', '2026-01-07 12:55:00',  '2024-06-18 13:55:00', true);
+    ('5bfb6628-8d7e-4eab-8f70-b27e166ea73c', '17ea3de3-a6f1-4b9a-b49c-5563ce2bba78', 'CRN0005', 'BD2044AC', '2026-01-07 12:55:00',  '2024-06-18 13:55:00', true),
+    ('0827e8d7-0a38-4ac0-9c43-fe72922b18f5', '0d7f9ccf-9637-4965-8d30-f1ac35169e7e', 'CRN0006', 'DF4288CE', '2026-01-07 17:35:00',  '2026-06-19 14:55:00', true),
+    ('c9f5b3ed-5bd9-487b-86c4-3acc64a4b557', 'a0b9e6be-e239-4ff1-96e4-a10d6ba74ee3', 'CRN0007', 'FG6400EC', '2026-01-08 09:35:00',  '2026-06-20 15:20:00', false),
+    ('aacd0c6f-d9fc-44e5-9204-bb78010ffc2e', '7910f5af-006b-43da-ba30-9f7c5beaef38', 'CRN0008', 'GI8620HD', '2026-01-09 10:40:00',  '2026-06-21 12:55:00', false);
 
 -- Referral users (sample users for assignments)
 INSERT INTO referral_user (id, hmpps_auth_id, hmpps_auth_username, auth_source, full_name, last_synced_at)
@@ -48,7 +57,10 @@ VALUES
     ('ca000000-0000-4000-8000-000000000004', 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', '4a1fca07-aa93-46ab-8145-4017811d4749', '2026-01-04 16:20:00', 'a0000000-0000-4000-8000-000000000002'),
     ('ca000000-0000-4000-8000-000000000005', '123e4567-e89b-12d3-a456-426614174000', '0ca2070b-fbe6-4baf-a89c-6be88a0c3b10', '2026-01-05 11:10:00', 'a0000000-0000-4000-8000-000000000003'),
     ('ca000000-0000-4000-8000-000000000006', '6f1e2d3c-4b5a-6978-8c9d-0a1b2c3d4e5f', 'd5e0c774-8e95-4fe4-b9f3-8ecc2b62c242', '2026-01-06 13:55:00', 'a0000000-0000-4000-8000-000000000003'),
-    ('ca000000-0000-4000-8000-000000000007', '5bfb6628-8d7e-4eab-8f70-b27e166ea73c', '4a1fca07-aa93-46ab-8145-4017811d4749', '2026-01-06 13:55:00', 'a0000000-0000-4000-8000-000000000002');
+    ('ca000000-0000-4000-8000-000000000007', '5bfb6628-8d7e-4eab-8f70-b27e166ea73c', '4a1fca07-aa93-46ab-8145-4017811d4749', '2026-01-06 13:55:00', 'a0000000-0000-4000-8000-000000000002'),
+    ('ca000000-0000-4000-8000-000000000008', '0827e8d7-0a38-4ac0-9c43-fe72922b18f5', '4a1fca07-aa93-46ab-8145-4017811d4749', '2026-01-08 11:15:00', 'a0000000-0000-4000-8000-000000000003'),
+    ('ca000000-0000-4000-8000-000000000009', 'c9f5b3ed-5bd9-487b-86c4-3acc64a4b557', 'd5e0c774-8e95-4fe4-b9f3-8ecc2b62c242', '2026-01-09 14:15:00', 'a0000000-0000-4000-8000-000000000003'),
+    ('ca000000-0000-4000-8000-000000000010', 'aacd0c6f-d9fc-44e5-9204-bb78010ffc2e', 'd5e0c774-8e95-4fe4-b9f3-8ecc2b62c242', '2026-01-10 12:25:00', 'a0000000-0000-4000-8000-000000000003');
 
 -- Referral user assignments (assigning users to referrals)
 INSERT INTO referral_user_assignment (id, referral_id, user_id, created_at, created_by, deleted_at, deleted_by)
@@ -60,7 +72,10 @@ VALUES
     ('da000000-0000-4000-8000-000000000005', 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'a0000000-0000-4000-8000-000000000002', '2026-01-04 17:00:00', 'a0000000-0000-4000-8000-000000000003', NULL, NULL),
     ('da000000-0000-4000-8000-000000000006', '123e4567-e89b-12d3-a456-426614174000', 'a0000000-0000-4000-8000-000000000003', '2026-01-05 12:00:00', 'a0000000-0000-4000-8000-000000000001', NULL, NULL),
     ('da000000-0000-4000-8000-000000000007', '5bfb6628-8d7e-4eab-8f70-b27e166ea73c', 'a0000000-0000-4000-8000-000000000001', '2026-01-07 14:00:00', 'a0000000-0000-4000-8000-000000000002', NULL, NULL),
-    ('da000000-0000-4000-8000-000000000008', '5bfb6628-8d7e-4eab-8f70-b27e166ea73c', 'a0000000-0000-4000-8000-000000000002', '2026-01-07 13:02:00', 'a0000000-0000-4000-8000-000000000002', NULL, NULL);
+    ('da000000-0000-4000-8000-000000000008', '5bfb6628-8d7e-4eab-8f70-b27e166ea73c', 'a0000000-0000-4000-8000-000000000002', '2026-01-07 13:02:00', 'a0000000-0000-4000-8000-000000000002', NULL, NULL),
+    ('da000000-0000-4000-8000-000000000009', '0827e8d7-0a38-4ac0-9c43-fe72922b18f5', 'a0000000-0000-4000-8000-000000000003', '2026-01-07 14:22:00', 'a0000000-0000-4000-8000-000000000003', NULL, NULL),
+    ('da000000-0000-4000-8000-000000000010', 'c9f5b3ed-5bd9-487b-86c4-3acc64a4b557', 'a0000000-0000-4000-8000-000000000003', '2026-01-08 15:55:00', 'a0000000-0000-4000-8000-000000000003', NULL, NULL),
+    ('da000000-0000-4000-8000-000000000011', 'aacd0c6f-d9fc-44e5-9204-bb78010ffc2e', 'a0000000-0000-4000-8000-000000000003', '2026-01-09 16:05:00', 'a0000000-0000-4000-8000-000000000003', NULL, NULL);
 
 -- Referral events (simple sample events referencing the referrals)
 INSERT INTO referral_event (id, referral_id, event_type, created_at, actor_type, actor_id)
@@ -79,7 +94,10 @@ VALUES
     ('e1000000-0000-4000-8000-000000000004', 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'SUBMITTED', '2024-04-10 17:00:00', 'AUTH', 'a0000000-0000-4000-8000-000000000002'),
     ('e1000000-0000-4000-8000-000000000005', '123e4567-e89b-12d3-a456-426614174000', 'SUBMITTED', '2024-05-01 12:00:00', 'AUTH', 'a0000000-0000-4000-8000-000000000003'),
     ('e1000000-0000-4000-8000-000000000006', '6f1e2d3c-4b5a-6978-8c9d-0a1b2c3d4e5f', 'SUBMITTED', '2024-06-18 14:30:00', 'AUTH', 'a0000000-0000-4000-8000-000000000003'),
-    ('e1000000-0000-4000-8000-000000000007', '5bfb6628-8d7e-4eab-8f70-b27e166ea73c', 'SUBMITTED', '2024-06-07 14:30:00', 'AUTH', 'a0000000-0000-4000-8000-000000000002');
+    ('e1000000-0000-4000-8000-000000000007', '5bfb6628-8d7e-4eab-8f70-b27e166ea73c', 'SUBMITTED', '2024-06-07 14:30:00', 'AUTH', 'a0000000-0000-4000-8000-000000000002'),
+    ('e1000000-0000-4000-8000-000000000008', '0827e8d7-0a38-4ac0-9c43-fe72922b18f5', 'SUBMITTED', '2024-06-04 14:30:00', 'AUTH', 'a0000000-0000-4000-8000-000000000003'),
+    ('e1000000-0000-4000-8000-000000000009', 'c9f5b3ed-5bd9-487b-86c4-3acc64a4b557', 'SUBMITTED', '2024-06-05 15:30:00', 'AUTH', 'a0000000-0000-4000-8000-000000000003'),
+    ('e1000000-0000-4000-8000-000000000010', 'aacd0c6f-d9fc-44e5-9204-bb78010ffc2e', 'SUBMITTED', '2024-06-06 15:40:00', 'AUTH', 'a0000000-0000-4000-8000-000000000003');
 
 -- Refresh the materialized view to include the new data
 REFRESH MATERIALIZED VIEW case_list_view;
