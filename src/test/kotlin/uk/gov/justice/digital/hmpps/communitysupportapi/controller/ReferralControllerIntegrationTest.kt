@@ -565,7 +565,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         appointmentDateTime,
       )
 
-      appointmentHelper.createAppointmentIcs(
+      val ics = appointmentHelper.createAppointmentIcs(
         appointment,
         delivery = appointmentHelper.createAppointmentDelivery(),
         user = referralUser,
@@ -586,7 +586,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           referralProgressDto.referralId shouldBe referral.id
           referralProgressDto.fullName shouldBe person.firstName + " " + person.lastName
           referralProgressDto.appointments.size shouldBe 1
-          referralProgressDto.appointments[0].appointmentId shouldBe appointment.id
+          referralProgressDto.appointments[0].appointmentId shouldBe ics.id
           referralProgressDto.appointments[0].dateTime shouldBe appointmentDateTime
           referralProgressDto.appointments[0].status shouldBe AppointmentStatusHistoryType.NEEDS_FEEDBACK
         }
