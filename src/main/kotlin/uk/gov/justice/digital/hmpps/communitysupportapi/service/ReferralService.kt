@@ -175,14 +175,13 @@ class ReferralService(
 
     val appointmentHistory = appointments.map { appointment ->
       val ics = icsByAppointment.getValue(appointment.id)
-
       val latestStatus = statusHistoryByAppointment[appointment.id]
         ?.maxByOrNull { it.createdAt }
         ?.status
         ?: error("No status history for appointment ${appointment.id}")
 
       ReferralAppointmentHistoryDto(
-        appointmentId = appointment.id,
+        appointmentId = ics.id,
         type = appointment.type,
         dateTime = ics.appointmentDateTime,
         status = latestStatus,
