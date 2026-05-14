@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
+import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toCaseWorkerDto
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -83,12 +84,12 @@ data class ReferralDetailsBffResponseDto(
 
   data class ReferralDetailsTableDataDto(
     val referralDate: String,
-    val assignedTo: List<String>,
+    val assignedTo: List<CaseWorkerDto>,
   ) {
     companion object {
       fun from(referral: Referral, referralAssignments: List<ReferralUserAssignment>): ReferralDetailsTableDataDto = ReferralDetailsTableDataDto(
         referralDate = referral.createdAt.toString(),
-        assignedTo = referralAssignments.map { it.user.fullName },
+        assignedTo = referralAssignments.map { it.user.toCaseWorkerDto() },
       )
     }
   }
