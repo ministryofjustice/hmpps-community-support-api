@@ -231,7 +231,8 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     assertEquals(referral.id, result.id)
     assertEquals(referral.crn, result.personDetailsTableData.crn)
-    assertEquals(referralUser.fullName, result.referralDetailsTableData.assignedTo.first())
+    assertEquals(referralUser.fullName, result.referralDetailsTableData.assignedTo.first().fullName)
+    assertEquals(referralUser.hmppsAuthUsername, result.referralDetailsTableData.assignedTo.first().emailAddress)
   }
 
   @Test
@@ -246,7 +247,8 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     assertEquals(referral.id, result.id)
     assertEquals(referral.crn, result.personDetailsTableData.crn)
-    assertEquals(referralUser.fullName, result.referralDetailsTableData.assignedTo.first())
+    assertEquals(referralUser.fullName, result.referralDetailsTableData.assignedTo.first().fullName)
+    assertEquals(referralUser.hmppsAuthUsername, result.referralDetailsTableData.assignedTo.first().emailAddress)
   }
 
   @Test

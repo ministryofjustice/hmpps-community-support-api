@@ -16,6 +16,8 @@ interface ReferralUserAssignmentRepository : JpaRepository<ReferralUserAssignmen
     """
         SELECT a
         FROM ReferralUserAssignment a
+        LEFT JOIN FETCH a.user
+        LEFT JOIN FETCH a.referral
         WHERE a.referral.id = :referralId
           AND (a.deletedAt IS NULL or a.deletedBy IS NULL)
     """,
