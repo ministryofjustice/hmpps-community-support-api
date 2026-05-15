@@ -2,20 +2,21 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AssignmentFailureDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.UserDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.UserType
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AssignCaseWorkersResult
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CaseIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.CaseIdentifierValidator
 import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import java.time.LocalDateTime
 import java.util.UUID
@@ -31,14 +32,19 @@ class ReferralAssignmentService(
   companion object {
     private const val MAX_CASE_WORKERS = 5
     private val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")
+    private val identifierValidator: CaseIdentifierValidator = CaseIdentifierValidator()
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun getAssignedCaseWorkers(referralId: UUID): List<CaseWorkerDto>? {
-    log.info("Get assigned case workers of a referral {}", referralId)
+  fun getAssignedCaseWorkers(identifier: String): List<CaseWorkerDto>? {
+    log.info("Get assigned case workers of a referral {}", identifier)
 
-    val referral = referralRepository.findById(referralId)
-      .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Referral not found") }
+    val referral = when (val identifier = identifierValidator.validate(identifier)) {
+      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
+        .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
+
+      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value).first()
+    }
 
     val activeAssignments: List<ReferralUserAssignment> = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(referral.id)
 
@@ -54,11 +60,15 @@ class ReferralAssignmentService(
   }
 
   @Transactional
-  fun assignCaseWorkers(assigner: ReferralUser, referralId: UUID, caseWorkers: List<CaseWorkerDto>): AssignCaseWorkersResult? {
-    log.info("Assigning case workers to referral {}", referralId)
+  fun assignCaseWorkers(assigner: ReferralUser, identifier: String, caseWorkers: List<CaseWorkerDto>): AssignCaseWorkersResult? {
+    log.info("Assigning case workers to referral {}", identifier)
 
-    val referral = referralRepository.findById(referralId)
-      .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Referral not found") }
+    val referral = when (val identifier = identifierValidator.validate(identifier)) {
+      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
+        .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
+
+      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value).first()
+    }
 
     inputValidation(caseWorkers)?.let { return it }
 
@@ -123,7 +133,7 @@ class ReferralAssignmentService(
         },
         succeededList = submittedAssignments.map { CaseWorkerDto(userType = if (it.second.authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL, userId = it.second.id, it.second.fullName, it.second.hmppsAuthUsername) },
       )
-      log.info("Caseworkers assigned to referral {}: {}", referralId, result)
+      log.info("Caseworkers assigned to referral {}: {}", identifier, result)
       return result
     } else {
       return AssignCaseWorkersResult(
