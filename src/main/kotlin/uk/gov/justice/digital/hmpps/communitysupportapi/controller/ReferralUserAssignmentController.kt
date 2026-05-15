@@ -20,7 +20,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AssignCaseWorkersR
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AssignCaseWorkersResult
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralAssignmentService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
-import java.util.UUID
 
 @RestController
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
@@ -49,8 +48,8 @@ class ReferralUserAssignmentController(
       ),
     ],
   )
-  @PostMapping("/referral/{referralId}/assign")
-  fun assignCaseWorkers(@PathVariable referralId: String, @RequestBody assignCaseWorkersRequest: AssignCaseWorkersRequest): ResponseEntity<AssignCaseWorkersResult> {
+  @PostMapping("/referral/{identifier}/assign")
+  fun assignCaseWorkers(@PathVariable identifier: String, @RequestBody assignCaseWorkersRequest: AssignCaseWorkersRequest): ResponseEntity<AssignCaseWorkersResult> {
     val user = userMapper.fromToken(authenticationHolder)
 
     val emailList = assignCaseWorkersRequest.emails
@@ -58,7 +57,7 @@ class ReferralUserAssignmentController(
         CaseWorkerDto(userType = UserType.EXTERNAL, fullName = "", emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(user, UUID.fromString(referralId), emailList)
+    val result = referralAssignmentService.assignCaseWorkers(user, identifier, emailList)
 
     return when {
       (result?.success == true) -> ResponseEntity.ok(result)
@@ -81,11 +80,11 @@ class ReferralUserAssignmentController(
       ),
     ],
   )
-  @GetMapping("/bff/referral-assignments/{referralId}")
+  @GetMapping("/bff/referral-assignments/{identifier}")
   fun getAssignedCaseWorkers(
-    @PathVariable referralId: String,
+    @PathVariable identifier: String,
   ): ResponseEntity<List<CaseWorkerDto>> {
-    val caseWorkers = referralAssignmentService.getAssignedCaseWorkers(UUID.fromString(referralId))
+    val caseWorkers = referralAssignmentService.getAssignedCaseWorkers(identifier)
     return ResponseEntity.ok(caseWorkers)
   }
 }
