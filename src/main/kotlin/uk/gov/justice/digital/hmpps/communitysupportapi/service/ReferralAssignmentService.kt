@@ -2,11 +2,13 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AssignmentFailureDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.UserDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.UserType
@@ -36,16 +38,18 @@ class ReferralAssignmentService(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
+  fun getReferralByCaseIdentifier(caseIdentifier: String?): Referral = when (val identifier = ReferralAssignmentService.Companion.identifierValidator.validate(caseIdentifier)) {
+    is CaseIdentifier.ReferralId -> referralRepository.findByIdOrNull(identifier.value)
+      ?: throw NotFoundException("Referral not found for id ${identifier.value}")
+
+    is CaseIdentifier.CaseId -> referralRepository.findReferenceNumberOrNull(identifier.value)
+      ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
+  }
+
   fun getAssignedCaseWorkers(identifier: String): List<CaseWorkerDto>? {
     log.info("Get assigned case workers of a referral {}", identifier)
 
-    val referral = when (val identifier = identifierValidator.validate(identifier)) {
-      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
-        .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
-
-      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value).first()
-    }
-
+    val referral = getReferralByCaseIdentifier(identifier)
     val activeAssignments: List<ReferralUserAssignment> = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(referral.id)
 
     return activeAssignments
@@ -63,12 +67,7 @@ class ReferralAssignmentService(
   fun assignCaseWorkers(assigner: ReferralUser, identifier: String, caseWorkers: List<CaseWorkerDto>): AssignCaseWorkersResult? {
     log.info("Assigning case workers to referral {}", identifier)
 
-    val referral = when (val identifier = identifierValidator.validate(identifier)) {
-      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
-        .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
-
-      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value).first()
-    }
+    val referral = getReferralByCaseIdentifier(identifier)
 
     inputValidation(caseWorkers)?.let { return it }
 
@@ -186,11 +185,6 @@ class ReferralAssignmentService(
       return AssignCaseWorkersResult(
         success = false,
         message = "Cannot assign more than $MAX_CASE_WORKERS caseworkers.",
-      )
-    } else if (uniqueEmailsCount.isEmpty()) {
-      return AssignCaseWorkersResult(
-        success = false,
-        message = "No email address provided.",
       )
     }
     return null
