@@ -94,7 +94,7 @@ services:
       test: pg_isready -d auth-db
 
   postgresql:
-    image: postgres:18.3
+    image: postgres:18.4
     container_name: postgres-api
     networks:
       - hmpps
