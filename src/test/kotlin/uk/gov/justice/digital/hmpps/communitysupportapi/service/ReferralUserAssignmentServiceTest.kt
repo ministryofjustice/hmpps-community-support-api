@@ -54,7 +54,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to a caseworker.")
     assertThat(result?.succeededList?.size).isEqualTo(1)
@@ -81,7 +81,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
     assertThat(result?.succeededList?.size).isEqualTo(3)
@@ -116,7 +116,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isFalse()
     assertThat(result?.message).isEqualTo("Cannot assign more than 5 caseworkers.")
   }
@@ -132,7 +132,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isFalse()
     assertThat(result?.message).isEqualTo("Failed to assign case worker(s)")
     assertThat(result?.succeededList).isEmpty()
@@ -151,7 +151,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isFalse()
     assertThat(result?.message).isEqualTo("Failed to assign case worker(s)")
     assertThat(result?.succeededList).isEmpty()
@@ -180,14 +180,14 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to a caseworker.")
     assertThat(result?.succeededList?.size).isEqualTo(1)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
 
-    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.referenceNumber.orEmpty())
     assertThat(assignedCaseWorkers?.size).isEqualTo(1)
     assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
   }
@@ -213,7 +213,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
     assertThat(result?.succeededList?.size).isEqualTo(3)
@@ -222,7 +222,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
 
-    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.referenceNumber.orEmpty())
     assertThat(assignedCaseWorkers?.size).isEqualTo(3)
     assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(assignedCaseWorkers?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
@@ -250,7 +250,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isFalse()
     assertThat(result?.message).isEqualTo("Failed to assign case worker(s)")
     assertThat(result?.succeededList).isEmpty()
@@ -285,7 +285,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isFalse()
     assertThat(result?.message).isEqualTo("Failed to assign case worker(s)")
     assertThat(result?.succeededList).isEmpty()
@@ -313,21 +313,21 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase(), userId = user1.id)
       }
 
-    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to a caseworker.")
     assertThat(result?.succeededList?.size).isEqualTo(1)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
 
-    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The caseworker assigned to this case has changed.")
     assertThat(result?.succeededList?.size).isEqualTo(1)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
 
-    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.referenceNumber.orEmpty())
     assertThat(assignedCaseWorkers?.size).isEqualTo(1)
     assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
   }
@@ -344,7 +344,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
       CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker2@email.com"),
     )
 
-    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
     assertThat(result?.succeededList?.size).isEqualTo(2)
@@ -354,14 +354,14 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
 
     caseWorkers.removeIf { it.emailAddress == "caseworker1@email.com" }
 
-    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The caseworker assigned to this case has changed.")
     assertThat(result?.succeededList?.size).isEqualTo(1)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
 
-    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.referenceNumber.orEmpty())
     assertThat(assignedCaseWorkers?.size).isEqualTo(1)
     assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
   }
@@ -384,7 +384,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
       CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker5@email.com"),
     )
 
-    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
     assertThat(result?.succeededList?.size).isEqualTo(5)
@@ -398,7 +398,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     caseWorkers.removeIf { it.emailAddress == "caseworker2@email.com" }
     caseWorkers.removeIf { it.emailAddress == "caseworker4@email.com" }
 
-    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The caseworkers assigned to this case have changed.")
     assertThat(result?.succeededList?.size).isEqualTo(3)
@@ -407,7 +407,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
 
-    referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    referralAssignmentService.getAssignedCaseWorkers(referral.referenceNumber.orEmpty())
     assertThat(result?.succeededList?.size).isEqualTo(3)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user3.hmppsAuthUsername)
@@ -434,7 +434,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
       CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker5@email.com"),
     )
 
-    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
     assertThat(result?.succeededList?.size).isEqualTo(5)
@@ -453,7 +453,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
       CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker5@email.com"),
     )
 
-    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, newCaseWorkers)
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), newCaseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The caseworkers assigned to this case have changed.")
     assertThat(result?.succeededList?.size).isEqualTo(5)
@@ -464,7 +464,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.succeededList?.get(4)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
 
-    referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    referralAssignmentService.getAssignedCaseWorkers(referral.referenceNumber.orEmpty())
     assertThat(result?.succeededList?.size).isEqualTo(5)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user6.hmppsAuthUsername)
@@ -490,7 +490,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
       CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker3@email.com", userId = UUID.randomUUID()),
     )
 
-    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
     assertThat(result?.succeededList?.size).isEqualTo(3)
@@ -505,7 +505,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
       CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker6@email.com", userId = UUID.randomUUID()),
     )
 
-    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, newCaseWorkers)
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), newCaseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The caseworkers assigned to this case have changed.")
     assertThat(result?.succeededList?.size).isEqualTo(3)
@@ -514,7 +514,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.succeededList?.get(2)?.emailAddress).isEqualTo(user6.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
 
-    referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    referralAssignmentService.getAssignedCaseWorkers(referral.referenceNumber.orEmpty())
     assertThat(result?.succeededList?.size).isEqualTo(3)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user4.hmppsAuthUsername)
     assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user5.hmppsAuthUsername)
@@ -540,7 +540,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
       CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker4@email.com"),
     )
 
-    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    var result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
     assertThat(result?.succeededList?.size).isEqualTo(4)
@@ -558,7 +558,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
       CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = "caseworker1@email.com"),
     )
 
-    result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, newCaseWorkers)
+    result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), newCaseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The caseworkers assigned to this case have changed.")
     assertThat(result?.succeededList?.size).isEqualTo(5)
@@ -569,7 +569,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.succeededList?.get(4)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
 
-    referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    referralAssignmentService.getAssignedCaseWorkers(referral.referenceNumber.orEmpty())
     assertThat(result?.succeededList?.size).isEqualTo(5)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user7.hmppsAuthUsername)
     assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user6.hmppsAuthUsername)
@@ -592,14 +592,14 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.id, caseWorkers)
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
     assertThat(result?.success).isTrue()
     assertThat(result?.message).isEqualTo("The case has been assigned to caseworkers.")
     assertThat(result?.succeededList?.size).isEqualTo(2)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(result?.succeededList?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)
 
-    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.id)
+    val assignedCaseWorkers = referralAssignmentService.getAssignedCaseWorkers(referral.referenceNumber.orEmpty())
     assertThat(assignedCaseWorkers?.size).isEqualTo(2)
     assertThat(assignedCaseWorkers?.get(0)?.emailAddress).isEqualTo(user1.hmppsAuthUsername)
     assertThat(assignedCaseWorkers?.get(1)?.emailAddress).isEqualTo(user2.hmppsAuthUsername)

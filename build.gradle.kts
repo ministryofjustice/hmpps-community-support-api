@@ -11,7 +11,7 @@ configurations {
 }
 
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:2.2.0")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:2.4.0")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-webclient")
   implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -29,7 +29,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
   implementation("org.springframework.security:spring-security-crypto:7.0.5")
-  implementation("com.nimbusds:oauth2-oidc-sdk:11.37.1")
+  implementation("com.nimbusds:oauth2-oidc-sdk:11.37.2")
 
   // csv
   implementation("org.apache.commons:commons-csv:1.14.1")
@@ -38,7 +38,7 @@ dependencies {
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.boot:spring-boot-test-autoconfigure")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
-  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.2.0")
+  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.4.0")
   testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
   testImplementation("org.wiremock:wiremock-standalone:3.13.2")
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.42") {
