@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpMethod.GET
 import org.springframework.http.HttpMethod.POST
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -484,6 +485,126 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           val body = result.responseBody!!
           assertThat(body.recordSessionNotHappenReason).isEqualTo("REFERRAL_DID_NOT_COMPLY")
           assertThat(body.recordSessionNotHappenReasonDetails).isEqualTo("Alex was disruptive and refused to engage with the session.")
+        }
+    }
+  }
+
+  // ── Helper to create feedback and return its id ────────────────────────────
+
+  private fun createIcsFeedbackId(icsId: UUID): UUID {
+    whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+    return webTestClient.post()
+      .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+      .contentType(MediaType.APPLICATION_JSON)
+      .headers(setAuthorisation())
+      .bodyValue(appointmentHelper.buildIcsFeedbackRequest())
+      .exchange()
+      .expectStatus().isCreated
+      .expectBody<AppointmentIcsFeedbackResponse>()
+      .returnResult()
+      .responseBody!!
+      .id
+  }
+
+  // ── Tests for GET /bff/ics-feedback/{icsFeedbackId} ──
+
+  @Nested
+  @DisplayName("GET /bff/ics-feedback/{icsFeedbackId}")
+  inner class GetIcsFeedbackEndpoint {
+
+    @Test
+    fun `should return 401 unauthorized when no token provided`() {
+      assertUnauthorized(GET, "/bff/ics-feedback/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return 403 forbidden when no roles provided`() {
+      assertForbiddenNoRole(GET, "/bff/ics-feedback/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return 403 forbidden when wrong role provided`() {
+      assertForbiddenWrongRole(GET, "/bff/ics-feedback/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return 404 when feedback does not exist`() {
+      assertNotFound(GET, "/bff/ics-feedback/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return 200 with correct feedback when queried by feedback id`() {
+      val icsId = createIcsAppointmentId()
+      val feedbackId = createIcsFeedbackId(icsId)
+
+      webTestClient.get()
+        .uri("/bff/ics-feedback/$feedbackId")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<AppointmentIcsFeedbackResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.id).isEqualTo(feedbackId)
+          assertThat(body.appointmentIcsId).isEqualTo(icsId)
+          assertThat(body.recordSessionDidSessionHappen).isTrue()
+        }
+    }
+
+    @Test
+    fun `should return 200 with all persisted feedback fields`() {
+      val icsId = createIcsAppointmentId()
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val request = appointmentHelper.buildIcsFeedbackRequest(
+        didSessionHappen = true,
+        howSessionTookPlace = SessionMethodRequest(type = SessionMethodType.PHONE, additionalDetails = "Client preferred phone"),
+        wasPersonLate = true,
+        lateReason = "Car trouble",
+        duration = SessionDurationRequest(hours = 1, minutes = 45),
+        whatHappened = "Reviewed progress on employment goals",
+        behaviour = "Engaged and motivated",
+        strengthsIdentified = "Excellent communication skills",
+        issuesConcernsIdentified = "Risk of housing loss",
+        notifyProbationPractitioner = true,
+        plannedForNextSession = "Review housing options",
+        actionsBeforeNextSession = "Contact housing officer",
+      )
+
+      val feedbackId = webTestClient.post()
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isCreated
+        .expectBody<AppointmentIcsFeedbackResponse>()
+        .returnResult()
+        .responseBody!!
+        .id
+
+      webTestClient.get()
+        .uri("/bff/ics-feedback/$feedbackId")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<AppointmentIcsFeedbackResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.id).isEqualTo(feedbackId)
+          assertThat(body.appointmentIcsId).isEqualTo(icsId)
+          assertThat(body.recordSessionHowSessionTookPlace).isEqualTo("Phone call")
+          assertThat(body.recordSessionNotInPersonReason).isEqualTo("Client preferred phone")
+          assertThat(body.sessionDetailsWasPersonLate).isTrue()
+          assertThat(body.sessionDetailsLateReason).isEqualTo("Car trouble")
+          assertThat(body.sessionDetailsDuration).isEqualTo("1 hour and 45 minutes")
+          assertThat(body.sessionFeedbackWhatHappened).isEqualTo("Reviewed progress on employment goals")
+          assertThat(body.sessionFeedbackBehaviour).isEqualTo("Engaged and motivated")
+          assertThat(body.sessionFeedbackStrengthsIdentified).isEqualTo("Excellent communication skills")
+          assertThat(body.issuesOrConcernsIdentified).isEqualTo("Risk of housing loss")
+          assertThat(body.issuesOrConcernsNotifyProbationPractitioner).isTrue()
+          assertThat(body.nextStepsPlannedForNextSession).isEqualTo("Review housing options")
+          assertThat(body.nextStepsActionsBeforeNextSession).isEqualTo("Contact housing officer")
         }
     }
   }

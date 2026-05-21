@@ -189,6 +189,16 @@ class AppointmentService(
   private fun getReferralName(appointment: Appointment) = personRepository.findById(appointment.referral.personId).map { it.firstName + " " + it.lastName }.get()
 
   /**
+   * Returns a single ICS feedback record by its own ID.
+   */
+  @Transactional(readOnly = true)
+  fun getIcsFeedback(icsFeedbackId: UUID): AppointmentIcsFeedbackResponse {
+    val feedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
+      .orElseThrow { NotFoundException("ICS feedback not found for id $icsFeedbackId") }
+    return AppointmentIcsFeedbackResponse.from(feedback)
+  }
+
+  /**
    * Creates and persists feedback for the given ICS appointment.
    * Verifies that the ICS appointment exists and belongs to the specified referral.
    */
