@@ -128,6 +128,25 @@ class AppointmentController(
     return ResponseEntity.status(HttpStatus.CREATED).body(response)
   }
 
+  @Operation(summary = "Get a single ICS feedback record by its ID")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "ICS feedback found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = AppointmentIcsFeedbackResponse::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "ICS feedback not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/ics-feedback/{icsFeedbackId}")
+  fun getIcsFeedback(
+    @PathVariable icsFeedbackId: UUID,
+  ): ResponseEntity<AppointmentIcsFeedbackResponse> {
+    log.info("GET /bff/ics-feedback/{}", icsFeedbackId)
+    return ResponseEntity.ok(appointmentService.getIcsFeedback(icsFeedbackId))
+  }
+
   @Operation(summary = "Get ICS feedback session details")
   @ApiResponses(
     value = [

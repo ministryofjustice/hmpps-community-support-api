@@ -729,4 +729,65 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(events.all { it.referral.id == referral.id }).isTrue()
     }
   }
+
+  @Nested
+  @DisplayName("getIcsFeedback")
+  inner class GetIcsFeedback {
+
+    @Test
+    fun `should return the correct feedback by id`() {
+      val icsId = createIcsAndGetId()
+      val created = appointmentService.createIcsFeedback(referral.id, icsId, buildFeedbackRequest(), testUser)
+
+      val fetched = appointmentService.getIcsFeedback(created.id)
+
+      assertThat(fetched.id).isEqualTo(created.id)
+      assertThat(fetched.appointmentIcsId).isEqualTo(icsId)
+      assertThat(fetched.recordSessionDidSessionHappen).isTrue()
+    }
+
+    @Test
+    fun `should throw NotFoundException for unknown feedback id`() {
+      val unknownId = UUID.randomUUID()
+
+      val ex = assertThrows<NotFoundException> {
+        appointmentService.getIcsFeedback(unknownId)
+      }
+      assertThat(ex.message).isEqualTo("ICS feedback not found for id $unknownId")
+    }
+
+    @Test
+    fun `should return all persisted feedback fields`() {
+      val icsId = createIcsAndGetId()
+      val request = buildFeedbackRequest(
+        didSessionHappen = true,
+        howSessionTookPlace = SessionMethodRequest(type = SessionMethodType.PHONE, additionalDetails = "Client preferred phone"),
+        wasPersonLate = true,
+        lateReason = "Car trouble",
+        duration = SessionDurationRequest(hours = 1, minutes = 45),
+        whatHappened = "Reviewed employment goals",
+        behaviour = "Engaged and motivated",
+        strengthsIdentified = "Excellent communication",
+        issuesConcernsIdentified = "Risk of housing loss",
+        notifyProbationPractitioner = true,
+        plannedForNextSession = "Review housing options",
+        actionsBeforeNextSession = "Contact housing officer",
+      )
+      val created = appointmentService.createIcsFeedback(referral.id, icsId, request, testUser)
+
+      val fetched = appointmentService.getIcsFeedback(created.id)
+
+      assertThat(fetched.recordSessionHowSessionTookPlace).isEqualTo("Phone call")
+      assertThat(fetched.recordSessionNotInPersonReason).isEqualTo("Client preferred phone")
+      assertThat(fetched.sessionDetailsWasPersonLate).isTrue()
+      assertThat(fetched.sessionDetailsLateReason).isEqualTo("Car trouble")
+      assertThat(fetched.sessionDetailsDuration).isEqualTo("1 hour and 45 minutes")
+      assertThat(fetched.sessionFeedbackWhatHappened).isEqualTo("Reviewed employment goals")
+      assertThat(fetched.issuesOrConcernsIdentified).isEqualTo("Risk of housing loss")
+      assertThat(fetched.issuesOrConcernsNotifyProbationPractitioner).isTrue()
+      assertThat(fetched.nextStepsPlannedForNextSession).isEqualTo("Review housing options")
+      assertThat(fetched.nextStepsActionsBeforeNextSession).isEqualTo("Contact housing officer")
+      assertThat(fetched.createdBy).isEqualTo(testUser.id)
+    }
+  }
 }
