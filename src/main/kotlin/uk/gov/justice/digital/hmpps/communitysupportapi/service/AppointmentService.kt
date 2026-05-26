@@ -28,7 +28,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.CaseIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
@@ -36,7 +35,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.validation.CaseIdentifierValidator
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -51,10 +49,10 @@ class AppointmentService(
   private val appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository,
   private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
   private val personRepository: PersonRepository,
+  private val referralLookupService: ReferralLookupService,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
-    private val identifierValidator: CaseIdentifierValidator = CaseIdentifierValidator()
   }
 
   @Transactional
@@ -63,12 +61,7 @@ class AppointmentService(
     request: CreateAppointmentRequest,
     createdBy: ReferralUser,
   ): AppointmentIcsResponse {
-    val referral = when (val identifier = identifierValidator.validate(caseIdentifier)) {
-      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
-        .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
-      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value)
-        .firstOrNull() ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
-    }
+    val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
 
     log.info("Creating ICS appointment for referral {}", caseIdentifier)
 
@@ -201,6 +194,7 @@ class AppointmentService(
   /**
    * Creates and persists feedback for the given ICS appointment.
    * Verifies that the ICS appointment exists and belongs to the specified referral.
+   * If feedback already exists for this ICS appointment, the existing record is returned (idempotent).
    */
   @Transactional
   fun createIcsFeedback(
@@ -216,10 +210,16 @@ class AppointmentService(
       throw NotFoundException("ICS appointment $icsAppointmentId does not belong to referral $referralId")
     }
 
+    // Idempotency guard – return the existing feedback record if one already exists
+    appointmentIcsFeedbackRepository.findByAppointmentIcsId(icsAppointmentId)?.let { existing ->
+      log.info("ICS feedback already exists for ics appointment {}, returning existing record {}", icsAppointmentId, existing.id)
+      return AppointmentIcsFeedbackResponse.from(existing)
+    }
+
     log.info("Creating ICS feedback for ics appointment {}", icsAppointmentId)
 
     val sessionMethod = request.record.howSessionTookPlace
-    val isOtherLocation = sessionMethod?.type == SessionMethodType.OTHER_LOCATION
+    val isOtherLocation = sessionMethod?.type == SessionMethodType.IN_PERSON_OTHER_LOCATION
 
     val feedback = AppointmentIcsFeedback(
       appointmentIcs = ics,
@@ -252,6 +252,15 @@ class AppointmentService(
     val saved = appointmentIcsFeedbackRepository.save(feedback)
     log.info("ICS feedback created with id {} for ics appointment {}", saved.id, icsAppointmentId)
 
+    // Derive and persist the new appointment status from the feedback answers
+    val newStatus = deriveAppointmentStatus(saved)
+    val statusHistory = AppointmentStatusHistory(
+      appointment = ics.appointment,
+      status = newStatus,
+    )
+    appointmentStatusHistoryRepository.save(statusHistory)
+    log.info("Appointment status set to {} for appointment {}", newStatus, ics.appointment.id)
+
     // Audit: record APPOINTMENT_FEEDBACK_SENT event on the referral
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
@@ -268,5 +277,19 @@ class AppointmentService(
     log.info("Referral event APPOINTMENT_FEEDBACK_SENT recorded for referral {}", referralId)
 
     return AppointmentIcsFeedbackResponse.from(saved)
+  }
+
+  /**
+   * Derives the [AppointmentStatusHistoryType] from the submitted feedback:
+   *
+   * - `didSessionHappen == true`                                                     → COMPLETED
+   * - `didSessionHappen == false` AND `didPersonAttend == false`                     → DID_NOT_ATTEND
+   * - `didSessionHappen == false` AND `didPersonAttend == true`
+   *   AND `sessionNotHappenReason != null`                                           → DID_NOT_HAPPEN
+   */
+  private fun deriveAppointmentStatus(feedback: AppointmentIcsFeedback): AppointmentStatusHistoryType = when {
+    feedback.recordSessionDidSessionHappen -> AppointmentStatusHistoryType.COMPLETED
+    feedback.recordSessionDidPersonAttend == false -> AppointmentStatusHistoryType.DID_NOT_ATTEND
+    else -> AppointmentStatusHistoryType.DID_NOT_HAPPEN
   }
 }

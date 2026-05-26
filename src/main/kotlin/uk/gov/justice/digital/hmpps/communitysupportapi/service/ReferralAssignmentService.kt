@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AssignmentFailureDto
@@ -12,13 +11,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.UserType
-import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AssignCaseWorkersResult
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.CaseIdentifier
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.validation.CaseIdentifierValidator
 import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import java.time.LocalDateTime
 import java.util.UUID
@@ -26,25 +21,18 @@ import java.util.regex.Pattern
 
 @Service
 class ReferralAssignmentService(
-  private val referralRepository: ReferralRepository,
   private val referralUserAssignmentRepository: ReferralUserAssignmentRepository,
   private val userService: UserService,
   private val entityManager: EntityManager,
+  private val referralLookupService: ReferralLookupService,
 ) {
   companion object {
     private const val MAX_CASE_WORKERS = 5
     private val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")
-    private val identifierValidator: CaseIdentifierValidator = CaseIdentifierValidator()
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun getReferralByCaseIdentifier(caseIdentifier: String?): Referral = when (val identifier = ReferralAssignmentService.Companion.identifierValidator.validate(caseIdentifier)) {
-    is CaseIdentifier.ReferralId -> referralRepository.findByIdOrNull(identifier.value)
-      ?: throw NotFoundException("Referral not found for id ${identifier.value}")
-
-    is CaseIdentifier.CaseId -> referralRepository.findReferenceNumberOrNull(identifier.value)
-      ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
-  }
+  fun getReferralByCaseIdentifier(caseIdentifier: String?): Referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
 
   fun getAssignedCaseWorkers(identifier: String): List<CaseWorkerDto>? {
     log.info("Get assigned case workers of a referral {}", identifier)
@@ -212,14 +200,5 @@ class ReferralAssignmentService(
       }
     }
     return results
-  }
-
-  fun recentlySynchronised(user: ReferralUser): Boolean {
-    val lastSync = user.lastSyncedAt
-    if (lastSync == null) {
-      return false
-    } else {
-      return lastSync.isAfter(LocalDateTime.now().minusMinutes(1))
-    }
   }
 }

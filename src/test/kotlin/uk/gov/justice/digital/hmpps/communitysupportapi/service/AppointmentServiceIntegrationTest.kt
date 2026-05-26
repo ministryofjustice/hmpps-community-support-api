@@ -15,6 +15,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReason
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReasonRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
@@ -179,11 +181,11 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should map IN_PERSON_OTHER_LOCATION and persist address fields`() {
       val request = buildRequest(
-        type = SessionMethodType.OTHER_LOCATION,
+        type = SessionMethodType.IN_PERSON_OTHER_LOCATION,
         additionalDetails = "Side entrance",
       ).copy(
         sessionMethodRequest = SessionMethodRequest(
-          type = SessionMethodType.OTHER_LOCATION,
+          type = SessionMethodType.IN_PERSON_OTHER_LOCATION,
           additionalDetails = "Side entrance",
           addressLine1 = "10 Downing Street",
           addressLine2 = null,
@@ -358,7 +360,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     fun `should return correct howTakePlace type in response`() {
       val created = appointmentService.createIcsAppointment(
         referral.referenceNumber!!,
-        buildRequest(type = SessionMethodType.PROBATION_OFFICE),
+        buildRequest(type = SessionMethodType.IN_PERSON_PROBATION_OFFICE),
         testUser,
       )
       val fetched = appointmentService.getIcsAppointment(created.appointmentIcsId)
@@ -661,7 +663,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       val icsId = createIcsAndGetId()
       val request = buildFeedbackRequest(
         howSessionTookPlace = SessionMethodRequest(
-          type = SessionMethodType.PROBATION_OFFICE,
+          type = SessionMethodType.IN_PERSON_PROBATION_OFFICE,
           pdu = "PDU-South-East",
         ),
       )
@@ -681,7 +683,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       val icsId = createIcsAndGetId()
       val request = buildFeedbackRequest(
         howSessionTookPlace = SessionMethodRequest(
-          type = SessionMethodType.OTHER_LOCATION,
+          type = SessionMethodType.IN_PERSON_OTHER_LOCATION,
           addressLine1 = "10 Downing Street",
           townOrCity = "London",
           postcode = "SW1A 2AA",
@@ -727,6 +729,80 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         .filter { it.eventType == ReferralEventType.APPOINTMENT_FEEDBACK_SENT }
       assertThat(events).hasSize(2)
       assertThat(events.all { it.referral.id == referral.id }).isTrue()
+    }
+
+    @Test
+    fun `should set appointment status to COMPLETED when didSessionHappen is true`() {
+      val icsId = createIcsAndGetId()
+
+      appointmentService.createIcsFeedback(referral.id, icsId, buildFeedbackRequest(didSessionHappen = true), testUser)
+
+      val ics = appointmentIcsRepository.findById(icsId).orElseThrow()
+      val latestStatus = appointmentStatusHistoryRepository
+        .findTopByAppointmentIdOrderByCreatedAtDesc(ics.appointment.id)
+      assertThat(latestStatus?.status).isEqualTo(AppointmentStatusHistoryType.COMPLETED)
+    }
+
+    @Test
+    fun `should set appointment status to DID_NOT_ATTEND when didSessionHappen is false and didPersonAttend is false`() {
+      val icsId = createIcsAndGetId()
+      val request = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = false,
+          noAttendanceInformation = "No answer when called.",
+        ),
+      )
+
+      appointmentService.createIcsFeedback(referral.id, icsId, request, testUser)
+
+      val ics = appointmentIcsRepository.findById(icsId).orElseThrow()
+      val latestStatus = appointmentStatusHistoryRepository
+        .findTopByAppointmentIdOrderByCreatedAtDesc(ics.appointment.id)
+      assertThat(latestStatus?.status).isEqualTo(AppointmentStatusHistoryType.DID_NOT_ATTEND)
+    }
+
+    @Test
+    fun `should set appointment status to DID_NOT_HAPPEN when didSessionHappen is false and didPersonAttend is true`() {
+      val icsId = createIcsAndGetId()
+      val request = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = true,
+          sessionNotHappenReason = SessionNotHappenReasonRequest(
+            reason = SessionNotHappenReason.SERVICE_PROVIDER_ISSUE,
+            details = "Room was unavailable.",
+          ),
+        ),
+      )
+
+      appointmentService.createIcsFeedback(referral.id, icsId, request, testUser)
+
+      val ics = appointmentIcsRepository.findById(icsId).orElseThrow()
+      val latestStatus = appointmentStatusHistoryRepository
+        .findTopByAppointmentIdOrderByCreatedAtDesc(ics.appointment.id)
+      assertThat(latestStatus?.status).isEqualTo(AppointmentStatusHistoryType.DID_NOT_HAPPEN)
+    }
+
+    @Test
+    fun `should return existing feedback without creating a duplicate when called twice for the same ics appointment`() {
+      val icsId = createIcsAndGetId()
+
+      val first = appointmentService.createIcsFeedback(referral.id, icsId, buildFeedbackRequest(), testUser)
+      val second = appointmentService.createIcsFeedback(referral.id, icsId, buildFeedbackRequest(), testUser)
+
+      // Same feedback id returned
+      assertThat(second.id).isEqualTo(first.id)
+
+      // Only one record in the database
+      val allFeedback = appointmentIcsFeedbackRepository.findAll()
+        .filter { it.appointmentIcs.id == icsId }
+      assertThat(allFeedback).hasSize(1)
+
+      // Only one audit event created (not two)
+      val events = referralEventRepository.findAll()
+        .filter { it.eventType == ReferralEventType.APPOINTMENT_FEEDBACK_SENT }
+      assertThat(events).hasSize(1)
     }
   }
 

@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReas
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReasonRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
@@ -31,6 +32,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationT
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -47,6 +49,9 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository
+
+  @Autowired
+  private lateinit var appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository
 
   @Autowired
   private lateinit var referralEventRepository: ReferralEventRepository
@@ -306,7 +311,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
 
       val request = appointmentHelper.buildIcsFeedbackRequest(
         howSessionTookPlace = SessionMethodRequest(
-          type = SessionMethodType.PROBATION_OFFICE,
+          type = SessionMethodType.IN_PERSON_PROBATION_OFFICE,
           pdu = "PDU-North-West",
         ),
       )
@@ -486,6 +491,123 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           assertThat(body.recordSessionNotHappenReason).isEqualTo("REFERRAL_DID_NOT_COMPLY")
           assertThat(body.recordSessionNotHappenReasonDetails).isEqualTo("Alex was disruptive and refused to engage with the session.")
         }
+    }
+
+    @Test
+    fun `should set appointment status to COMPLETED when didSessionHappen is true`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val icsId = createIcsAppointmentId()
+
+      webTestClient.post()
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(appointmentHelper.buildIcsFeedbackRequest(didSessionHappen = true))
+        .exchange()
+        .expectStatus().isCreated
+
+      val ics = appointmentIcsRepository.findById(icsId).orElseThrow()
+      val latestStatus = appointmentStatusHistoryRepository
+        .findTopByAppointmentIdOrderByCreatedAtDesc(ics.appointment.id)
+      assertThat(latestStatus?.status).isEqualTo(AppointmentStatusHistoryType.COMPLETED)
+    }
+
+    @Test
+    fun `should set appointment status to DID_NOT_ATTEND when didSessionHappen is false and person did not come`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val icsId = createIcsAppointmentId()
+
+      val request = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = false,
+          noAttendanceInformation = "No answer when called twice.",
+        ),
+      )
+
+      webTestClient.post()
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isCreated
+
+      val ics = appointmentIcsRepository.findById(icsId).orElseThrow()
+      val latestStatus = appointmentStatusHistoryRepository
+        .findTopByAppointmentIdOrderByCreatedAtDesc(ics.appointment.id)
+      assertThat(latestStatus?.status).isEqualTo(AppointmentStatusHistoryType.DID_NOT_ATTEND)
+    }
+
+    @Test
+    fun `should set appointment status to DID_NOT_HAPPEN when didSessionHappen is false and person attended`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val icsId = createIcsAppointmentId()
+
+      val request = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = true,
+          sessionNotHappenReason = SessionNotHappenReasonRequest(
+            reason = SessionNotHappenReason.SERVICE_PROVIDER_ISSUE,
+            details = "Room was unavailable.",
+          ),
+        ),
+      )
+
+      webTestClient.post()
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isCreated
+
+      val ics = appointmentIcsRepository.findById(icsId).orElseThrow()
+      val latestStatus = appointmentStatusHistoryRepository
+        .findTopByAppointmentIdOrderByCreatedAtDesc(ics.appointment.id)
+      assertThat(latestStatus?.status).isEqualTo(AppointmentStatusHistoryType.DID_NOT_HAPPEN)
+    }
+
+    @Test
+    fun `should return existing feedback and 201 when same ics appointment is submitted twice (idempotent)`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val icsId = createIcsAppointmentId()
+
+      val firstResponse = webTestClient.post()
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(appointmentHelper.buildIcsFeedbackRequest())
+        .exchange()
+        .expectStatus().isCreated
+        .expectBody<AppointmentIcsFeedbackResponse>()
+        .returnResult()
+        .responseBody!!
+
+      val secondResponse = webTestClient.post()
+        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(appointmentHelper.buildIcsFeedbackRequest())
+        .exchange()
+        .expectStatus().isCreated
+        .expectBody<AppointmentIcsFeedbackResponse>()
+        .returnResult()
+        .responseBody!!
+
+      // Same feedback record returned both times
+      assertThat(secondResponse.id).isEqualTo(firstResponse.id)
+
+      // Only one record in the DB
+      val allFeedback = appointmentIcsFeedbackRepository.findAll()
+        .filter { it.appointmentIcs.id == icsId }
+      assertThat(allFeedback).hasSize(1)
+
+      // Only one audit event created
+      val events = referralEventRepository.findAll()
+        .filter { it.eventType == ReferralEventType.APPOINTMENT_FEEDBACK_SENT }
+      assertThat(events).hasSize(1)
     }
   }
 
