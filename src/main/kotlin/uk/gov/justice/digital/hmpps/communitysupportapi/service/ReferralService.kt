@@ -192,12 +192,7 @@ class ReferralService(
   }
 
   fun getReferralInformation(caseIdentifier: String?): ReferralInformationDto {
-    val foundReferral = when (val identifier = identifierValidator.validate(caseIdentifier)) {
-      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
-        .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
-      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value)
-        .firstOrNull() ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
-    }
+    val foundReferral = getReferralByCaseIdentifier(caseIdentifier)
     val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral?.personId}") }
 
     val providerAssignment = referralProviderAssignmentRepository.findByReferralId(foundReferral.id)

@@ -3,14 +3,18 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.config
 import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.access.AccessDeniedException
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.resource.NoResourceFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.hmpps.kotlin.common.ErrorResponse
 
@@ -26,6 +30,31 @@ class CommunitySupportApiExceptionHandler {
         developerMessage = e.message,
       ),
     ).also { log.info("Validation exception: {}", e.message) }
+
+  @ExceptionHandler(HttpMessageNotReadableException::class)
+  fun handleHttpMessageNotReadableException(e: HttpMessageNotReadableException): ResponseEntity<ErrorResponse> = ResponseEntity
+    .status(BAD_REQUEST)
+    .body(
+      ErrorResponse(
+        status = BAD_REQUEST,
+        userMessage = "Bad request: ${e.message}",
+        developerMessage = e.message,
+      ),
+    ).also { log.info("HttpMessageNotReadable exception: {}", e.message) }
+
+  @ExceptionHandler(MethodArgumentNotValidException::class)
+  fun handleMethodArgumentNotValidException(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
+    val errors = e.bindingResult.fieldErrors.joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
+    return ResponseEntity
+      .status(BAD_REQUEST)
+      .body(
+        ErrorResponse(
+          status = BAD_REQUEST,
+          userMessage = "Validation failure: $errors",
+          developerMessage = e.message,
+        ),
+      ).also { log.info("MethodArgumentNotValid exception: {}", e.message) }
+  }
 
   @ExceptionHandler(NoResourceFoundException::class)
   fun handleNoResourceFoundException(e: NoResourceFoundException): ResponseEntity<ErrorResponse> = ResponseEntity
@@ -47,6 +76,20 @@ class CommunitySupportApiExceptionHandler {
         ErrorResponse(
           status = NOT_FOUND.value(),
           userMessage = "Not Found: ${exception.message}",
+          developerMessage = exception.message,
+        ),
+      )
+  }
+
+  @ExceptionHandler(ConflictException::class)
+  fun handleConflictException(exception: ConflictException): ResponseEntity<ErrorResponse> {
+    log.warn("Conflict", exception)
+    return ResponseEntity
+      .status(CONFLICT)
+      .body(
+        ErrorResponse(
+          status = CONFLICT.value(),
+          userMessage = "Conflict: ${exception.message}",
           developerMessage = exception.message,
         ),
       )

@@ -8,7 +8,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.UserDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
-import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
@@ -52,6 +51,4 @@ class UserService(
       return null
     }
   }
-
-  fun recentlySynchronised(user: ReferralUser): Boolean = user.lastSyncedAt?.isAfter(LocalDateTime.now().minusDays(1)) ?: false
 }

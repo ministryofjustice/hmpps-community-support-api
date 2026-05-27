@@ -19,7 +19,7 @@ class AppointmentIcsFeedback(
   val id: UUID = UUID.randomUUID(),
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "appointment_ics_id", nullable = false)
+  @JoinColumn(name = "appointment_ics_id", nullable = false, unique = true)
   val appointmentIcs: AppointmentIcs,
 
   @Column(name = "record_session_did_session_happen", nullable = false)

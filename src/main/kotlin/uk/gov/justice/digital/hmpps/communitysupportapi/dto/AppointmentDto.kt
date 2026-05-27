@@ -34,7 +34,7 @@ data class AppointmentTimeRequest(
 data class SessionMethodRequest(
   /**
    * Matches the UI options.
-   * "PHONE" | "VIDEO" | "PROBATION_OFFICE" | "OTHER_LOCATION"
+   * "PHONE" | "VIDEO" | "IN_PERSON_PROBATION_OFFICE" | "IN_PERSON_OTHER_LOCATION"
    */
   val type: SessionMethodType,
   val additionalDetails: String? = null,
@@ -51,8 +51,8 @@ data class SessionMethodRequest(
 enum class SessionMethodType {
   PHONE,
   VIDEO,
-  PROBATION_OFFICE,
-  OTHER_LOCATION,
+  IN_PERSON_PROBATION_OFFICE,
+  IN_PERSON_OTHER_LOCATION,
 }
 
 // ── Session-method sealed hierarchy ──────────────────────────────────────────
@@ -211,8 +211,8 @@ fun AppointmentTimeRequest.toLocalTime(): LocalTime {
 fun SessionMethodType.toDeliveryMethod(): AppointmentDeliveryMethod = when (this) {
   SessionMethodType.PHONE -> AppointmentDeliveryMethod.PHONE_CALL
   SessionMethodType.VIDEO -> AppointmentDeliveryMethod.VIDEO_CALL
-  SessionMethodType.PROBATION_OFFICE -> AppointmentDeliveryMethod.IN_PERSON_PROBATION_OFFICE
-  SessionMethodType.OTHER_LOCATION -> AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION
+  SessionMethodType.IN_PERSON_PROBATION_OFFICE -> AppointmentDeliveryMethod.IN_PERSON_PROBATION_OFFICE
+  SessionMethodType.IN_PERSON_OTHER_LOCATION -> AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION
 }
 
 /**
@@ -222,6 +222,6 @@ fun SessionMethodType.toDeliveryMethod(): AppointmentDeliveryMethod = when (this
 fun SessionMethodType.toSessionDisplayString(): String = when (this) {
   SessionMethodType.PHONE -> "Phone call"
   SessionMethodType.VIDEO -> "Video call"
-  SessionMethodType.PROBATION_OFFICE -> "In person (probation office)"
-  SessionMethodType.OTHER_LOCATION -> "In person (other location)"
+  SessionMethodType.IN_PERSON_PROBATION_OFFICE -> "In person (probation office)"
+  SessionMethodType.IN_PERSON_OTHER_LOCATION -> "In person (other location)"
 }

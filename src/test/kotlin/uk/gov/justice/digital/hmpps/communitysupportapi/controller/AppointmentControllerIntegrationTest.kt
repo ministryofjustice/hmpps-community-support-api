@@ -216,7 +216,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         date = LocalDate.of(2026, 3, 27),
         time = AppointmentTimeRequest(hour = 2, minute = 0, amPm = "pm"),
         sessionMethodRequest = SessionMethodRequest(
-          type = SessionMethodType.OTHER_LOCATION,
+          type = SessionMethodType.IN_PERSON_OTHER_LOCATION,
           additionalDetails = "Side entrance",
           addressLine1 = "10 Downing Street",
           addressLine2 = null,
