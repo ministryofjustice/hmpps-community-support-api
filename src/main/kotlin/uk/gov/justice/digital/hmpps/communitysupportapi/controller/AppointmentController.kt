@@ -113,6 +113,7 @@ class AppointmentController(
       ),
       ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content(mediaType = "application/json")]),
       ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(responseCode = "409", description = "ICS feedback already exists for this appointment", content = [Content(mediaType = "application/json")]),
     ],
   )
   @PostMapping("/referral/{caseReference}/ics/{icsId}/feedback")

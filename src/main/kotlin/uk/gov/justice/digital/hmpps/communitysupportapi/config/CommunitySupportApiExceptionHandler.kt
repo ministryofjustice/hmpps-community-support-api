@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.config
 import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
@@ -13,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.resource.NoResourceFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.hmpps.kotlin.common.ErrorResponse
 
@@ -74,6 +76,20 @@ class CommunitySupportApiExceptionHandler {
         ErrorResponse(
           status = NOT_FOUND.value(),
           userMessage = "Not Found: ${exception.message}",
+          developerMessage = exception.message,
+        ),
+      )
+  }
+
+  @ExceptionHandler(ConflictException::class)
+  fun handleConflictException(exception: ConflictException): ResponseEntity<ErrorResponse> {
+    log.warn("Conflict", exception)
+    return ResponseEntity
+      .status(CONFLICT)
+      .body(
+        ErrorResponse(
+          status = CONFLICT.value(),
+          userMessage = "Conflict: ${exception.message}",
           developerMessage = exception.message,
         ),
       )

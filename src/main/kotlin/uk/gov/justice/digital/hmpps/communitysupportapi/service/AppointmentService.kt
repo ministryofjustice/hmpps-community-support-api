@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
@@ -194,7 +195,7 @@ class AppointmentService(
   /**
    * Creates and persists feedback for the given ICS appointment.
    * Verifies that the ICS appointment exists and belongs to the specified referral.
-   * If feedback already exists for this ICS appointment, the existing record is returned (idempotent).
+   * If feedback already exists for this ICS appointment, throws ConflictException.
    */
   @Transactional
   fun createIcsFeedback(
@@ -210,10 +211,10 @@ class AppointmentService(
       throw NotFoundException("ICS appointment $icsAppointmentId does not belong to referral $referralId")
     }
 
-    // Idempotency guard – return the existing feedback record if one already exists
+    // Check if feedback already exists and throw ConflictException if it does
     appointmentIcsFeedbackRepository.findByAppointmentIcsId(icsAppointmentId)?.let { existing ->
-      log.info("ICS feedback already exists for ics appointment {}, returning existing record {}", icsAppointmentId, existing.id)
-      return AppointmentIcsFeedbackResponse.from(existing)
+      log.warn("ICS feedback already exists for ics appointment {}, existing record id: {}", icsAppointmentId, existing.id)
+      throw ConflictException("ICS feedback already exists for appointment $icsAppointmentId")
     }
 
     log.info("Creating ICS feedback for ics appointment {}", icsAppointmentId)

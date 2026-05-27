@@ -570,7 +570,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return existing feedback and 201 when same ics appointment is submitted twice (idempotent)`() {
+    fun `should return 409 Conflict when same ics appointment is submitted twice`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
       val icsId = createIcsAppointmentId()
 
@@ -585,24 +585,20 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
         .returnResult()
         .responseBody!!
 
-      val secondResponse = webTestClient.post()
+      // Second attempt should return 409 Conflict
+      webTestClient.post()
         .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(appointmentHelper.buildIcsFeedbackRequest())
         .exchange()
-        .expectStatus().isCreated
-        .expectBody<AppointmentIcsFeedbackResponse>()
-        .returnResult()
-        .responseBody!!
-
-      // Same feedback record returned both times
-      assertThat(secondResponse.id).isEqualTo(firstResponse.id)
+        .expectStatus().isEqualTo(409)
 
       // Only one record in the DB
       val allFeedback = appointmentIcsFeedbackRepository.findAll()
         .filter { it.appointmentIcs.id == icsId }
       assertThat(allFeedback).hasSize(1)
+      assertThat(allFeedback.first().id).isEqualTo(firstResponse.id)
 
       // Only one audit event created
       val events = referralEventRepository.findAll()

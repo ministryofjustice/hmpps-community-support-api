@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -785,19 +786,22 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return existing feedback without creating a duplicate when called twice for the same ics appointment`() {
+    fun `should throw ConflictException when called twice for the same ics appointment`() {
       val icsId = createIcsAndGetId()
 
       val first = appointmentService.createIcsFeedback(referral.id, icsId, buildFeedbackRequest(), testUser)
-      val second = appointmentService.createIcsFeedback(referral.id, icsId, buildFeedbackRequest(), testUser)
 
-      // Same feedback id returned
-      assertThat(second.id).isEqualTo(first.id)
+      // Second attempt should throw ConflictException
+      val ex = assertThrows<ConflictException> {
+        appointmentService.createIcsFeedback(referral.id, icsId, buildFeedbackRequest(), testUser)
+      }
+      assertThat(ex.message).isEqualTo("ICS feedback already exists for appointment $icsId")
 
       // Only one record in the database
       val allFeedback = appointmentIcsFeedbackRepository.findAll()
         .filter { it.appointmentIcs.id == icsId }
       assertThat(allFeedback).hasSize(1)
+      assertThat(allFeedback.first().id).isEqualTo(first.id)
 
       // Only one audit event created (not two)
       val events = referralEventRepository.findAll()
