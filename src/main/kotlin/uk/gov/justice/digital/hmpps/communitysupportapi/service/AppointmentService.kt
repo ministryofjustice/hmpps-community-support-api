@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import SessionFeedbackDetailsDto
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -43,6 +44,8 @@ import java.util.UUID
 
 @Service
 class AppointmentService(
+  private val referralService: ReferralService,
+  private val referralAssignmentService: ReferralAssignmentService,
   private val referralRepository: ReferralRepository,
   private val appointmentRepository: AppointmentRepository,
   private val appointmentDeliveryRepository: AppointmentDeliveryRepository,
@@ -183,13 +186,47 @@ class AppointmentService(
   private fun getReferralName(appointment: Appointment) = personRepository.findById(appointment.referral.personId).map { it.firstName + " " + it.lastName }.get()
 
   /**
-   * Returns a single ICS feedback record by its own ID.
+   * Returns a single ICS feedback record via the referral case reference.
    */
   @Transactional(readOnly = true)
-  fun getIcsFeedback(icsFeedbackId: UUID): AppointmentIcsFeedbackResponse {
-    val feedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
-      .orElseThrow { NotFoundException("ICS feedback not found for id $icsFeedbackId") }
-    return AppointmentIcsFeedbackResponse.from(feedback)
+  fun getIcsFeedback(caseReference: String): AppointmentIcsFeedbackResponse {
+    val referral = referralService.getReferralByCaseIdentifier(caseReference)
+
+    val icsAppointment = appointmentIcsRepository.findByAppointmentReferralId(referral.id)
+      .maxByOrNull { it.createdAt }
+      ?: throw NotFoundException("ICS appointment not found for referral ${referral.referenceNumber}")
+
+    val latestStatus = getLatestAppointmentStatus(icsAppointment.appointment.id)
+
+    if (latestStatus !in setOf(AppointmentStatusHistoryType.DID_NOT_HAPPEN, AppointmentStatusHistoryType.DID_NOT_ATTEND)) {
+      throw IllegalStateException("Feedback is not available for appointment status $latestStatus")
+    }
+
+    val appointmentIcsFeedback =
+      appointmentIcsFeedbackRepository.findByAppointmentIcsId(icsAppointment.id)
+        ?: throw NotFoundException("ICS feedback not found for appointment ${icsAppointment.id}")
+
+    val feedbackSubmittedBy = appointmentIcsFeedback.createdBy?.let { "${it.fullName} (${it.hmppsAuthUsername})" } ?: "Unknown user"
+
+    val person = personRepository.findById(referral.personId).orElseThrow {
+      NotFoundException("Person not found for referral ${referral.personId}")
+    }
+
+    val caseWorkers = referralAssignmentService.getAssignedCaseWorkers(caseReference)
+      ?.map { "${it.fullName} (${it.emailAddress})" }
+      ?.takeIf { it.isNotEmpty() }
+      ?: throw NotFoundException("Case workers not found for referral ${referral.referenceNumber}")
+
+    val sessionDetails = SessionFeedbackDetailsDto(
+      currentCaseworkers = caseWorkers,
+      feedbackSubmittedBy = feedbackSubmittedBy,
+      startDateTime = icsAppointment.appointmentDateTime,
+      sessionMethod = icsAppointment.appointmentDelivery?.method,
+      sessionCommunications = icsAppointment.sessionCommunication,
+      personFirstName = person.firstName,
+    )
+
+    return AppointmentIcsFeedbackResponse.from(appointmentIcsFeedback, sessionDetails)
   }
 
   /**
