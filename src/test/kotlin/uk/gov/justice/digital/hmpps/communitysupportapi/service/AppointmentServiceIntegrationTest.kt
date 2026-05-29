@@ -836,13 +836,18 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         ),
       )
 
-      appointmentService.createIcsFeedback(referral.id, icsId, didNotHappenSessionFeedback, testUser)
+      val icsFeedback = appointmentService.createIcsFeedback(
+        referral.id,
+        icsId,
+        didNotHappenSessionFeedback,
+        testUser,
+      )
 
       appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.DID_NOT_HAPPEN)
 
       referralHelper.assignCaseWorkers(referral, referralHelper.createCaseWorkers("CaseWorker One"))
 
-      val response = appointmentService.getIcsFeedback(caseReference)
+      val response = appointmentService.getIcsFeedback(icsFeedback.id)
 
       assertThat(response.recordSessionDidSessionHappen).isFalse()
       assertThat(response.recordSessionDidPersonAttend).isTrue()
@@ -870,13 +875,13 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         ),
       )
 
-      appointmentService.createIcsFeedback(referral.id, icsId, didNotAttendSessionFeedback, testUser)
+      val icsFeedback = appointmentService.createIcsFeedback(referral.id, icsId, didNotAttendSessionFeedback, testUser)
 
       appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.DID_NOT_ATTEND)
 
       referralHelper.assignCaseWorkers(referral, referralHelper.createCaseWorkers("CaseWorker One", "CaseWorker Two"))
 
-      val response = appointmentService.getIcsFeedback(caseReference)
+      val response = appointmentService.getIcsFeedback(icsFeedback.id)
 
       assertThat(response.recordSessionDidSessionHappen).isFalse()
       assertThat(response.recordSessionDidPersonAttend).isFalse()
@@ -894,47 +899,29 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should throw NotFoundException for unknown case reference id`() {
-      val unknownCaseReference = "UN1793KO"
-
-      val exception = assertThrows<NotFoundException> { appointmentService.getIcsFeedback(unknownCaseReference) }
-      assertThat(exception.message).isEqualTo("Referral not found for reference $unknownCaseReference")
-    }
-
-    @Test
     fun `should throw IllegalStateException when latest status is not eligible for feedback`() {
-      val appointmentRequest = buildRequest(
-        hour = 10,
-        minute = 30,
-        amPm = "am",
-        type = SessionMethodType.PHONE,
-        additionalDetails = "Call on mobile",
-        sessionCommunication = listOf("Phone call", "Text message"),
+      val icsId = createIcsAndGetId()
+      val didNotAttendSessionFeedback = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = false,
+          noAttendanceInformation = "Called three times and there was no answer. Left voicemail.",
+        ),
+      )
+      val icsFeedback = appointmentService.createIcsFeedback(
+        referral.id,
+        icsId,
+        didNotAttendSessionFeedback,
+        testUser,
       )
 
-      appointmentService.createIcsAppointment(caseReference, appointmentRequest, testUser)
+      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.RESCHEDULED)
 
-      assertThatThrownBy { appointmentService.getIcsFeedback(caseReference) }
+      referralHelper.assignCaseWorkers(referral, referralHelper.createCaseWorkers("CaseWorker One", "CaseWorker Two"))
+
+      assertThatThrownBy { appointmentService.getIcsFeedback(icsFeedback.id) }
         .isInstanceOf(IllegalStateException::class.java)
-        .hasMessage("Feedback is not available for appointment status SCHEDULED")
-    }
-
-    @Test
-    fun `should throw not found when ICS appointment does not exist`() {
-      assertThatThrownBy { appointmentService.getIcsFeedback(caseReference) }
-        .isInstanceOf(NotFoundException::class.java)
-        .hasMessageContaining("ICS appointment not found")
-    }
-
-    @Test
-    fun `should throw not found when ICS feedback does not exist`() {
-      val icsId = createIcsAndGetId()
-
-      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.DID_NOT_HAPPEN)
-
-      assertThatThrownBy { appointmentService.getIcsFeedback(caseReference) }
-        .isInstanceOf(NotFoundException::class.java)
-        .hasMessageContaining("ICS feedback not found for appointment")
+        .hasMessage("Feedback is not available for appointment status RESCHEDULED")
     }
 
     @Test
@@ -947,12 +934,16 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
           noAttendanceInformation = "Called three times and there was no answer. Left voicemail.",
         ),
       )
+      val icsFeedback = appointmentService.createIcsFeedback(
+        referral.id,
+        icsId,
+        didNotAttendSessionFeedback,
+        testUser,
+      )
 
-      appointmentService.createIcsFeedback(referral.id, icsId, didNotAttendSessionFeedback, testUser)
+      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.DID_NOT_ATTEND)
 
-      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.DID_NOT_HAPPEN)
-
-      assertThatThrownBy { appointmentService.getIcsFeedback(caseReference) }
+      assertThatThrownBy { appointmentService.getIcsFeedback(icsFeedback.id) }
         .isInstanceOf(NotFoundException::class.java)
         .hasMessageContaining("Case workers not found for referral")
     }

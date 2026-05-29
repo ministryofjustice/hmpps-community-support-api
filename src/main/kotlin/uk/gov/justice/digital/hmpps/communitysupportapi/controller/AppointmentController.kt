@@ -140,12 +140,12 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "ICS feedback not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @GetMapping("/ics-feedback/{caseReference}")
+  @GetMapping("/ics-feedback/{icsFeedbackId}")
   fun getIcsFeedback(
-    @PathVariable caseReference: String,
+    @PathVariable icsFeedbackId: UUID,
   ): ResponseEntity<AppointmentIcsFeedbackResponse> {
-    log.info("GET /bff/ics-feedback/{}", caseReference)
-    return ResponseEntity.ok(appointmentService.getIcsFeedback(caseReference))
+    log.info("GET /bff/ics-feedback/{}", icsFeedbackId)
+    return ResponseEntity.ok(appointmentService.getIcsFeedback(icsFeedbackId))
   }
 
   @Operation(summary = "Get ICS feedback session details")

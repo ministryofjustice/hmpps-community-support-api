@@ -186,36 +186,42 @@ class AppointmentService(
   private fun getReferralName(appointment: Appointment) = personRepository.findById(appointment.referral.personId).map { it.firstName + " " + it.lastName }.get()
 
   /**
-   * Returns a single ICS feedback record via the referral case reference.
+   * Returns a single ICS feedback record by its own ID.
    */
   @Transactional(readOnly = true)
-  fun getIcsFeedback(caseReference: String): AppointmentIcsFeedbackResponse {
-    val referral = referralService.getReferralByCaseIdentifier(caseReference)
+  fun getIcsFeedback(icsFeedbackId: UUID): AppointmentIcsFeedbackResponse {
+    val icsFeedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
+      .orElseThrow { NotFoundException("ICS feedback not found for id $icsFeedbackId") }
 
-    val icsAppointment = appointmentIcsRepository.findByAppointmentReferralId(referral.id)
-      .maxByOrNull { it.createdAt }
-      ?: throw NotFoundException("ICS appointment not found for referral ${referral.referenceNumber}")
+    val icsAppointment = appointmentIcsRepository.findById(icsFeedback.appointmentIcs.id)
+      .orElseThrow { NotFoundException("ICS appointment not found for id ${icsFeedback.appointmentIcs.id}") }
 
     val latestStatus = getLatestAppointmentStatus(icsAppointment.appointment.id)
 
-    if (latestStatus !in setOf(AppointmentStatusHistoryType.DID_NOT_HAPPEN, AppointmentStatusHistoryType.DID_NOT_ATTEND)) {
+    val feedbackEligibleStatuses = setOf(
+      AppointmentStatusHistoryType.DID_NOT_HAPPEN,
+      AppointmentStatusHistoryType.DID_NOT_ATTEND,
+      AppointmentStatusHistoryType.COMPLETED,
+    )
+
+    if (latestStatus !in feedbackEligibleStatuses) {
       throw IllegalStateException("Feedback is not available for appointment status $latestStatus")
     }
 
-    val appointmentIcsFeedback =
-      appointmentIcsFeedbackRepository.findByAppointmentIcsId(icsAppointment.id)
-        ?: throw NotFoundException("ICS feedback not found for appointment ${icsAppointment.id}")
+    val feedbackSubmittedBy = icsFeedback.createdBy?.let { "${it.fullName} (${it.hmppsAuthUsername})" } ?: "Unknown user"
 
-    val feedbackSubmittedBy = appointmentIcsFeedback.createdBy?.let { "${it.fullName} (${it.hmppsAuthUsername})" } ?: "Unknown user"
+    val referral = icsAppointment.appointment.referral
 
-    val person = personRepository.findById(referral.personId).orElseThrow {
-      NotFoundException("Person not found for referral ${referral.personId}")
-    }
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral ${referral.personId}") }
+
+    val caseReference = referral.referenceNumber
+      ?: throw IllegalStateException("Referral ${referral.id} does not have a reference number")
 
     val caseWorkers = referralAssignmentService.getAssignedCaseWorkers(caseReference)
       ?.map { "${it.fullName} (${it.emailAddress})" }
       ?.takeIf { it.isNotEmpty() }
-      ?: throw NotFoundException("Case workers not found for referral ${referral.referenceNumber}")
+      ?: throw NotFoundException("Case workers not found for referral $caseReference")
 
     val sessionDetails = SessionFeedbackDetailsDto(
       currentCaseworkers = caseWorkers,
@@ -226,7 +232,7 @@ class AppointmentService(
       personFirstName = person.firstName,
     )
 
-    return AppointmentIcsFeedbackResponse.from(appointmentIcsFeedback, sessionDetails)
+    return AppointmentIcsFeedbackResponse.from(icsFeedback, sessionDetails)
   }
 
   /**
