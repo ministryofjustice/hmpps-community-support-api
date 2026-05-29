@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -60,6 +61,30 @@ class AppointmentController(
     log.info("POST /bff/referral/{}/ics", caseIdentifier)
     val createdBy = userMapper.fromToken(authenticationHolder)
     val response = appointmentService.createIcsAppointment(caseIdentifier, request, createdBy)
+    return ResponseEntity.status(HttpStatus.CREATED).body(response)
+  }
+
+  @Operation(summary = "Change an ICS appointment for a referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "201",
+        description = "Appointment changed successfully",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = AppointmentIcsResponse::class))],
+      ),
+      ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content(mediaType = "application/json")]),
+      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(responseCode = "409", description = "The ICS id does not match the latest ICS record", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @PutMapping("/referral/{caseReference}/ics")
+  fun changeIcsAppointment(
+    @PathVariable caseReference: String,
+    @RequestBody request: CreateAppointmentRequest,
+  ): ResponseEntity<AppointmentIcsResponse> {
+    log.info("GET /bff/referral/{}/ics", caseReference)
+    val changedBy = userMapper.fromToken(authenticationHolder)
+    val response = appointmentService.changeIcsAppointment(caseReference, request, changedBy)
     return ResponseEntity.status(HttpStatus.CREATED).body(response)
   }
 

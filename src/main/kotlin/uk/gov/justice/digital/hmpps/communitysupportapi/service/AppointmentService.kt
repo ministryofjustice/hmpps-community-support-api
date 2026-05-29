@@ -111,6 +111,8 @@ class AppointmentService(
       appointmentDateTime = startDateTime,
       createdBy = createdBy,
       sessionCommunication = request.sessionCommunication,
+      changeRequestedBy = null,
+      changeReason = null,
     )
     val savedIcs = appointmentIcsRepository.save(ics)
 
@@ -145,6 +147,82 @@ class AppointmentService(
     val ics = appointmentIcsRepository.findById(icsId)
       .orElseThrow { NotFoundException("Appointment ICS not found for id $icsId") }
     return AppointmentIcsResponse.from(ics, getLatestAppointmentStatus(ics.appointment.id), getReferralName(ics.appointment))
+  }
+
+  /**
+   * Returns the latest ICS appointment by its referral ID.
+   */
+  @Transactional(readOnly = true)
+  fun getLatestIcsAppointment(caseIdentifier: String): AppointmentIcsResponse {
+    val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
+    val ics = appointmentIcsRepository.findLatestIcsByReferralId(referral.id, AppointmentType.ICS)
+    if (ics === null) {
+      throw NotFoundException("ICS appointment not found: $caseIdentifier")
+    }
+    return AppointmentIcsResponse.from(ics, getLatestAppointmentStatus(ics.appointment.id), getReferralName(ics.appointment))
+  }
+
+  fun changeIcsAppointment(
+    caseIdentifier: String,
+    request: CreateAppointmentRequest,
+    changedBy: ReferralUser,
+  ): AppointmentIcsResponse {
+    log.info("Changing ICS appointment for referral {}", caseIdentifier)
+
+    val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
+
+    // Fetch the specific history record
+    val existingIcs = appointmentIcsRepository.findLatestIcsByReferralId(referral.id, AppointmentType.ICS)
+
+    if (existingIcs === null) {
+      throw NotFoundException("ICS appointment not found: $caseIdentifier")
+    }
+
+    // 1. udpate previous ics appointment status History
+    val existingIcsAppointmentHistory = AppointmentStatusHistory(
+      appointment = existingIcs.appointment,
+      status = AppointmentStatusHistoryType.RESCHEDULED,
+      createdAt = existingIcs.createdAt,
+    )
+    appointmentStatusHistoryRepository.save(existingIcsAppointmentHistory)
+
+    // 2. udpate the new ics appointment status History
+    val newIcsAppointmentHistory = AppointmentStatusHistory(
+      appointment = existingIcs.appointment,
+      status = AppointmentStatusHistoryType.SCHEDULED,
+    )
+    appointmentStatusHistoryRepository.save(newIcsAppointmentHistory)
+
+    // 4. create new delivery method
+    val deliveryMethod = request.sessionMethodRequest.type.toDeliveryMethod()
+    val appointmentDelivery = AppointmentDelivery(
+      id = UUID.randomUUID(),
+      method = deliveryMethod,
+      methodDetails = request.sessionMethodRequest.additionalDetails,
+      // Address fields are only relevant for IN_PERSON_OTHER_LOCATION
+      addressLine1 = request.sessionMethodRequest.addressLine1.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
+      addressLine2 = request.sessionMethodRequest.addressLine2.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
+      townOrCity = request.sessionMethodRequest.townOrCity.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
+      county = request.sessionMethodRequest.county.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
+      postcode = request.sessionMethodRequest.postcode.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
+    )
+    appointmentDeliveryRepository.save(appointmentDelivery)
+
+    // 5. create new history ics record
+    val ics = AppointmentIcs(
+      id = UUID.randomUUID(),
+      appointment = existingIcs.appointment,
+      appointmentDelivery = appointmentDelivery,
+      appointmentDateTime = LocalDateTime.of(request.date, request.time.toLocalTime()),
+      sessionCommunication = request.sessionCommunication,
+      createdBy = changedBy,
+      changeRequestedBy = request.changeAppointmentDetails?.changeRequestedBy,
+      changeReason = request.changeAppointmentDetails?.reasonForChange,
+    )
+    val savedIcs = appointmentIcsRepository.save(ics)
+
+    log.info("ICS appointment updated with id {}", savedIcs.id)
+    return AppointmentIcsResponse.from(savedIcs, newIcsAppointmentHistory.status, getReferralName(ics.appointment))
   }
 
   /**

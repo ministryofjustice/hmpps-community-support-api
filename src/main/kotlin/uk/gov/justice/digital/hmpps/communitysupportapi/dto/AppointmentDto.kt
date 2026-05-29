@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelive
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.OffsetDateTime
@@ -21,6 +22,12 @@ data class CreateAppointmentRequest(
   val time: AppointmentTimeRequest,
   val sessionMethodRequest: SessionMethodRequest,
   val sessionCommunication: List<String> = emptyList(),
+  val changeAppointmentDetails: ChangeAppointmentDetails? = null,
+)
+
+data class ChangeAppointmentDetails(
+  val changeRequestedBy: ChangeRequesterType? = null,
+  val reasonForChange: String? = null,
 )
 
 data class AppointmentTimeRequest(
@@ -123,6 +130,7 @@ data class AppointmentIcsResponse(
   val referralFirstName: String,
   val referralLastName: String,
   val createdAt: OffsetDateTime,
+  val changeAppointmentDetails: ChangeAppointmentDetails? = null,
 ) {
 
   companion object {
@@ -152,6 +160,10 @@ data class AppointmentIcsResponse(
         referralFirstName = referralName.substringBefore(" "),
         referralLastName = referralName.substringAfter(" ", missingDelimiterValue = ""),
         createdAt = ics.createdAt.atOffset(ZoneOffset.UTC),
+        changeAppointmentDetails = ChangeAppointmentDetails(
+          changeRequestedBy = ics.changeRequestedBy,
+          reasonForChange = ics.changeReason,
+        ),
       )
     }
 
