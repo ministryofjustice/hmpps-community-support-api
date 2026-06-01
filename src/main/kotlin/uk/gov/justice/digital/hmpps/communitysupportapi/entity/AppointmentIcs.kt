@@ -49,8 +49,4 @@ class AppointmentIcs(
 
   @Column(name = "change_reason")
   val changeReason: String? = null,
-
-//  @ManyToOne(fetch = FetchType.LAZY)
-//  @JoinColumn(name = "changed_by")
-//  val changedBy: ReferralUser? = null,
 )

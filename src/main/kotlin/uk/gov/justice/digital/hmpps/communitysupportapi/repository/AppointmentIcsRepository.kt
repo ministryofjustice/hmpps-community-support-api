@@ -20,25 +20,14 @@ interface AppointmentIcsRepository : JpaRepository<AppointmentIcs, UUID> {
   @Query(
 """
           SELECT a FROM AppointmentIcs a
-          WHERE a.appointment.referral.id = :referralId
-          AND a.appointment.type = :appointmentType
-          AND a.createdAt = (
-              SELECT MAX(b.createdAt) FROM AppointmentIcs b
-              WHERE b.appointment.referral.id = :referralId
-                AND b.appointment.id = a.appointment.id
-          )
+              WHERE a.appointment.referral.id = :referralId
+                AND a.appointment.type = :appointmentType
+              ORDER BY a.createdAt DESC
+              LIMIT 1
       """,
   )
   fun findLatestIcsByReferralId(
     referralId: UUID,
     @Param("appointmentType") appointmentType: AppointmentType,
   ): AppointmentIcs?
-
-//  @Query("""
-//        SELECT a FROM AppointmentIcs a
-//        WHERE a.appointment.id = :appointmentId
-//        ORDER BY a.createdAt DESC
-//        LIMIT 1
-//    """)
-//  fun findLatestByAppointmentId(appointmentId: UUID): AppointmentIcs?
 }

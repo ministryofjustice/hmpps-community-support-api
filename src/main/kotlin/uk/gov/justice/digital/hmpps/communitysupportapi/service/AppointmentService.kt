@@ -178,7 +178,7 @@ class AppointmentService(
       throw NotFoundException("ICS appointment not found: $caseIdentifier")
     }
 
-    // 1. udpate previous ics appointment status History
+    // 1. update previous ics appointment status History
     val existingIcsAppointmentHistory = AppointmentStatusHistory(
       appointment = existingIcs.appointment,
       status = AppointmentStatusHistoryType.RESCHEDULED,
@@ -186,9 +186,17 @@ class AppointmentService(
     )
     appointmentStatusHistoryRepository.save(existingIcsAppointmentHistory)
 
-    // 2. udpate the new ics appointment status History
+    // 2. Create the new appointment (parent record)
+    val appointment = Appointment(
+      id = UUID.randomUUID(),
+      referral = referral,
+      type = AppointmentType.ICS,
+    )
+    appointmentRepository.save(appointment)
+
+    // 3. update the new ics appointment status History
     val newIcsAppointmentHistory = AppointmentStatusHistory(
-      appointment = existingIcs.appointment,
+      appointment = appointment,
       status = AppointmentStatusHistoryType.SCHEDULED,
     )
     appointmentStatusHistoryRepository.save(newIcsAppointmentHistory)
@@ -208,10 +216,10 @@ class AppointmentService(
     )
     appointmentDeliveryRepository.save(appointmentDelivery)
 
-    // 5. create new history ics record
+    // 5. create new ics record
     val ics = AppointmentIcs(
       id = UUID.randomUUID(),
-      appointment = existingIcs.appointment,
+      appointment = appointment,
       appointmentDelivery = appointmentDelivery,
       appointmentDateTime = LocalDateTime.of(request.date, request.time.toLocalTime()),
       sessionCommunication = request.sessionCommunication,
