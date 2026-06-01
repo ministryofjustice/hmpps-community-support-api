@@ -899,32 +899,6 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should throw IllegalStateException when latest status is not eligible for feedback`() {
-      val icsId = createIcsAndGetId()
-      val didNotAttendSessionFeedback = CreateIcsFeedbackRequest(
-        record = RecordSessionRequest(
-          didSessionHappen = false,
-          didPersonAttend = false,
-          noAttendanceInformation = "Called three times and there was no answer. Left voicemail.",
-        ),
-      )
-      val icsFeedback = appointmentService.createIcsFeedback(
-        referral.id,
-        icsId,
-        didNotAttendSessionFeedback,
-        testUser,
-      )
-
-      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.RESCHEDULED)
-
-      referralHelper.assignCaseWorkers(referral, referralHelper.createCaseWorkers("CaseWorker One", "CaseWorker Two"))
-
-      assertThatThrownBy { appointmentService.getIcsFeedback(icsFeedback.id) }
-        .isInstanceOf(IllegalStateException::class.java)
-        .hasMessage("Feedback is not available for appointment status RESCHEDULED")
-    }
-
-    @Test
     fun `should throw not found when case workers do not exist`() {
       val icsId = createIcsAndGetId()
       val didNotAttendSessionFeedback = CreateIcsFeedbackRequest(
