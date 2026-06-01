@@ -193,10 +193,9 @@ class AppointmentService(
     val icsFeedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
       .orElseThrow { NotFoundException("ICS feedback not found for id $icsFeedbackId") }
 
-    val icsAppointment = appointmentIcsRepository.findById(icsFeedback.appointmentIcs.id)
-      .orElseThrow { NotFoundException("ICS appointment not found for id ${icsFeedback.appointmentIcs.id}") }
+    val ics = icsFeedback.appointmentIcs
 
-    val latestStatus = getLatestAppointmentStatus(icsAppointment.appointment.id)
+    val latestStatus = getLatestAppointmentStatus(ics.appointment.id)
 
     val feedbackEligibleStatuses = setOf(
       AppointmentStatusHistoryType.DID_NOT_HAPPEN,
@@ -210,7 +209,7 @@ class AppointmentService(
 
     val feedbackSubmittedBy = icsFeedback.createdBy?.let { "${it.fullName} (${it.hmppsAuthUsername})" } ?: "Unknown user"
 
-    val referral = icsAppointment.appointment.referral
+    val referral = ics.appointment.referral
 
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral ${referral.personId}") }
@@ -226,9 +225,9 @@ class AppointmentService(
     val sessionDetails = SessionFeedbackDetailsDto(
       currentCaseworkers = caseWorkers,
       feedbackSubmittedBy = feedbackSubmittedBy,
-      startDateTime = icsAppointment.appointmentDateTime,
-      sessionMethod = icsAppointment.appointmentDelivery?.method,
-      sessionCommunications = icsAppointment.sessionCommunication,
+      startDateTime = ics.appointmentDateTime,
+      sessionMethod = ics.appointmentDelivery?.method,
+      sessionCommunications = ics.sessionCommunication,
       personFirstName = person.firstName,
     )
 
