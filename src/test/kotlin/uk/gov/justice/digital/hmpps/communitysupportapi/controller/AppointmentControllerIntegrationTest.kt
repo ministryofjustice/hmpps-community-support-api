@@ -305,7 +305,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         date = rescheduleDate,
         hour = rescheduleHourIn12,
         minute = appointmentDateTime.minute,
-        amPm = if (appointmentDateTime.hour > 12) "pm" else "am",
+        amPm = if (appointmentDateTime.hour >= 12) "pm" else "am",
         type = SessionMethodType.PHONE,
         additionalDetails = "He is not feeling good, call on mobile",
         sessionCommunication = listOf("Phone call", "Text message"),
@@ -331,7 +331,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           assertThat(body.appointmentDate).isEqualTo(rescheduleDate)
           assertThat(body.appointmentTime.hour).isEqualTo(rescheduleHourIn12)
           assertThat(body.appointmentTime.minute).isEqualTo(appointmentDateTime.minute)
-          assertThat(body.appointmentTime.amPm).isEqualTo(if (appointmentDateTime.hour > 12) "pm" else "am")
+          assertThat(body.appointmentTime.amPm).isEqualTo(if (appointmentDateTime.hour >= 12) "pm" else "am")
           assertThat(body.sessionMethod).isInstanceOf(VirtualAppointment::class.java)
           with(body.sessionMethod as VirtualAppointment) {
             assertThat(type).isEqualTo("PHONE")
