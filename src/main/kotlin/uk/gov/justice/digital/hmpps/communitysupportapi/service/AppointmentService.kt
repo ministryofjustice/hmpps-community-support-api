@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import SessionFeedbackDetailsDto
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -43,6 +44,8 @@ import java.util.UUID
 
 @Service
 class AppointmentService(
+  private val referralService: ReferralService,
+  private val referralAssignmentService: ReferralAssignmentService,
   private val referralRepository: ReferralRepository,
   private val appointmentRepository: AppointmentRepository,
   private val appointmentDeliveryRepository: AppointmentDeliveryRepository,
@@ -187,9 +190,34 @@ class AppointmentService(
    */
   @Transactional(readOnly = true)
   fun getIcsFeedback(icsFeedbackId: UUID): AppointmentIcsFeedbackResponse {
-    val feedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
+    val icsFeedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
       .orElseThrow { NotFoundException("ICS feedback not found for id $icsFeedbackId") }
-    return AppointmentIcsFeedbackResponse.from(feedback)
+
+    val feedbackSubmittedBy = icsFeedback.createdBy?.let { "${it.fullName} (${it.hmppsAuthUsername})" } ?: "Unknown user"
+
+    val ics = icsFeedback.appointmentIcs
+
+    val person = personRepository.findById(ics.appointment.referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral ${ics.appointment.referral.personId}") }
+
+    val caseReference = ics.appointment.referral.referenceNumber
+      ?: throw IllegalStateException("Referral ${ics.appointment.referral.id} does not have a reference number")
+
+    val caseWorkers = referralAssignmentService.getAssignedCaseWorkers(caseReference)
+      ?.map { "${it.fullName} (${it.emailAddress})" }
+      ?.takeIf { it.isNotEmpty() }
+      ?: throw NotFoundException("Case workers not found for referral $caseReference")
+
+    val sessionDetails = SessionFeedbackDetailsDto(
+      currentCaseworkers = caseWorkers,
+      feedbackSubmittedBy = feedbackSubmittedBy,
+      startDateTime = ics.appointmentDateTime,
+      sessionMethod = ics.appointmentDelivery?.method,
+      sessionCommunications = ics.sessionCommunication,
+      personFirstName = person.firstName,
+    )
+
+    return AppointmentIcsFeedbackResponse.from(icsFeedback, sessionDetails)
   }
 
   /**

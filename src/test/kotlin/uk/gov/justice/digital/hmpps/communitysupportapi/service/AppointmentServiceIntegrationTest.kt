@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -22,6 +23,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
@@ -68,10 +70,10 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   private lateinit var appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository
 
   @Autowired
-  private lateinit var referralEventRepository: ReferralEventRepository
+  private lateinit var appointmentHelper: AppointmentTestSupport
 
   @Autowired
-  private lateinit var appointmentHelper: AppointmentTestSupport
+  private lateinit var referralEventRepository: ReferralEventRepository
 
   @Autowired
   private lateinit var referralRepository: ReferralRepository
@@ -84,10 +86,12 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
   private lateinit var referral: Referral
 
+  private lateinit var caseReference: String
+
   @Autowired
   private lateinit var personRepository: PersonRepository
 
-  private lateinit var person: uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
+  private lateinit var person: Person
 
   private lateinit var testUser: ReferralUser
 
@@ -96,6 +100,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     testUser = referralHelper.ensureReferralUser()
     person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
     referral = referralHelper.createReferral(person, submittedBy = testUser)
+    caseReference = referral.referenceNumber!!
   }
 
   @Nested
@@ -113,7 +118,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         sessionCommunication = listOf("Phone call", "Text message"),
       )
 
-      val response = appointmentService.createIcsAppointment(referral.referenceNumber!!, request, testUser)
+      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
 
       // Appointment persisted
       val savedAppointment = appointmentRepository.findById(response.appointmentId).orElseThrow()
@@ -141,7 +146,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should correctly convert 12-hour am time to 24-hour`() {
       val request = buildRequest(hour = 12, minute = 0, amPm = "am") // midnight edge case
-      val response = appointmentService.createIcsAppointment(referral.referenceNumber!!, request, testUser)
+      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.appointmentDateTime.hour).isEqualTo(0) // 12am → 00:xx
@@ -150,7 +155,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should correctly convert 12-hour pm time to 24-hour`() {
       val request = buildRequest(hour = 12, minute = 0, amPm = "pm") // noon
-      val response = appointmentService.createIcsAppointment(referral.referenceNumber!!, request, testUser)
+      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.appointmentDateTime.hour).isEqualTo(12) // 12pm stays 12
@@ -159,7 +164,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should correctly convert 1pm to 13 in 24-hour format`() {
       val request = buildRequest(hour = 1, minute = 0, amPm = "pm")
-      val response = appointmentService.createIcsAppointment(referral.referenceNumber!!, request, testUser)
+      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.appointmentDateTime.hour).isEqualTo(13)
@@ -168,7 +173,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should map VIDEO type to VIDEO_CALL delivery method`() {
       val request = buildRequest(type = SessionMethodType.VIDEO, additionalDetails = "Teams link")
-      val response = appointmentService.createIcsAppointment(referral.referenceNumber!!, request, testUser)
+      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.appointmentDelivery?.method).isEqualTo(AppointmentDeliveryMethod.VIDEO_CALL)
@@ -195,7 +200,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
           postcode = "SW1A 2AA",
         ),
       )
-      val response = appointmentService.createIcsAppointment(referral.referenceNumber!!, request, testUser)
+      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       val delivery = ics.appointmentDelivery!!
@@ -217,7 +222,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return VirtualAppointment for phone with no address fields`() {
       val request = buildRequest(type = SessionMethodType.PHONE)
-      val response = appointmentService.createIcsAppointment(referral.referenceNumber!!, request, testUser)
+      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
 
       val sessionMethod = response.sessionMethod
       assertThat(sessionMethod).isInstanceOf(VirtualAppointment::class.java)
@@ -230,7 +235,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should persist empty sessionCommunication list as empty session_communication`() {
       val request = buildRequest(sessionCommunication = emptyList())
-      val response = appointmentService.createIcsAppointment(referral.referenceNumber!!, request, testUser)
+      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.sessionCommunication).isEmpty()
@@ -250,7 +255,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should link ics to the correct referral via appointment`() {
       val request = buildRequest()
-      val response = appointmentService.createIcsAppointment(referral.referenceNumber!!, request, testUser)
+      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
 
       assertThat(response.referralId).isEqualTo(referral.id)
     }
@@ -259,7 +264,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     fun `should persist createdBy when a user is supplied`() {
       val testUser = referralUserRepository.findById(testUser.id).orElseThrow()
       val request = buildRequest()
-      val response = appointmentService.createIcsAppointment(referral.referenceNumber!!, request, testUser)
+      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.createdBy.id).isEqualTo(testUser.id)
@@ -278,8 +283,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return all appointments for the referral`() {
-      appointmentService.createIcsAppointment(referral.referenceNumber!!, buildRequest(hour = 9, amPm = "am"), testUser)
-      appointmentService.createIcsAppointment(referral.referenceNumber!!, buildRequest(hour = 2, amPm = "pm"), testUser)
+      appointmentService.createIcsAppointment(caseReference, buildRequest(hour = 9, amPm = "am"), testUser)
+      appointmentService.createIcsAppointment(caseReference, buildRequest(hour = 2, amPm = "pm"), testUser)
 
       val result = appointmentService.getIcsAppointmentsByReferral(referral.id)
       assertThat(result).hasSize(2)
@@ -293,7 +298,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         ReferralFactory().withPersonId(anotherPerson.id).withCrn("Y999999").create(),
       )
 
-      appointmentService.createIcsAppointment(referral.referenceNumber!!, buildRequest(), testUser)
+      appointmentService.createIcsAppointment(caseReference, buildRequest(), testUser)
       appointmentService.createIcsAppointment(anotherReferral.referenceNumber!!, buildRequest(), testUser)
 
       val result = appointmentService.getIcsAppointmentsByReferral(referral.id)
@@ -311,7 +316,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return correct date and time in response`() {
       appointmentService.createIcsAppointment(
-        referral.referenceNumber!!,
+        caseReference,
         buildRequest(hour = 3, minute = 15, amPm = "pm"),
         testUser,
       )
@@ -330,7 +335,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return the correct ICS appointment by id`() {
-      val created = appointmentService.createIcsAppointment(referral.referenceNumber!!, buildRequest(hour = 11, amPm = "am"), testUser)
+      val created = appointmentService.createIcsAppointment(caseReference, buildRequest(hour = 11, amPm = "am"), testUser)
       val fetched = appointmentService.getIcsAppointment(created.appointmentIcsId)
 
       assertThat(fetched.appointmentIcsId).isEqualTo(created.appointmentIcsId)
@@ -348,7 +353,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return correct sessionCommunication in response`() {
       val created = appointmentService.createIcsAppointment(
-        referral.referenceNumber!!,
+        caseReference,
         buildRequest(sessionCommunication = listOf("Email", "Phone call")),
         testUser,
       )
@@ -360,7 +365,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return correct howTakePlace type in response`() {
       val created = appointmentService.createIcsAppointment(
-        referral.referenceNumber!!,
+        caseReference,
         buildRequest(type = SessionMethodType.IN_PERSON_PROBATION_OFFICE),
         testUser,
       )
@@ -508,10 +513,11 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   )
 
   /** Creates an ICS appointment and returns its id, ready to receive feedback. */
-  private fun createIcsAndGetId(): UUID = appointmentService.createIcsAppointment(referral.referenceNumber!!, buildRequest(), testUser).appointmentIcsId
+  private fun createIcsAndGetId(): UUID = appointmentService.createIcsAppointment(caseReference, buildRequest(), testUser).appointmentIcsId
 
   private fun buildFeedbackRequest(
     didSessionHappen: Boolean = true,
+    didPersonAttend: Boolean = true,
     howSessionTookPlace: SessionMethodRequest? = SessionMethodRequest(type = SessionMethodType.PHONE),
     wasPersonLate: Boolean? = false,
     lateReason: String? = null,
@@ -525,6 +531,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     actionsBeforeNextSession: String? = "Complete referral details",
   ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
     .withDidSessionHappen(didSessionHappen)
+    .withDidPersonAttend(didPersonAttend)
     .withHowSessionTookPlace(howSessionTookPlace)
     .withWasPersonLate(wasPersonLate)
     .withLateReason(lateReason)
@@ -547,6 +554,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       val icsId = createIcsAndGetId()
       val request = buildFeedbackRequest(
         didSessionHappen = true,
+        didPersonAttend = true,
         howSessionTookPlace = SessionMethodRequest(
           type = SessionMethodType.PHONE,
           additionalDetails = "Client preferred phone",
@@ -585,7 +593,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       // Verify audit event created
       val events = referralEventRepository.findAll().filter { it.eventType == ReferralEventType.APPOINTMENT_FEEDBACK_SENT }
       assertThat(events).hasSize(1)
-      assertThat(events.first().referral.referenceNumber!!).isEqualTo(referral.referenceNumber!!)
+      assertThat(events.first().referral.referenceNumber!!).isEqualTo(caseReference)
       assertThat(events.first().actorType).isEqualTo(ActorType.EXTERNAL)
       assertThat(events.first().actorId).isEqualTo(testUser.id)
     }
@@ -711,7 +719,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         .filter { it.eventType == ReferralEventType.APPOINTMENT_FEEDBACK_SENT }
       assertThat(events).hasSize(1)
       with(events.first()) {
-        assertThat(referral.referenceNumber!!).isEqualTo(referral.referenceNumber!!)
+        assertThat(caseReference).isEqualTo(caseReference)
         assertThat(actorType).isEqualTo(ActorType.EXTERNAL)
         assertThat(actorId).isEqualTo(testUser.id)
         assertThat(createdAt).isNotNull()
@@ -815,59 +823,103 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   inner class GetIcsFeedback {
 
     @Test
-    fun `should return the correct feedback by id`() {
+    fun `should return feedback when latest appointment status is DID_NOT_HAPPEN`() {
       val icsId = createIcsAndGetId()
-      val created = appointmentService.createIcsFeedback(referral.id, icsId, buildFeedbackRequest(), testUser)
-
-      val fetched = appointmentService.getIcsFeedback(created.id)
-
-      assertThat(fetched.id).isEqualTo(created.id)
-      assertThat(fetched.appointmentIcsId).isEqualTo(icsId)
-      assertThat(fetched.recordSessionDidSessionHappen).isTrue()
-    }
-
-    @Test
-    fun `should throw NotFoundException for unknown feedback id`() {
-      val unknownId = UUID.randomUUID()
-
-      val ex = assertThrows<NotFoundException> {
-        appointmentService.getIcsFeedback(unknownId)
-      }
-      assertThat(ex.message).isEqualTo("ICS feedback not found for id $unknownId")
-    }
-
-    @Test
-    fun `should return all persisted feedback fields`() {
-      val icsId = createIcsAndGetId()
-      val request = buildFeedbackRequest(
-        didSessionHappen = true,
-        howSessionTookPlace = SessionMethodRequest(type = SessionMethodType.PHONE, additionalDetails = "Client preferred phone"),
-        wasPersonLate = true,
-        lateReason = "Car trouble",
-        duration = SessionDurationRequest(hours = 1, minutes = 45),
-        whatHappened = "Reviewed employment goals",
-        behaviour = "Engaged and motivated",
-        strengthsIdentified = "Excellent communication",
-        issuesConcernsIdentified = "Risk of housing loss",
-        notifyProbationPractitioner = true,
-        plannedForNextSession = "Review housing options",
-        actionsBeforeNextSession = "Contact housing officer",
+      val didNotHappenSessionFeedback = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = true,
+          sessionNotHappenReason = SessionNotHappenReasonRequest(
+            reason = SessionNotHappenReason.REFERRAL_DID_NOT_COMPLY,
+            details = "Alex was disruptive and refused to engage with the session.",
+          ),
+        ),
       )
-      val created = appointmentService.createIcsFeedback(referral.id, icsId, request, testUser)
 
-      val fetched = appointmentService.getIcsFeedback(created.id)
+      val icsFeedback = appointmentService.createIcsFeedback(
+        referral.id,
+        icsId,
+        didNotHappenSessionFeedback,
+        testUser,
+      )
 
-      assertThat(fetched.recordSessionHowSessionTookPlace).isEqualTo("Phone call")
-      assertThat(fetched.recordSessionNotInPersonReason).isEqualTo("Client preferred phone")
-      assertThat(fetched.sessionDetailsWasPersonLate).isTrue()
-      assertThat(fetched.sessionDetailsLateReason).isEqualTo("Car trouble")
-      assertThat(fetched.sessionDetailsDuration).isEqualTo("1 hour and 45 minutes")
-      assertThat(fetched.sessionFeedbackWhatHappened).isEqualTo("Reviewed employment goals")
-      assertThat(fetched.issuesOrConcernsIdentified).isEqualTo("Risk of housing loss")
-      assertThat(fetched.issuesOrConcernsNotifyProbationPractitioner).isTrue()
-      assertThat(fetched.nextStepsPlannedForNextSession).isEqualTo("Review housing options")
-      assertThat(fetched.nextStepsActionsBeforeNextSession).isEqualTo("Contact housing officer")
-      assertThat(fetched.createdBy).isEqualTo(testUser.id)
+      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.DID_NOT_HAPPEN)
+
+      referralHelper.assignCaseWorkers(referral, referralHelper.createCaseWorkers("CaseWorker One"))
+
+      val response = appointmentService.getIcsFeedback(icsFeedback.id)
+
+      assertThat(response.recordSessionDidSessionHappen).isFalse()
+      assertThat(response.recordSessionDidPersonAttend).isTrue()
+      assertThat(response.recordSessionNotHappenReason).isEqualTo("REFERRAL_DID_NOT_COMPLY")
+      assertThat(response.recordSessionNotHappenReasonDetails).isEqualTo(
+        "Alex was disruptive and refused to engage with the session.",
+      )
+
+      assertThat(response.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(listOf("CaseWorker One (test-user)"))
+      assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
+      assertThat(response.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-03-27T10:00")
+      assertThat(response.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
+      assertThat(response.sessionFeedbackDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
+      assertThat(response.sessionFeedbackDetails?.personFirstName).isEqualTo("Alex")
+    }
+
+    @Test
+    fun `should return feedback when latest appointment status is DID_NOT_ATTEND`() {
+      val icsId = createIcsAndGetId()
+      val didNotAttendSessionFeedback = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = false,
+          noAttendanceInformation = "Called three times and there was no answer. Left voicemail.",
+        ),
+      )
+
+      val icsFeedback = appointmentService.createIcsFeedback(referral.id, icsId, didNotAttendSessionFeedback, testUser)
+
+      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.DID_NOT_ATTEND)
+
+      referralHelper.assignCaseWorkers(referral, referralHelper.createCaseWorkers("CaseWorker One", "CaseWorker Two"))
+
+      val response = appointmentService.getIcsFeedback(icsFeedback.id)
+
+      assertThat(response.recordSessionDidSessionHappen).isFalse()
+      assertThat(response.recordSessionDidPersonAttend).isFalse()
+      assertThat(response.recordSessionNotHappenReason).isNull()
+      assertThat(response.recordSessionNotHappenReasonDetails).isNull()
+
+      assertThat(response.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
+        listOf("CaseWorker One (test-user)", "CaseWorker Two (test-user)"),
+      )
+      assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
+      assertThat(response.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-03-27T10:00")
+      assertThat(response.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
+      assertThat(response.sessionFeedbackDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
+      assertThat(response.sessionFeedbackDetails?.personFirstName).isEqualTo("Alex")
+    }
+
+    @Test
+    fun `should throw not found when case workers do not exist`() {
+      val icsId = createIcsAndGetId()
+      val didNotAttendSessionFeedback = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = false,
+          noAttendanceInformation = "Called three times and there was no answer. Left voicemail.",
+        ),
+      )
+      val icsFeedback = appointmentService.createIcsFeedback(
+        referral.id,
+        icsId,
+        didNotAttendSessionFeedback,
+        testUser,
+      )
+
+      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.DID_NOT_ATTEND)
+
+      assertThatThrownBy { appointmentService.getIcsFeedback(icsFeedback.id) }
+        .isInstanceOf(NotFoundException::class.java)
+        .hasMessageContaining("Case workers not found for referral")
     }
   }
 }

@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.Appoint
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentStatusHistoryFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.CreateIcsFeedbackRequestFactory
 import java.time.LocalDateTime
+import java.util.UUID
 
 @Component
 class AppointmentTestSupport(
@@ -92,6 +93,14 @@ class AppointmentTestSupport(
       .withCreatedAt(createdAt)
       .create(),
   )
+
+  fun updateAppointmentStatusHistory(icsId: UUID, status: AppointmentStatusHistoryType) {
+    val icsAppointment = appointmentIcsRepository.findById(icsId).orElseThrow()
+
+    appointmentStatusHistoryRepository.save(
+      AppointmentStatusHistory(appointment = icsAppointment.appointment, status = status),
+    )
+  }
 
   /**
    * Builds a [CreateIcsFeedbackRequest] via [CreateIcsFeedbackRequestFactory].

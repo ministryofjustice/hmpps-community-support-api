@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReas
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
@@ -65,6 +66,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
   @MockitoBean
   private lateinit var userMapper: UserMapper
 
+  private lateinit var referral: Referral
   private lateinit var referralId: UUID
   private lateinit var referralCaseReference: String
   private lateinit var testUser: ReferralUser
@@ -73,7 +75,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
   fun setUp() {
     val person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
     testUser = referralHelper.ensureReferralUser()
-    val referral = referralHelper.createReferral(person, submittedBy = testUser)
+    referral = referralHelper.createReferral(person, submittedBy = testUser)
     referralId = referral.id
     referralCaseReference = referral.referenceNumber!!
   }
@@ -609,19 +611,18 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
 
   // ── Helper to create feedback and return its id ────────────────────────────
 
-  private fun createIcsFeedbackId(icsId: UUID): UUID {
+  private fun createIcsFeedback(icsId: UUID, icsFeedbackRequest: CreateIcsFeedbackRequest): AppointmentIcsFeedbackResponse {
     whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
     return webTestClient.post()
       .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
       .contentType(MediaType.APPLICATION_JSON)
       .headers(setAuthorisation())
-      .bodyValue(appointmentHelper.buildIcsFeedbackRequest())
+      .bodyValue(icsFeedbackRequest)
       .exchange()
       .expectStatus().isCreated
       .expectBody<AppointmentIcsFeedbackResponse>()
       .returnResult()
       .responseBody!!
-      .id
   }
 
   // ── Tests for GET /bff/ics-feedback/{icsFeedbackId} ──
@@ -651,30 +652,101 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return 200 with correct feedback when queried by feedback id`() {
+    fun `should return ICS feedback with session details for DID_NOT_HAPPEN appointment`() {
       val icsId = createIcsAppointmentId()
-      val feedbackId = createIcsFeedbackId(icsId)
+      val icsFeedbackRequest = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = true,
+          sessionNotHappenReason = SessionNotHappenReasonRequest(
+            reason = SessionNotHappenReason.REFERRAL_DID_NOT_COMPLY,
+            details = "Alex was disruptive and refused to engage with the session.",
+          ),
+        ),
+      )
+
+      referralHelper.assignCaseWorkers(referral, referralHelper.createCaseWorkers("CaseWorker One"))
+
+      val icsFeedback = createIcsFeedback(icsId, icsFeedbackRequest)
+
+      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.DID_NOT_HAPPEN)
 
       webTestClient.get()
-        .uri("/bff/ics-feedback/$feedbackId")
+        .uri("/bff/ics-feedback/${icsFeedback.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
         .expectBody<AppointmentIcsFeedbackResponse>()
         .consumeWith { result ->
           val body = result.responseBody!!
-          assertThat(body.id).isEqualTo(feedbackId)
+          assertThat(body.id).isEqualTo(icsFeedback.id)
           assertThat(body.appointmentIcsId).isEqualTo(icsId)
-          assertThat(body.recordSessionDidSessionHappen).isTrue()
+          assertThat(body.recordSessionDidSessionHappen).isFalse()
+          assertThat(body.recordSessionDidPersonAttend).isTrue()
+          assertThat(body.recordSessionNotHappenReason).isEqualTo("REFERRAL_DID_NOT_COMPLY")
+          assertThat(body.recordSessionNotHappenReasonDetails).isEqualTo("Alex was disruptive and refused to engage with the session.")
+
+          assertThat(body.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(listOf("CaseWorker One (test-user)"))
+          assertThat(body.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
+          assertThat(body.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-04-09T10:00:00")
+          assertThat(body.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
+          assertThat(body.sessionFeedbackDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
+          assertThat(body.sessionFeedbackDetails?.personFirstName).isEqualTo("Alex")
         }
     }
 
     @Test
-    fun `should return 200 with all persisted feedback fields`() {
+    fun `should return ICS feedback with session details for DID_NOT_ATTEND appointment`() {
+      val icsId = createIcsAppointmentId()
+      val icsFeedbackRequest = CreateIcsFeedbackRequest(
+        record = RecordSessionRequest(
+          didSessionHappen = false,
+          didPersonAttend = false,
+          noAttendanceInformation = "Called on two separate occasions this afternoon and got no answer. Left voicemail to call back.",
+        ),
+      )
+
+      referralHelper.assignCaseWorkers(
+        referral,
+        referralHelper.createCaseWorkers("CaseWorker One", "CaseWorker Two"),
+      )
+
+      val icsFeedback = createIcsFeedback(icsId, icsFeedbackRequest)
+
+      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.DID_NOT_ATTEND)
+
+      webTestClient.get()
+        .uri("/bff/ics-feedback/${icsFeedback.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<AppointmentIcsFeedbackResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.id).isEqualTo(icsFeedback.id)
+          assertThat(body.appointmentIcsId).isEqualTo(icsId)
+          assertThat(body.recordSessionDidSessionHappen).isFalse()
+          assertThat(body.recordSessionDidPersonAttend).isFalse()
+          assertThat(body.recordSessionNotHappenReason).isNull()
+          assertThat(body.recordSessionNotHappenReasonDetails).isNull()
+
+          assertThat(body.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
+            listOf("CaseWorker One (test-user)", "CaseWorker Two (test-user)"),
+          )
+          assertThat(body.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
+          assertThat(body.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-04-09T10:00:00")
+          assertThat(body.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
+          assertThat(body.sessionFeedbackDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
+          assertThat(body.sessionFeedbackDetails?.personFirstName).isEqualTo("Alex")
+        }
+    }
+
+    @Test
+    fun `should return ICS feedback with session details for COMPLETED appointment`() {
       val icsId = createIcsAppointmentId()
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
-      val request = appointmentHelper.buildIcsFeedbackRequest(
+      val completedIcsFeedback = appointmentHelper.buildIcsFeedbackRequest(
         didSessionHappen = true,
         howSessionTookPlace = SessionMethodRequest(type = SessionMethodType.PHONE, additionalDetails = "Client preferred phone"),
         wasPersonLate = true,
@@ -689,27 +761,21 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
         actionsBeforeNextSession = "Contact housing officer",
       )
 
-      val feedbackId = webTestClient.post()
-        .uri("/bff/referral/$referralCaseReference/ics/$icsId/feedback")
-        .contentType(MediaType.APPLICATION_JSON)
-        .headers(setAuthorisation())
-        .bodyValue(request)
-        .exchange()
-        .expectStatus().isCreated
-        .expectBody<AppointmentIcsFeedbackResponse>()
-        .returnResult()
-        .responseBody!!
-        .id
+      referralHelper.assignCaseWorkers(referral, referralHelper.createCaseWorkers("CaseWorker One"))
+
+      val icsFeedback = createIcsFeedback(icsId, completedIcsFeedback)
+
+      appointmentHelper.updateAppointmentStatusHistory(icsId, AppointmentStatusHistoryType.COMPLETED)
 
       webTestClient.get()
-        .uri("/bff/ics-feedback/$feedbackId")
+        .uri("/bff/ics-feedback/${icsFeedback.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
         .expectBody<AppointmentIcsFeedbackResponse>()
         .consumeWith { result ->
           val body = result.responseBody!!
-          assertThat(body.id).isEqualTo(feedbackId)
+          assertThat(body.id).isEqualTo(icsFeedback.id)
           assertThat(body.appointmentIcsId).isEqualTo(icsId)
           assertThat(body.recordSessionHowSessionTookPlace).isEqualTo("Phone call")
           assertThat(body.recordSessionNotInPersonReason).isEqualTo("Client preferred phone")
