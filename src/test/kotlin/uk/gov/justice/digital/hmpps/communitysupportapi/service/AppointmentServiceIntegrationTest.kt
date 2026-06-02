@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.InPersonAppointment
@@ -23,6 +24,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
@@ -141,6 +143,10 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(savedIcs.appointmentDateTime.toLocalDate()).isEqualTo(LocalDate.of(2026, 3, 27))
       assertThat(savedIcs.appointmentDateTime.toLocalTime()).isEqualTo(LocalTime.of(10, 30))
       assertThat(savedIcs.sessionCommunication).containsExactly("Phone call", "Text message")
+
+      // no change details for new ics appointment
+      assertThat(savedIcs.changeReason).isNull()
+      assertThat(savedIcs.changeRequestedBy).isNull()
     }
 
     @Test
@@ -272,6 +278,67 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("changeIcsAppointment")
+  inner class ChangeIcsAppointment {
+    @Test
+    fun `should reschedule ICS appointment and create new history record`() {
+      val createIcsAppointRequest = buildRequest(
+        hour = 9,
+        minute = 0,
+        amPm = "am",
+        type = SessionMethodType.PHONE,
+        additionalDetails = "Call on mobile",
+        sessionCommunication = listOf("Phone call", "Text message"),
+      )
+
+      appointmentService.createIcsAppointment(caseReference, createIcsAppointRequest, testUser)
+
+      val changeIcsAppointmentRequest = CreateAppointmentRequest(
+        date = createIcsAppointRequest.date,
+        time = createIcsAppointRequest.time,
+        sessionMethodRequest = createIcsAppointRequest.sessionMethodRequest,
+        sessionCommunication = createIcsAppointRequest.sessionCommunication,
+        changeAppointmentDetails = ChangeAppointmentDetails(
+          changeRequestedBy = ChangeRequesterType.REFERRAL_USER,
+          reasonForChange = "Some reasons",
+        ),
+      )
+
+      val response = appointmentService.changeIcsAppointment(
+        referral.referenceNumber!!,
+        changeIcsAppointmentRequest,
+        testUser,
+      )
+
+      // Appointment persisted
+      val savedAppointment = appointmentRepository.findById(response.appointmentId).orElseThrow()
+      assertThat(savedAppointment.referral.id).isEqualTo(referral.id)
+      assertThat(savedAppointment.type).isEqualTo(AppointmentType.ICS)
+
+      // Status History persisted
+      val savedAppointmentStatusHistory =
+        appointmentStatusHistoryRepository.findTopByAppointmentIdOrderByCreatedAtDesc(response.appointmentId)
+      assertThat(savedAppointmentStatusHistory?.appointment?.id).isEqualTo(savedAppointment.id)
+      assertThat(savedAppointmentStatusHistory?.status).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
+
+      // Delivery persisted
+      val savedIcs = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
+      val savedDelivery = appointmentDeliveryRepository.findById(savedIcs.appointmentDelivery!!.id).orElseThrow()
+      assertThat(savedDelivery.method).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
+      assertThat(savedDelivery.methodDetails).isEqualTo("Call on mobile")
+
+      // ICS persisted
+      assertThat(savedIcs.appointmentDateTime.toLocalDate()).isEqualTo(LocalDate.of(2026, 3, 27))
+      assertThat(savedIcs.appointmentDateTime.toLocalTime()).isEqualTo(LocalTime.of(9, 0))
+      assertThat(savedIcs.sessionCommunication).containsExactly("Phone call", "Text message")
+
+      // Change details persisted
+      assertThat(savedIcs.changeRequestedBy).isEqualTo(ChangeRequesterType.REFERRAL_USER)
+      assertThat(savedIcs.changeReason).isEqualTo("Some reasons")
+    }
+  }
+
+  @Nested
   @DisplayName("getIcsAppointmentsByReferral")
   inner class GetIcsAppointmentsByReferral {
 
@@ -374,6 +441,48 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       val sessionMethod = fetched.sessionMethod
       assertThat(sessionMethod).isInstanceOf(InPersonAppointment::class.java)
       assertThat(sessionMethod.type).isEqualTo("IN_PERSON_PROBATION_OFFICE")
+    }
+  }
+
+  @Nested
+  @DisplayName("getLatestIcsAppointment")
+  inner class GetLatestIcsAppointment {
+
+    @Test
+    fun `should return the correct ICS appointment by caseIdentifier`() {
+      val created = appointmentService.createIcsAppointment(
+        caseReference,
+        buildRequest(hour = 11, amPm = "am"),
+        testUser,
+      )
+      val changed = appointmentService.changeIcsAppointment(
+        referral.referenceNumber!!,
+        buildRequest(
+          hour = 10,
+          amPm = "pm",
+          changeAppointmentDetails = ChangeAppointmentDetails(
+            changeRequestedBy = ChangeRequesterType.DELIVERY_PARTNER,
+            reasonForChange = "Have urgent medical appointment to attend",
+          ),
+        ),
+        testUser,
+      )
+      val fetched = appointmentService.getLatestIcsAppointment(referral.referenceNumber!!)
+
+      assertThat(fetched.appointmentIcsId).isEqualTo(changed.appointmentIcsId)
+      assertThat(fetched.referralId).isEqualTo(referral.id)
+      assertThat(fetched.appointmentType).isEqualTo(AppointmentType.ICS)
+      assertThat(fetched.changeAppointmentDetails?.changeRequestedBy).isEqualTo(ChangeRequesterType.DELIVERY_PARTNER)
+      assertThat(fetched.changeAppointmentDetails?.reasonForChange).isEqualTo(
+        "Have urgent medical appointment to attend",
+      )
+    }
+
+    @Test
+    fun `should throw NotFoundException for unknown caseIdentifier id`() {
+      assertThrows<NotFoundException> {
+        appointmentService.getLatestIcsAppointment(UUID.randomUUID().toString())
+      }
     }
   }
 
@@ -505,11 +614,13 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     type: SessionMethodType = SessionMethodType.PHONE,
     additionalDetails: String? = null,
     sessionCommunication: List<String> = listOf("Phone call"),
+    changeAppointmentDetails: ChangeAppointmentDetails? = null,
   ) = CreateAppointmentRequest(
     date = date,
     time = AppointmentTimeRequest(hour = hour, minute = minute, amPm = amPm),
     sessionMethodRequest = SessionMethodRequest(type = type, additionalDetails = additionalDetails),
     sessionCommunication = sessionCommunication,
+    changeAppointmentDetails = changeAppointmentDetails,
   )
 
   /** Creates an ICS appointment and returns its id, ready to receive feedback. */

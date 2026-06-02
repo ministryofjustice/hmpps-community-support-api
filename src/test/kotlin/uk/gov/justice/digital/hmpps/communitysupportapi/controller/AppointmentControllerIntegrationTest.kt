@@ -18,6 +18,7 @@ import org.springframework.test.web.reactive.server.expectBodyList
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.InPersonAppointment
@@ -26,6 +27,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
@@ -245,6 +247,105 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
             assertThat(townOrCity).isEqualTo("London")
             assertThat(postcode).isEqualTo("SW1A 2AA")
           }
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("PUT /bff/referral/{caseIdentifier}/ics")
+  inner class ChangeIcsAppointmentEndpoint {
+
+    @Test
+    fun `should return 401 unauthorized when no token provided`() {
+      assertUnauthorized(POST, "/bff/referral/${referral.id}/ics")
+    }
+
+    @Test
+    fun `should return 403 forbidden when no roles provided`() {
+      assertForbiddenNoRole(POST, "/bff/referral/${referral.id}/ics", buildRequest())
+    }
+
+    @Test
+    fun `should return 403 forbidden when wrong role provided`() {
+      assertForbiddenWrongRole(POST, "/bff/referral/${referral.id}/ics", buildRequest())
+    }
+
+    @Test
+    fun `should return 404 not found for unknown referral id`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      assertNotFound(POST, "/bff/referral/${UUID.randomUUID()}/appointment/ics", buildRequest())
+    }
+
+    @Test
+    fun `should return 201 changed and persist appointment for an existing appointment`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val referral = referralRepository.findById(referral.id).orElseThrow()
+      val appointment = appointmentHelper.createAppointment(referral)
+      val now = LocalDateTime.now()
+      val appointmentDateTime = now.plusDays(1)
+      val createdAt = now
+      val delivery = appointmentHelper.createAppointmentDelivery(
+        AppointmentDeliveryMethod.VIDEO_CALL,
+        "Zoom link",
+      )
+      val savedIcs = appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        appointmentDateTime,
+        createdAt,
+        listOf("Email", "Phone call"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      val rescheduleDate = appointmentDateTime.plusDays(5).toLocalDate()
+      val rescheduleHourIn12 = if (appointmentDateTime.hour > 12) appointmentDateTime.hour - 12 else appointmentDateTime.hour
+      val request = buildRequest(
+        date = rescheduleDate,
+        hour = rescheduleHourIn12,
+        minute = appointmentDateTime.minute,
+        amPm = if (appointmentDateTime.hour >= 12) "pm" else "am",
+        type = SessionMethodType.PHONE,
+        additionalDetails = "He is not feeling good, call on mobile",
+        sessionCommunication = listOf("Phone call", "Text message"),
+        changeAppointmentDetails = ChangeAppointmentDetails(
+          changeRequestedBy = ChangeRequesterType.REFERRAL_USER,
+          reasonForChange = "Feeling unwell and not abe to attend the appointment",
+        ),
+      )
+
+      webTestClient.put()
+        .uri("/bff/referral/${referral.id}/ics")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isCreated
+        .expectBody<AppointmentIcsResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.referralId).isEqualTo(referral.id)
+          assertThat(body.appointmentType).isEqualTo(AppointmentType.ICS)
+          assertThat(body.appointmentDate).isEqualTo(rescheduleDate)
+          assertThat(body.appointmentTime.hour).isEqualTo(rescheduleHourIn12)
+          assertThat(body.appointmentTime.minute).isEqualTo(appointmentDateTime.minute)
+          assertThat(body.appointmentTime.amPm).isEqualTo(if (appointmentDateTime.hour >= 12) "pm" else "am")
+          assertThat(body.sessionMethod).isInstanceOf(VirtualAppointment::class.java)
+          with(body.sessionMethod as VirtualAppointment) {
+            assertThat(type).isEqualTo("PHONE")
+            assertThat(whyNotInPersonReason).isEqualTo("He is not feeling good, call on mobile")
+          }
+          assertThat(body.sessionCommunications).containsExactly("Phone call", "Text message")
+
+          val ics = appointmentIcsRepository.findById(body.appointmentIcsId).orElseThrow()
+          assertThat(ics.appointmentDateTime.toLocalDate()).isEqualTo(rescheduleDate)
+          assertThat(ics.appointmentDateTime.hour).isEqualTo(appointmentDateTime.hour)
+          assertThat(ics.appointmentDateTime.minute).isEqualTo(appointmentDateTime.minute)
+          assertThat(ics.sessionCommunication).containsExactly("Phone call", "Text message")
+          assertThat(ics.changeRequestedBy).isEqualTo(ChangeRequesterType.REFERRAL_USER)
+          assertThat(ics.changeReason).isEqualTo("Feeling unwell and not abe to attend the appointment")
         }
     }
   }
@@ -576,10 +677,12 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
     type: SessionMethodType = SessionMethodType.PHONE,
     additionalDetails: String? = null,
     sessionCommunication: List<String> = listOf("Phone call"),
+    changeAppointmentDetails: ChangeAppointmentDetails? = null,
   ) = CreateAppointmentRequest(
     date = date,
     time = AppointmentTimeRequest(hour = hour, minute = minute, amPm = amPm),
     sessionMethodRequest = SessionMethodRequest(type = type, additionalDetails = additionalDetails),
     sessionCommunication = sessionCommunication,
+    changeAppointmentDetails = changeAppointmentDetails,
   )
 }

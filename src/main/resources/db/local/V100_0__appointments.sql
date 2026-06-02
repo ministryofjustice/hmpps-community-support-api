@@ -89,7 +89,7 @@ VALUES
     );
 
 -- Appointment ICS records
-INSERT INTO appointment_ics (id, appointment_id, appointment_delivery_id, created_at, start_date, created_by, session_communication)
+INSERT INTO appointment_ics_history (id, appointment_id, appointment_delivery_id, created_at, start_date, created_by, session_communication)
 VALUES
     (
         'b0000000-0000-4000-8000-000000000001',
