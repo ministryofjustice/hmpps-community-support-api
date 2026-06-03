@@ -34,6 +34,9 @@ generic-service:
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_COMMUNITY-SUPPORT-API-CLIENT_CLIENT-ID: "API_CLIENT_ID"
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_COMMUNITY-SUPPORT-API-CLIENT_CLIENT-SECRET: "API_CLIENT_SECRET"
 
+    notify:
+      NOTIFY_API_KEY: "notify_api_key"
+
     rds-postgresql-instance-output:
       DB_HOST: "rds_instance_endpoint"
       DB_NAME: "database_name"
