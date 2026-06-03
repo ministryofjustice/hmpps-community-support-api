@@ -21,11 +21,11 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
 import uk.gov.service.notify.NotificationClient
-import uk.gov.service.notify.SendEmailResponse
 import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
@@ -104,7 +104,7 @@ class ReferralUserAssignmentServiceTest(@Autowired private val userService: User
     val user: ReferralUser = setupUser("victoriasmith@email.com", "Victor Smith")
 
     val emailsList = listOf("victoriasmith@email.com")
-    val sendEmailResponse = createSendEmailResponse()
+    val sendEmailResponse = ExternalApiResponse.createSendEmailResponse()
     whenever(notifyClient.sendEmail("2269a690-61e1-4b04-881f-198beb822465", user.hmppsAuthUsername, mapOf("fullName" to user.fullName), null)).thenReturn(sendEmailResponse)
 
     val caseWorkers = emailsList
@@ -717,34 +717,5 @@ class ReferralUserAssignmentServiceTest(@Autowired private val userService: User
           .create(),
       )
     return user
-  }
-
-  private fun createSendEmailResponse(
-    notificationId: UUID = UUID.randomUUID(),
-    templateId: UUID = UUID.randomUUID(),
-    templateVersion: Int = 1,
-    templateUri: String = "https://api.notifications.service.gov.uk/templates/$templateId",
-    body: String = "Email body",
-    subject: String = "Email subject",
-    fromEmail: String? = "noreply@example.com",
-    reference: String? = "test-reference",
-  ): SendEmailResponse {
-    val jsonBody = """
-        {
-            "id": "$notificationId",
-            "reference": ${reference?.let { "\"$it\"" } ?: "null"},
-            "content": {
-                "body": "$body",
-                "subject": "$subject",
-                "from_email": ${fromEmail?.let { "\"$it\"" } ?: "null"}
-            },
-            "template": {
-                "id": "$templateId",
-                "version": $templateVersion,
-                "uri": "$templateUri"
-            }
-        }
-    """.trimIndent()
-    return SendEmailResponse(jsonBody)
   }
 }

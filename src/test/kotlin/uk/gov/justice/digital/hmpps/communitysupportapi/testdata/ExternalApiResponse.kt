@@ -15,7 +15,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.nomis.AliasesDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.nomis.NomisPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
+import uk.gov.service.notify.SendEmailResponse
 import java.time.LocalDate
+import java.util.UUID
 import kotlin.String
 
 object ExternalApiResponse {
@@ -224,4 +226,33 @@ object ExternalApiResponse {
           "message": "Prisoner not found"
         }
   """.trimIndent()
+
+  fun createSendEmailResponse(
+    notificationId: UUID = UUID.randomUUID(),
+    templateId: UUID = UUID.randomUUID(),
+    templateVersion: Int = 1,
+    templateUri: String = "https://api.notifications.service.gov.uk/templates/$templateId",
+    body: String = "Email body",
+    subject: String = "Email subject",
+    fromEmail: String? = "noreply@example.com",
+    reference: String? = "test-reference",
+  ): SendEmailResponse {
+    val jsonBody = """
+        {
+            "id": "$notificationId",
+            "reference": ${reference?.let { "\"$it\"" } ?: "null"},
+            "content": {
+                "body": "$body",
+                "subject": "$subject",
+                "from_email": ${fromEmail?.let { "\"$it\"" } ?: "null"}
+            },
+            "template": {
+                "id": "$templateId",
+                "version": $templateVersion,
+                "uri": "$templateUri"
+            }
+        }
+    """.trimIndent()
+    return SendEmailResponse(jsonBody)
+  }
 }
