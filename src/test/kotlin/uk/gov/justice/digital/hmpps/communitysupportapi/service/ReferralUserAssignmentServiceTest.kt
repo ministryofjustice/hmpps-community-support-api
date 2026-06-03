@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.Mock
+import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
@@ -41,6 +43,9 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   @Autowired
   private lateinit var referralAssignmentService: ReferralAssignmentService
 
+  @Mock
+  private lateinit var notifyService: NotifyService
+
   @Test
   fun `assignCaseWorker should save a case worker assignment`() {
     val assigner: ReferralUser = setupAssigner()
@@ -60,6 +65,23 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
     assertThat(result?.succeededList?.size).isEqualTo(1)
     assertThat(result?.succeededList?.get(0)?.emailAddress).isEqualTo(user.hmppsAuthUsername)
     assertThat(result?.failureList).isEmpty()
+  }
+
+  @Test
+  fun `assignCaseWorker should email caseworker`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assigner.id)
+    val user: ReferralUser = setupUser("victoriasmith@email.com", "Victor Smith")
+
+    val emailsList = listOf("victoriasmith@email.com")
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
+    verify(notifyService).sendEmail("", "victoriasmith@email.com", mapOf("name" to "value"))
   }
 
   @Test

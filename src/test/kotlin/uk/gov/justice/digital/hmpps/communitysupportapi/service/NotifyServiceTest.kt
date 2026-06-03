@@ -18,13 +18,13 @@ class NotifyServiceTest {
 
   @BeforeEach
   fun setUp() {
-    notifyService = NotifyService(notifyClient = notificationClient )
+    notifyService = NotifyService(notifyClient = notificationClient)
   }
 
   @Test
   fun `should send email when give email and templateId`() {
     val templateId = UUID.randomUUID().toString()
-    notifyService.sendEmail(templateId,"test@justice.gov.uk", mapOf("name" to "value"))
+    notifyService.sendEmail(templateId, "test@justice.gov.uk", mapOf("name" to "value"))
     verify(notificationClient).sendEmail(
       templateId,
       "test@justice.gov.uk",

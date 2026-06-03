@@ -1,13 +1,12 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.client
 
-import io.kotest.matchers.shouldBe
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.service.notify.NotificationClient
 
-class NotifyClientIntegrationTest: IntegrationTestBase() {
+class NotifyClientIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   lateinit var notifyClient: NotificationClient
