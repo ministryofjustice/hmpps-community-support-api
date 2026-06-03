@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import SessionFeedbackDetailsDto
 import com.fasterxml.jackson.annotation.JsonInclude
 import io.swagger.v3.oas.annotations.media.Schema
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcsFeedback
@@ -121,12 +122,14 @@ data class AppointmentIcsFeedbackResponse(
   val nextStepsPlannedForNextSession: String?,
   val nextStepsActionsBeforeNextSession: String?,
 
+  val sessionFeedbackDetails: SessionFeedbackDetailsDto?,
+
   // Audit
   val createdAt: LocalDateTime,
   val createdBy: UUID?,
 ) {
   companion object {
-    fun from(feedback: AppointmentIcsFeedback) = AppointmentIcsFeedbackResponse(
+    fun from(feedback: AppointmentIcsFeedback, sessionFeedbackDetails: SessionFeedbackDetailsDto? = null) = AppointmentIcsFeedbackResponse(
       id = feedback.id,
       appointmentIcsId = feedback.appointmentIcs.id,
       recordSessionDidSessionHappen = feedback.recordSessionDidSessionHappen,
@@ -152,6 +155,7 @@ data class AppointmentIcsFeedbackResponse(
       issuesOrConcernsNotifyProbationPractitioner = feedback.issuesConcernsNotifyProbationPractitioner,
       nextStepsPlannedForNextSession = feedback.nextStepsPlannedForNextSession,
       nextStepsActionsBeforeNextSession = feedback.nextStepsActionsBeforeNextSession,
+      sessionFeedbackDetails = sessionFeedbackDetails,
       createdAt = feedback.createdAt,
       createdBy = feedback.createdBy?.id,
     )

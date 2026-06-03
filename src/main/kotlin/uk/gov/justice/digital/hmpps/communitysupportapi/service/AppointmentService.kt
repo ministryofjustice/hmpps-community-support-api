@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import SessionFeedbackDetailsDto
 import org.slf4j.LoggerFactory
+import org.springframework.data.jpa.domain.AbstractAuditable_.createdBy
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentDetailsDto
@@ -9,6 +11,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsRespon
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayString
@@ -43,6 +46,8 @@ import java.util.UUID
 
 @Service
 class AppointmentService(
+  private val referralService: ReferralService,
+  private val referralAssignmentService: ReferralAssignmentService,
   private val referralRepository: ReferralRepository,
   private val appointmentRepository: AppointmentRepository,
   private val appointmentDeliveryRepository: AppointmentDeliveryRepository,
@@ -56,51 +61,53 @@ class AppointmentService(
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
   }
 
-  @Transactional
-  fun createIcsAppointment(
-    caseIdentifier: String,
-    request: CreateAppointmentRequest,
-    createdBy: ReferralUser,
-  ): AppointmentIcsResponse {
-    val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
-
-    log.info("Creating ICS appointment for referral {}", caseIdentifier)
-
-    // 1. Appointment (parent record)
+  private fun createNewAppointment(referral: Referral, type: AppointmentType): Appointment {
     val appointment = Appointment(
       id = UUID.randomUUID(),
       referral = referral,
-      type = AppointmentType.ICS,
+      type = type,
     )
-    appointmentRepository.save(appointment)
+    return appointmentRepository.save(appointment)
+  }
 
-    // 2. Status History
-    val appointmentHistory = AppointmentStatusHistory(
+  private fun createAppointmentStatusHistory(
+    appointment: Appointment,
+    status: AppointmentStatusHistoryType,
+    createdAt: LocalDateTime? = null,
+  ): AppointmentStatusHistory {
+    val history = AppointmentStatusHistory(
       appointment = appointment,
-      status = AppointmentStatusHistoryType.SCHEDULED,
+      status = status,
+      createdAt = createdAt ?: LocalDateTime.now(),
     )
-    appointmentStatusHistoryRepository.save(appointmentHistory)
+    return appointmentStatusHistoryRepository.save(history)
+  }
 
-    // 3. Delivery method
-    val deliveryMethod = request.sessionMethodRequest.type.toDeliveryMethod()
-    val appointmentDelivery = AppointmentDelivery(
+  private fun createAppointmentDelivery(sessionMethodRequest: SessionMethodRequest): AppointmentDelivery {
+    val deliveryMethod = sessionMethodRequest.type.toDeliveryMethod()
+
+    return AppointmentDelivery(
       id = UUID.randomUUID(),
       method = deliveryMethod,
-      methodDetails = request.sessionMethodRequest.additionalDetails,
-      // Address fields are only relevant for IN_PERSON_OTHER_LOCATION
-      addressLine1 = request.sessionMethodRequest.addressLine1.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
-      addressLine2 = request.sessionMethodRequest.addressLine2.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
-      townOrCity = request.sessionMethodRequest.townOrCity.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
-      county = request.sessionMethodRequest.county.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
-      postcode = request.sessionMethodRequest.postcode.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
-    )
-    appointmentDeliveryRepository.save(appointmentDelivery)
+      methodDetails = sessionMethodRequest.additionalDetails,
+      addressLine1 = sessionMethodRequest.addressLine1.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
+      addressLine2 = sessionMethodRequest.addressLine2.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
+      townOrCity = sessionMethodRequest.townOrCity.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
+      county = sessionMethodRequest.county.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
+      postcode = sessionMethodRequest.postcode.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
+    ).also {
+      appointmentDeliveryRepository.save(it)
+    }
+  }
 
-    // 4. Combine date + time
-    val localTime = request.time.toLocalTime()
-    val startDateTime = LocalDateTime.of(request.date, localTime)
+  private fun createAppointmentIcsRecord(
+    appointment: Appointment,
+    appointmentDelivery: AppointmentDelivery,
+    request: CreateAppointmentRequest,
+    createdBy: ReferralUser,
+  ): AppointmentIcs {
+    val startDateTime = LocalDateTime.of(request.date, request.time.toLocalTime())
 
-    // 5. ICS record
     val ics = AppointmentIcs(
       id = UUID.randomUUID(),
       appointment = appointment,
@@ -108,11 +115,46 @@ class AppointmentService(
       appointmentDateTime = startDateTime,
       createdBy = createdBy,
       sessionCommunication = request.sessionCommunication,
+      changeRequestedBy = request.changeAppointmentDetails?.changeRequestedBy,
+      changeReason = request.changeAppointmentDetails?.reasonForChange,
     )
-    val savedIcs = appointmentIcsRepository.save(ics)
+
+    return appointmentIcsRepository.save(ics)
+  }
+
+  @Transactional
+  fun createIcsAppointment(
+    caseIdentifier: String,
+    request: CreateAppointmentRequest,
+    createdBy: ReferralUser,
+  ): AppointmentIcsResponse {
+    log.info("Creating ICS appointment for referral {}", caseIdentifier)
+
+    val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
+
+    // 1. Appointment (parent record)
+    val appointment = createNewAppointment(referral, AppointmentType.ICS)
+
+    // 2. Status History
+    val appointmentHistory = createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED)
+
+    // 3. Delivery method
+    val appointmentDelivery = createAppointmentDelivery(request.sessionMethodRequest)
+
+    // 4. Combine date + time
+    val localTime = request.time.toLocalTime()
+    val startDateTime = LocalDateTime.of(request.date, localTime)
+
+    // 5. ICS record
+    val savedIcs = createAppointmentIcsRecord(
+      appointment = appointment,
+      appointmentDelivery = appointmentDelivery,
+      request = request,
+      createdBy = createdBy,
+    )
 
     log.info("ICS appointment created with id {}", savedIcs.id)
-    return AppointmentIcsResponse.from(savedIcs, appointmentHistory.status, getReferralName(ics.appointment))
+    return AppointmentIcsResponse.from(savedIcs, appointmentHistory.status, getReferralName(savedIcs.appointment))
   }
 
   /**
@@ -142,6 +184,63 @@ class AppointmentService(
     val ics = appointmentIcsRepository.findById(icsId)
       .orElseThrow { NotFoundException("Appointment ICS not found for id $icsId") }
     return AppointmentIcsResponse.from(ics, getLatestAppointmentStatus(ics.appointment.id), getReferralName(ics.appointment))
+  }
+
+  /**
+   * Returns the latest ICS appointment by its referral ID.
+   */
+  @Transactional(readOnly = true)
+  fun getLatestIcsAppointment(caseIdentifier: String): AppointmentIcsResponse {
+    val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
+    val ics = appointmentIcsRepository.findLatestIcsByReferralId(referral.id, AppointmentType.ICS)
+    if (ics === null) {
+      throw NotFoundException("ICS appointment not found: $caseIdentifier")
+    }
+    return AppointmentIcsResponse.from(ics, getLatestAppointmentStatus(ics.appointment.id), getReferralName(ics.appointment))
+  }
+
+  fun changeIcsAppointment(
+    caseIdentifier: String,
+    request: CreateAppointmentRequest,
+    changedBy: ReferralUser,
+  ): AppointmentIcsResponse {
+    log.info("Changing ICS appointment for referral {}", caseIdentifier)
+
+    val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
+
+    // Fetch the specific history record
+    val existingIcs = appointmentIcsRepository.findLatestIcsByReferralId(referral.id, AppointmentType.ICS)
+
+    if (existingIcs === null) {
+      throw NotFoundException("ICS appointment not found: $caseIdentifier")
+    }
+
+    // 1. update previous ics appointment status History
+    val existingIcsAppointmentHistory = createAppointmentStatusHistory(
+      appointment = existingIcs.appointment,
+      status = AppointmentStatusHistoryType.RESCHEDULED,
+      createdAt = existingIcs.createdAt,
+    )
+
+    // 2. Create the new appointment (parent record)
+    val appointment = createNewAppointment(referral, AppointmentType.ICS)
+
+    // 3. update the new ics appointment status History
+    val newIcsAppointmentHistory = createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED)
+
+    // 4. create new delivery method
+    val appointmentDelivery = createAppointmentDelivery(request.sessionMethodRequest)
+
+    // 5. create new ics record
+    val savedIcs = createAppointmentIcsRecord(
+      appointment = appointment,
+      appointmentDelivery = appointmentDelivery,
+      request = request,
+      createdBy = changedBy,
+    )
+
+    log.info("ICS appointment updated with id {}", savedIcs.id)
+    return AppointmentIcsResponse.from(savedIcs, newIcsAppointmentHistory.status, getReferralName(savedIcs.appointment))
   }
 
   /**
@@ -187,9 +286,34 @@ class AppointmentService(
    */
   @Transactional(readOnly = true)
   fun getIcsFeedback(icsFeedbackId: UUID): AppointmentIcsFeedbackResponse {
-    val feedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
+    val icsFeedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
       .orElseThrow { NotFoundException("ICS feedback not found for id $icsFeedbackId") }
-    return AppointmentIcsFeedbackResponse.from(feedback)
+
+    val feedbackSubmittedBy = icsFeedback.createdBy?.let { "${it.fullName} (${it.hmppsAuthUsername})" } ?: "Unknown user"
+
+    val ics = icsFeedback.appointmentIcs
+
+    val person = personRepository.findById(ics.appointment.referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral ${ics.appointment.referral.personId}") }
+
+    val caseReference = ics.appointment.referral.referenceNumber
+      ?: throw IllegalStateException("Referral ${ics.appointment.referral.id} does not have a reference number")
+
+    val caseWorkers = referralAssignmentService.getAssignedCaseWorkers(caseReference)
+      ?.map { "${it.fullName} (${it.emailAddress})" }
+      ?.takeIf { it.isNotEmpty() }
+      ?: throw NotFoundException("Case workers not found for referral $caseReference")
+
+    val sessionDetails = SessionFeedbackDetailsDto(
+      currentCaseworkers = caseWorkers,
+      feedbackSubmittedBy = feedbackSubmittedBy,
+      startDateTime = ics.appointmentDateTime,
+      sessionMethod = ics.appointmentDelivery?.method,
+      sessionCommunications = ics.sessionCommunication,
+      personFirstName = person.firstName,
+    )
+
+    return AppointmentIcsFeedbackResponse.from(icsFeedback, sessionDetails)
   }
 
   /**

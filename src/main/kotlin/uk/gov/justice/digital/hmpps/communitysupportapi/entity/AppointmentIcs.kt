@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
@@ -14,7 +16,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 @Entity
-@Table(name = "appointment_ics")
+@Table(name = "appointment_ics_history")
 class AppointmentIcs(
   @Id
   val id: UUID = UUID.randomUUID(),
@@ -40,4 +42,11 @@ class AppointmentIcs(
   @JdbcTypeCode(SqlTypes.ARRAY)
   @Column(name = "session_communication", columnDefinition = "text[]")
   val sessionCommunication: List<String> = emptyList(),
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "change_requested_by")
+  val changeRequestedBy: ChangeRequesterType? = null,
+
+  @Column(name = "change_reason")
+  val changeReason: String? = null,
 )
