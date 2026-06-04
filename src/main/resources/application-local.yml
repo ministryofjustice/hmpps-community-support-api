@@ -27,6 +27,9 @@ services:
       auth-user-groups: "/externalusers/{userId}/groups"
       auth-user-details: "/users/{userName}"
 
+notify:
+  api.key: "${NOTIFY_API_KEY:invalid-key}"
+
 logging:
   level:
     uk.gov.justice.digital.hmpps.communitysupportapi.client: DEBUG

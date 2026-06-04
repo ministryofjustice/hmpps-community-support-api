@@ -1,8 +1,16 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
@@ -13,12 +21,18 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
+import uk.gov.service.notify.NotificationClient
 import java.util.UUID
 
-class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
+@ExtendWith(MockitoExtension::class)
+class ReferralUserAssignmentServiceTest(@Autowired private val userService: UserService) : IntegrationTestBase() {
+
+  @Autowired
+  lateinit var entityManager: EntityManager
 
   @Autowired
   private lateinit var referralRepository: ReferralRepository
@@ -39,9 +53,29 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   private lateinit var referralService: ReferralService
 
   @Autowired
+  private lateinit var referralLookupService: ReferralLookupService
+
   private lateinit var referralAssignmentService: ReferralAssignmentService
 
+  private lateinit var notifyService: NotifyService
+
+  @Mock
+  private lateinit var notifyClient: NotificationClient
+
+  @BeforeEach
+  fun setUp() {
+    notifyService = NotifyService(notifyClient)
+    referralAssignmentService = ReferralAssignmentService(
+      referralUserAssignmentRepository = referralUserAssignmentRepository,
+      userService = userService,
+      entityManager = entityManager,
+      referralLookupService = referralLookupService,
+      notifyService = notifyService,
+    )
+  }
+
   @Test
+  @Transactional
   fun `assignCaseWorker should save a case worker assignment`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assigner.id)
@@ -63,6 +97,27 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
+  fun `assignCaseWorker should email caseworker`() {
+    val assigner: ReferralUser = setupAssigner()
+    val referral: Referral = setUpReferral(assigner.id)
+    val user: ReferralUser = setupUser("victoriasmith@email.com", "Victor Smith")
+
+    val emailsList = listOf("victoriasmith@email.com")
+    val sendEmailResponse = ExternalApiResponse.createSendEmailResponse()
+    whenever(notifyClient.sendEmail("2269a690-61e1-4b04-881f-198beb822465", user.hmppsAuthUsername, mapOf("fullName" to user.fullName), null)).thenReturn(sendEmailResponse)
+
+    val caseWorkers = emailsList
+      .map { email ->
+        CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
+      }
+
+    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
+    verify(notifyClient).sendEmail("2269a690-61e1-4b04-881f-198beb822465", "victoriasmith@email.com", mapOf("fullName" to user.fullName), null)
+  }
+
+  @Test
+  @Transactional
   fun `assignCaseWorker should save case worker assignments`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assigner.id)
@@ -92,6 +147,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `assignCaseWorker with more than 5 assignments`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assigner.id)
@@ -122,6 +178,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `assignCaseWorker that could not find a caseworker with that email address`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -141,6 +198,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `blank email and invalid email address inputs submitted`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -162,6 +220,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `inputs with 5 same email addresses submitted - all the sames`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -193,6 +252,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `inputs with same email addresses submitted but not all the sames`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -230,6 +290,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `inputs with same email addresses submitted with invalid email address - partial the sames`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -266,6 +327,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `inputs with same email addresses submitted and an unknown user`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -299,6 +361,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `assigns the same caseworker twice`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -333,6 +396,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `assigns two caseworkers and then remove the 1st caseworker`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -367,6 +431,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `assigns five caseworkers and then remove the 2nd and 4th caseworkers`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -415,6 +480,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `assigns five caseworkers and then replace another two new casworkers in the 2nd and 4th entries`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -474,6 +540,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `assigns three caseworkers and then replace all with new caseworkers`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -522,6 +589,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `assigns four caseworkers and then replace another two and add one more caseworkers`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assignerId = assigner.id)
@@ -579,6 +647,7 @@ class ReferralUserAssignmentServiceTest : IntegrationTestBase() {
   }
 
   @Test
+  @Transactional
   fun `getAssignedCaseWorkers should return assigned case workers`() {
     val assigner: ReferralUser = setupAssigner()
     val referral: Referral = setUpReferral(assigner.id)

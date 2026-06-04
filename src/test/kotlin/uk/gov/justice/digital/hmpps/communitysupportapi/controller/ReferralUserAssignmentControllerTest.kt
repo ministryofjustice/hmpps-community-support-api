@@ -28,11 +28,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
 import uk.gov.justice.hmpps.kotlin.auth.AuthSource
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import uk.gov.service.notify.NotificationClient
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -58,6 +60,9 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
+
+  @MockitoBean
+  private lateinit var notifyClient: NotificationClient
 
   private val testUser = ReferralUserFactory()
     .withHmppsAuthId(UUID.randomUUID().toString())
@@ -133,7 +138,9 @@ class ReferralUserAssignmentControllerTest : IntegrationTestBase() {
     @Test
     fun `should return OK indicating successful to assign case worker(s)`() {
       val assigner = setupAssigner(testUser)
+      val sendEmailResponse = ExternalApiResponse.createSendEmailResponse()
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(assigner)
+      whenever(notifyClient.sendEmail("2269a690-61e1-4b04-881f-198beb822465", "johnsmith@email.com", mapOf("fullName" to "John Smith"), null)).thenReturn(sendEmailResponse)
 
       val referral: Referral = setUpReferral(assigner.id)
       val user: ReferralUser = setupUser("johnsmith@email.com")

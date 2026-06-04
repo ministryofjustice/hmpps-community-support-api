@@ -25,11 +25,13 @@ class ReferralAssignmentService(
   private val userService: UserService,
   private val entityManager: EntityManager,
   private val referralLookupService: ReferralLookupService,
+  private val notifyService: NotifyService,
 ) {
   companion object {
     private const val MAX_CASE_WORKERS = 5
     private val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")
     private val log = LoggerFactory.getLogger(this::class.java)
+    private val assignCaseworkEmailTemplateId = "2269a690-61e1-4b04-881f-198beb822465"
   }
 
   fun getReferralByCaseIdentifier(caseIdentifier: String?): Referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
@@ -120,6 +122,7 @@ class ReferralAssignmentService(
         },
         succeededList = submittedAssignments.map { CaseWorkerDto(userType = if (it.second.authSource == AuthSource.AUTH.source) UserType.INTERNAL else UserType.EXTERNAL, userId = it.second.id, it.second.fullName, it.second.hmppsAuthUsername) },
       )
+      result.succeededList?.forEach { notifyService.sendEmail(assignCaseworkEmailTemplateId, it.emailAddress, mapOf("fullName" to it.fullName.toString())) }
       log.info("Caseworkers assigned to referral {}: {}", identifier, result)
       return result
     } else {
