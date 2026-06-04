@@ -122,6 +122,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       )
 
       val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      assertThat(response.caseReference).isEqualTo(referral.referenceNumber)
 
       // Appointment persisted
       val savedAppointment = appointmentRepository.findById(response.appointmentId).orElseThrow()
