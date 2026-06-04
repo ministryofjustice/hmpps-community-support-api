@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.integration
 
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
@@ -10,18 +11,21 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcsFeedback
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentDeliveryFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentIcsFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentIcsFeedbackFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.AppointmentStatusHistoryFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.CreateIcsFeedbackRequestFactory
 import java.time.LocalDateTime
@@ -31,8 +35,10 @@ import java.util.UUID
 class AppointmentTestSupport(
   private val appointmentRepository: AppointmentRepository,
   private val appointmentIcsRepository: AppointmentIcsRepository,
+  private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
   private val appointmentDeliveryRepository: AppointmentDeliveryRepository,
   private val appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository,
+  private val userMapper: UserMapper,
 ) {
   fun createAppointment(
     referral: Referral,
@@ -139,4 +145,34 @@ class AppointmentTestSupport(
     .withPlannedForNextSession(plannedForNextSession)
     .withActionsBeforeNextSession(actionsBeforeNextSession)
     .create()
+
+  fun createIcsFeedback(
+    ics: AppointmentIcs,
+    createdBy: ReferralUser,
+    didSessionHappen: Boolean = true,
+    sessionMethod: String? = "Phone",
+    didPersonAttend: Boolean? = true,
+    notHappenReason: String? = null,
+    noAttendanceInformation: String? = null,
+    wasPersonLate: Boolean? = false,
+    duration: String? = "1 hour",
+    whatHappened: String? = "Discussed reintegration goals",
+    behaviour: String? = "Engaged and positive",
+    strengthsIdentified: String? = "Strong family support",
+  ): AppointmentIcsFeedback = appointmentIcsFeedbackRepository.save(
+    AppointmentIcsFeedbackFactory()
+      .withAppointmentIcs(ics)
+      .withCreatedBy(createdBy)
+      .withDidSessionHappen(didSessionHappen)
+      .withSessionMethod(sessionMethod)
+      .withDidPersonAttend(didPersonAttend)
+      .withNotHappenReason(notHappenReason)
+      .withNoAttendanceInformation(noAttendanceInformation)
+      .withWasPersonLate(wasPersonLate)
+      .withDuration(duration)
+      .withWhatHappened(whatHappened)
+      .withBehaviour(behaviour)
+      .withStrengthsIdentified(strengthsIdentified)
+      .create(),
+  )
 }

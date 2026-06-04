@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CaseIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
@@ -45,6 +46,7 @@ class ReferralService(
   private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
   private val referralUserAssignmentRepository: ReferralUserAssignmentRepository,
   private val referenceGenerator: ReferralReferenceGenerator,
+  private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
@@ -161,6 +163,10 @@ class ReferralService(
 
     val appointmentIds = appointments.map { it.id }
 
+    val statusHistoryByAppointment = appointmentStatusHistoryRepository
+      .findAllByAppointmentIdIn(appointmentIds)
+      .groupBy { it.appointment.id }
+
     val icsByAppointment = appointmentIcsRepository
       .findAllByAppointmentIdIn(appointmentIds)
       .associateBy { it.appointment.id }
@@ -169,22 +175,26 @@ class ReferralService(
       "Missing ICS for appointments: ${appointmentIds - icsByAppointment.keys}"
     }
 
-    val statusHistoryByAppointment = appointmentStatusHistoryRepository
-      .findAllByAppointmentIdIn(appointmentIds)
-      .groupBy { it.appointment.id }
+    val feedbackByIcsId = appointmentIcsFeedbackRepository
+      .findAllByAppointmentIcsIdIn(icsByAppointment.values.map { it.id })
+      .associateBy { it.appointmentIcs.id }
 
     val appointmentHistory = appointments.map { appointment ->
       val ics = icsByAppointment.getValue(appointment.id)
+
       val latestStatus = statusHistoryByAppointment[appointment.id]
         ?.maxByOrNull { it.createdAt }
         ?.status
         ?: error("No status history for appointment ${appointment.id}")
 
+      val icsFeedbackId = feedbackByIcsId[ics.id]?.id
+
       ReferralAppointmentHistoryDto(
-        appointmentId = ics.id,
+        appointmentIcsId = ics.id,
         type = appointment.type,
         dateTime = ics.appointmentDateTime,
         status = latestStatus,
+        icsFeedbackId = icsFeedbackId,
       )
     }
 

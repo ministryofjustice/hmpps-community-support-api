@@ -6,4 +6,5 @@ import java.util.UUID
 
 interface AppointmentIcsFeedbackRepository : JpaRepository<AppointmentIcsFeedback, UUID> {
   fun findByAppointmentIcsId(appointmentIcsId: UUID): AppointmentIcsFeedback?
+  fun findAllByAppointmentIcsIdIn(appointmentIcsIds: Collection<UUID>): List<AppointmentIcsFeedback>
 }
