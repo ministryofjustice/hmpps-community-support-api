@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
@@ -968,7 +969,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         "Alex was disruptive and refused to engage with the session.",
       )
 
-      assertThat(response.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(listOf("CaseWorker One (test-user)"))
+      assertThat(response.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
+        listOf(CaseWorkerSummaryDto(fullName = "CaseWorker One", emailAddress = "test-user")),
+      )
       assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
       assertThat(response.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-03-27T10:00")
       assertThat(response.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
@@ -1001,7 +1004,10 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(response.recordSessionNotHappenReasonDetails).isNull()
 
       assertThat(response.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
-        listOf("CaseWorker One (test-user)", "CaseWorker Two (test-user)"),
+        listOf(
+          CaseWorkerSummaryDto(fullName = "CaseWorker One", emailAddress = "test-user"),
+          CaseWorkerSummaryDto(fullName = "CaseWorker Two", emailAddress = "test-user"),
+        ),
       )
       assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
       assertThat(response.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-03-27T10:00")

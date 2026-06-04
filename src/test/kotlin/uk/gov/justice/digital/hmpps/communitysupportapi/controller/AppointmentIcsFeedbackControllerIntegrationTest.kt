@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
@@ -686,7 +687,9 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           assertThat(body.recordSessionNotHappenReason).isEqualTo("REFERRAL_DID_NOT_COMPLY")
           assertThat(body.recordSessionNotHappenReasonDetails).isEqualTo("Alex was disruptive and refused to engage with the session.")
 
-          assertThat(body.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(listOf("CaseWorker One (test-user)"))
+          assertThat(body.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
+            listOf(CaseWorkerSummaryDto(fullName = "CaseWorker One", emailAddress = "test-user")),
+          )
           assertThat(body.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
           assertThat(body.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-04-09T10:00:00")
           assertThat(body.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
@@ -731,7 +734,10 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           assertThat(body.recordSessionNotHappenReasonDetails).isNull()
 
           assertThat(body.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
-            listOf("CaseWorker One (test-user)", "CaseWorker Two (test-user)"),
+            listOf(
+              CaseWorkerSummaryDto(fullName = "CaseWorker One", emailAddress = "test-user"),
+              CaseWorkerSummaryDto(fullName = "CaseWorker Two", emailAddress = "test-user"),
+            ),
           )
           assertThat(body.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
           assertThat(body.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-04-09T10:00:00")

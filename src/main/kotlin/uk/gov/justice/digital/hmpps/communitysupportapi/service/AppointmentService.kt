@@ -2,12 +2,12 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import SessionFeedbackDetailsDto
 import org.slf4j.LoggerFactory
-import org.springframework.data.jpa.domain.AbstractAuditable_.createdBy
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
@@ -306,7 +306,7 @@ class AppointmentService(
       ?: throw IllegalStateException("Referral ${ics.appointment.referral.id} does not have a reference number")
 
     val caseWorkers = referralAssignmentService.getAssignedCaseWorkers(caseReference)
-      ?.map { "${it.fullName} (${it.emailAddress})" }
+      ?.map { CaseWorkerSummaryDto(fullName = it.fullName, emailAddress = it.emailAddress) }
       ?.takeIf { it.isNotEmpty() }
       ?: throw NotFoundException("Case workers not found for referral $caseReference")
 
