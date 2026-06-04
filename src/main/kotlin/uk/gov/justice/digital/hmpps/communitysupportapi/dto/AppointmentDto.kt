@@ -121,6 +121,7 @@ data class AppointmentIcsResponse(
   val appointmentIcsId: UUID,
   val appointmentId: UUID,
   val referralId: UUID,
+  val caseReference: String? = null,
   val appointmentType: AppointmentType,
   val appointmentDate: LocalDate,
   val appointmentTime: AppointmentTimeResponse,
@@ -134,7 +135,7 @@ data class AppointmentIcsResponse(
 ) {
 
   companion object {
-    fun from(ics: AppointmentIcs, status: AppointmentStatusHistoryType, referralName: String): AppointmentIcsResponse {
+    fun from(ics: AppointmentIcs, status: AppointmentStatusHistoryType, referralName: ReferralNameDto): AppointmentIcsResponse {
       val appointmentDateTime = ics.appointmentDateTime
       val hour24 = appointmentDateTime.hour
       val amPm = if (hour24 < 12) "am" else "pm"
@@ -147,6 +148,7 @@ data class AppointmentIcsResponse(
         appointmentIcsId = ics.id,
         appointmentId = ics.appointment.id,
         referralId = ics.appointment.referral.id,
+        caseReference = ics.appointment.referral.referenceNumber,
         appointmentType = ics.appointment.type,
         appointmentDate = appointmentDateTime.toLocalDate(),
         appointmentTime = AppointmentTimeResponse(
@@ -157,8 +159,8 @@ data class AppointmentIcsResponse(
         appointmentStatus = status,
         sessionMethod = buildSessionMethod(ics.appointmentDelivery),
         sessionCommunications = ics.sessionCommunication,
-        referralFirstName = referralName.substringBefore(" "),
-        referralLastName = referralName.substringAfter(" ", missingDelimiterValue = ""),
+        referralFirstName = referralName.firstName,
+        referralLastName = referralName.lastName,
         createdAt = ics.createdAt.atOffset(ZoneOffset.UTC),
         changeAppointmentDetails = ChangeAppointmentDetails(
           changeRequestedBy = ics.changeRequestedBy,
