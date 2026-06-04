@@ -21,6 +21,15 @@ data class ReferralDto(
   }
 }
 
+data class ReferralNameDto(
+  val firstName: String,
+  val lastName: String,
+) {
+  companion object {
+    fun fullName(firstName: String, lastName: String): String = "$firstName $lastName"
+  }
+}
+
 data class ReferralInformationDto(
   val personId: UUID,
   val referralId: UUID,

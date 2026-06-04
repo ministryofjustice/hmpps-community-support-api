@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsRespon
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
@@ -279,7 +280,12 @@ class AppointmentService(
     ?.status
     ?: throw IllegalStateException("No status history for appointment $appointmentId")
 
-  private fun getReferralName(appointment: Appointment) = personRepository.findById(appointment.referral.personId).map { it.firstName + " " + it.lastName }.get()
+  private fun getReferralName(appointment: Appointment) = personRepository.findById(appointment.referral.personId).map {
+    ReferralNameDto(
+      it.firstName,
+      it.lastName,
+    )
+  }.get()
 
   /**
    * Returns a single ICS feedback record by its own ID.
