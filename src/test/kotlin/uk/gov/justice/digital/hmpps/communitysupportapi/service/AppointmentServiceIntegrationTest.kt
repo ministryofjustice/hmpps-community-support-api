@@ -972,7 +972,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(response.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
         listOf(CaseWorkerSummaryDto(fullName = "CaseWorker One", emailAddress = "test-user")),
       )
-      assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
+      assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo(
+        CaseWorkerSummaryDto(fullName = "fullname", emailAddress = "test-user"),
+      )
       assertThat(response.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-03-27T10:00")
       assertThat(response.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
       assertThat(response.sessionFeedbackDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
@@ -1009,7 +1011,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
           CaseWorkerSummaryDto(fullName = "CaseWorker Two", emailAddress = "test-user"),
         ),
       )
-      assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
+      assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo(
+        CaseWorkerSummaryDto(fullName = "fullname", emailAddress = "test-user"),
+      )
       assertThat(response.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-03-27T10:00")
       assertThat(response.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
       assertThat(response.sessionFeedbackDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
