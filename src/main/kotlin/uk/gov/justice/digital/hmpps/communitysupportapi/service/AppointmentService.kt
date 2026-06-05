@@ -295,7 +295,9 @@ class AppointmentService(
     val icsFeedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
       .orElseThrow { NotFoundException("ICS feedback not found for id $icsFeedbackId") }
 
-    val feedbackSubmittedBy = icsFeedback.createdBy?.let { "${it.fullName} (${it.hmppsAuthUsername})" } ?: "Unknown user"
+    val feedbackSubmittedBy = icsFeedback.createdBy?.let {
+      CaseWorkerSummaryDto(fullName = it.fullName, emailAddress = it.hmppsAuthUsername)
+    } ?: CaseWorkerSummaryDto(fullName = "Unknown user", emailAddress = "Unknown email address")
 
     val ics = icsFeedback.appointmentIcs
 
