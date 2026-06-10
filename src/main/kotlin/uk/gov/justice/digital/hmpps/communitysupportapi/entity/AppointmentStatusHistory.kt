@@ -23,7 +23,7 @@ enum class AppointmentStatusHistoryType {
   SCHEDULED,
   NEEDS_FEEDBACK,
   COMPLETED,
-  RESCHEDULED,
+  CHANGED,
   DID_NOT_ATTEND,
   DID_NOT_HAPPEN,
 }

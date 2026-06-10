@@ -106,6 +106,7 @@ class AppointmentService(
     appointmentDelivery: AppointmentDelivery,
     request: CreateAppointmentRequest,
     createdBy: ReferralUser,
+    createdAt: LocalDateTime = LocalDateTime.now(),
   ): AppointmentIcs {
     val startDateTime = LocalDateTime.of(request.date, request.time.toLocalTime())
 
@@ -115,6 +116,7 @@ class AppointmentService(
       appointmentDelivery = appointmentDelivery,
       appointmentDateTime = startDateTime,
       createdBy = createdBy,
+      createdAt = createdAt,
       sessionCommunication = request.sessionCommunication,
       changeRequestedBy = request.changeAppointmentDetails?.changeRequestedBy,
       changeReason = request.changeAppointmentDetails?.reasonForChange,
@@ -152,6 +154,7 @@ class AppointmentService(
       appointmentDelivery = appointmentDelivery,
       request = request,
       createdBy = createdBy,
+      createdAt = appointmentHistory.createdAt,
     )
 
     log.info("ICS appointment created with id {}", savedIcs.id)
@@ -167,7 +170,7 @@ class AppointmentService(
     if (!referralRepository.existsById(referralId)) {
       throw NotFoundException("Referral not found for id $referralId")
     }
-    return appointmentIcsRepository.findByAppointmentReferralId(referralId)
+    return appointmentIcsRepository.findByAppointmentReferralIdOrderByCreatedAtDesc(referralId)
       .map { ics ->
         AppointmentIcsResponse.from(
           ics,
@@ -219,7 +222,7 @@ class AppointmentService(
     // 1. update previous ics appointment status History
     val existingIcsAppointmentHistory = createAppointmentStatusHistory(
       appointment = existingIcs.appointment,
-      status = AppointmentStatusHistoryType.RESCHEDULED,
+      status = AppointmentStatusHistoryType.CHANGED,
       createdAt = existingIcs.createdAt,
     )
 
@@ -238,6 +241,7 @@ class AppointmentService(
       appointmentDelivery = appointmentDelivery,
       request = request,
       createdBy = changedBy,
+      createdAt = newIcsAppointmentHistory.createdAt,
     )
 
     log.info("ICS appointment updated with id {}", savedIcs.id)

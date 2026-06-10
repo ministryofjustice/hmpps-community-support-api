@@ -293,7 +293,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         sessionCommunication = listOf("Phone call", "Text message"),
       )
 
-      appointmentService.createIcsAppointment(caseReference, createIcsAppointRequest, testUser)
+      val previousAppointment = appointmentService.createIcsAppointment(caseReference, createIcsAppointRequest, testUser)
 
       val changeIcsAppointmentRequest = CreateAppointmentRequest(
         date = createIcsAppointRequest.date,
@@ -311,6 +311,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         changeIcsAppointmentRequest,
         testUser,
       )
+      assertThat(response.appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
 
       // Appointment persisted
       val savedAppointment = appointmentRepository.findById(response.appointmentId).orElseThrow()
@@ -337,6 +338,12 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       // Change details persisted
       assertThat(savedIcs.changeRequestedBy).isEqualTo(ChangeRequesterType.REFERRAL_USER)
       assertThat(savedIcs.changeReason).isEqualTo("Some reasons")
+
+      // Status of previous appointment updated
+      val previousAppointmentStatusHistory =
+        appointmentStatusHistoryRepository.findTopByAppointmentIdOrderByCreatedAtDesc(previousAppointment.appointmentId)
+      assertThat(previousAppointmentStatusHistory?.appointment?.id).isEqualTo(previousAppointment.appointmentId)
+      assertThat(previousAppointmentStatusHistory?.status).isEqualTo(AppointmentStatusHistoryType.CHANGED)
     }
   }
 

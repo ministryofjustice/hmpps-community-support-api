@@ -190,10 +190,10 @@ VALUES
     ('4a88fd16-76a9-4ded-9f87-f60a9748f641', 'NEEDS_FEEDBACK',  '2026-01-11 11:00:00'),
     ('4a88fd16-76a9-4ded-9f87-f60a9748f641', 'COMPLETED',  '2026-02-01 11:00:00'),
 
-    -- Bob: scheduled, rescheduled, then completed
+    -- Bob: scheduled, changed, then completed
     ('a7b108a8-1ce0-4a86-98d9-faa4847e6f1d', 'SCHEDULED',  '2026-01-11 11:00:00'),
     ('a7b108a8-1ce0-4a86-98d9-faa4847e6f1d', 'NEEDS_FEEDBACK',  '2026-01-12 12:00:00'),
-    ('a7b108a8-1ce0-4a86-98d9-faa4847e6f1d', 'RESCHEDULED','2026-01-20 10:00:00'),
+    ('a7b108a8-1ce0-4a86-98d9-faa4847e6f1d', 'CHANGED','2026-01-20 10:00:00'),
     ('a7b108a8-1ce0-4a86-98d9-faa4847e6f1d', 'COMPLETED',  '2026-02-05 15:00:00'),
 
     -- Carlos: scheduled only
