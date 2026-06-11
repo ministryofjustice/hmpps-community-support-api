@@ -9,6 +9,7 @@ import java.util.UUID
 
 interface AppointmentIcsRepository : JpaRepository<AppointmentIcs, UUID> {
   fun findByAppointmentReferralId(referralId: UUID): List<AppointmentIcs>
+  fun findByAppointmentReferralIdOrderByCreatedAtDesc(referralId: UUID): List<AppointmentIcs>
   fun findAllByAppointmentIdIn(appointmentIds: List<UUID>): List<AppointmentIcs>
 
   fun findTopByAppointmentIdOrderByCreatedAtDesc(appointmentId: UUID): AppointmentIcs?
