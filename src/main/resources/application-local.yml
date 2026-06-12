@@ -21,6 +21,8 @@ services:
     base-url: http://localhost:9091/delius
   nomis-api:
     base-url: http://localhost:9091/nomis
+  core-person-record-api:
+    base-url: http://localhost:9091
   manage-users-api:
     base-url: http://localhost:9091/manage-users
     locations:

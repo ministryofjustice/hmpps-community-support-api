@@ -44,6 +44,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonA
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Duration
 import java.time.LocalDate
@@ -233,7 +234,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
               personIdentifier = "X123456",
               firstName = "John",
               lastName = "Smith",
-              dateOfBirth = LocalDate.of(1980, 1, 1),
+              dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
               sex = "Male",
               additionalDetails = null,
             ),
@@ -253,7 +254,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         personIdentifier = "X123456",
         firstName = "John",
         lastName = "Smith",
-        dateOfBirth = LocalDate.of(1980, 1, 1),
+        dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
         sex = "Male",
         additionalDetails = null,
       )

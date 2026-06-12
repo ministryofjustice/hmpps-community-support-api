@@ -29,6 +29,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.parseDateOfBirth
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.CaseIdentifierValidator
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -222,7 +224,7 @@ class ReferralService(
     val additionalDetailsChanged = !additionalDetailsEqual(existing.additionalDetails, personDetails.additionalDetails)
     val basicFieldsChanged = existing.firstName != personDetails.firstName ||
       existing.lastName != personDetails.lastName ||
-      !existing.dateOfBirth.isEqual(personDetails.dateOfBirth) ||
+      !existing.dateOfBirth.isEqual(personDetails.dateOfBirth.parseDateOfBirth()) ||
       existing.gender != desiredGender
 
     if (!basicFieldsChanged && !additionalDetailsChanged) return existing
@@ -232,7 +234,7 @@ class ReferralService(
       identifier = existing.identifier,
       firstName = personDetails.firstName,
       lastName = personDetails.lastName,
-      dateOfBirth = personDetails.dateOfBirth,
+      dateOfBirth = personDetails.dateOfBirth.parseDateOfBirth(),
       gender = desiredGender,
       createdAt = existing.createdAt,
       updatedAt = OffsetDateTime.now(),

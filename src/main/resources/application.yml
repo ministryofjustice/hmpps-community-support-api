@@ -61,7 +61,6 @@ management:
       cache:
         time-to-live: 2000ms
 webclient:
-  max-retry-attempts: 2
   connect-timeout-seconds: 20
   read-timeout-seconds: 10
   write-timeout-seconds: 10

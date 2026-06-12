@@ -9,8 +9,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentif
 
 @Service
 class PersonService(
-  private val deliusService: DeliusService,
-  private val nomisService: NomisService,
+  private val cprProbationService: CprProbationService,
   private val identifierValidator: PersonIdentifierValidator,
 ) {
   companion object {
@@ -23,8 +22,8 @@ class PersonService(
 
     val personAggregate = requireNotNull(
       when (identifier) {
-        is PersonIdentifier.Crn -> deliusService.getPersonDetailsByCrn(identifier.value)
-        is PersonIdentifier.PrisonerNumber -> nomisService.getPersonDetailsByPrisonerNumber(identifier.value)
+        is PersonIdentifier.Crn -> cprProbationService.getPersonDetailsByCrn(identifier.value)
+        is PersonIdentifier.PrisonerNumber -> cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
       },
     )
     return personAggregate.toPersonDto()
