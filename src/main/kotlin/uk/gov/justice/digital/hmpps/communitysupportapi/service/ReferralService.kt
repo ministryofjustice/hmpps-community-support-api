@@ -30,7 +30,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.parseDateOfBirth
-import uk.gov.justice.digital.hmpps.communitysupportapi.validation.CaseIdentifierValidator
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
