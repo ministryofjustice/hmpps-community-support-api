@@ -29,7 +29,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.validation.CaseIdentifierValidator
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
