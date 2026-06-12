@@ -173,7 +173,7 @@ class ReferralController(
     val referral = referralService.getReferralDetailsPage(caseReference)
     val icsAppointmentDetails = appointmentService.getIcsAppointmentsByReferral(referral.id)
     val appointmentIcsResponse = icsAppointmentDetails
-      .maxByOrNull(AppointmentIcsResponse::appointmentDate)
+      .maxByOrNull(AppointmentIcsResponse::createdAt)
       ?: throw NotFoundException("ICS appointment not found for referral $caseReference")
 
     return ResponseEntity.ok(appointmentIcsResponse)
