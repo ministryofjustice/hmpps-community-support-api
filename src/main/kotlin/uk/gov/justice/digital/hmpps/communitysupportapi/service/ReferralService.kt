@@ -19,7 +19,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.CaseIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
@@ -47,6 +46,7 @@ class ReferralService(
   private val referralUserAssignmentRepository: ReferralUserAssignmentRepository,
   private val referenceGenerator: ReferralReferenceGenerator,
   private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
+  private val referralLookupService: ReferralLookupService,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
@@ -56,16 +56,8 @@ class ReferralService(
 
   fun getReferral(referralId: UUID) = referralRepository.findById(referralId)
 
-  fun getReferralByCaseIdentifier(caseIdentifier: String?): Referral = when (val identifier = identifierValidator.validate(caseIdentifier)) {
-    is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
-      .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
-
-    is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value)
-      .firstOrNull() ?: throw NotFoundException("Referral not found for reference ${identifier.value}")
-  }
-
   fun getReferralDetailsPage(caseIdentifier: String?): ReferralDetailsBffResponseDto {
-    val foundReferral = getReferralByCaseIdentifier(caseIdentifier)
+    val foundReferral = referralLookupService.findByCaseIdentifier(caseIdentifier)
     val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral.personId}") }
     val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(foundReferral.id)
 
@@ -144,13 +136,7 @@ class ReferralService(
   }
 
   fun getReferralProgress(referralIdentifier: String): ReferralProgressDto {
-    val referral = when (val identifier = identifierValidator.validate(referralIdentifier)) {
-      is CaseIdentifier.ReferralId -> referralRepository.findById(identifier.value)
-        .orElseThrow { NotFoundException("Referral not found for id ${identifier.value}") }
-
-      is CaseIdentifier.CaseId -> referralRepository.findByReferenceNumber(identifier.value).first()
-    }
-
+    val referral = referralLookupService.findByCaseIdentifier(referralIdentifier)
     val personName = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralIdentifier") }
       .let { "${it.firstName} ${it.lastName}" }
@@ -167,31 +153,29 @@ class ReferralService(
       .findAllByAppointmentIdIn(appointmentIds)
       .groupBy { it.appointment.id }
 
-    val icsByAppointment = appointmentIcsRepository
-      .findAllByAppointmentIdIn(appointmentIds)
+    val icsByAppointments = appointmentIcsRepository
+      .findAllByAppointmentIdInOrderByCreatedAtDesc(appointmentIds)
       .associateBy { it.appointment.id }
 
-    check(appointmentIds.all { it in icsByAppointment }) {
-      "Missing ICS for appointments: ${appointmentIds - icsByAppointment.keys}"
+    check(appointmentIds.all { it in icsByAppointments }) {
+      "Missing ICS for appointments: ${appointmentIds - icsByAppointments.keys}"
     }
 
-    val feedbackByIcsId = appointmentIcsFeedbackRepository
-      .findAllByAppointmentIcsIdIn(icsByAppointment.values.map { it.id })
+    val feedbackByIcsIds = appointmentIcsFeedbackRepository
+      .findAllByAppointmentIcsIdIn(icsByAppointments.values.map { it.id })
       .associateBy { it.appointmentIcs.id }
 
-    val appointmentHistory = appointments.map { appointment ->
-      val ics = icsByAppointment.getValue(appointment.id)
-
-      val latestStatus = statusHistoryByAppointment[appointment.id]
+    val appointmentHistory = icsByAppointments.map { (appointmentId, ics) ->
+      val latestStatus = statusHistoryByAppointment[appointmentId]
         ?.maxByOrNull { it.createdAt }
         ?.status
-        ?: error("No status history for appointment ${appointment.id}")
+        ?: error("No status history for appointment $appointmentId")
 
-      val icsFeedbackId = feedbackByIcsId[ics.id]?.id
+      val icsFeedbackId = feedbackByIcsIds[ics.id]?.id
 
       ReferralAppointmentHistoryDto(
         appointmentIcsId = ics.id,
-        type = appointment.type,
+        type = ics.appointment.type,
         dateTime = ics.appointmentDateTime,
         status = latestStatus,
         icsFeedbackId = icsFeedbackId,
@@ -202,7 +186,7 @@ class ReferralService(
   }
 
   fun getReferralInformation(caseIdentifier: String?): ReferralInformationDto {
-    val foundReferral = getReferralByCaseIdentifier(caseIdentifier)
+    val foundReferral = referralLookupService.findByCaseIdentifier(caseIdentifier)
     val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral?.personId}") }
 
     val providerAssignment = referralProviderAssignmentRepository.findByReferralId(foundReferral.id)

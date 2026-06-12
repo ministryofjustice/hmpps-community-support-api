@@ -153,16 +153,17 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
       val otherPerson = referralHelper.createPerson(identifier = "Y999999")
-      val otherReferral = referralHelper.createReferral(otherPerson, submittedBy = testUser)
+      val otherReferral = referralHelper.createReferral(otherPerson, referenceNumber = "AB1234EF", submittedBy = testUser)
       val otherAppointment = appointmentHelper.createAppointment(otherReferral)
-      appointmentHelper.createAppointmentStatusHistory(otherAppointment)
+      val createdAt = LocalDateTime.now()
+      appointmentHelper.createAppointmentStatusHistory(otherAppointment, createdAt = createdAt)
       val delivery = appointmentHelper.createAppointmentDelivery()
       val otherIcs = appointmentHelper.createAppointmentIcs(
         otherAppointment,
         delivery,
         testUser,
-        LocalDateTime.now().plusDays(1),
-        LocalDateTime.now(),
+        createdAt.plusDays(1),
+        createdAt,
         listOf("Email"),
       )
 

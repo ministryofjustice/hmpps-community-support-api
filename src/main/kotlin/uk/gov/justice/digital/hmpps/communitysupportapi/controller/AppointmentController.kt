@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReq
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
+import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralLookupService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
@@ -36,6 +37,7 @@ class AppointmentController(
   private val referralService: ReferralService,
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
+  private val referralLookupService: ReferralLookupService,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentController::class.java)
@@ -104,7 +106,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<List<AppointmentIcsResponse>> {
     log.info("GET /bff/referral/{}/ics", caseReference)
-    val referral = referralService.getReferralByCaseIdentifier(caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
     return ResponseEntity.ok(appointmentService.getIcsAppointmentsByReferral(referral.id))
   }
 
@@ -149,7 +151,7 @@ class AppointmentController(
   ): ResponseEntity<AppointmentIcsFeedbackResponse> {
     log.info("POST /bff/referral/{}/ics/{}/feedback", caseReference, icsId)
     val submittedBy = userMapper.fromToken(authenticationHolder)
-    val referral = referralService.getReferralByCaseIdentifier(caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
     val response = appointmentService.createIcsFeedback(referral.id, icsId, request, submittedBy)
     return ResponseEntity.status(HttpStatus.CREATED).body(response)
   }
@@ -194,7 +196,7 @@ class AppointmentController(
   ): ResponseEntity<IcsFeedbackSessionDto> {
     log.info("GET /bff/referral/{}/ics_appointment_feedback_details", caseReference)
 
-    val referral = referralService.getReferralByCaseIdentifier(caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
 
     return ResponseEntity.ok(
       appointmentService.getIcsFeedbackSessionDetails(referral),
