@@ -103,17 +103,17 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
+      assertUnauthorized(GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
+      assertForbiddenNoRole(GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
+      assertForbiddenWrongRole(GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
     }
 
     @Test

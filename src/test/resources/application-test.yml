@@ -21,8 +21,6 @@ spring:
     url: jdbc:postgresql://localhost:5432/postgres
     username: admin
     password: admin_password
-  application:
-    environment: dev
   security:
     oauth2:
       client:
@@ -47,16 +45,11 @@ services:
       auth-user-groups: "/externalusers/{userId}/groups"
       auth-user-details: "/users/{userName}"
 webclient:
-  max-retry-attempts: 2
   connect-timeout-seconds: 20
   read-timeout-seconds: 10
   write-timeout-seconds: 10
   manage-users-api:
     max-retry-attempts: 2
-
-wiremock:
-  logging:
-    verbose: true
 
 reference-data:
   probation-offices:
