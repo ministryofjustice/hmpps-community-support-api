@@ -50,7 +50,6 @@ class ReferralService(
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
-    private val identifierValidator: CaseIdentifierValidator = CaseIdentifierValidator()
     private const val MAX_REFERENCE_NUMBER_TRIES = 10
   }
 
@@ -187,7 +186,7 @@ class ReferralService(
 
   fun getReferralInformation(caseIdentifier: String?): ReferralInformationDto {
     val foundReferral = referralLookupService.findByCaseIdentifier(caseIdentifier)
-    val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral?.personId}") }
+    val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral.personId}") }
 
     val providerAssignment = referralProviderAssignmentRepository.findByReferralId(foundReferral.id)
       .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $foundReferral.id")

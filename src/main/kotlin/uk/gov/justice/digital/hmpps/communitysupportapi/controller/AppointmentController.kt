@@ -25,7 +25,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackReq
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralLookupService
-import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
 
@@ -34,7 +33,6 @@ import java.util.UUID
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class AppointmentController(
   private val appointmentService: AppointmentService,
-  private val referralService: ReferralService,
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
   private val referralLookupService: ReferralLookupService,
