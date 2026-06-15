@@ -4,6 +4,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import java.time.OffsetDateTime
 import java.util.UUID
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person as PersonEntity
@@ -49,9 +50,11 @@ fun PersonAggregate.toPersonDto(): PersonDto = PersonDto(
     is PersonIdentifier.Crn -> person.identifier.value
     is PersonIdentifier.PrisonerNumber -> person.identifier.value
   },
+  title = person.title,
   firstName = person.firstName,
+  middleNames = person.middleNames,
   lastName = person.lastName,
-  dateOfBirth = person.dateOfBirth,
+  dateOfBirth = person.dateOfBirth.toFormattedDateOfBirth(),
   sex = person.sex,
   additionalDetails = additionalDetails,
 )

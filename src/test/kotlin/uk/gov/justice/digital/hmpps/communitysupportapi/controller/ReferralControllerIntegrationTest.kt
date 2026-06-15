@@ -44,6 +44,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonA
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Duration
 import java.time.LocalDate
@@ -102,17 +103,17 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
+      assertUnauthorized(GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
+      assertForbiddenNoRole(GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
+      assertForbiddenWrongRole(GET, "/bff/referral-details/${referralHelper.communityServiceProviderId}")
     }
 
     @Test
@@ -233,7 +234,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
               personIdentifier = "X123456",
               firstName = "John",
               lastName = "Smith",
-              dateOfBirth = LocalDate.of(1980, 1, 1),
+              dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
               sex = "Male",
               additionalDetails = null,
             ),
@@ -253,7 +254,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         personIdentifier = "X123456",
         firstName = "John",
         lastName = "Smith",
-        dateOfBirth = LocalDate.of(1980, 1, 1),
+        dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
         sex = "Male",
         additionalDetails = null,
       )

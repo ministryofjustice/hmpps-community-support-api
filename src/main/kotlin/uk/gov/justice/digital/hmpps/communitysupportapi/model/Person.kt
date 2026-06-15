@@ -8,4 +8,6 @@ data class Person(
   val lastName: String,
   val dateOfBirth: LocalDate,
   val sex: String = "Unknown",
+  val title: String? = null,
+  val middleNames: String? = null,
 )

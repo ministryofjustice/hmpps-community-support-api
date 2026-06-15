@@ -24,13 +24,11 @@ import java.time.Duration
 class WebClientConfiguration(
   @Value($$"${services.hmpps-auth-api.base-url}") private val hmppsAuthBaseUri: String,
   @Value($$"${api.health-timeout:2s}") private val healthTimeout: Duration,
-  @Value($$"${services.ndelius-integration-api.base-url}") private val deliusBaseUrl: String,
-  @Value($$"${services.nomis-api.base-url}") private val nomisBaseUrl: String,
+  @Value($$"${services.core-person-record-api.base-url}") private val corePersonRecordBaseUrl: String,
   @Value($$"${services.manage-users-api.base-url}") private val manageUsersAuthBaseUrl: String,
   @Value($$"${webclient.read-timeout-seconds}") private val readTimeoutSeconds: Int,
   @Value($$"${webclient.connect-timeout-seconds}") private val authConnectTimeoutSeconds: Long,
   @Value($$"${webclient.write-timeout-seconds}") private val writeTimeoutSeconds: Int,
-
 ) {
   companion object {
     const val COMMUNITY_SUPPORT_API_CLIENT_ID = "community-support-api-client"
@@ -58,17 +56,11 @@ class WebClientConfiguration(
     }
   }
 
-  @Bean("deliusWebClient")
-  fun deliusWebClient(
+  @Bean("corePersonRecordWebClient")
+  fun corePersonRecordWebClient(
     builder: WebClient.Builder,
     authorizedClientManager: OAuth2AuthorizedClientManager,
-  ): WebClient = createWebClient(builder, authorizedClientManager, deliusBaseUrl)
-
-  @Bean("nomisWebClient")
-  fun nomisWebClient(
-    builder: WebClient.Builder,
-    authorizedClientManager: OAuth2AuthorizedClientManager,
-  ): WebClient = createWebClient(builder, authorizedClientManager, nomisBaseUrl)
+  ): WebClient = createWebClient(builder, authorizedClientManager, corePersonRecordBaseUrl)
 
   @Bean("manageUsersWebClient")
   fun manageUsersWebClient(

@@ -13,8 +13,11 @@ import org.springframework.http.HttpMethod.GET
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createNomisPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import java.time.LocalDate
 
@@ -45,14 +48,14 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return OK with valid person identifier`() {
+    fun `should return OK with valid prison number identifier`() {
       stubFor(
-        get(urlEqualTo("/prisoner/$PRISONER_NUMBER"))
+        get(urlEqualTo("/person/prison/$PRISONER_NUMBER"))
           .willReturn(
             aResponse()
               .withStatus(200)
               .withHeader("Content-Type", "application/json")
-              .withBody(createNomisPersonDto(PRISONER_NUMBER).toJson()),
+              .withBody(createCprPrisonPersonDto(PRISONER_NUMBER).toJson()),
           ),
       )
 
@@ -67,19 +70,55 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
 
           body.id shouldNotBe null
           body.personIdentifier shouldBe PRISONER_NUMBER
+          body.title shouldBe "Mr"
           body.firstName shouldBe "John"
+          body.middleNames shouldBe "James"
           body.lastName shouldBe "Smith"
-          body.dateOfBirth shouldBe LocalDate.of(1985, 1, 1)
+          body.dateOfBirth shouldBe LocalDate.of(1985, 1, 1).toFormattedDateOfBirth()
           body.sex shouldBe "Male"
+          body.additionalDetails?.disability shouldBe false
         }
     }
 
     @Test
-    fun `should return Not Found for valid person identifier that does not exist`() {
+    fun `should return OK with valid CRN identifier`() {
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createCprProbationPersonDto(CRN).toJson()),
+          ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/person/$CRN")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<PersonDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.id shouldNotBe null
+          body.personIdentifier shouldBe CRN
+          body.title shouldBe "Mr"
+          body.firstName shouldBe "John"
+          body.middleNames shouldBe "David"
+          body.lastName shouldBe "Smith"
+          body.dateOfBirth shouldBe LocalDate.of(1985, 1, 1).toFormattedDateOfBirth()
+          body.sex shouldBe "Male"
+          body.additionalDetails?.disability shouldBe true
+        }
+    }
+
+    @Test
+    fun `should return Not Found for valid prison number that does not exist`() {
       val unknownPrisonerNumber = "Z9786YX"
 
       stubFor(
-        get(urlEqualTo("/prisoner/$unknownPrisonerNumber"))
+        get(urlEqualTo("/person/prison/$unknownPrisonerNumber"))
           .willReturn(
             aResponse()
               .withStatus(404),
@@ -87,6 +126,21 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
       )
 
       assertNotFound(GET, "/bff/person/$unknownPrisonerNumber")
+    }
+
+    @Test
+    fun `should return Not Found for valid CRN that does not exist`() {
+      val unknownCrn = "Z999999"
+
+      stubFor(
+        get(urlEqualTo("/person/probation/$unknownCrn"))
+          .willReturn(
+            aResponse()
+              .withStatus(404),
+          ),
+      )
+
+      assertNotFound(GET, "/bff/person/$unknownCrn")
     }
   }
 }

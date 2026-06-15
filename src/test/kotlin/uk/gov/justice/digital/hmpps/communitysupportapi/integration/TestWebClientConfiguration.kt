@@ -24,16 +24,10 @@ class TestWebClientConfiguration {
   fun reactiveOAuth2AuthorizedClientManager(): ReactiveOAuth2AuthorizedClientManager = mock(ReactiveOAuth2AuthorizedClientManager::class.java)
 
   @Bean
-  @Qualifier("deliusWebClient")
-  fun deliusWebClient(
-    @Value("\${services.ndelius-integration-api.base-url}") deliusBaseUrl: String,
-  ): WebClient = WebClient.builder().baseUrl(deliusBaseUrl).build()
-
-  @Bean
-  @Qualifier("nomisWebClient")
-  fun nomisWebClient(
-    @Value("\${services.nomis-api.base-url}") nomisBaseUrl: String,
-  ): WebClient = WebClient.builder().baseUrl(nomisBaseUrl).build()
+  @Qualifier("corePersonRecordWebClient")
+  fun corePersonRecordWebClient(
+    @Value("\${services.core-person-record-api.base-url}") corePersonRecordBaseUrl: String,
+  ): WebClient = WebClient.builder().baseUrl(corePersonRecordBaseUrl).build()
 
   @Bean
   @Qualifier("manageUsersWebClient")

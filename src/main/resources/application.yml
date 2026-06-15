@@ -61,7 +61,6 @@ management:
       cache:
         time-to-live: 2000ms
 webclient:
-  max-retry-attempts: 2
   connect-timeout-seconds: 20
   read-timeout-seconds: 10
   write-timeout-seconds: 10
@@ -72,6 +71,10 @@ webclient:
 case-list-view:
   refresh-rate-ms: 300000  # 5 minutes
 services:
+  hmpps-auth-api:
+    base-url: ${HMPPS_AUTH_API_BASE_URL}
+  core-person-record-api:
+    base-url: ${CORE_PERSON_RECORD_API_BASE_URL}
   manage-users-api:
     base-url: ${MANAGE_USERS_API_BASE_URL}
     locations:

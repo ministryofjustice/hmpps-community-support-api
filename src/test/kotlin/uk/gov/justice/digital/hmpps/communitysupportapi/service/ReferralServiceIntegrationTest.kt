@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -111,7 +112,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       personIdentifier = "X123456",
       firstName = "John",
       lastName = "Smith",
-      dateOfBirth = LocalDate.of(1980, 1, 1),
+      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
       sex = "Male",
       additionalDetails = null,
     )
@@ -129,7 +130,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(result.referral.personId).isEqualTo(existingPerson.id)
     assertThat(persistedPerson.firstName).isEqualTo(updatedPersonDto.firstName)
     assertThat(persistedPerson.lastName).isEqualTo(updatedPersonDto.lastName)
-    assertThat(persistedPerson.dateOfBirth).isEqualTo(updatedPersonDto.dateOfBirth)
+    assertThat(persistedPerson.dateOfBirth).isEqualTo(LocalDate.of(1980, 1, 1))
   }
 
   @Test
@@ -156,7 +157,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       personIdentifier = "X999999",
       firstName = "NewFirst",
       lastName = "NewLast",
-      dateOfBirth = LocalDate.of(1985, 6, 6),
+      dateOfBirth = LocalDate.of(1985, 6, 6).toFormattedDateOfBirth(),
       sex = "Male",
       additionalDetails = PersonAdditionalDetails(
         ethnicity = "NewEthnicity",
@@ -177,7 +178,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     assertThat(persistedPerson.firstName).isEqualTo(updatedPersonDto.firstName)
     assertThat(persistedPerson.lastName).isEqualTo(updatedPersonDto.lastName)
-    assertThat(persistedPerson.dateOfBirth).isEqualTo(updatedPersonDto.dateOfBirth)
+    assertThat(persistedPerson.dateOfBirth).isEqualTo(LocalDate.of(1985, 6, 6))
     assertThat(persistedPerson.additionalDetails?.ethnicity).isEqualTo("NewEthnicity")
     assertThat(persistedPerson.additionalDetails?.preferredLanguage).isEqualTo("NewLang")
     assertThat(persistedPerson.additionalDetails?.sexualOrientation).isEqualTo("NewOrientation")
@@ -318,7 +319,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       personIdentifier = "X123456",
       firstName = "John",
       lastName = "Smith",
-      dateOfBirth = LocalDate.of(1980, 1, 1),
+      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
       sex = "Male",
       additionalDetails = null,
     )
