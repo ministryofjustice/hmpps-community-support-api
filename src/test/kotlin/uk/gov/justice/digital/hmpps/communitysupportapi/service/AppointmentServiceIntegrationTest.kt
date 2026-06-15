@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
@@ -292,7 +293,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         sessionCommunication = listOf("Phone call", "Text message"),
       )
 
-      appointmentService.createIcsAppointment(caseReference, createIcsAppointRequest, testUser)
+      val previousAppointment = appointmentService.createIcsAppointment(caseReference, createIcsAppointRequest, testUser)
 
       val changeIcsAppointmentRequest = CreateAppointmentRequest(
         date = createIcsAppointRequest.date,
@@ -310,6 +311,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         changeIcsAppointmentRequest,
         testUser,
       )
+      assertThat(response.appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
 
       // Appointment persisted
       val savedAppointment = appointmentRepository.findById(response.appointmentId).orElseThrow()
@@ -336,6 +338,12 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       // Change details persisted
       assertThat(savedIcs.changeRequestedBy).isEqualTo(ChangeRequesterType.REFERRAL_USER)
       assertThat(savedIcs.changeReason).isEqualTo("Some reasons")
+
+      // Status of previous appointment updated
+      val previousAppointmentStatusHistory =
+        appointmentStatusHistoryRepository.findTopByAppointmentIdOrderByCreatedAtDesc(previousAppointment.appointmentId)
+      assertThat(previousAppointmentStatusHistory?.appointment?.id).isEqualTo(previousAppointment.appointmentId)
+      assertThat(previousAppointmentStatusHistory?.status).isEqualTo(AppointmentStatusHistoryType.CHANGED)
     }
   }
 
@@ -968,8 +976,12 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         "Alex was disruptive and refused to engage with the session.",
       )
 
-      assertThat(response.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(listOf("CaseWorker One (test-user)"))
-      assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
+      assertThat(response.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
+        listOf(CaseWorkerSummaryDto(fullName = "CaseWorker One", emailAddress = "test-user")),
+      )
+      assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo(
+        CaseWorkerSummaryDto(fullName = "fullname", emailAddress = "test-user"),
+      )
       assertThat(response.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-03-27T10:00")
       assertThat(response.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
       assertThat(response.sessionFeedbackDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
@@ -1001,9 +1013,14 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(response.recordSessionNotHappenReasonDetails).isNull()
 
       assertThat(response.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
-        listOf("CaseWorker One (test-user)", "CaseWorker Two (test-user)"),
+        listOf(
+          CaseWorkerSummaryDto(fullName = "CaseWorker One", emailAddress = "test-user"),
+          CaseWorkerSummaryDto(fullName = "CaseWorker Two", emailAddress = "test-user"),
+        ),
       )
-      assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo("fullname (test-user)")
+      assertThat(response.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo(
+        CaseWorkerSummaryDto(fullName = "fullname", emailAddress = "test-user"),
+      )
       assertThat(response.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-03-27T10:00")
       assertThat(response.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
       assertThat(response.sessionFeedbackDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))

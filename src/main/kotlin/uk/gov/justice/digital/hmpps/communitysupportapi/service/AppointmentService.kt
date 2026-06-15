@@ -2,12 +2,12 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import SessionFeedbackDetailsDto
 import org.slf4j.LoggerFactory
-import org.springframework.data.jpa.domain.AbstractAuditable_.createdBy
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
@@ -106,6 +106,7 @@ class AppointmentService(
     appointmentDelivery: AppointmentDelivery,
     request: CreateAppointmentRequest,
     createdBy: ReferralUser,
+    createdAt: LocalDateTime = LocalDateTime.now(),
   ): AppointmentIcs {
     val startDateTime = LocalDateTime.of(request.date, request.time.toLocalTime())
 
@@ -115,6 +116,7 @@ class AppointmentService(
       appointmentDelivery = appointmentDelivery,
       appointmentDateTime = startDateTime,
       createdBy = createdBy,
+      createdAt = createdAt,
       sessionCommunication = request.sessionCommunication,
       changeRequestedBy = request.changeAppointmentDetails?.changeRequestedBy,
       changeReason = request.changeAppointmentDetails?.reasonForChange,
@@ -152,6 +154,7 @@ class AppointmentService(
       appointmentDelivery = appointmentDelivery,
       request = request,
       createdBy = createdBy,
+      createdAt = appointmentHistory.createdAt,
     )
 
     log.info("ICS appointment created with id {}", savedIcs.id)
@@ -167,7 +170,7 @@ class AppointmentService(
     if (!referralRepository.existsById(referralId)) {
       throw NotFoundException("Referral not found for id $referralId")
     }
-    return appointmentIcsRepository.findByAppointmentReferralId(referralId)
+    return appointmentIcsRepository.findByAppointmentReferralIdOrderByCreatedAtDesc(referralId)
       .map { ics ->
         AppointmentIcsResponse.from(
           ics,
@@ -219,7 +222,7 @@ class AppointmentService(
     // 1. update previous ics appointment status History
     val existingIcsAppointmentHistory = createAppointmentStatusHistory(
       appointment = existingIcs.appointment,
-      status = AppointmentStatusHistoryType.RESCHEDULED,
+      status = AppointmentStatusHistoryType.CHANGED,
       createdAt = existingIcs.createdAt,
     )
 
@@ -238,6 +241,7 @@ class AppointmentService(
       appointmentDelivery = appointmentDelivery,
       request = request,
       createdBy = changedBy,
+      createdAt = newIcsAppointmentHistory.createdAt,
     )
 
     log.info("ICS appointment updated with id {}", savedIcs.id)
@@ -295,7 +299,9 @@ class AppointmentService(
     val icsFeedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
       .orElseThrow { NotFoundException("ICS feedback not found for id $icsFeedbackId") }
 
-    val feedbackSubmittedBy = icsFeedback.createdBy?.let { "${it.fullName} (${it.hmppsAuthUsername})" } ?: "Unknown user"
+    val feedbackSubmittedBy = icsFeedback.createdBy?.let {
+      CaseWorkerSummaryDto(fullName = it.fullName, emailAddress = it.hmppsAuthUsername)
+    } ?: CaseWorkerSummaryDto(fullName = "Unknown user", emailAddress = "Unknown email address")
 
     val ics = icsFeedback.appointmentIcs
 
@@ -306,7 +312,7 @@ class AppointmentService(
       ?: throw IllegalStateException("Referral ${ics.appointment.referral.id} does not have a reference number")
 
     val caseWorkers = referralAssignmentService.getAssignedCaseWorkers(caseReference)
-      ?.map { "${it.fullName} (${it.emailAddress})" }
+      ?.map { CaseWorkerSummaryDto(fullName = it.fullName, emailAddress = it.emailAddress) }
       ?.takeIf { it.isNotEmpty() }
       ?: throw NotFoundException("Case workers not found for referral $caseReference")
 

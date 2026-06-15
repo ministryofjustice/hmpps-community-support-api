@@ -6,8 +6,9 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 data class ReferralAppointmentHistoryDto(
-  val appointmentId: UUID,
+  val appointmentIcsId: UUID,
   val type: AppointmentType,
   val dateTime: LocalDateTime,
   val status: AppointmentStatusHistoryType,
+  val icsFeedbackId: UUID?,
 )

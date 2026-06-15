@@ -263,6 +263,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED, yesterday)
     appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.NEEDS_FEEDBACK, appointmentDateTime)
+    appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.COMPLETED, appointmentDateTime.plusDays(1))
 
     val ics = appointmentHelper.createAppointmentIcs(
       appointment = appointment,
@@ -273,15 +274,18 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       communications = listOf("EMAIL", "SMS", "LETTER"),
     )
 
+    val icsFeedback = appointmentHelper.createIcsFeedback(ics = ics, createdBy = referralUser)
+
     val result = referralService.getReferralProgress(referral.id.toString())
 
     assertEquals(referral.id, result.referralId)
     assertEquals(person.firstName + " " + person.lastName, result.fullName)
 
     assertEquals(1, result.appointments.size)
-    assertEquals(ics.id, result.appointments[0].appointmentId)
+    assertEquals(ics.id, result.appointments[0].appointmentIcsId)
     assertEquals(appointmentDateTime, result.appointments[0].dateTime)
-    assertEquals(AppointmentStatusHistoryType.NEEDS_FEEDBACK, result.appointments[0].status)
+    assertEquals(AppointmentStatusHistoryType.COMPLETED, result.appointments[0].status)
+    assertEquals(icsFeedback.id, result.appointments[0].icsFeedbackId)
   }
 
   @Test

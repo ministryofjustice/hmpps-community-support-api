@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
@@ -36,6 +37,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
@@ -54,6 +56,9 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var appointmentRepository: AppointmentRepository
+
+  @Autowired
+  private lateinit var appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository
 
   @Autowired
   private lateinit var appointmentDeliveryRepository: AppointmentDeliveryRepository
@@ -289,15 +294,16 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         AppointmentDeliveryMethod.VIDEO_CALL,
         "Zoom link",
       )
+      val appointmentStatusHistory = appointmentHelper.createAppointmentStatusHistory(appointment)
+
       val savedIcs = appointmentHelper.createAppointmentIcs(
         appointment,
         delivery,
         testUser,
         appointmentDateTime,
-        createdAt,
+        appointmentStatusHistory.createdAt,
         listOf("Email", "Phone call"),
       )
-      appointmentHelper.createAppointmentStatusHistory(appointment)
 
       val rescheduleDate = appointmentDateTime.plusDays(5).toLocalDate()
       val rescheduleHourIn12 = if (appointmentDateTime.hour > 12) appointmentDateTime.hour - 12 else appointmentDateTime.hour
@@ -338,6 +344,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
             assertThat(whyNotInPersonReason).isEqualTo("He is not feeling good, call on mobile")
           }
           assertThat(body.sessionCommunications).containsExactly("Phone call", "Text message")
+          assertThat(body.appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
 
           val ics = appointmentIcsRepository.findById(body.appointmentIcsId).orElseThrow()
           assertThat(ics.appointmentDateTime.toLocalDate()).isEqualTo(rescheduleDate)
@@ -346,6 +353,12 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           assertThat(ics.sessionCommunication).containsExactly("Phone call", "Text message")
           assertThat(ics.changeRequestedBy).isEqualTo(ChangeRequesterType.REFERRAL_USER)
           assertThat(ics.changeReason).isEqualTo("Feeling unwell and not abe to attend the appointment")
+
+          // Status of previous appointment updated
+          val previousAppointmentStatusHistory =
+            appointmentStatusHistoryRepository.findTopByAppointmentIdOrderByCreatedAtDesc(savedIcs.appointment.id)
+          assertThat(previousAppointmentStatusHistory?.appointment?.id).isEqualTo(savedIcs.appointment.id)
+          assertThat(previousAppointmentStatusHistory?.status).isEqualTo(AppointmentStatusHistoryType.CHANGED)
         }
     }
   }
@@ -402,6 +415,9 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val secondAppointmentDateTime = LocalDateTime.of(2026, 4, 5, 14, 30)
       val secondCreatedAt = secondAppointmentDateTime.minusDays(1)
 
+      appointmentHelper.createAppointmentStatusHistory(firstAppointment, createdAt = firstCreatedAt)
+      appointmentHelper.createAppointmentStatusHistory(secondAppointment, createdAt = secondCreatedAt)
+
       appointmentHelper.createAppointmentIcs(
         firstAppointment,
         firstDelivery,
@@ -418,9 +434,6 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         secondCreatedAt,
         listOf("Email", "Text message"),
       )
-
-      appointmentHelper.createAppointmentStatusHistory(firstAppointment)
-      appointmentHelper.createAppointmentStatusHistory(secondAppointment)
 
       val result = webTestClient.get()
         .uri("/bff/referral/${referral.referenceNumber}/ics")

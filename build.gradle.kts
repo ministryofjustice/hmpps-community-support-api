@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.3.1"
-  kotlin("plugin.spring") version "2.3.21"
-  kotlin("plugin.jpa") version "2.3.21"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.5.0"
+  kotlin("plugin.spring") version "2.4.0"
+  kotlin("plugin.jpa") version "2.4.0"
 }
 
 configurations {
@@ -29,7 +29,7 @@ dependencies {
   // security
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
-  implementation("org.springframework.security:spring-security-crypto:7.0.5")
+  implementation("org.springframework.security:spring-security-crypto:7.1.0")
   implementation("com.nimbusds:oauth2-oidc-sdk:11.37.2")
 
   // csv
@@ -42,7 +42,7 @@ dependencies {
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.5.0")
   testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
   testImplementation("org.wiremock:wiremock-standalone:3.13.2")
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.43") {
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.44") {
     exclude(group = "io.swagger.core.v3")
   }
   testImplementation("org.testcontainers:postgresql:1.21.4")
