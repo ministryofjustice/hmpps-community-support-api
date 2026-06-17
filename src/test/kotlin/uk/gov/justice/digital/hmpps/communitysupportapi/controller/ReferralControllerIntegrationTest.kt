@@ -205,6 +205,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
             val referralInfo = ReferralInformationDto(
               referralId = referral.id,
+              referralDate = referral.createdAt.toLocalDate(),
               personId = referral.personId,
               firstName = person.firstName,
               lastName = person.lastName,

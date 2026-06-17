@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import java.time.LocalDate
 import java.util.UUID
 
 data class ReferralDto(
@@ -33,6 +34,7 @@ data class ReferralNameDto(
 data class ReferralInformationDto(
   val personId: UUID,
   val referralId: UUID,
+  val referralDate: LocalDate,
   val firstName: String?,
   val lastName: String?,
   val sex: String? = null,
@@ -47,6 +49,7 @@ data class ReferralInformationDto(
     fun from(result: ReferralCreationResult): ReferralInformationDto = ReferralInformationDto(
       personId = result.referral.personId,
       referralId = result.referral.id,
+      referralDate = result.referral.createdAt.toLocalDate(),
       communityServiceProviderId = result.communityServiceProvider.id,
       firstName = result.person.firstName,
       lastName = result.person.lastName,
