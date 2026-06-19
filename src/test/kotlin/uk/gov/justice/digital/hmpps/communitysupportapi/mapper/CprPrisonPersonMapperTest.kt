@@ -94,4 +94,10 @@ class CprPrisonPersonMapperTest {
     val person = createCprPrisonPersonDto(PRISONER_NUMBER).toPrisonPerson()
     assertEquals("James", person.middleNames)
   }
+
+  @Test
+  fun `maps prison numbers from CPR identifiers`() {
+    val person = createCprPrisonPersonDto(PRISONER_NUMBER).toPrisonPerson()
+    assertEquals(listOf(PRISONER_NUMBER), person.prisonNumbers)
+  }
 }

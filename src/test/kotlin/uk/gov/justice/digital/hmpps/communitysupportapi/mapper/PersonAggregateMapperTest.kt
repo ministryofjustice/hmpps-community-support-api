@@ -55,6 +55,7 @@ class PersonAggregateMapperTest {
       sex = "Male",
       title = "Mr",
       middleNames = "David",
+      prisonNumbers = listOf("A1234BC"),
     )
 
     val personAggregate = PersonAggregate(
@@ -71,6 +72,7 @@ class PersonAggregateMapperTest {
     personDto.lastName shouldBe "Smith"
     personDto.dateOfBirth shouldBe LocalDate.of(1985, 1, 1).toFormattedDateOfBirth()
     personDto.sex shouldBe "Male"
+    personDto.prisonNumbers shouldBe listOf("A1234BC")
     personDto.additionalDetails?.ethnicity shouldBe "White"
     personDto.additionalDetails?.preferredLanguage shouldBe "English"
     personDto.additionalDetails?.genderIdentity shouldBe "Male"
