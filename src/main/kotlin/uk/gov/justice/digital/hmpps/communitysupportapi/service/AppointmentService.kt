@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcsFee
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
@@ -123,6 +124,29 @@ class AppointmentService(
     )
 
     return appointmentIcsRepository.save(ics)
+  }
+
+  private fun updateAppointmentIcsRecord(
+    id: UUID,
+    changeRequestedBy: ChangeRequesterType?,
+    changeReason: String?,
+  ): AppointmentIcs {
+    val ics = appointmentIcsRepository.findById(id)
+      .orElseThrow { NotFoundException("Appointment ICS not found for id $id") }
+
+    val updatedIcs = AppointmentIcs(
+      id = ics.id,
+      appointment = ics.appointment,
+      appointmentDelivery = ics.appointmentDelivery,
+      appointmentDateTime = ics.appointmentDateTime,
+      createdBy = ics.createdBy,
+      createdAt = ics.createdAt,
+      sessionCommunication = ics.sessionCommunication,
+      changeRequestedBy = changeRequestedBy,
+      changeReason = changeReason,
+    )
+
+    return appointmentIcsRepository.save(updatedIcs)
   }
 
   @Transactional
@@ -226,20 +250,35 @@ class AppointmentService(
       createdAt = existingIcs.createdAt,
     )
 
-    // 2. Create the new appointment (parent record)
+    // 2. update appointment ics history row
+    updateAppointmentIcsRecord(
+      existingIcs.id,
+      request.changeAppointmentDetails?.changeRequestedBy,
+      request.changeAppointmentDetails?.reasonForChange
+    )
+
+    // 3. remove changeAppointmentDetails from request
+    val newRequest = CreateAppointmentRequest(
+      request.date,
+      request.time,
+      request.sessionMethodRequest,
+      request.sessionCommunication
+    )
+
+    // 4. Create the new appointment (parent record)
     val appointment = createNewAppointment(referral, AppointmentType.ICS)
 
-    // 3. update the new ics appointment status History
+    // 5. update the new ics appointment status History
     val newIcsAppointmentHistory = createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED)
 
-    // 4. create new delivery method
+    // 6. create new delivery method
     val appointmentDelivery = createAppointmentDelivery(request.sessionMethodRequest)
 
-    // 5. create new ics record
+    // 7. create new ics record
     val savedIcs = createAppointmentIcsRecord(
       appointment = appointment,
       appointmentDelivery = appointmentDelivery,
-      request = request,
+      request = newRequest,
       createdBy = changedBy,
       createdAt = newIcsAppointmentHistory.createdAt,
     )
