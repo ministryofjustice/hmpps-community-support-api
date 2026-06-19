@@ -254,7 +254,7 @@ class AppointmentService(
     updateAppointmentIcsRecord(
       existingIcs.id,
       request.changeAppointmentDetails?.changeRequestedBy,
-      request.changeAppointmentDetails?.reasonForChange
+      request.changeAppointmentDetails?.reasonForChange,
     )
 
     // 3. remove changeAppointmentDetails from request
@@ -262,7 +262,7 @@ class AppointmentService(
       request.date,
       request.time,
       request.sessionMethodRequest,
-      request.sessionCommunication
+      request.sessionCommunication,
     )
 
     // 4. Create the new appointment (parent record)
