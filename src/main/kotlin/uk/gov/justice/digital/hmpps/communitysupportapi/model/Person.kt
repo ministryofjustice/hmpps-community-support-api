@@ -10,4 +10,5 @@ data class Person(
   val sex: String = "Unknown",
   val title: String? = null,
   val middleNames: String? = null,
+  val prisonNumbers: List<String> = emptyList(),
 )

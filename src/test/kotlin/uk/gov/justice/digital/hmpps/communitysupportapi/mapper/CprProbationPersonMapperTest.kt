@@ -94,4 +94,10 @@ class CprProbationPersonMapperTest {
     val person = createCprProbationPersonDto(CRN).toProbationPerson()
     assertEquals("David", person.middleNames)
   }
+
+  @Test
+  fun `maps prison numbers as empty list for probation person`() {
+    val person = createCprProbationPersonDto(CRN).toProbationPerson()
+    assertEquals(emptyList<String>(), person.prisonNumbers)
+  }
 }
