@@ -127,26 +127,14 @@ class AppointmentService(
   }
 
   private fun updateAppointmentIcsRecord(
-    id: UUID,
+    ics: AppointmentIcs,
     changeRequestedBy: ChangeRequesterType?,
     changeReason: String?,
   ): AppointmentIcs {
-    val ics = appointmentIcsRepository.findById(id)
-      .orElseThrow { NotFoundException("Appointment ICS not found for id $id") }
+    ics.changeRequestedBy = changeRequestedBy
+    ics.changeReason = changeReason
 
-    val updatedIcs = AppointmentIcs(
-      id = ics.id,
-      appointment = ics.appointment,
-      appointmentDelivery = ics.appointmentDelivery,
-      appointmentDateTime = ics.appointmentDateTime,
-      createdBy = ics.createdBy,
-      createdAt = ics.createdAt,
-      sessionCommunication = ics.sessionCommunication,
-      changeRequestedBy = changeRequestedBy,
-      changeReason = changeReason,
-    )
-
-    return appointmentIcsRepository.save(updatedIcs)
+    return appointmentIcsRepository.saveAndFlush(ics)
   }
 
   @Transactional
@@ -244,7 +232,7 @@ class AppointmentService(
     }
 
     // 1. update previous ics appointment status History
-    val existingIcsAppointmentHistory = createAppointmentStatusHistory(
+    createAppointmentStatusHistory(
       appointment = existingIcs.appointment,
       status = AppointmentStatusHistoryType.CHANGED,
       createdAt = existingIcs.createdAt,
@@ -252,18 +240,13 @@ class AppointmentService(
 
     // 2. update appointment ics history row
     updateAppointmentIcsRecord(
-      existingIcs.id,
+      existingIcs,
       request.changeAppointmentDetails?.changeRequestedBy,
       request.changeAppointmentDetails?.reasonForChange,
     )
 
     // 3. remove changeAppointmentDetails from request
-    val newRequest = CreateAppointmentRequest(
-      request.date,
-      request.time,
-      request.sessionMethodRequest,
-      request.sessionCommunication,
-    )
+    request.changeAppointmentDetails = null
 
     // 4. Create the new appointment (parent record)
     val appointment = createNewAppointment(referral, AppointmentType.ICS)
@@ -278,7 +261,7 @@ class AppointmentService(
     val savedIcs = createAppointmentIcsRecord(
       appointment = appointment,
       appointmentDelivery = appointmentDelivery,
-      request = newRequest,
+      request = request,
       createdBy = changedBy,
       createdAt = newIcsAppointmentHistory.createdAt,
     )
