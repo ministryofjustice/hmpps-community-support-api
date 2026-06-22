@@ -16,6 +16,7 @@ fun PersonDto.toEntity(): PersonEntity {
     gender = sex!!,
     createdAt = OffsetDateTime.now(),
     updatedAt = OffsetDateTime.now(),
+    prisonNumbers = prisonNumbers.joinToString(",").ifEmpty { null },
   )
 
   person.additionalDetails = additionalDetails?.toEntity(person)
