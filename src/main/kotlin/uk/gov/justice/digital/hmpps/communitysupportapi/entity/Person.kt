@@ -38,6 +38,9 @@ class Person(
   @Column(name = "updated_at", nullable = false)
   val updatedAt: OffsetDateTime = OffsetDateTime.now(),
 
+  @Column(name = "prison_numbers", nullable = true)
+  val prisonNumbers: String? = null,
+
   @OneToOne(
     cascade = [CascadeType.ALL],
     orphanRemoval = true,
