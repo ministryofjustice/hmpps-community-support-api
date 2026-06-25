@@ -45,8 +45,8 @@ class AppointmentIcs(
 
   @Enumerated(EnumType.STRING)
   @Column(name = "change_requested_by")
-  val changeRequestedBy: ChangeRequesterType? = null,
+  var changeRequestedBy: ChangeRequesterType? = null,
 
   @Column(name = "change_reason")
-  val changeReason: String? = null,
+  var changeReason: String? = null,
 )
