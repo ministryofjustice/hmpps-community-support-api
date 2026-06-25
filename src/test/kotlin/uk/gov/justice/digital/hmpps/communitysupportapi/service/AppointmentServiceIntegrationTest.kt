@@ -335,15 +335,20 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(savedIcs.appointmentDateTime.toLocalTime()).isEqualTo(LocalTime.of(9, 0))
       assertThat(savedIcs.sessionCommunication).containsExactly("Phone call", "Text message")
 
-      // Change details persisted
-      assertThat(savedIcs.changeRequestedBy).isEqualTo(ChangeRequesterType.REFERRAL_USER)
-      assertThat(savedIcs.changeReason).isEqualTo("Some reasons")
+      // Change details null on new appointment
+      assertThat(savedIcs.changeRequestedBy).isNull()
+      assertThat(savedIcs.changeReason).isNull()
 
       // Status of previous appointment updated
       val previousAppointmentStatusHistory =
         appointmentStatusHistoryRepository.findTopByAppointmentIdOrderByCreatedAtDesc(previousAppointment.appointmentId)
       assertThat(previousAppointmentStatusHistory?.appointment?.id).isEqualTo(previousAppointment.appointmentId)
       assertThat(previousAppointmentStatusHistory?.status).isEqualTo(AppointmentStatusHistoryType.CHANGED)
+
+      // Change details of previous appointment updated
+      val previousIcs = appointmentIcsRepository.findById(previousAppointment.appointmentIcsId).orElseThrow()
+      assertThat(previousIcs.changeRequestedBy).isEqualTo(ChangeRequesterType.REFERRAL_USER)
+      assertThat(previousIcs.changeReason).isEqualTo("Some reasons")
     }
   }
 
@@ -481,8 +486,12 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(fetched.appointmentIcsId).isEqualTo(changed.appointmentIcsId)
       assertThat(fetched.referralId).isEqualTo(referral.id)
       assertThat(fetched.appointmentType).isEqualTo(AppointmentType.ICS)
-      assertThat(fetched.changeAppointmentDetails?.changeRequestedBy).isEqualTo(ChangeRequesterType.DELIVERY_PARTNER)
-      assertThat(fetched.changeAppointmentDetails?.reasonForChange).isEqualTo(
+      assertThat(fetched.changeAppointmentDetails?.changeRequestedBy).isNull()
+      assertThat(fetched.changeAppointmentDetails?.reasonForChange).isNull()
+
+      val previous = appointmentService.getIcsAppointment(created.appointmentIcsId)
+      assertThat(previous.changeAppointmentDetails?.changeRequestedBy).isEqualTo(ChangeRequesterType.DELIVERY_PARTNER)
+      assertThat(previous.changeAppointmentDetails?.reasonForChange).isEqualTo(
         "Have urgent medical appointment to attend",
       )
     }
