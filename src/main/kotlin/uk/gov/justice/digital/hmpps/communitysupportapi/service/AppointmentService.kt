@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
-import SessionFeedbackDetailsDto
+import SessionFeedbackAppointmentDetailsDto
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -338,16 +338,16 @@ class AppointmentService(
       ?.takeIf { it.isNotEmpty() }
       ?: throw NotFoundException("Case workers not found for referral $caseReference")
 
-    val sessionDetails = SessionFeedbackDetailsDto(
+    val sessionFeedbackAppointmentDetails = SessionFeedbackAppointmentDetailsDto(
       currentCaseworkers = caseWorkers,
       feedbackSubmittedBy = feedbackSubmittedBy,
       startDateTime = ics.appointmentDateTime,
-      sessionMethod = ics.appointmentDelivery?.method,
+      appointmentDeliveryDetails = ics.appointmentDelivery,
       sessionCommunications = ics.sessionCommunication,
       personFirstName = person.firstName,
     )
 
-    return AppointmentIcsFeedbackResponse.from(icsFeedback, sessionDetails)
+    return AppointmentIcsFeedbackResponse.from(icsFeedback, sessionFeedbackAppointmentDetails)
   }
 
   /**
