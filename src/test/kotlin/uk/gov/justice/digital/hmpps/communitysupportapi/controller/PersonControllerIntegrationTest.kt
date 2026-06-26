@@ -76,6 +76,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
           body.lastName shouldBe "Smith"
           body.dateOfBirth shouldBe LocalDate.of(1985, 1, 1).toFormattedDateOfBirth()
           body.sex shouldBe "Male"
+          body.prisonNumbers shouldBe listOf(PRISONER_NUMBER)
           body.additionalDetails?.disability shouldBe false
         }
     }
@@ -109,6 +110,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
           body.lastName shouldBe "Smith"
           body.dateOfBirth shouldBe LocalDate.of(1985, 1, 1).toFormattedDateOfBirth()
           body.sex shouldBe "Male"
+          body.prisonNumbers shouldBe emptyList()
           body.additionalDetails?.disability shouldBe true
         }
     }

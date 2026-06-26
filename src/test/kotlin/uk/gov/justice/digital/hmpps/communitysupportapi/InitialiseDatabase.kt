@@ -14,9 +14,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.TestWebClien
 @TestPropertySource(
   properties = [
     "services.hmpps-auth-api.base-url=http://localhost:8090/auth",
-    "services.ndelius-integration-api.base-url=http://localhost:9999",
-    "services.nomis-api.base-url=http://localhost:9999",
     "services.manage-users-api.base-url=http://localhost:9999",
+    "services.core-person-record-api.base-url=http://localhost:9999",
   ],
 )
 class InitialiseDatabase {

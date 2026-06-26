@@ -56,5 +56,6 @@ fun PersonAggregate.toPersonDto(): PersonDto = PersonDto(
   lastName = person.lastName,
   dateOfBirth = person.dateOfBirth.toFormattedDateOfBirth(),
   sex = person.sex,
+  prisonNumbers = person.prisonNumbers,
   additionalDetails = additionalDetails,
 )

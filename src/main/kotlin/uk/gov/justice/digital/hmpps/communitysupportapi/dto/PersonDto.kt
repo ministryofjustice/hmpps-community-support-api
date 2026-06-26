@@ -12,5 +12,6 @@ data class PersonDto(
   val lastName: String,
   val dateOfBirth: String,
   val sex: String?,
+  val prisonNumbers: List<String> = emptyList(),
   val additionalDetails: PersonAdditionalDetails?,
 )

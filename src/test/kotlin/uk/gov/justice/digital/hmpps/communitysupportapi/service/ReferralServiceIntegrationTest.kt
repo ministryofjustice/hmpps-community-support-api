@@ -186,6 +186,70 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   }
 
   @Test
+  fun `createReferral should persist prison numbers on person when provided`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+
+    val personDto = PersonDto(
+      id = UUID.randomUUID(),
+      personIdentifier = "A1234BC",
+      firstName = "John",
+      lastName = "Smith",
+      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
+      sex = "Male",
+      prisonNumbers = listOf("A1234BC", "B5678DE"),
+      additionalDetails = null,
+    )
+
+    val request = CreateReferralRequest(
+      personDetails = personDto,
+      communityServiceProviderId = communityServiceProvider.id,
+      crn = "A1234BC",
+    )
+
+    val result = referralService.createReferral(referralUser.id, request)
+    val persistedPerson = personRepository.findById(result.person.id).get()
+
+    assertThat(persistedPerson.prisonNumbers).isEqualTo("A1234BC,B5678DE")
+  }
+
+  @Test
+  fun `createReferral should update prison numbers on existing person`() {
+    val referralUser = referralHelper.ensureReferralUser()
+
+    val existingPerson = referralHelper.createPerson(
+      firstName = "John",
+      lastName = "Smith",
+      identifier = "A9999ZZ",
+      dateOfBirth = LocalDate.of(1980, 1, 1),
+    )
+
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+
+    val updatedPersonDto = PersonDto(
+      id = UUID.randomUUID(),
+      personIdentifier = "A9999ZZ",
+      firstName = "John",
+      lastName = "Smith",
+      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
+      sex = "Male",
+      prisonNumbers = listOf("A9999ZZ"),
+      additionalDetails = null,
+    )
+
+    val request = CreateReferralRequest(
+      personDetails = updatedPersonDto,
+      communityServiceProviderId = communityServiceProvider.id,
+      crn = "A9999ZZ",
+    )
+
+    referralService.createReferral(referralUser.id, request)
+
+    val persistedPerson = personRepository.findById(existingPerson.id).get()
+    assertThat(persistedPerson.prisonNumbers).isEqualTo("A9999ZZ")
+  }
+
+  @Test
   fun `getReferralProgress should throw NotFoundException when referral does not exist`() {
     val nonExistentReferralId = UUID.randomUUID()
 

@@ -220,11 +220,13 @@ class ReferralService(
       personDetails.toEntity(),
     )
     val desiredGender = personDetails.sex ?: existing.gender
+    val desiredPrisonNumbers = personDetails.prisonNumbers.joinToString(",").ifEmpty { null }
     val additionalDetailsChanged = !additionalDetailsEqual(existing.additionalDetails, personDetails.additionalDetails)
     val basicFieldsChanged = existing.firstName != personDetails.firstName ||
       existing.lastName != personDetails.lastName ||
       !existing.dateOfBirth.isEqual(personDetails.dateOfBirth.parseDateOfBirth()) ||
-      existing.gender != desiredGender
+      existing.gender != desiredGender ||
+      existing.prisonNumbers != desiredPrisonNumbers
 
     if (!basicFieldsChanged && !additionalDetailsChanged) return existing
 
@@ -237,6 +239,7 @@ class ReferralService(
       gender = desiredGender,
       createdAt = existing.createdAt,
       updatedAt = OffsetDateTime.now(),
+      prisonNumbers = desiredPrisonNumbers,
     )
 
     if (personDetails.additionalDetails != null) {

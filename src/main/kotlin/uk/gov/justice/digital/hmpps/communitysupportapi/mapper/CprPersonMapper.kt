@@ -21,6 +21,7 @@ fun CprPersonDto.toProbationPerson(): Person = Person(
   sex = sex?.description ?: "Unknown",
   title = title?.description,
   middleNames = middleNames,
+  prisonNumbers = identifiers.prisonNumbers,
 )
 
 fun CprPersonDto.toPrisonPerson(): Person = Person(
@@ -35,6 +36,7 @@ fun CprPersonDto.toPrisonPerson(): Person = Person(
   sex = sex?.description ?: "Unknown",
   title = title?.description,
   middleNames = middleNames,
+  prisonNumbers = identifiers.prisonNumbers,
 )
 
 fun CprPersonDto.toAdditionalDetails(): PersonAdditionalDetails {
