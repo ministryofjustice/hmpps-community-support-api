@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
-import SessionFeedbackDetailsDto
+import SessionFeedbackAppointmentDetailsDto
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcsFee
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
@@ -125,6 +126,17 @@ class AppointmentService(
     return appointmentIcsRepository.save(ics)
   }
 
+  private fun updateAppointmentIcsRecord(
+    ics: AppointmentIcs,
+    changeRequestedBy: ChangeRequesterType?,
+    changeReason: String?,
+  ): AppointmentIcs {
+    ics.changeRequestedBy = changeRequestedBy
+    ics.changeReason = changeReason
+
+    return appointmentIcsRepository.saveAndFlush(ics)
+  }
+
   @Transactional
   fun createIcsAppointment(
     caseIdentifier: String,
@@ -220,22 +232,32 @@ class AppointmentService(
     }
 
     // 1. update previous ics appointment status History
-    val existingIcsAppointmentHistory = createAppointmentStatusHistory(
+    createAppointmentStatusHistory(
       appointment = existingIcs.appointment,
       status = AppointmentStatusHistoryType.CHANGED,
       createdAt = existingIcs.createdAt,
     )
 
-    // 2. Create the new appointment (parent record)
+    // 2. update appointment ics history row
+    updateAppointmentIcsRecord(
+      existingIcs,
+      request.changeAppointmentDetails?.changeRequestedBy,
+      request.changeAppointmentDetails?.reasonForChange,
+    )
+
+    // 3. remove changeAppointmentDetails from request
+    request.changeAppointmentDetails = null
+
+    // 4. Create the new appointment (parent record)
     val appointment = createNewAppointment(referral, AppointmentType.ICS)
 
-    // 3. update the new ics appointment status History
+    // 5. update the new ics appointment status History
     val newIcsAppointmentHistory = createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED)
 
-    // 4. create new delivery method
+    // 6. create new delivery method
     val appointmentDelivery = createAppointmentDelivery(request.sessionMethodRequest)
 
-    // 5. create new ics record
+    // 7. create new ics record
     val savedIcs = createAppointmentIcsRecord(
       appointment = appointment,
       appointmentDelivery = appointmentDelivery,
@@ -316,16 +338,16 @@ class AppointmentService(
       ?.takeIf { it.isNotEmpty() }
       ?: throw NotFoundException("Case workers not found for referral $caseReference")
 
-    val sessionDetails = SessionFeedbackDetailsDto(
+    val sessionFeedbackAppointmentDetails = SessionFeedbackAppointmentDetailsDto(
       currentCaseworkers = caseWorkers,
       feedbackSubmittedBy = feedbackSubmittedBy,
       startDateTime = ics.appointmentDateTime,
-      sessionMethod = ics.appointmentDelivery?.method,
+      appointmentDeliveryDetails = ics.appointmentDelivery,
       sessionCommunications = ics.sessionCommunication,
       personFirstName = person.firstName,
     )
 
-    return AppointmentIcsFeedbackResponse.from(icsFeedback, sessionDetails)
+    return AppointmentIcsFeedbackResponse.from(icsFeedback, sessionFeedbackAppointmentDetails)
   }
 
   /**

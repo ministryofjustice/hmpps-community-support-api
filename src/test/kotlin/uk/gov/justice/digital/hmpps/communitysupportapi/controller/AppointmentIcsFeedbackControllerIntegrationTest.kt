@@ -87,7 +87,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
     val referral = referralRepository.findById(referralId).orElseThrow()
     val appointment = appointmentHelper.createAppointment(referral)
     appointmentHelper.createAppointmentStatusHistory(appointment)
-    val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL)
+    val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL, methodDetails = "Not feeling well enough to attend in person")
     val ics = appointmentHelper.createAppointmentIcs(
       appointment,
       delivery,
@@ -688,16 +688,17 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           assertThat(body.recordSessionNotHappenReason).isEqualTo("REFERRAL_DID_NOT_COMPLY")
           assertThat(body.recordSessionNotHappenReasonDetails).isEqualTo("Alex was disruptive and refused to engage with the session.")
 
-          assertThat(body.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
+          assertThat(body.sessionFeedbackAppointmentDetails?.currentCaseworkers).isEqualTo(
             listOf(CaseWorkerSummaryDto(fullName = "CaseWorker One", emailAddress = "test-user")),
           )
-          assertThat(body.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo(
+          assertThat(body.sessionFeedbackAppointmentDetails?.feedbackSubmittedBy).isEqualTo(
             CaseWorkerSummaryDto(fullName = "fullname", emailAddress = "test-user"),
           )
-          assertThat(body.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-04-09T10:00:00")
-          assertThat(body.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
-          assertThat(body.sessionFeedbackDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
-          assertThat(body.sessionFeedbackDetails?.personFirstName).isEqualTo("Alex")
+          assertThat(body.sessionFeedbackAppointmentDetails?.startDateTime).isEqualTo("2026-04-09T10:00:00")
+          assertThat(body.sessionFeedbackAppointmentDetails?.appointmentDeliveryDetails?.method).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
+          assertThat(body.sessionFeedbackAppointmentDetails?.appointmentDeliveryDetails?.methodDetails).isEqualTo("Not feeling well enough to attend in person")
+          assertThat(body.sessionFeedbackAppointmentDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
+          assertThat(body.sessionFeedbackAppointmentDetails?.personFirstName).isEqualTo("Alex")
         }
     }
 
@@ -735,20 +736,20 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           assertThat(body.recordSessionDidPersonAttend).isFalse()
           assertThat(body.recordSessionNotHappenReason).isNull()
           assertThat(body.recordSessionNotHappenReasonDetails).isNull()
-
-          assertThat(body.sessionFeedbackDetails?.currentCaseworkers).isEqualTo(
+          assertThat(body.sessionFeedbackAppointmentDetails?.currentCaseworkers).isEqualTo(
             listOf(
               CaseWorkerSummaryDto(fullName = "CaseWorker One", emailAddress = "test-user"),
               CaseWorkerSummaryDto(fullName = "CaseWorker Two", emailAddress = "test-user"),
             ),
           )
-          assertThat(body.sessionFeedbackDetails?.feedbackSubmittedBy).isEqualTo(
+          assertThat(body.sessionFeedbackAppointmentDetails?.feedbackSubmittedBy).isEqualTo(
             CaseWorkerSummaryDto(fullName = "fullname", emailAddress = "test-user"),
           )
-          assertThat(body.sessionFeedbackDetails?.startDateTime).isEqualTo("2026-04-09T10:00:00")
-          assertThat(body.sessionFeedbackDetails?.sessionMethod).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
-          assertThat(body.sessionFeedbackDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
-          assertThat(body.sessionFeedbackDetails?.personFirstName).isEqualTo("Alex")
+          assertThat(body.sessionFeedbackAppointmentDetails?.startDateTime).isEqualTo("2026-04-09T10:00:00")
+          assertThat(body.sessionFeedbackAppointmentDetails?.appointmentDeliveryDetails?.method).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
+          assertThat(body.sessionFeedbackAppointmentDetails?.appointmentDeliveryDetails?.methodDetails).isEqualTo("Not feeling well enough to attend in person")
+          assertThat(body.sessionFeedbackAppointmentDetails?.sessionCommunications).isEqualTo(listOf("Phone call"))
+          assertThat(body.sessionFeedbackAppointmentDetails?.personFirstName).isEqualTo("Alex")
         }
     }
 
