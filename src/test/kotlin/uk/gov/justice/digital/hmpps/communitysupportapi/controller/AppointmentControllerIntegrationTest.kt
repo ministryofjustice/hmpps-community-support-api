@@ -290,7 +290,6 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val appointment = appointmentHelper.createAppointment(referral)
       val now = LocalDateTime.now()
       val appointmentDateTime = now.plusDays(1)
-      val createdAt = now
       val delivery = appointmentHelper.createAppointmentDelivery(
         AppointmentDeliveryMethod.VIDEO_CALL,
         "Zoom link",
