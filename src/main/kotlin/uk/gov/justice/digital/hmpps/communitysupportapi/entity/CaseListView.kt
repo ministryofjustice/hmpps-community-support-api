@@ -42,4 +42,7 @@ class CaseListView(
 
   @Column(name = "reference_number")
   val referenceNumber: String,
+
+  @Column(name = "created_by")
+  val createdBy: UUID,
 )

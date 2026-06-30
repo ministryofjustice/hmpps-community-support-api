@@ -57,11 +57,15 @@ class ReferralTestSupport(
     id: UUID = UUID.randomUUID(),
     hmppsAuthId: UUID = UUID.randomUUID(),
     username: String = "test-user",
+    authSource: String = "auth",
+    setAsActiveUser: Boolean = true,
   ): ReferralUser {
-    val testUser = ensureReferralUser(userId = id, hmppsAuthId = hmppsAuthId.toString(), username = username)
+    val testUser = ensureReferralUser(userId = id, hmppsAuthId = hmppsAuthId.toString(), username = username, authSource = authSource)
 
-    whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>()))
-      .thenReturn(testUser)
+    if (setAsActiveUser) {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>()))
+        .thenReturn(testUser)
+    }
 
     return testUser
   }
@@ -89,6 +93,7 @@ class ReferralTestSupport(
     referenceNumber: String? = "AB1234CD",
     submittedBy: ReferralUser,
     createdAt: OffsetDateTime = OffsetDateTime.now(),
+    createdBy: UUID = UUID.randomUUID(),
   ): Referral = referralRepository.save(
     ReferralFactory()
       .withPersonId(person.id)
@@ -96,6 +101,7 @@ class ReferralTestSupport(
       .withReferenceNumber(referenceNumber)
       .withCreatedAt(createdAt)
       .withSubmittedEvent(actorId = submittedBy.id, createdAt = createdAt)
+      .withCreatedBy(createdBy)
       .create(),
   )
 

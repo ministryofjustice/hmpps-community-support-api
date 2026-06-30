@@ -25,7 +25,7 @@ class CaseListService(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  private fun getCasesByState(
+  private fun getCasesByStateAndUserType(
     pageable: Pageable,
     stateSpecification: Specification<CaseListView>,
     logMessage: String,
@@ -35,12 +35,14 @@ class CaseListService(
     }
 
     val referralUser = userMapper.fromToken(authenticationHolder)
-    if (referralUser.authSource.equals("delius", ignoreCase = true)) {
-      log.info("Delius user detected: ${authenticationHolder.username} - returning empty case list")
-      return Page.empty()
-    }
 
     log.info("$logMessage: ${referralUser.hmppsAuthUsername}")
+
+    if (referralUser.authSource.equals("delius", ignoreCase = true)) {
+      val isDeliusUserSpecification = CaseListViewSpecifications.createdBy(referralUser.id).and(stateSpecification)
+      val cases = caseListViewRepository.findAll(isDeliusUserSpecification, pageable)
+      return cases
+    }
 
     val serviceProviders =
       serviceProviderAccessScopeMapper.fromUser(referralUser).serviceProviders
@@ -52,13 +54,13 @@ class CaseListService(
     return caseListViewRepository.findAll(specification, pageable)
   }
 
-  fun getUnassignedCases(pageable: Pageable): Page<ReferralCaseListDto> = getCasesByState(
+  fun getUnassignedCases(pageable: Pageable): Page<ReferralCaseListDto> = getCasesByStateAndUserType(
     pageable = pageable,
     stateSpecification = CaseListViewSpecifications.isUnassigned(),
     logMessage = "Fetching unassigned cases for user",
   ).map { ReferralCaseListDto.from(it) }
 
-  fun getInProgressCases(pageable: Pageable): Page<ReferralCaseListDto> = getCasesByState(
+  fun getInProgressCases(pageable: Pageable): Page<ReferralCaseListDto> = getCasesByStateAndUserType(
     pageable = pageable,
     stateSpecification = CaseListViewSpecifications.isAssigned(),
     logMessage = "Fetching in-progress cases for user",

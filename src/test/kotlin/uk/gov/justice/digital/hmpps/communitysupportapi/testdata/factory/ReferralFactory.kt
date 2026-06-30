@@ -40,6 +40,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
   private var updatedAt: OffsetDateTime? = OffsetDateTime.now()
   private var urgency: Boolean? = null
   private var events: MutableList<(Referral) -> ReferralEvent> = mutableListOf()
+  private var createdBy: UUID = UUID.randomUUID()
 
   fun withId(id: UUID) = apply { this.id = id }
   fun withPersonId(personId: UUID) = apply { this.personId = personId }
@@ -48,6 +49,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
   fun withCreatedAt(createdAt: OffsetDateTime) = apply { this.createdAt = createdAt }
   fun withUpdatedAt(updatedAt: OffsetDateTime?) = apply { this.updatedAt = updatedAt }
   fun withUrgency(urgency: Boolean?) = apply { this.urgency = urgency }
+  fun withCreatedBy(createdBy: UUID) = apply { this.createdBy = createdBy }
 
   fun withSubmittedEvent(actorId: UUID = DEFAULT_ACTOR_ID, createdAt: OffsetDateTime? = null) = apply {
     events.add { referral ->
@@ -76,6 +78,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
       createdAt = createdAt,
       updatedAt = updatedAt,
       urgency = urgency,
+      createdBy = createdBy,
     )
 
     // Add all configured events

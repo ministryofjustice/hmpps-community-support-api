@@ -7,6 +7,7 @@ SELECT
     p.last_name || ', ' || p.first_name AS person_name,
     r.person_identifier,
     re.created_at AS date_received,
+    r.created_by AS created_by,
     MIN(rua.created_at) AS date_assigned,
     rpa.community_service_provider_id,
     csp.service_provider_id,
@@ -30,7 +31,8 @@ GROUP BY
     re.created_at,
     rpa.community_service_provider_id,
     csp.service_provider_id,
-    r.reference_number;
+    r.reference_number,
+    r.created_by;
 
 -- Comments for case_list_view materialized view
 COMMENT ON MATERIALIZED VIEW case_list_view IS 'Materialized view for efficient case list queries combining referral, person, and assignment data';
@@ -43,7 +45,7 @@ COMMENT ON COLUMN case_list_view.community_service_provider_id IS 'Foreign key r
 COMMENT ON COLUMN case_list_view.service_provider_id IS 'Foreign key reference to the service provider';
 COMMENT ON COLUMN case_list_view.case_workers IS 'Array of full names of caseworkers assigned to the referral';
 COMMENT ON COLUMN case_list_view.reference_number IS 'Reference number for the referral';
-
+COMMENT ON COLUMN case_list_view.created_by IS 'User ID of the user who submitted the referral';
 -- Create indexes for efficient querying
 CREATE UNIQUE INDEX idx_case_list_view_referral_id ON case_list_view (referral_id);
 CREATE INDEX idx_case_list_view_provider ON case_list_view (community_service_provider_id);

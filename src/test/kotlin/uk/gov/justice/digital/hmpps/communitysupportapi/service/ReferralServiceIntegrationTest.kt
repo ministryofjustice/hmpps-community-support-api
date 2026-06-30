@@ -84,6 +84,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedReferral.crn).isEqualTo(createReferralRequest.crn)
     assertThat(savedReferral.referralEvents.size).isEqualTo(1)
     assertThat(savedReferral.referenceNumber).isNull()
+    assertThat(savedReferral.createdBy).isEqualTo(referralUser.id)
 
     val providerAssignments = referralProviderAssignmentRepository.findByReferralId(savedReferral.id)
     assertThat(providerAssignments).hasSize(1)

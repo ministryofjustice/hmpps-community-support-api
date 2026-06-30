@@ -17,6 +17,10 @@ object CaseListViewSpecifications {
     }
   }
 
+  fun createdBy(referralUserId: UUID): Specification<CaseListView> = Specification { root, _, criteriaBuilder ->
+    criteriaBuilder.equal(root.get<UUID>("createdBy"), referralUserId)
+  }
+
   fun isUnassigned(): Specification<CaseListView> = Specification { root, _, criteriaBuilder ->
     criteriaBuilder.isNull(root.get<OffsetDateTime>("dateAssigned"))
   }
