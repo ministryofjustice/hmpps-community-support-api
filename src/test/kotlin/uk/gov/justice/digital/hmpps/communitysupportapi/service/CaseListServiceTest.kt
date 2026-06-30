@@ -102,23 +102,6 @@ class CaseListServiceTest {
   }
 
   @Test
-  fun `should return empty page when user is a Delius user`() {
-    // Given
-    val referralUser = createReferralUser(authSource = "delius")
-    whenever(authenticationHolder.username).thenReturn("delius-user")
-    whenever(userMapper.fromToken(authenticationHolder)).thenReturn(referralUser)
-
-    // When
-    val result = caseListService.getUnassignedCases(pageable)
-
-    // Then
-    assertThat(result.isEmpty).isTrue()
-    verify(userMapper).fromToken(authenticationHolder)
-    verify(serviceProviderAccessScopeMapper, never()).fromUser(any())
-    verify(caseListViewRepository, never()).findAll(any<Specification<CaseListView>>(), any<Pageable>())
-  }
-
-  @Test
   fun `should return empty page when user has no service provider access`() {
     // Given
     val referralUser = createReferralUser()
@@ -240,17 +223,26 @@ class CaseListServiceTest {
   }
 
   @Test
-  fun `should return empty in-progress cases page when user is a Delius user`() {
-    val referralUser = createReferralUser(authSource = "delius")
+  fun `should return created by cases for user when user is delius user`() {
+    // Given
+    val deliusUser = createDeliusUser()
+    val serviceProvider = createServiceProvider()
+    val caseListViews = listOf(createCaseListView(serviceProvider.id))
+    val expectedPage: Page<CaseListView> = PageImpl(caseListViews, pageable, caseListViews.size.toLong())
+
     whenever(authenticationHolder.username).thenReturn("delius-user")
-    whenever(userMapper.fromToken(authenticationHolder)).thenReturn(referralUser)
+    whenever(userMapper.fromToken(authenticationHolder)).thenReturn(deliusUser)
+    whenever(caseListViewRepository.findAll(any<Specification<CaseListView>>(), eq(pageable))).thenReturn(expectedPage)
 
-    val result = caseListService.getInProgressCases(pageable)
+    // When
+    val result = caseListService.getUnassignedCases(pageable)
 
-    assertThat(result.isEmpty).isTrue()
+    // Then
+    assertThat(result.totalElements).isEqualTo(1)
+    assertThat(result.content[0].referralId).isEqualTo(caseListViews[0].referralId)
+    assertThat(result.content[0].referenceNumber).isEqualTo(caseListViews[0].referenceNumber)
     verify(userMapper).fromToken(authenticationHolder)
-    verify(serviceProviderAccessScopeMapper, never()).fromUser(any())
-    verify(caseListViewRepository, never()).findAll(any<Specification<CaseListView>>(), any<Pageable>())
+    verify(caseListViewRepository).findAll(any<Specification<CaseListView>>(), eq(pageable))
   }
 
   private fun createReferralUser(
@@ -258,6 +250,20 @@ class CaseListServiceTest {
     hmppsAuthId: String = UUID.randomUUID().toString(),
     hmppsAuthUsername: String = "test-user",
     authSource: String = "auth",
+    fullName: String = "Test User",
+  ) = ReferralUser(
+    id = id,
+    hmppsAuthId = hmppsAuthId,
+    hmppsAuthUsername = hmppsAuthUsername,
+    authSource = authSource,
+    fullName = fullName,
+  )
+
+  private fun createDeliusUser(
+    id: UUID = UUID.randomUUID(),
+    hmppsAuthId: String = UUID.randomUUID().toString(),
+    hmppsAuthUsername: String = "delius-user",
+    authSource: String = "delius",
     fullName: String = "Test User",
   ) = ReferralUser(
     id = id,
@@ -287,6 +293,7 @@ class CaseListServiceTest {
     dateAssigned: OffsetDateTime = OffsetDateTime.now().plusDays(1),
     communityServiceProviderId: UUID = UUID.randomUUID(),
     caseWorkers: List<String> = emptyList(),
+    createdBy: UUID = UUID.randomUUID(),
   ) = CaseListView(
     referralId = referralId,
     referenceNumber = referenceNumber,
@@ -297,5 +304,6 @@ class CaseListServiceTest {
     communityServiceProviderId = communityServiceProviderId,
     serviceProviderId = serviceProviderId,
     caseWorkers = caseWorkers,
+    createdBy = createdBy,
   )
 }

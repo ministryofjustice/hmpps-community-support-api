@@ -76,6 +76,7 @@ class ReferralService(
       crn = createReferralRequest.crn,
       personId = person.id,
       createdAt = now,
+      createdBy = userId,
       updatedAt = now,
       urgency = createReferralRequest.urgency,
     )

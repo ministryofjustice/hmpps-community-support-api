@@ -35,6 +35,9 @@ class Referral(
   @Column(name = "urgency")
   val urgency: Boolean? = null,
 
+  @Column(name = "created_by")
+  val createdBy: UUID,
+
   @OneToMany(mappedBy = "referral", cascade = [CascadeType.PERSIST, CascadeType.MERGE], orphanRemoval = true)
   val referralEvents: MutableList<ReferralEvent> = mutableListOf(),
 ) {

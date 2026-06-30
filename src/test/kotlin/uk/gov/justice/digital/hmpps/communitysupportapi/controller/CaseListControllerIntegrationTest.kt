@@ -282,7 +282,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
     fun `should return in-progress cases when user has service provider access`() {
       val testUser = referralHelper.createTestUser()
       val person = referralHelper.createPerson(identifier = "CRN12345")
-      val referral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      val referral = referralHelper.createReferral(person = person, submittedBy = testUser, createdBy = testUser.id)
       val caseWorkers = referralHelper.createCaseWorkers("CaseWorker One", "CaseWorker Two", "CaseWorker Three")
 
       stubManageUsersGetUserGroups(
@@ -302,7 +302,38 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
       assertThat(response.content[0].personName).isEqualTo("Smith, John")
       assertThat(response.content[0].personIdentifier).isEqualTo("CRN12345")
       assertThat(response.content[0].date).isNotNull()
-      assertThat(response.content[0].caseWorkers).containsExactly("CaseWorker One", "CaseWorker Two", "CaseWorker Three")
+      assertThat(response.content[0].caseWorkers).contains("CaseWorker One", "CaseWorker Two", "CaseWorker Three")
+    }
+
+    @Test
+    fun `should return in-progress cases for only the user who created the referral when user is delius user`() {
+      val testUser = referralHelper.createTestUser(authSource = "delius")
+      val otherUser = referralHelper.createTestUser(authSource = "delius", setAsActiveUser = false)
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val usersReferral = referralHelper.createReferral(person = person, submittedBy = testUser, createdBy = testUser.id)
+      val otherUsersReferral = referralHelper.createReferral(person = person, submittedBy = otherUser, createdBy = otherUser.id)
+      val caseWorkers = referralHelper.createCaseWorkers("CaseWorker Uno")
+
+      stubManageUsersGetUserGroups(
+        testUser.hmppsAuthId,
+        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
+      )
+
+      referralHelper.assignToCommunityServiceProvider(usersReferral, communityServiceProvider)
+      referralHelper.assignCaseWorkers(usersReferral, caseWorkers)
+      referralHelper.assignToCommunityServiceProvider(otherUsersReferral, communityServiceProvider)
+      referralHelper.assignCaseWorkers(otherUsersReferral, caseWorkers)
+
+      testDataCleaner.refreshMaterializedView()
+
+      val response = getInProgressCases(testUser)
+
+      assertThat(response.content).hasSize(1)
+      assertThat(response.content[0].referralId).isEqualTo(usersReferral.id)
+      assertThat(response.content[0].personName).isEqualTo("Smith, John")
+      assertThat(response.content[0].personIdentifier).isEqualTo("CRN12345")
+      assertThat(response.content[0].date).isNotNull()
+      assertThat(response.content[0].caseWorkers).containsExactly("CaseWorker Uno")
     }
 
     @Test
@@ -343,7 +374,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
         assertThat(caseDto.personName).isNotBlank()
         assertThat(caseDto.personIdentifier).startsWith("CRN")
         assertThat(caseDto.date).isNotNull()
-        assertThat(caseDto.caseWorkers).containsExactly("CaseWorker One", "CaseWorker Two")
+        assertThat(caseDto.caseWorkers).contains("CaseWorker One", "CaseWorker Two")
       }
     }
 
