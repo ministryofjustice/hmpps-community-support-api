@@ -160,7 +160,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("POST /bff/referral")
+  @DisplayName("POST /referral")
   inner class CreateReferrals {
 
     @BeforeEach
@@ -171,17 +171,17 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.POST, "/bff/referral")
+      assertUnauthorized(HttpMethod.POST, "/referral")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.POST, "/bff/referral", setUpData())
+      assertForbiddenNoRole(HttpMethod.POST, "/referral", setUpData())
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.POST, "/bff/referral", setUpData())
+      assertForbiddenWrongRole(HttpMethod.POST, "/referral", setUpData())
     }
 
     @Test
@@ -189,7 +189,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
       webTestClient.post()
-        .uri("/bff/referral")
+        .uri("/referral")
         .headers(setAuthorisation())
         .bodyValue(setUpData())
         .exchange()
@@ -226,7 +226,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
       webTestClient.post()
-        .uri("/bff/referral")
+        .uri("/referral")
         .headers(setAuthorisation())
         .bodyValue(
           CreateReferralRequest(
@@ -269,7 +269,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("POST /bff/{referralId}/submit-a-referral")
+  @DisplayName("POST /{referralId}/submit-a-referral")
   inner class SubmitReferral {
 
     @BeforeEach
@@ -280,17 +280,17 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.POST, "/bff/${UUID.randomUUID()}/submit-a-referral")
+      assertUnauthorized(HttpMethod.POST, "/${UUID.randomUUID()}/submit-a-referral")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.POST, "/bff/${UUID.randomUUID()}/submit-a-referral")
+      assertForbiddenNoRole(HttpMethod.POST, "/${UUID.randomUUID()}/submit-a-referral")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.POST, "/bff/${UUID.randomUUID()}/submit-a-referral")
+      assertForbiddenWrongRole(HttpMethod.POST, "/${UUID.randomUUID()}/submit-a-referral")
     }
 
     @Test
@@ -320,7 +320,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       referralProviderAssignmentRepository.save(providerAssignment)
 
       webTestClient.post()
-        .uri("/bff/${savedReferral.id}/submit-a-referral")
+        .uri("/${savedReferral.id}/submit-a-referral")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
