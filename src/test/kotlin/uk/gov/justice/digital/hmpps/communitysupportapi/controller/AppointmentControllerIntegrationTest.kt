@@ -11,6 +11,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpMethod.POST
+import org.springframework.http.HttpMethod.PUT
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
@@ -92,28 +93,28 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("POST /bff/referral/{caseIdentifier}/ics")
+  @DisplayName("POST /referral/{caseIdentifier}/ics")
   inner class CreateIcsAppointmentEndpoint {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(POST, "/bff/referral/${referral.id}/ics")
+      assertUnauthorized(POST, "/referral/${referral.id}/ics")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      assertForbiddenNoRole(POST, "/bff/referral/${referral.id}/ics", buildRequest())
+      assertForbiddenNoRole(POST, "/referral/${referral.id}/ics", buildRequest())
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      assertForbiddenWrongRole(POST, "/bff/referral/${referral.id}/ics", buildRequest())
+      assertForbiddenWrongRole(POST, "/referral/${referral.id}/ics", buildRequest())
     }
 
     @Test
     fun `should return 404 not found for unknown referral id`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
-      assertNotFound(POST, "/bff/referral/${UUID.randomUUID()}/appointment/ics", buildRequest())
+      assertNotFound(POST, "/referral/${UUID.randomUUID()}/ics", buildRequest())
     }
 
     @Test
@@ -130,7 +131,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.post()
-        .uri("/bff/referral/${referral.id}/ics")
+        .uri("/referral/${referral.id}/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -167,7 +168,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val request = buildRequest(type = SessionMethodType.VIDEO, additionalDetails = "Car broke down")
 
       webTestClient.post()
-        .uri("/bff/referral/${referral.id}/ics")
+        .uri("/referral/${referral.id}/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -195,7 +196,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val request = buildRequest(hour = 1, minute = 0, amPm = "pm")
 
       webTestClient.post()
-        .uri("/bff/referral/${referral.id}/ics")
+        .uri("/referral/${referral.id}/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -235,7 +236,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.post()
-        .uri("/bff/referral/${referral.id}/ics")
+        .uri("/referral/${referral.id}/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -257,28 +258,28 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("PUT /bff/referral/{caseIdentifier}/ics")
+  @DisplayName("PUT /referral/{caseIdentifier}/ics")
   inner class ChangeIcsAppointmentEndpoint {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(POST, "/bff/referral/${referral.id}/ics")
+      assertUnauthorized(POST, "/referral/${referral.id}/ics")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      assertForbiddenNoRole(POST, "/bff/referral/${referral.id}/ics", buildRequest())
+      assertForbiddenNoRole(POST, "/referral/${referral.id}/ics", buildRequest())
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      assertForbiddenWrongRole(POST, "/bff/referral/${referral.id}/ics", buildRequest())
+      assertForbiddenWrongRole(POST, "/referral/${referral.id}/ics", buildRequest())
     }
 
     @Test
     fun `should return 404 not found for unknown referral id`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
-      assertNotFound(POST, "/bff/referral/${UUID.randomUUID()}/appointment/ics", buildRequest())
+      assertNotFound(PUT, "/referral/${UUID.randomUUID()}/ics", buildRequest())
     }
 
     @Test
@@ -289,7 +290,6 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val appointment = appointmentHelper.createAppointment(referral)
       val now = LocalDateTime.now()
       val appointmentDateTime = now.plusDays(1)
-      val createdAt = now
       val delivery = appointmentHelper.createAppointmentDelivery(
         AppointmentDeliveryMethod.VIDEO_CALL,
         "Zoom link",
@@ -305,6 +305,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         listOf("Email", "Phone call"),
       )
 
+      // Create the reschedule appointment
       val rescheduleDate = appointmentDateTime.plusDays(5).toLocalDate()
       val rescheduleHourIn12 = if (appointmentDateTime.hour > 12) appointmentDateTime.hour - 12 else appointmentDateTime.hour
       val request = buildRequest(
@@ -322,7 +323,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.put()
-        .uri("/bff/referral/${referral.id}/ics")
+        .uri("/referral/${referral.id}/ics")
         .contentType(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .bodyValue(request)
@@ -351,14 +352,23 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           assertThat(ics.appointmentDateTime.hour).isEqualTo(appointmentDateTime.hour)
           assertThat(ics.appointmentDateTime.minute).isEqualTo(appointmentDateTime.minute)
           assertThat(ics.sessionCommunication).containsExactly("Phone call", "Text message")
-          assertThat(ics.changeRequestedBy).isEqualTo(ChangeRequesterType.REFERRAL_USER)
-          assertThat(ics.changeReason).isEqualTo("Feeling unwell and not abe to attend the appointment")
+          assertThat(ics.changeRequestedBy).isNull()
+          assertThat(ics.changeReason).isNull()
 
           // Status of previous appointment updated
           val previousAppointmentStatusHistory =
             appointmentStatusHistoryRepository.findTopByAppointmentIdOrderByCreatedAtDesc(savedIcs.appointment.id)
           assertThat(previousAppointmentStatusHistory?.appointment?.id).isEqualTo(savedIcs.appointment.id)
           assertThat(previousAppointmentStatusHistory?.status).isEqualTo(AppointmentStatusHistoryType.CHANGED)
+
+          // Previous ICS record contains the reason for change fields
+          val previousIcs = appointmentIcsRepository.findById(savedIcs.id).orElseThrow()
+          assertThat(previousIcs.appointmentDateTime.toLocalDate()).isEqualTo(savedIcs.appointmentDateTime.toLocalDate())
+          assertThat(previousIcs.appointmentDateTime.hour).isEqualTo(savedIcs.appointmentDateTime.hour)
+          assertThat(previousIcs.appointmentDateTime.minute).isEqualTo(savedIcs.appointmentDateTime.minute)
+          assertThat(previousIcs.sessionCommunication).containsExactly("Email", "Phone call")
+          assertThat(previousIcs.changeRequestedBy).isEqualTo(ChangeRequesterType.REFERRAL_USER)
+          assertThat(previousIcs.changeReason).isEqualTo("Feeling unwell and not abe to attend the appointment")
         }
     }
   }

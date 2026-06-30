@@ -22,7 +22,7 @@ data class CreateAppointmentRequest(
   val time: AppointmentTimeRequest,
   val sessionMethodRequest: SessionMethodRequest,
   val sessionCommunication: List<String> = emptyList(),
-  val changeAppointmentDetails: ChangeAppointmentDetails? = null,
+  var changeAppointmentDetails: ChangeAppointmentDetails? = null,
 )
 
 data class ChangeAppointmentDetails(
