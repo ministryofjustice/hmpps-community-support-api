@@ -340,6 +340,29 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           assertThat(updated.submittedEvent?.eventType).isEqualTo(ReferralEventType.SUBMITTED)
         }
     }
+
+    @Test
+    fun `should return 409 conflict when referral has already been submitted`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = personRepository.save(
+        PersonFactory()
+          .withFirstName("Jane")
+          .withLastName("Doe")
+          .withIdentifier("X654321")
+          .create(),
+      )
+      val alreadySubmittedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+
+      webTestClient.post()
+        .uri("/${alreadySubmittedReferral.id}/submit-a-referral")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .is4xxClientError
+        .expectStatus()
+        .isEqualTo(409)
+    }
   }
 
   @Nested

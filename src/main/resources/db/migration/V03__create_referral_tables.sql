@@ -55,6 +55,13 @@ CREATE TABLE IF NOT EXISTS referral_event (
     actor_id UUID REFERENCES referral_user(id)
 );
 
+-- Add a composite unique index scoped to event types that must be unique per referral.
+-- CREATED and SUBMITTED may only occur once; APPOINTMENT_FEEDBACK_SENT and UPDATED
+-- are repeatable and intentionally excluded.
+CREATE UNIQUE INDEX idx_referral_event_unique_type_per_referral
+    ON referral_event (referral_id, event_type)
+    WHERE event_type IN ('CREATED', 'SUBMITTED');
+
 -- Comments for referral_event table columns
 COMMENT ON COLUMN referral_event.id IS 'Unique identifier for the referral event';
 COMMENT ON COLUMN referral_event.referral_id IS 'Foreign key reference to the referral table';
