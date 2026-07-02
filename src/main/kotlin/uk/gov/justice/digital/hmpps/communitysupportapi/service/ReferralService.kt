@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonAdditionalSupportNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
@@ -13,6 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
@@ -21,11 +24,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.SubmitReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
@@ -48,6 +53,7 @@ class ReferralService(
   private val referenceGenerator: ReferralReferenceGenerator,
   private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
   private val referralLookupService: ReferralLookupService,
+  private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
@@ -64,6 +70,7 @@ class ReferralService(
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
   }
 
+  @Transactional
   fun createReferral(userId: UUID, createReferralRequest: CreateReferralRequest): ReferralCreationResult {
     val person = upsertPerson(createReferralRequest.personDetails)
     val communityServiceProvider = communityServiceProviderRepository.findById(createReferralRequest.communityServiceProviderId)
@@ -109,17 +116,34 @@ class ReferralService(
     )
   }
 
-  fun submitReferral(referralId: UUID, userId: UUID): SubmitReferralResponseDto {
+  @Transactional
+  fun submitReferral(
+    referralId: UUID,
+    userId: UUID,
+    request: SubmitReferralRequest? = null,
+  ): SubmitReferralResponseDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
     if (referral.submittedEvent != null) {
       throw ConflictException("Referral $referralId has already been submitted")
     }
+
     val providerAssignment = referralProviderAssignmentRepository.findByReferralId(referralId)
       .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $referralId")
 
     val communityServiceProvider = providerAssignment.communityServiceProvider
+
+    request?.additionalInformation?.let { additional ->
+      additional.supportNeeds?.let { supportNeeds ->
+        createOrUpdateSupportNeeds(
+          referralId = referral.id,
+          personId = referral.personId,
+          request = supportNeeds,
+          updatedBy = userId,
+        )
+      }
+    }
 
     val referralEvent = ReferralEvent(
       id = UUID.randomUUID(),
@@ -132,6 +156,48 @@ class ReferralService(
 
     referral.addEvent(referralEvent)
     referral.referenceNumber = generateReferenceNumber(communityServiceProvider, referralId)
+    val savedReferral = referralRepository.save(referral)
+    return SubmitReferralResponseDto(
+      referralId = savedReferral.id,
+      referenceNumber = savedReferral.referenceNumber,
+    )
+  }
+
+  @Transactional
+  fun updateReferral(
+    referralId: UUID,
+    userId: UUID,
+    request: SubmitReferralRequest? = null,
+  ): SubmitReferralResponseDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $request.referralId") }
+
+    val providerAssignment = referralProviderAssignmentRepository.findByReferralId(referralId)
+      .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $referralId")
+
+    val communityServiceProvider = providerAssignment.communityServiceProvider
+
+    request?.additionalInformation?.let { additional ->
+      additional.supportNeeds?.let { supportNeeds ->
+        createOrUpdateSupportNeeds(
+          referralId = referral.id,
+          personId = referral.personId,
+          request = supportNeeds,
+          updatedBy = userId,
+        )
+      }
+    }
+
+    val referralEvent = ReferralEvent(
+      id = UUID.randomUUID(),
+      eventType = ReferralEventType.UPDATED,
+      createdAt = OffsetDateTime.now(),
+      actorType = ActorType.AUTH,
+      actorId = userId,
+      referral = referral,
+    )
+
+    referral.addEvent(referralEvent)
     val savedReferral = referralRepository.save(referral)
     return SubmitReferralResponseDto(
       referralId = savedReferral.id,
@@ -280,5 +346,73 @@ class ReferralService(
       existing.address == incoming.address &&
       existing.phoneNumber == incoming.phoneNumber &&
       existing.emailAddress == incoming.emailAddress
+  }
+
+  private fun createSupportNeeds(
+    referralId: UUID,
+    personId: UUID,
+    request: PersonAdditionalSupportNeedsDto,
+    createdBy: UUID,
+  ) {
+    val supportNeeds = PersonAdditionalSupportNeeds(
+      id = UUID.randomUUID(),
+      referralId = referralId,
+      personId = personId,
+      noAdditionalSupportNeeded = request.noAdditionalSupportNeeded,
+      physicalHealthDetails = if (request.noAdditionalSupportNeeded) null else request.physicalHealthDetails,
+      mentalEmotionalHealthDetails = if (request.noAdditionalSupportNeeded) null else request.mentalEmotionalHealthDetails,
+      neurodiversityDetails = if (request.noAdditionalSupportNeeded) null else request.neurodiversityDetails,
+      locationTravelDetails = if (request.noAdditionalSupportNeeded) null else request.locationTravelDetails,
+      caringResponsibilitiesDetails = if (request.noAdditionalSupportNeeded) null else request.caringResponsibilitiesDetails,
+      employmentResponsibilitiesDetails = if (request.noAdditionalSupportNeeded) null else request.employmentResponsibilitiesDetails,
+      diversityDetails = if (request.noAdditionalSupportNeeded) null else request.diversityDetails,
+      anythingElseDetails = if (request.noAdditionalSupportNeeded) null else request.anythingElseDetails,
+      interpreterLanguage = request.interpreterLanguage,
+      createdBy = createdBy,
+      createdAt = OffsetDateTime.now(),
+    )
+
+    personAdditionalSupportNeedsRepository.save(supportNeeds)
+  }
+
+  private fun updateSupportNeeds(
+    existingRecord: PersonAdditionalSupportNeeds,
+    newRecord: PersonAdditionalSupportNeedsDto,
+    updatedBy: UUID,
+  ) {
+    val noAdditionalSupportNeeded = newRecord.noAdditionalSupportNeeded
+    val supportNeeds = PersonAdditionalSupportNeeds(
+      id = existingRecord.id,
+      referralId = existingRecord.referralId,
+      personId = existingRecord.personId,
+      noAdditionalSupportNeeded = newRecord.noAdditionalSupportNeeded,
+      physicalHealthDetails = if (noAdditionalSupportNeeded) null else newRecord.physicalHealthDetails,
+      mentalEmotionalHealthDetails = if (noAdditionalSupportNeeded) null else newRecord.mentalEmotionalHealthDetails,
+      neurodiversityDetails = if (noAdditionalSupportNeeded) null else newRecord.neurodiversityDetails,
+      locationTravelDetails = if (noAdditionalSupportNeeded) null else newRecord.locationTravelDetails,
+      caringResponsibilitiesDetails = if (noAdditionalSupportNeeded) null else newRecord.caringResponsibilitiesDetails,
+      employmentResponsibilitiesDetails = if (noAdditionalSupportNeeded) null else newRecord.employmentResponsibilitiesDetails,
+      diversityDetails = if (noAdditionalSupportNeeded) null else newRecord.diversityDetails,
+      anythingElseDetails = if (noAdditionalSupportNeeded) null else newRecord.anythingElseDetails,
+      interpreterLanguage = newRecord.interpreterLanguage,
+      createdBy = existingRecord.createdBy,
+      createdAt = existingRecord.createdAt,
+      updatedBy = updatedBy,
+      updatedAt = OffsetDateTime.now(),
+    )
+    personAdditionalSupportNeedsRepository.save(supportNeeds)
+  }
+
+  private fun createOrUpdateSupportNeeds(
+    referralId: UUID,
+    personId: UUID,
+    request: PersonAdditionalSupportNeedsDto,
+    updatedBy: UUID,
+  ) {
+    personAdditionalSupportNeedsRepository.findByReferralId(referralId)
+      ?.let { existing ->
+        updateSupportNeeds(existing, request, updatedBy)
+      }
+      ?: createSupportNeeds(referralId, personId, request, updatedBy)
   }
 }
