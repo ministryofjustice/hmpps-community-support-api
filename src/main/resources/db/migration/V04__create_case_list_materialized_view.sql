@@ -12,16 +12,20 @@ SELECT
     rpa.community_service_provider_id,
     csp.service_provider_id,
     COALESCE(
-        array_agg(ru.full_name) FILTER (WHERE ru.id IS NOT NULL),
-        ARRAY[]::TEXT[]
+                    array_agg(ru.full_name) FILTER (WHERE ru.id IS NOT NULL),
+                    ARRAY[]::TEXT[]
     ) AS case_workers
 FROM referral r
-    INNER JOIN person p ON r.person_id = p.id
-    INNER JOIN referral_event re ON re.referral_id = r.id AND re.event_type = 'SUBMITTED'
-    INNER JOIN referral_provider_assignment rpa ON rpa.referral_id = r.id
-    INNER JOIN community_service_provider csp ON csp.id = rpa.community_service_provider_id
-    LEFT JOIN referral_user_assignment rua ON rua.referral_id = r.id AND rua.deleted_at IS NULL
-    LEFT JOIN referral_user ru ON ru.id = rua.user_id
+         INNER JOIN person p ON r.person_id = p.id
+         INNER JOIN (
+    SELECT DISTINCT ON (referral_id) referral_id, created_at
+    FROM referral_event
+    WHERE event_type = 'SUBMITTED'
+    ORDER BY referral_id, created_at) re ON re.referral_id = r.id
+         INNER JOIN referral_provider_assignment rpa ON rpa.referral_id = r.id
+         INNER JOIN community_service_provider csp ON csp.id = rpa.community_service_provider_id
+         LEFT JOIN referral_user_assignment rua ON rua.referral_id = r.id AND rua.deleted_at IS NULL
+         LEFT JOIN referral_user ru ON ru.id = rua.user_id
 WHERE r.reference_number IS NOT NULL
 GROUP BY
     r.id,

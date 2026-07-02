@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
@@ -112,6 +113,9 @@ class ReferralService(
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
+    if (referral.submittedEvent != null) {
+      throw ConflictException("Referral $referralId has already been submitted")
+    }
     val providerAssignment = referralProviderAssignmentRepository.findByReferralId(referralId)
       .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $referralId")
 
