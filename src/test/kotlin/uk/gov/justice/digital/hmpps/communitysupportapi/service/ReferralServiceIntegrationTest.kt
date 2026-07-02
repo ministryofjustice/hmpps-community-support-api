@@ -1,12 +1,18 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.WithUpdated
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
@@ -25,6 +31,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprPrisonPersonJson
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import java.time.LocalDate
@@ -374,6 +384,104 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertEquals(person.firstName, referralInformation.firstName)
     assertEquals(person.lastName, referralInformation.lastName)
     assertEquals(communityServiceProvider.id, referralInformation.communityServiceProviderId)
+  }
+
+  @Test
+  fun `Get person details using CRN identifier`() {
+    val person = referralHelper.createPerson(identifier = CRN)
+
+    stubFor(
+      get(urlPathEqualTo("/person/probation/$CRN"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(cprProbationPersonJson(person.identifier)),
+        ),
+    )
+
+    val result = referralService.getPersonDetails(person.identifier)
+    assertEquals(person.id, result.id)
+
+    assertEquals(CRN, result.personalDetails.personIdentifier)
+    assertEquals("Mr", result.personalDetails.title)
+    assertEquals("John", result.personalDetails.firstName)
+    assertEquals("David", result.personalDetails.middleNames)
+    assertEquals("Smith", result.personalDetails.lastName)
+    assertEquals("1985-01-01", result.personalDetails.dateOfBirth.toString())
+    assertEquals(emptyList<String>(), result.personalDetails.prisonNumbers)
+    assertNull(result.personalDetails.preferredLanguage)
+    assertEquals(WithUpdated("", LocalDate.EPOCH), result.personalDetails.currentCircumstances)
+    assertEquals(WithUpdated(emptyList<String>(), LocalDate.EPOCH), result.personalDetails.disabilities)
+
+    assertEquals("Male", result.equalityMonitoring.sex)
+    assertEquals("White", result.equalityMonitoring.ethnicity)
+    assertNull(result.equalityMonitoring.neurodiverseConditions)
+    assertEquals("Christian", result.equalityMonitoring.religionOrBelief)
+    assertNull(result.equalityMonitoring.transgender)
+    assertEquals("Heterosexual", result.equalityMonitoring.sexualOrientation)
+    assertEquals("Male", result.equalityMonitoring.genderIdentity)
+    assertEquals(listOf("Argentine", "Brazilian"), result.equalityMonitoring.nationalities)
+    assertNull(result.equalityMonitoring.interestToImmigration)
+    assertEquals(true, result.equalityMonitoring.disability)
+
+    assertEquals("1, Test Street, Testville, TE1 1ST", result.contactDetails.address.address)
+    assertEquals("Friends/Family (settled) (verified)", result.contactDetails.address.addressType)
+    assertEquals(false, result.contactDetails.address.addressTypeVerified)
+    assertEquals("2005-12-01", result.contactDetails.address.addressStartDate.toString())
+    assertEquals("No notes", result.contactDetails.address.addressNotes)
+    assertEquals("01234567890", result.contactDetails.phoneNumber)
+    assertEquals("07700900002", result.contactDetails.mobileNumber)
+    assertEquals("john.smith@example.com", result.contactDetails.emailAddress)
+  }
+
+  @Test
+  fun `Get person details using prison number`() {
+    val person = referralHelper.createPerson(identifier = PRISONER_NUMBER)
+
+    stubFor(
+      get(urlPathEqualTo("/person/prison/$PRISONER_NUMBER"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(cprPrisonPersonJson(person.identifier)),
+        ),
+    )
+
+    val result = referralService.getPersonDetails(person.identifier)
+    assertEquals(person.id, result.id)
+
+    assertEquals(PRISONER_NUMBER, result.personalDetails.personIdentifier)
+    assertEquals("Mr", result.personalDetails.title)
+    assertEquals("John", result.personalDetails.firstName)
+    assertEquals("James", result.personalDetails.middleNames)
+    assertEquals("Smith", result.personalDetails.lastName)
+    assertEquals("1985-01-01", result.personalDetails.dateOfBirth.toString())
+    assertEquals(listOf(PRISONER_NUMBER), result.personalDetails.prisonNumbers)
+    assertNull(result.personalDetails.preferredLanguage)
+    assertEquals(WithUpdated("", LocalDate.EPOCH), result.personalDetails.currentCircumstances)
+    assertEquals(WithUpdated(emptyList<String>(), LocalDate.EPOCH), result.personalDetails.disabilities)
+
+    assertEquals("Male", result.equalityMonitoring.sex)
+    assertEquals("White", result.equalityMonitoring.ethnicity)
+    assertNull(result.equalityMonitoring.neurodiverseConditions)
+    assertEquals("Christian", result.equalityMonitoring.religionOrBelief)
+    assertNull(result.equalityMonitoring.transgender)
+    assertEquals("Heterosexual", result.equalityMonitoring.sexualOrientation)
+    assertEquals("Male", result.equalityMonitoring.genderIdentity)
+    assertEquals(listOf("British"), result.equalityMonitoring.nationalities)
+    assertNull(result.equalityMonitoring.interestToImmigration)
+    assertEquals(false, result.equalityMonitoring.disability)
+
+    assertEquals("10, Prison Road, Leeds, LS1 1AA", result.contactDetails.address.address)
+    assertEquals("Home", result.contactDetails.address.addressType)
+    assertEquals(false, result.contactDetails.address.addressTypeVerified)
+    assertEquals("2020-04-03", result.contactDetails.address.addressStartDate.toString())
+    assertNull(result.contactDetails.address.addressNotes)
+    assertEquals("01234567890", result.contactDetails.phoneNumber)
+    assertEquals("07700900002", result.contactDetails.mobileNumber)
+    assertEquals("john.smith@example.com", result.contactDetails.emailAddress)
   }
 
   private fun setUpData(): CreateReferralRequest {
