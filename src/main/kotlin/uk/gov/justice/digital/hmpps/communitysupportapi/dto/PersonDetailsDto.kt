@@ -55,6 +55,9 @@ data class ContactDetails(
 )
 
 fun getCurrentCircumstances(provisions: List<ProvisionDto>): WithUpdated<String>? {
+  if (provisions.isEmpty()) {
+    return null
+  }
   val currentProvision = provisions.sortedByDescending { it.startDate }.first()
   if (currentProvision.provisionType?.description != null && currentProvision.startDate != null) {
     return WithUpdated(currentProvision.provisionType.description, currentProvision.startDate)
@@ -63,14 +66,17 @@ fun getCurrentCircumstances(provisions: List<ProvisionDto>): WithUpdated<String>
 }
 
 fun getDisabilities(disabilities: List<DisabilityDto>): WithUpdated<List<String>>? {
+  if (disabilities.isEmpty()) {
+    return null
+  }
   val latestUpdated = disabilities.sortedByDescending { it.startDate }.first().startDate
-  val disabilityList = disabilities.map { disability ->
+  val disabilityList = disabilities.mapNotNull { disability ->
     if (disability.disabilityType?.description != null) {
       disability.disabilityType.description
     } else {
       null
     }
-  }.filterNotNull()
+  }
   if (latestUpdated != null) {
     return WithUpdated(disabilityList, latestUpdated)
   }

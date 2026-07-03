@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.WithUpdated
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
@@ -411,8 +410,8 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertEquals("1985-01-01", result.personalDetails.dateOfBirth.toString())
     assertEquals(emptyList<String>(), result.personalDetails.prisonNumbers)
     assertNull(result.personalDetails.preferredLanguage)
-    assertEquals(WithUpdated("provision 2", LocalDate.parse("2022-01-01")), result.personalDetails.currentCircumstances)
-    assertEquals(WithUpdated(listOf("disability 1", "disability 2"), LocalDate.parse("2022-01-01")), result.personalDetails.disabilities)
+    assertNull(result.personalDetails.currentCircumstances)
+    assertNull(result.personalDetails.disabilities)
 
     assertEquals("Male", result.equalityMonitoring.sex)
     assertEquals("White", result.equalityMonitoring.ethnicity)
@@ -460,8 +459,8 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertEquals("1985-01-01", result.personalDetails.dateOfBirth.toString())
     assertEquals(listOf(PRISONER_NUMBER), result.personalDetails.prisonNumbers)
     assertNull(result.personalDetails.preferredLanguage)
-    assertEquals(WithUpdated("provision 2", LocalDate.parse("2022-01-01")), result.personalDetails.currentCircumstances)
-    assertEquals(WithUpdated(listOf("disability 1", "disability 2"), LocalDate.parse("2022-01-01")), result.personalDetails.disabilities)
+    assertNull(result.personalDetails.currentCircumstances)
+    assertNull(result.personalDetails.disabilities)
 
     assertEquals("Male", result.equalityMonitoring.sex)
     assertEquals("White", result.equalityMonitoring.ethnicity)
