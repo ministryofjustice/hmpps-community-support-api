@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -26,6 +27,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.SubmitReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -103,15 +105,49 @@ class ReferralController(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "Referral created",
+        description = "Referral submitted",
         content = [Content(mediaType = "application/json", schema = Schema(implementation = SubmitReferralResponseDto::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
       ),
     ],
   )
   @PostMapping("/{referralId}/submit-a-referral")
-  fun submitReferral(@PathVariable referralId: UUID): ResponseEntity<SubmitReferralResponseDto> {
+  fun submitReferral(
+    @PathVariable referralId: UUID,
+    @RequestBody(required = false) request: SubmitReferralRequest?,
+  ): ResponseEntity<SubmitReferralResponseDto> {
     val user = userMapper.fromToken(authenticationHolder)
-    return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
+
+    return ResponseEntity.ok(referralService.submitReferral(referralId, user.id, request))
+  }
+
+  @Operation(summary = "Update a referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral updated",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = SubmitReferralResponseDto::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/referral/{referralId}/additional-information")
+  fun updateReferral(
+    @PathVariable referralId: UUID,
+    @RequestBody(required = false) request: SubmitReferralRequest?,
+  ): ResponseEntity<SubmitReferralResponseDto> {
+    val user = userMapper.fromToken(authenticationHolder)
+
+    return ResponseEntity.ok(referralService.updateReferral(referralId, user.id, request))
   }
 
   @Operation(summary = "Get referral progress page data")

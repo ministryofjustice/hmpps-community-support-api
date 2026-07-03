@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceP
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
@@ -88,6 +89,20 @@ class ReferralTestSupport(
     )
   }
 
+  fun createDraftReferral(
+    person: Person,
+    createdAt: OffsetDateTime = OffsetDateTime.now(),
+    createdBy: UUID = UUID.randomUUID(),
+  ): Referral = referralRepository.save(
+    ReferralFactory()
+      .withPersonId(person.id)
+      .withCrn(person.identifier)
+      .withCreatedAt(createdAt)
+      .withCreatedBy(createdBy)
+      .withCreatedEvent(actorId = createdBy, createdAt = createdAt)
+      .create(),
+  )
+
   fun createReferral(
     person: Person,
     referenceNumber: String? = "AB1234CD",
@@ -98,10 +113,12 @@ class ReferralTestSupport(
     ReferralFactory()
       .withPersonId(person.id)
       .withCrn(person.identifier)
-      .withReferenceNumber(referenceNumber)
       .withCreatedAt(createdAt)
-      .withSubmittedEvent(actorId = submittedBy.id, createdAt = createdAt)
       .withCreatedBy(createdBy)
+      .withCreatedEvent(actorId = submittedBy.id, createdAt = createdAt)
+      .withReferenceNumber(referenceNumber)
+      .withUpdatedAt(createdAt)
+      .withSubmittedEvent(actorId = submittedBy.id, createdAt = OffsetDateTime.now())
       .create(),
   )
 
@@ -119,6 +136,16 @@ class ReferralTestSupport(
       .withDateOfBirth(dateOfBirth)
       .withGender(gender)
       .withCreatedAt(OffsetDateTime.now())
+      .create(),
+  )
+
+  fun createProviderAssignment(
+    referral: Referral,
+    communityServiceProvider: CommunityServiceProvider,
+  ): ReferralProviderAssignment = referralProviderAssignmentRepository.save(
+    ReferralProviderAssignmentFactory()
+      .withReferral(referral)
+      .withCommunityServiceProvider(communityServiceProvider)
       .create(),
   )
 
