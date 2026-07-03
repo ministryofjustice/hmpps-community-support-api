@@ -15,7 +15,7 @@ data class PersonAdditionalSupportNeedsDto(
   val employmentResponsibilitiesDetails: String? = null,
   val diversityDetails: String? = null,
   val anythingElseDetails: String? = null,
-  var noAdditionalSupportNeeded: Boolean = false,
+  val noAdditionalSupportNeeded: Boolean = false,
   val interpreterLanguage: String? = null,
 ) {
   companion object {

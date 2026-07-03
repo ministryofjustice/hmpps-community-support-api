@@ -32,44 +32,44 @@ class PersonAdditionalSupportNeeds(
   val person: Person? = null,
 
   @Column(name = "physical_health_details")
-  var physicalHealthDetails: String? = null,
+  val physicalHealthDetails: String? = null,
 
   @Column(name = "mental_emotional_health_details")
-  var mentalEmotionalHealthDetails: String? = null,
+  val mentalEmotionalHealthDetails: String? = null,
 
   @Column(name = "neurodiversity_details")
-  var neurodiversityDetails: String? = null,
+  val neurodiversityDetails: String? = null,
 
   @Column(name = "location_travel_details")
-  var locationTravelDetails: String? = null,
+  val locationTravelDetails: String? = null,
 
   @Column(name = "caring_responsibilities_details")
-  var caringResponsibilitiesDetails: String? = null,
+  val caringResponsibilitiesDetails: String? = null,
 
   @Column(name = "employment_responsibilities_details")
-  var employmentResponsibilitiesDetails: String? = null,
+  val employmentResponsibilitiesDetails: String? = null,
 
   @Column(name = "diversity_details")
-  var diversityDetails: String? = null,
+  val diversityDetails: String? = null,
 
   @Column(name = "anything_else_details")
-  var anythingElseDetails: String? = null,
+  val anythingElseDetails: String? = null,
 
   @Column(name = "no_additional_support_needed", nullable = false)
-  var noAdditionalSupportNeeded: Boolean = false,
+  val noAdditionalSupportNeeded: Boolean = false,
 
   @Column(name = "interpreter_language")
-  var interpreterLanguage: String? = null,
+  val interpreterLanguage: String? = null,
 
   @Column(name = "created_at")
   val createdAt: OffsetDateTime? = null,
 
   @Column(name = "updated_at")
-  var updatedAt: OffsetDateTime? = null,
+  val updatedAt: OffsetDateTime? = null,
 
   @Column(name = "created_by", nullable = false)
   val createdBy: UUID,
 
   @Column(name = "updated_by")
-  var updatedBy: UUID? = null,
+  val updatedBy: UUID? = null,
 )
