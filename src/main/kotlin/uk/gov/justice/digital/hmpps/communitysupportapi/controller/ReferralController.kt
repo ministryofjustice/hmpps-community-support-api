@@ -251,7 +251,7 @@ class ReferralController(
       ApiResponse(
         responseCode = "404",
         description = "Person details not found",
-        content = [Content(mediaType = "application/json")],
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = PersonDetailsDto::class))],
       ),
     ],
   )
