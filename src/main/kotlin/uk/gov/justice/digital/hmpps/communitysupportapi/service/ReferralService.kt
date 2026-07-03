@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonAdditionalSupportNeedsDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
@@ -11,6 +12,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
@@ -24,6 +26,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.SubmitReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
@@ -36,6 +39,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.parseDateOfBirth
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -53,6 +57,8 @@ class ReferralService(
   private val referenceGenerator: ReferralReferenceGenerator,
   private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
   private val referralLookupService: ReferralLookupService,
+  private val cprProbationService: CprProbationService,
+  private val identifierValidator: PersonIdentifierValidator,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
 ) {
   companion object {
@@ -263,6 +269,25 @@ class ReferralService(
       providerAssignment.communityServiceProvider,
     )
     return ReferralInformationDto.from(referralResult)
+  }
+
+  fun getPersonDetails(personIdentifier: String): PersonDetailsDto {
+    val person = personRepository.findByIdentifier(personIdentifier)
+      ?: throw NotFoundException("Person not found for identifier $personIdentifier")
+
+    // TODO: get offenderProfile from DeliusPersonDto
+    val offenderProfile = OffenderProfileDto()
+
+    val identifier = identifierValidator.validate(personIdentifier)
+
+    val personAggregate = requireNotNull(
+      when (identifier) {
+        is PersonIdentifier.Crn -> cprProbationService.getPersonDetailsByCrn(identifier.value)
+        is PersonIdentifier.PrisonerNumber -> cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
+      },
+    )
+
+    return PersonDetailsDto.from(person.id, personAggregate, offenderProfile)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {

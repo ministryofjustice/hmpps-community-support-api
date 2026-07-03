@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
@@ -234,6 +235,32 @@ class ReferralController(
       referralService.getReferralInformation(caseIdentifier)
     } catch (e: RuntimeException) {
       log.warn("Referral not found for case reference={}", caseIdentifier, e)
+      return ResponseEntity.notFound().build()
+    }
+    return ResponseEntity.ok(result)
+  }
+
+  @Operation(summary = "Get person details for referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Person details found",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Person details not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/find-person-details/{personIdentifier}")
+  fun getReferralPersonDetails(@PathVariable personIdentifier: String): ResponseEntity<PersonDetailsDto> {
+    val result = try {
+      referralService.getPersonDetails(personIdentifier)
+    } catch (e: RuntimeException) {
+      log.warn("Person details not found for person identifier={}", personIdentifier, e)
       return ResponseEntity.notFound().build()
     }
     return ResponseEntity.ok(result)
