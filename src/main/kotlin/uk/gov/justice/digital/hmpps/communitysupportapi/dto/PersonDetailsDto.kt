@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DisabilityDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.ProvisionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import java.time.LocalDate
@@ -19,8 +22,8 @@ data class PersonalDetails(
   val dateOfBirth: LocalDate,
   val prisonNumbers: List<String> = emptyList(),
   val preferredLanguage: String? = null,
-  val currentCircumstances: WithUpdated<String>,
-  val disabilities: WithUpdated<List<String>>,
+  val currentCircumstances: WithUpdated<String>? = null,
+  val disabilities: WithUpdated<List<String>>? = null,
 )
 
 data class EqualityMonitoring(
@@ -51,6 +54,29 @@ data class ContactDetails(
   val address: Address,
 )
 
+fun getCurrentCircumstances(provisions: List<ProvisionDto>): WithUpdated<String>? {
+  val currentProvision = provisions.sortedByDescending { it.startDate }.first()
+  if (currentProvision.provisionType?.description != null && currentProvision.startDate != null) {
+    return WithUpdated(currentProvision.provisionType.description, currentProvision.startDate)
+  }
+  return null
+}
+
+fun getDisabilities(disabilities: List<DisabilityDto>): WithUpdated<List<String>>? {
+  val latestUpdated = disabilities.sortedByDescending { it.startDate }.first().startDate
+  val disabilityList = disabilities.map { disability ->
+    if (disability.disabilityType?.description != null) {
+      disability.disabilityType.description
+    } else {
+      null
+    }
+  }.filterNotNull()
+  if (latestUpdated != null) {
+    return WithUpdated(disabilityList, latestUpdated)
+  }
+  return null
+}
+
 data class PersonDetailsDto(
   val id: UUID,
   val personalDetails: PersonalDetails,
@@ -58,7 +84,7 @@ data class PersonDetailsDto(
   val contactDetails: ContactDetails,
 ) {
   companion object {
-    fun from(id: UUID, personAggregate: PersonAggregate): PersonDetailsDto = PersonDetailsDto(
+    fun from(id: UUID, personAggregate: PersonAggregate, offenderProfile: OffenderProfileDto): PersonDetailsDto = PersonDetailsDto(
       id = id,
       personalDetails = PersonalDetails(
         personIdentifier = when (personAggregate.person.identifier) {
@@ -72,15 +98,8 @@ data class PersonDetailsDto(
         dateOfBirth = personAggregate.person.dateOfBirth,
         prisonNumbers = personAggregate.person.prisonNumbers,
         preferredLanguage = personAggregate.additionalDetails?.preferredLanguage,
-        // TODO: get this info from nDelius
-        currentCircumstances = WithUpdated(
-          value = "",
-          updated = LocalDate.EPOCH,
-        ),
-        disabilities = WithUpdated(
-          value = emptyList(),
-          updated = LocalDate.EPOCH,
-        ),
+        currentCircumstances = getCurrentCircumstances(offenderProfile.provisions),
+        disabilities = getDisabilities(offenderProfile.disabilities),
       ),
       equalityMonitoring = EqualityMonitoring(
         sex = personAggregate.person.sex,

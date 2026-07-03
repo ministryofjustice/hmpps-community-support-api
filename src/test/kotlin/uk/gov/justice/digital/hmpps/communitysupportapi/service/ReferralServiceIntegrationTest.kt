@@ -411,8 +411,8 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertEquals("1985-01-01", result.personalDetails.dateOfBirth.toString())
     assertEquals(emptyList<String>(), result.personalDetails.prisonNumbers)
     assertNull(result.personalDetails.preferredLanguage)
-    assertEquals(WithUpdated("", LocalDate.EPOCH), result.personalDetails.currentCircumstances)
-    assertEquals(WithUpdated(emptyList<String>(), LocalDate.EPOCH), result.personalDetails.disabilities)
+    assertEquals(WithUpdated("provision 2", LocalDate.parse("2022-01-01")), result.personalDetails.currentCircumstances)
+    assertEquals(WithUpdated(listOf("disability 1", "disability 2"), LocalDate.parse("2022-01-01")), result.personalDetails.disabilities)
 
     assertEquals("Male", result.equalityMonitoring.sex)
     assertEquals("White", result.equalityMonitoring.ethnicity)
@@ -460,8 +460,8 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertEquals("1985-01-01", result.personalDetails.dateOfBirth.toString())
     assertEquals(listOf(PRISONER_NUMBER), result.personalDetails.prisonNumbers)
     assertNull(result.personalDetails.preferredLanguage)
-    assertEquals(WithUpdated("", LocalDate.EPOCH), result.personalDetails.currentCircumstances)
-    assertEquals(WithUpdated(emptyList<String>(), LocalDate.EPOCH), result.personalDetails.disabilities)
+    assertEquals(WithUpdated("provision 2", LocalDate.parse("2022-01-01")), result.personalDetails.currentCircumstances)
+    assertEquals(WithUpdated(listOf("disability 1", "disability 2"), LocalDate.parse("2022-01-01")), result.personalDetails.disabilities)
 
     assertEquals("Male", result.equalityMonitoring.sex)
     assertEquals("White", result.equalityMonitoring.ethnicity)

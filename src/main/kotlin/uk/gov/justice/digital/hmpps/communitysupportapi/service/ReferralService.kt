@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CodeDescriptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
@@ -10,6 +11,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DisabilityDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.ProvisionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
@@ -34,6 +38,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.parseDateOfBirth
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -213,6 +218,35 @@ class ReferralService(
     val person = personRepository.findByIdentifier(personIdentifier)
       ?: throw NotFoundException("Person not found for identifier $personIdentifier")
 
+    // TODO: get offenderProfile from DeliusPersonDto - stub for now
+    val offenderProfile = OffenderProfileDto(
+      disabilities = listOf(
+        DisabilityDto(
+          disabilityId = 1,
+          disabilityType = CodeDescriptionDto(code = "D1", description = "disability 1"),
+          startDate = LocalDate.parse("2021-01-01"),
+        ),
+        DisabilityDto(
+          disabilityId = 2,
+          disabilityType = CodeDescriptionDto(code = "D2", description = "disability 2"),
+          startDate = LocalDate.parse("2022-01-01"),
+        ),
+      ),
+      provisions = listOf(
+        ProvisionDto(
+          provisionId = 1,
+          provisionType = CodeDescriptionDto(code = "P1", description = "provision 1"),
+          startDate = LocalDate.parse("2021-01-01"),
+          endDate = LocalDate.parse("2021-01-31"),
+        ),
+        ProvisionDto(
+          provisionId = 2,
+          provisionType = CodeDescriptionDto(code = "P2", description = "provision 2"),
+          startDate = LocalDate.parse("2022-01-01"),
+        ),
+      ),
+    )
+
     val identifier = identifierValidator.validate(personIdentifier)
 
     val personAggregate = requireNotNull(
@@ -222,7 +256,7 @@ class ReferralService(
       },
     )
 
-    return PersonDetailsDto.from(person.id, personAggregate)
+    return PersonDetailsDto.from(person.id, personAggregate, offenderProfile)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
