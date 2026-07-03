@@ -51,6 +51,17 @@ class ReferralFactory : TestEntityFactory<Referral>() {
   fun withUrgency(urgency: Boolean?) = apply { this.urgency = urgency }
   fun withCreatedBy(createdBy: UUID) = apply { this.createdBy = createdBy }
 
+  fun withCreatedEvent(actorId: UUID = DEFAULT_ACTOR_ID, createdAt: OffsetDateTime? = null) = apply {
+    events.add { referral ->
+      ReferralEventFactory()
+        .withReferral(referral)
+        .withEventType(ReferralEventType.CREATED)
+        .withActorId(actorId)
+        .withCreatedAt(createdAt ?: referral.createdAt)
+        .create()
+    }
+  }
+
   fun withSubmittedEvent(actorId: UUID = DEFAULT_ACTOR_ID, createdAt: OffsetDateTime? = null) = apply {
     events.add { referral ->
       ReferralEventFactory()
