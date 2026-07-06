@@ -165,6 +165,7 @@ class ReferralService(
     val savedReferral = referralRepository.save(referral)
     return SubmitReferralResponseDto(
       referralId = savedReferral.id,
+      personId = savedReferral.personId,
       referenceNumber = savedReferral.referenceNumber,
     )
   }
@@ -202,6 +203,7 @@ class ReferralService(
     val savedReferral = referralRepository.save(referral)
     return SubmitReferralResponseDto(
       referralId = savedReferral.id,
+      personId = referral.personId,
       referenceNumber = savedReferral.referenceNumber,
     )
   }

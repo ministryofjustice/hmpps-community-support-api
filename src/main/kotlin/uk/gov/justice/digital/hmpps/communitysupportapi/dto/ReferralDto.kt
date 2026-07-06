@@ -70,6 +70,7 @@ data class ReferralCreationResult(
 
 data class SubmitReferralResponseDto(
   val referralId: UUID,
+  val personId: UUID,
   val referenceNumber: String?,
 )
 

@@ -325,6 +325,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
             val updatedReferral = referralRepository.findById(savedReferral.id).get()
             val submitReferralResponseDto = SubmitReferralResponseDto(
               referralId = updatedReferral.id,
+              personId = updatedReferral.personId,
               referenceNumber = updatedReferral.referenceNumber,
             )
             response.responseBody shouldBe submitReferralResponseDto
