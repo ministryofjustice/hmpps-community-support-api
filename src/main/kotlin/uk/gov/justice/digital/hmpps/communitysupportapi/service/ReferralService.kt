@@ -203,7 +203,7 @@ class ReferralService(
     val savedReferral = referralRepository.save(referral)
     return SubmitReferralResponseDto(
       referralId = savedReferral.id,
-      personId = referral.personId,
+      personId = savedReferral.personId,
       referenceNumber = savedReferral.referenceNumber,
     )
   }
