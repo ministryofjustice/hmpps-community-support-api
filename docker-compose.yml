@@ -5,7 +5,7 @@ services:
       - hmpps
     depends_on:
       - auth-db
-    container_name: hmpps-auth
+    container_name: hmpps-auth-community-support-api
     ports:
       - "8090:8080"
     healthcheck:
@@ -22,7 +22,7 @@ services:
     image: ghcr.io/ministryofjustice/hmpps-manage-users-api:latest
     networks:
       - hmpps
-    container_name: hmpps-manage-users
+    container_name: hmpps-manage-users-community-support-api
     depends_on:
       - hmpps-auth
       - nomis-user-roles-api
@@ -45,7 +45,7 @@ services:
     image: ghcr.io/ministryofjustice/nomis-user-roles-api:latest
     networks:
       - hmpps
-    container_name: nomis-user-roles-api
+    container_name: nomis-user-roles-community-support-api
     depends_on:
       - hmpps-auth
     ports:
@@ -61,7 +61,7 @@ services:
     image: ghcr.io/ministryofjustice/hmpps-external-users-api:latest
     networks:
       - hmpps
-    container_name: hmpps-external-users-api
+    container_name: hmpps-external-users-community-support-api
     depends_on:
       - auth-db
       - hmpps-auth
@@ -95,7 +95,7 @@ services:
 
   postgresql:
     image: postgres:18.4
-    container_name: postgres-api
+    container_name: postgres-community-support-api
     networks:
       - hmpps
     restart: always
@@ -126,7 +126,7 @@ services:
     image: localstack/localstack:4
     networks:
       - hmpps
-    container_name: hmpps-com-support-localstack-api
+    container_name: hmpps-com-support-localstack-community-support-api
     ports:
       - "4566:4566"
       - "8999:8080"
