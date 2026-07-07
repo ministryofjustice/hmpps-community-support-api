@@ -241,7 +241,7 @@ class ReferralController(
     return ResponseEntity.ok(result)
   }
 
-  @Operation(summary = "Get person details for referral")
+  @Operation(summary = "Get the details necessary to Confirm a Person's Detail in the Referral flow")
   @ApiResponses(
     value = [
       ApiResponse(
@@ -252,7 +252,7 @@ class ReferralController(
       ApiResponse(
         responseCode = "404",
         description = "Person details not found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = PersonDetailsDto::class))],
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ConfirmPersonDetailsBffDto::class))],
       ),
     ],
   )
