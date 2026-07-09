@@ -34,4 +34,10 @@ class TestWebClientConfiguration {
   fun manageUsersWebClient(
     @Value("\${services.manage-users-api.base-url}") manageUsersBaseUrl: String,
   ): WebClient = WebClient.builder().baseUrl(manageUsersBaseUrl).build()
+
+  @Bean
+  @Qualifier("assessRisksAndNeedsWebClient")
+  fun assessRisksAndNeedsWebClient(
+    @Value("\${services.assess-risks-and-needs-api.base-url}") assessRisksAndNeedsBaseUrl: String,
+  ): WebClient = WebClient.builder().baseUrl(assessRisksAndNeedsBaseUrl).build()
 }

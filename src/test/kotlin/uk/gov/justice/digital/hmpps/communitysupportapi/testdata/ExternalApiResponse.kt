@@ -1,5 +1,10 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsOtherRoshRisksDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskRoshSummaryDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRoshRiskDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRoshRiskToSelfDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprAddressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprAddressUsageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprCodeDescriptionDto
@@ -10,6 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDe
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.service.notify.SendEmailResponse
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.String
 
@@ -203,6 +209,88 @@ object ExternalApiResponse {
           "error": "Not Found",
           "status": 404,
           "message": "Person not found"
+        }
+  """.trimIndent()
+
+  // ARNS ROSH RISK DATA
+
+  fun createArnsRoshRiskDto(assessedOn: LocalDateTime? = LocalDateTime.now().minusDays(30)): ArnsRoshRiskDto = ArnsRoshRiskDto(
+    riskToSelf = ArnsRoshRiskToSelfDto(
+      suicide = ArnsRiskDto(
+        risk = "YES",
+        previous = "YES",
+        previousConcernsText = "Previous suicide concerns",
+        current = "YES",
+        currentConcernsText = "Current suicide concerns",
+      ),
+      selfHarm = ArnsRiskDto(
+        risk = "YES",
+        previous = "NO",
+        previousConcernsText = null,
+        current = "YES",
+        currentConcernsText = "Current self harm concerns",
+      ),
+      custody = ArnsRiskDto(
+        risk = "NO",
+        previous = "NO",
+        previousConcernsText = null,
+        current = "NO",
+        currentConcernsText = null,
+      ),
+      hostelSetting = ArnsRiskDto(
+        risk = "DK",
+        previous = "DK",
+        previousConcernsText = null,
+        current = "DK",
+        currentConcernsText = null,
+      ),
+      vulnerability = ArnsRiskDto(
+        risk = "YES",
+        previous = "NO",
+        previousConcernsText = null,
+        current = "YES",
+        currentConcernsText = "Vulnerability concerns noted",
+      ),
+    ),
+    otherRisks = ArnsOtherRoshRisksDto(
+      escapeOrAbscond = "NO",
+      controlIssuesDisruptiveBehaviour = "YES",
+      breachOfTrust = "NO",
+      riskToOtherPrisoners = "YES",
+    ),
+    summary = ArnsRiskRoshSummaryDto(
+      whoIsAtRisk = "Staff and public are at risk",
+      natureOfRisk = "Risk of violence",
+      riskImminence = "Risk is imminent in community",
+      riskIncreaseFactors = "Substance misuse increases risk",
+      riskMitigationFactors = "Regular supervision reduces risk",
+      analysisOfRiskFactors = "Historical pattern of violence",
+      riskInCommunity = mapOf(
+        "HIGH" to listOf("Public", "Known Adult"),
+        "MEDIUM" to listOf("Staff"),
+        "LOW" to listOf("Children", "Prisoners"),
+      ),
+      riskInCustody = mapOf(
+        "VERY_HIGH" to listOf("Staff"),
+        "HIGH" to listOf("Prisoners"),
+        "LOW" to listOf("Children", "Public"),
+      ),
+      overallRiskLevel = "HIGH",
+    ),
+    assessedOn = assessedOn,
+  )
+
+  fun createStaleArnsRoshRiskDto(): ArnsRoshRiskDto = createArnsRoshRiskDto(assessedOn = LocalDateTime.now().minusMonths(13))
+
+  fun arnsRoshRiskJson(assessedOn: LocalDateTime = LocalDateTime.now().minusDays(30)) = createArnsRoshRiskDto(assessedOn).toJson()
+
+  fun arnsStaleRoshRiskJson() = createStaleArnsRoshRiskDto().toJson()
+
+  fun arnsRoshRiskNotFoundJson() = """
+        {
+          "status": 404,
+          "userMessage": "CRN Not Found",
+          "developerMessage": "ROSH risks not found for CRN"
         }
   """.trimIndent()
 

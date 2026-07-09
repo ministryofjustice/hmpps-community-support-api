@@ -44,6 +44,8 @@ services:
     locations:
       auth-user-groups: "/externalusers/{userId}/groups"
       auth-user-details: "/users/{userName}"
+  assess-risks-and-needs-api:
+    base-url: "http://localhost:${wiremock.server.port}"
 webclient:
   connect-timeout-seconds: 20
   read-timeout-seconds: 10

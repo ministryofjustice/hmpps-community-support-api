@@ -24,6 +24,8 @@ services:
     locations:
       auth-user-groups: "/externalusers/{userId}/groups"
       auth-user-details: "/users/{userName}"
+  assess-risks-and-needs-api:
+    base-url: http://localhost:9091/assess-risks-and-needs
 
 notify:
   api.key: "${NOTIFY_API_KEY:invalid-key}"
