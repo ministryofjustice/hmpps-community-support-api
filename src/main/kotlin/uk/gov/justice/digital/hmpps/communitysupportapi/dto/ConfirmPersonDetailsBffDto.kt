@@ -57,6 +57,11 @@ data class ConfirmPersonalDetailsContact(
   val address: ConfirmPersonDetailsContactAddress = ConfirmPersonDetailsContactAddress(),
 )
 
+data class WithUpdated<T>(
+  val value: T,
+  val updated: LocalDate,
+)
+
 /**
  * Data that is shown on the /bff/confirm-personal-details/{personReference} page,
  * we have designed it to send back empty strings, as opposed to null values, where
@@ -69,13 +74,33 @@ data class ConfirmPersonDetailsBffDto(
   val contactDetails: ConfirmPersonalDetailsContact,
 ) {
   companion object {
+    private fun <T, R> getWithUpdated(
+      items: List<T>,
+      getStartDate: (T) -> LocalDate?,
+      getValue: (List<T>) -> R?,
+    ): WithUpdated<R>? {
+      if (items.isEmpty()) return null
+      val sorted = items.sortedByDescending(getStartDate)
+      val latestDate = getStartDate(sorted.first()) ?: return null
+      val value = getValue(sorted) ?: return null
+      return WithUpdated(value, latestDate)
+    }
+
     fun from(
       id: UUID,
       personAggregate: PersonAggregate,
       offenderProfile: OffenderProfileDto,
     ): ConfirmPersonDetailsBffDto {
-      val currentCircumstancesRaw = getCurrentCircumstances(offenderProfile.provisions)
-      val disabilitiesRaw = getDisabilities(offenderProfile.disabilities)
+      val currentCircumstancesRaw = getWithUpdated(
+        offenderProfile.provisions,
+        { it.startDate },
+        { it.first().provisionType?.description },
+      )
+      val disabilitiesRaw = getWithUpdated(
+        offenderProfile.disabilities,
+        { it.startDate },
+        { disabilities -> disabilities.mapNotNull { it.disabilityType?.description } },
+      )
 
       return ConfirmPersonDetailsBffDto(
         id = id,
