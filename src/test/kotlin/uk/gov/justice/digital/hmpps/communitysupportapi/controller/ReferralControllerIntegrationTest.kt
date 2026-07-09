@@ -1,5 +1,9 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.assertj.core.api.Assertions.assertThat
@@ -16,6 +20,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonAdditionalSupportNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
@@ -45,6 +50,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
@@ -914,6 +921,62 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
             whyNotInPersonReason shouldBe "Zoom link"
           }
           body.sessionCommunications shouldBe listOf("Email", "Phone call")
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/confirm-person-details/{personIdentifier}")
+  inner class ConfirmPersonDetailsEndPoint {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return 200 with person details for a valid CRN`() {
+      val person = referralHelper.createPerson(identifier = CRN)
+
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprProbationPersonJson(CRN)),
+          ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/confirm-person-details/$CRN")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ConfirmPersonDetailsBffDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.id shouldBe person.id
+          body.personalDetails.firstName shouldBe "John"
+          body.personalDetails.middleNames shouldBe "David"
+          body.personalDetails.lastName shouldBe "Smith"
+          body.personalDetails.crn shouldBe CRN
+          body.personalDetails.dateOfBirth shouldBe LocalDate.of(1985, 1, 1)
+          body.personalDetails.disabilities.allDisabilities shouldBe "None"
+          body.equalityMonitoring.sex shouldBe "Male"
+          body.equalityMonitoring.ethnicity shouldBe "White"
+          body.equalityMonitoring.religionOrBelief shouldBe "Christian"
+          body.equalityMonitoring.sexualOrientation shouldBe "Heterosexual"
+          body.equalityMonitoring.nationalities shouldBe listOf("Argentine", "Brazilian")
+          body.contactDetails.phoneNumber shouldBe "01234567890"
+          body.contactDetails.mobileNumber shouldBe "07700900002"
+          body.contactDetails.emailAddress shouldBe "john.smith@example.com"
+          body.contactDetails.address.value shouldBe "1, Test Street, Testville, TE1 1ST"
+          body.contactDetails.address.type shouldBe "Friends/Family (settled) (verified)"
+          body.contactDetails.address.startAt shouldBe "2005-12-01"
+          body.contactDetails.address.notes shouldBe "No notes"
         }
     }
   }

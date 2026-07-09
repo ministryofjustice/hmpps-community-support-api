@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDetailsDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
@@ -240,7 +240,7 @@ class ReferralController(
     return ResponseEntity.ok(result)
   }
 
-  @Operation(summary = "Get person details for referral")
+  @Operation(summary = "Get the details necessary to Confirm a Person's Detail in the Referral flow")
   @ApiResponses(
     value = [
       ApiResponse(
@@ -251,18 +251,18 @@ class ReferralController(
       ApiResponse(
         responseCode = "404",
         description = "Person details not found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = PersonDetailsDto::class))],
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ConfirmPersonDetailsBffDto::class))],
       ),
     ],
   )
-  @GetMapping("/find-person-details/{personIdentifier}")
-  fun getReferralPersonDetails(@PathVariable personIdentifier: String): ResponseEntity<PersonDetailsDto> {
-    val result = try {
-      referralService.getPersonDetails(personIdentifier)
+  @GetMapping("/bff/confirm-person-details/{personIdentifier}")
+  fun getReferralPersonDetails(@PathVariable personIdentifier: String): ResponseEntity<ConfirmPersonDetailsBffDto> {
+    try {
+      val result = referralService.getConfirmPersonDetailsBffDto(personIdentifier)
+      return ResponseEntity.ok(result)
     } catch (e: RuntimeException) {
       log.warn("Person details not found for person identifier={}", personIdentifier, e)
       return ResponseEntity.notFound().build()
     }
-    return ResponseEntity.ok(result)
   }
 }

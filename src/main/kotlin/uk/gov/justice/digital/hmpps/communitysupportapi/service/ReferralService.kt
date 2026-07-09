@@ -3,8 +3,8 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonAdditionalSupportNeedsDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.SubmitReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
@@ -273,7 +274,7 @@ class ReferralService(
     return ReferralInformationDto.from(referralResult)
   }
 
-  fun getPersonDetails(personIdentifier: String): PersonDetailsDto {
+  fun getPersonAggregateOffenderProfile(personIdentifier: String): Triple<Person, PersonAggregate, OffenderProfileDto> {
     val person = personRepository.findByIdentifier(personIdentifier)
       ?: throw NotFoundException("Person not found for identifier $personIdentifier")
 
@@ -289,7 +290,13 @@ class ReferralService(
       },
     )
 
-    return PersonDetailsDto.from(person.id, personAggregate, offenderProfile)
+    return Triple(person, personAggregate, offenderProfile)
+  }
+
+  fun getConfirmPersonDetailsBffDto(personIdentifier: String): ConfirmPersonDetailsBffDto {
+    val (person, personAggregate, offenderProfile) = this.getPersonAggregateOffenderProfile(personIdentifier)
+
+    return ConfirmPersonDetailsBffDto.from(person.id, personAggregate, offenderProfile)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
