@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonAdditionalSupportNeedsDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
@@ -292,12 +291,6 @@ class ReferralService(
     )
 
     return Triple(person, personAggregate, offenderProfile)
-  }
-
-  fun getPersonDetails(personIdentifier: String): PersonDetailsDto {
-    val (person, personAggregate, offenderProfile) = this.getPersonAggregateOffenderProfile(personIdentifier)
-
-    return PersonDetailsDto.from(person.id, personAggregate, offenderProfile)
   }
 
   fun getConfirmPersonDetailsBffDto(personIdentifier: String): ConfirmPersonDetailsBffDto {

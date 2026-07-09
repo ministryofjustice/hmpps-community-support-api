@@ -61,8 +61,6 @@ data class ConfirmPersonalDetailsContact(
  * Data that is shown on the /bff/confirm-personal-details/{personReference} page,
  * we have designed it to send back empty strings, as opposed to null values, where
  * values cannot be found in upstream components.
- *
- * This data is similar to the PersonDetailsDto, but is used on a separate screen.
  */
 data class ConfirmPersonDetailsBffDto(
   val id: UUID,
