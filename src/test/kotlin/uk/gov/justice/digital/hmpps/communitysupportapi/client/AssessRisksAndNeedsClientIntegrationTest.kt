@@ -36,7 +36,7 @@ class AssessRisksAndNeedsClientIntegrationTest : IntegrationTestBase() {
     assertThat(result).isNotNull
     assertThat(result.summary.overallRiskLevel).isEqualTo("HIGH")
     assertThat(result.summary.whoIsAtRisk).isEqualTo("Staff and public are at risk")
-    assertThat(result.riskToSelf.suicide?.risk).isEqualTo("YES")
+    assertThat(result.riskToSelf.suicide?.riskIndicator).isEqualTo("YES")
     assertThat(result.otherRisks.controlIssuesDisruptiveBehaviour).isEqualTo("YES")
   }
 

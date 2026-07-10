@@ -71,9 +71,9 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
           body.summary?.riskInCommunity?.get("HIGH") shouldBe listOf("Public", "Known Adult")
           body.summary?.riskInCustody?.get("VERY_HIGH") shouldBe listOf("Staff")
           body.riskToSelf shouldNotBe null
-          body.riskToSelf?.suicide?.risk shouldBe "YES"
-          body.riskToSelf?.suicide?.currentConcernsText shouldBe "Current suicide concerns"
-          body.riskToSelf?.vulnerability?.currentConcernsText shouldBe "Vulnerability concerns noted"
+          body.riskToSelf?.suicide?.riskIndicator shouldBe "YES"
+          body.riskToSelf?.suicide?.currentConcernsReason shouldBe "Current suicide concerns"
+          body.riskToSelf?.vulnerability?.currentConcernsReason shouldBe "Vulnerability concerns noted"
         }
     }
 

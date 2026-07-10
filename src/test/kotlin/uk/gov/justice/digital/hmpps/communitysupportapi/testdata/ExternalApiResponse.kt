@@ -1,10 +1,10 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsOtherRoshRisksDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskConcernsToSelfDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskRoshSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRoshRiskDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRoshRiskToSelfDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprAddressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprAddressUsageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprCodeDescriptionDto
@@ -215,41 +215,41 @@ object ExternalApiResponse {
   // ARNS ROSH RISK DATA
 
   fun createArnsRoshRiskDto(assessedOn: LocalDateTime? = LocalDateTime.now().minusDays(30)): ArnsRoshRiskDto = ArnsRoshRiskDto(
-    riskToSelf = ArnsRoshRiskToSelfDto(
+    riskToSelf = ArnsRiskConcernsToSelfDto(
       suicide = ArnsRiskDto(
-        risk = "YES",
-        previous = "YES",
-        previousConcernsText = "Previous suicide concerns",
-        current = "YES",
-        currentConcernsText = "Current suicide concerns",
+        riskIndicator = "YES",
+        previousConcern = "YES",
+        previousConcernsReason = "Previous suicide concerns",
+        currentConcern = "YES",
+        currentConcernsReason = "Current suicide concerns",
       ),
       selfHarm = ArnsRiskDto(
-        risk = "YES",
-        previous = "NO",
-        previousConcernsText = null,
-        current = "YES",
-        currentConcernsText = "Current self harm concerns",
+        riskIndicator = "YES",
+        previousConcern = "NO",
+        previousConcernsReason = null,
+        currentConcern = "YES",
+        currentConcernsReason = "Current self harm concerns",
       ),
       custody = ArnsRiskDto(
-        risk = "NO",
-        previous = "NO",
-        previousConcernsText = null,
-        current = "NO",
-        currentConcernsText = null,
+        riskIndicator = "NO",
+        previousConcern = "NO",
+        previousConcernsReason = null,
+        currentConcern = "NO",
+        currentConcernsReason = null,
       ),
       hostelSetting = ArnsRiskDto(
-        risk = "DK",
-        previous = "DK",
-        previousConcernsText = null,
-        current = "DK",
-        currentConcernsText = null,
+        riskIndicator = "DK",
+        previousConcern = "DK",
+        previousConcernsReason = null,
+        currentConcern = "DK",
+        currentConcernsReason = null,
       ),
       vulnerability = ArnsRiskDto(
-        risk = "YES",
-        previous = "NO",
-        previousConcernsText = null,
-        current = "YES",
-        currentConcernsText = "Vulnerability concerns noted",
+        riskIndicator = "YES",
+        previousConcern = "NO",
+        previousConcernsReason = null,
+        currentConcern = "YES",
+        currentConcernsReason = "Vulnerability concerns noted",
       ),
     ),
     otherRisks = ArnsOtherRoshRisksDto(

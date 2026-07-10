@@ -1,17 +1,18 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.annotation.Nulls
 import java.time.LocalDateTime
 
 data class ArnsRoshRiskDto(
-  val riskToSelf: ArnsRoshRiskToSelfDto,
+  val riskToSelf: ArnsRiskConcernsToSelfDto,
   val otherRisks: ArnsOtherRoshRisksDto,
   val summary: ArnsRiskRoshSummaryDto,
   val assessedOn: LocalDateTime? = null,
 )
 
-data class ArnsRoshRiskToSelfDto(
+data class ArnsRiskConcernsToSelfDto(
   val suicide: ArnsRiskDto? = null,
   val selfHarm: ArnsRiskDto? = null,
   val custody: ArnsRiskDto? = null,
@@ -20,11 +21,16 @@ data class ArnsRoshRiskToSelfDto(
 )
 
 data class ArnsRiskDto(
-  val risk: String? = null,
-  val previous: String? = null,
-  val previousConcernsText: String? = null,
-  val current: String? = null,
-  val currentConcernsText: String? = null,
+  @JsonProperty("risk")
+  val riskIndicator: String? = null,
+  @JsonProperty("previous")
+  val previousConcern: String? = null,
+  @JsonProperty("previousConcernsText")
+  val previousConcernsReason: String? = null,
+  @JsonProperty("current")
+  val currentConcern: String? = null,
+  @JsonProperty("currentConcernsText")
+  val currentConcernsReason: String? = null,
 )
 
 data class ArnsOtherRoshRisksDto(

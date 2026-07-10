@@ -6,6 +6,6 @@ import com.fasterxml.jackson.annotation.JsonInclude
 data class CommunitySupportRiskDto(
   val assessmentWithin12Months: Boolean,
   val assessedOn: String? = null,
-  val riskToSelf: ArnsRoshRiskToSelfDto? = null,
+  val riskToSelf: ArnsRiskConcernsToSelfDto? = null,
   val summary: ArnsRiskRoshSummaryDto? = null,
 )
