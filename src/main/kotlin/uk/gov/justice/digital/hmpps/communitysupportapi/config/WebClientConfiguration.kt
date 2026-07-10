@@ -26,6 +26,7 @@ class WebClientConfiguration(
   @Value($$"${api.health-timeout:2s}") private val healthTimeout: Duration,
   @Value($$"${services.core-person-record-api.base-url}") private val corePersonRecordBaseUrl: String,
   @Value($$"${services.manage-users-api.base-url}") private val manageUsersAuthBaseUrl: String,
+  @Value($$"${services.assess-risks-and-needs-api.base-url}") private val assessRisksAndNeedsBaseUrl: String,
   @Value($$"${webclient.read-timeout-seconds}") private val readTimeoutSeconds: Int,
   @Value($$"${webclient.connect-timeout-seconds}") private val authConnectTimeoutSeconds: Long,
   @Value($$"${webclient.write-timeout-seconds}") private val writeTimeoutSeconds: Int,
@@ -67,6 +68,12 @@ class WebClientConfiguration(
     builder: WebClient.Builder,
     authorizedClientManager: OAuth2AuthorizedClientManager,
   ): WebClient = createWebClient(builder, authorizedClientManager, manageUsersAuthBaseUrl)
+
+  @Bean("assessRisksAndNeedsWebClient")
+  fun assessRisksAndNeedsWebClient(
+    builder: WebClient.Builder,
+    authorizedClientManager: OAuth2AuthorizedClientManager,
+  ): WebClient = createWebClient(builder, authorizedClientManager, assessRisksAndNeedsBaseUrl)
 
   private fun createWebClient(
     builder: WebClient.Builder,

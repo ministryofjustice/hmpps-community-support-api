@@ -80,6 +80,8 @@ services:
     locations:
       auth-user-groups: "/externalusers/{userId}/groups"
       auth-user-details: "/users/{userName}"
+  assess-risks-and-needs-api:
+    base-url: ${ASSESS_RISKS_AND_NEEDS_API_BASE_URL}
 
 reference-data:
   probation-offices:
