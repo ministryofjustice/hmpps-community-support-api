@@ -30,7 +30,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
   implementation("org.springframework.security:spring-security-crypto:7.1.0")
-  implementation("com.nimbusds:oauth2-oidc-sdk:11.37.2")
+  implementation("com.nimbusds:oauth2-oidc-sdk:11.38.1")
 
   // csv
   implementation("org.apache.commons:commons-csv:1.14.1")
