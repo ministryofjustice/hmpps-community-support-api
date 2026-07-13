@@ -88,7 +88,7 @@ class ReferralService(
 
     val referral = Referral(
       id = referralId,
-      crn = createReferralRequest.crn,
+      personIdentifier = createReferralRequest.personIdentifier,
       personId = person.id,
       createdAt = now,
       createdBy = userId,

@@ -6,6 +6,6 @@ import java.util.UUID
 data class CreateReferralRequest(
   val personDetails: PersonDto,
   val communityServiceProviderId: UUID,
-  val crn: String,
+  val personIdentifier: String,
   val urgency: Boolean? = null,
 )

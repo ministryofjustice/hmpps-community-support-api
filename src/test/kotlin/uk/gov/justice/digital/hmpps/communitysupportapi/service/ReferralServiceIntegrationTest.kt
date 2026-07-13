@@ -102,7 +102,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val savedReferral = result.referral
 
     assertThat(savedReferral.personId).isEqualTo(result.person.id)
-    assertThat(savedReferral.crn).isEqualTo(createReferralRequest.crn)
+    assertThat(savedReferral.personIdentifier).isEqualTo(createReferralRequest.personIdentifier)
     assertThat(savedReferral.referralEvents.size).isEqualTo(1)
     assertThat(savedReferral.referenceNumber).isNull()
     assertThat(savedReferral.createdBy).isEqualTo(referralUser.id)
@@ -142,7 +142,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val request = CreateReferralRequest(
       personDetails = updatedPersonDto,
       communityServiceProviderId = communityServiceProvider.id,
-      crn = "X123456",
+      personIdentifier = "X123456",
     )
 
     val result = referralService.createReferral(referralUser.id, request)
@@ -191,7 +191,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val request = CreateReferralRequest(
       personDetails = updatedPersonDto,
       communityServiceProviderId = communityServiceProvider.id,
-      crn = "X999999",
+      personIdentifier = "X999999",
     )
 
     referralService.createReferral(referralUser.id, request)
@@ -226,7 +226,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val request = CreateReferralRequest(
       personDetails = personDto,
       communityServiceProviderId = communityServiceProvider.id,
-      crn = "A1234BC",
+      personIdentifier = "A1234BC",
     )
 
     val result = referralService.createReferral(referralUser.id, request)
@@ -262,7 +262,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val request = CreateReferralRequest(
       personDetails = updatedPersonDto,
       communityServiceProviderId = communityServiceProvider.id,
-      crn = "A9999ZZ",
+      personIdentifier = "A9999ZZ",
     )
 
     referralService.createReferral(referralUser.id, request)
@@ -424,7 +424,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val result = referralService.getReferralDetailsPage(referral.id.toString())
 
     assertEquals(referral.id, result.id)
-    assertEquals(referral.crn, result.personDetailsTableData.crn)
+    assertEquals(referral.personIdentifier, result.personDetailsTableData.crn)
     assertEquals(referralUser.fullName, result.referralDetailsTableData.assignedTo.first().fullName)
     assertEquals(referralUser.hmppsAuthUsername, result.referralDetailsTableData.assignedTo.first().emailAddress)
   }
@@ -440,7 +440,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val result = referralService.getReferralDetailsPage(referral.referenceNumber)
 
     assertEquals(referral.id, result.id)
-    assertEquals(referral.crn, result.personDetailsTableData.crn)
+    assertEquals(referral.personIdentifier, result.personDetailsTableData.crn)
     assertEquals(referralUser.fullName, result.referralDetailsTableData.assignedTo.first().fullName)
     assertEquals(referralUser.hmppsAuthUsername, result.referralDetailsTableData.assignedTo.first().emailAddress)
   }
@@ -498,7 +498,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val referralInformation = referralService.getReferralInformation(referral.id.toString())
 
     assertEquals(referral.id, referralInformation.referralId)
-    assertEquals(referral.crn, referralInformation.crn)
+    assertEquals(referral.personIdentifier, referralInformation.personIdentifier)
     assertEquals(person.firstName, referralInformation.firstName)
     assertEquals(person.lastName, referralInformation.lastName)
     assertEquals(communityServiceProvider.id, referralInformation.communityServiceProviderId)
@@ -568,7 +568,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     return CreateReferralRequest(
       personDetails = personDto,
       communityServiceProviderId = communityServiceProvider.id,
-      crn = "X123456",
+      personIdentifier = "X123456",
     )
   }
 }
