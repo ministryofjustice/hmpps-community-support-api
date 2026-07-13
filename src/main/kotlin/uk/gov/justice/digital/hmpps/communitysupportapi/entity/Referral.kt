@@ -20,7 +20,7 @@ class Referral(
   val personId: UUID,
 
   @Column(name = "person_identifier")
-  val crn: String,
+  val personIdentifier: String,
 
   @Column(name = "reference_number")
   var referenceNumber: String? = null,

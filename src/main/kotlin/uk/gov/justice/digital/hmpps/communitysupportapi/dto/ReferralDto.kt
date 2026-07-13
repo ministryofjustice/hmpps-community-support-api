@@ -15,7 +15,7 @@ data class ReferralDto(
   companion object {
     fun from(referral: Referral): ReferralDto = ReferralDto(
       id = referral.id,
-      crn = referral.crn,
+      crn = referral.personIdentifier,
       referenceNumber = referral.referenceNumber,
       createdDate = referral.createdAt,
     )
@@ -38,7 +38,7 @@ data class ReferralInformationDto(
   val firstName: String?,
   val lastName: String?,
   val sex: String? = null,
-  val crn: String,
+  val personIdentifier: String,
   val communityServiceProviderId: UUID,
   val communityServiceProviderName: String,
   val region: String,
@@ -54,7 +54,7 @@ data class ReferralInformationDto(
       firstName = result.person.firstName,
       lastName = result.person.lastName,
       sex = result.person.gender,
-      crn = result.referral.crn,
+      personIdentifier = result.referral.personIdentifier,
       communityServiceProviderName = result.communityServiceProvider.name,
       region = result.communityServiceProvider.contractArea.region.name,
       deliveryPartner = result.communityServiceProvider.serviceProvider.name,

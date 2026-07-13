@@ -142,7 +142,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val referralDto = ReferralDto(
         id = savedReferral.id,
-        crn = savedReferral.crn,
+        crn = savedReferral.personIdentifier,
         referenceNumber = savedReferral.referenceNumber,
         createdDate = savedReferral.createdAt,
       )
@@ -225,7 +225,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
               firstName = person.firstName,
               lastName = person.lastName,
               sex = person.gender,
-              crn = referral.crn,
+              personIdentifier = referral.personIdentifier,
               communityServiceProviderId = communityServiceProvider.id,
               communityServiceProviderName = communityServiceProvider.name,
               region = communityServiceProvider.contractArea.region.name,
@@ -255,7 +255,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
               additionalDetails = null,
             ),
             communityServiceProviderId = UUID.randomUUID(),
-            crn = "X123456",
+            personIdentifier = "X123456",
           ),
         )
         .exchange()
@@ -278,7 +278,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       return CreateReferralRequest(
         personDetails = personDto,
         communityServiceProviderId = communityServiceProvider.id,
-        crn = "X123456",
+        personIdentifier = "X123456",
       )
     }
   }
@@ -634,7 +634,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val personDetailsTable = ReferralDetailsBffResponseDto.PersonDetailsTableDataDto(
         name = "${person.firstName} ${person.lastName}",
-        crn = savedReferral.crn,
+        crn = savedReferral.personIdentifier,
         dateOfBirth = person.dateOfBirth.toString(),
         preferredLanguage = person.additionalDetails?.preferredLanguage.toString(),
         disabilities = "",
@@ -1034,7 +1034,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { result ->
           val body = result.responseBody!!
           body.referralId shouldBe referral.id
-          body.crn shouldBe referral.crn
+          body.personIdentifier shouldBe referral.personIdentifier
           body.firstName shouldBe person.firstName
           body.lastName shouldBe person.lastName
         }

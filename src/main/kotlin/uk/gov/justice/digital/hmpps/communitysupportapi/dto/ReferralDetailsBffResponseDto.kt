@@ -38,7 +38,8 @@ data class ReferralDetailsBffResponseDto(
     companion object {
       fun from(person: Person, referral: Referral): PersonDetailsTableDataDto = PersonDetailsTableDataDto(
         name = "${person.firstName} ${person.lastName}",
-        crn = referral.crn,
+        // TODO: Why is this coming from the Referral, not from the person?  --TWC 2026-07-13
+        crn = referral.personIdentifier,
         dateOfBirth = person.dateOfBirth.toString(),
         preferredLanguage = person.additionalDetails?.preferredLanguage ?: "",
         disabilities = "",

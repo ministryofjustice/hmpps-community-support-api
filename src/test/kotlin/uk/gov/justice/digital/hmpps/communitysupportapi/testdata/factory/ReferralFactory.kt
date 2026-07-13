@@ -34,7 +34,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
 
   private var id: UUID = UUID.randomUUID()
   private var personId: UUID = UUID.randomUUID()
-  private var crn: String = "CRN${(100000..999999).random()}"
+  private var personIdentifier: String = "CRN${(100000..999999).random()}"
   private var referenceNumber: String? = "AA${(1000..9999).random()}BB"
   private var createdAt: OffsetDateTime = OffsetDateTime.now()
   private var updatedAt: OffsetDateTime? = OffsetDateTime.now()
@@ -44,7 +44,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
 
   fun withId(id: UUID) = apply { this.id = id }
   fun withPersonId(personId: UUID) = apply { this.personId = personId }
-  fun withCrn(crn: String) = apply { this.crn = crn }
+  fun withCrn(crn: String) = apply { this.personIdentifier = crn }
   fun withReferenceNumber(referenceNumber: String?) = apply { this.referenceNumber = referenceNumber }
   fun withCreatedAt(createdAt: OffsetDateTime) = apply { this.createdAt = createdAt }
   fun withUpdatedAt(updatedAt: OffsetDateTime?) = apply { this.updatedAt = updatedAt }
@@ -73,18 +73,11 @@ class ReferralFactory : TestEntityFactory<Referral>() {
     }
   }
 
-  /**
-   * Adds a custom event to the referral.
-   */
-  fun withEvent(eventFactory: (Referral) -> ReferralEvent) = apply {
-    events.add(eventFactory)
-  }
-
   override fun create(): Referral {
     val referral = Referral(
       id = id,
       personId = personId,
-      crn = crn,
+      personIdentifier = personIdentifier,
       referenceNumber = referenceNumber,
       createdAt = createdAt,
       updatedAt = updatedAt,
@@ -99,20 +92,5 @@ class ReferralFactory : TestEntityFactory<Referral>() {
     }
 
     return referral
-  }
-
-  companion object {
-    fun aDefaultReferral(): Referral = ReferralFactory().create()
-
-    fun aReferralForPerson(personId: UUID, crn: String): Referral = ReferralFactory()
-      .withPersonId(personId)
-      .withCrn(crn)
-      .create()
-
-    fun aSubmittedReferral(personId: UUID, crn: String, actorId: UUID = UUID.randomUUID()): Referral = ReferralFactory()
-      .withPersonId(personId)
-      .withCrn(crn)
-      .withSubmittedEvent(actorId)
-      .create()
   }
 }
