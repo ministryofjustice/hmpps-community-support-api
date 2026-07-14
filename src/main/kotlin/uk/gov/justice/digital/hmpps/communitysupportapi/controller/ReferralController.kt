@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
@@ -264,5 +265,30 @@ class ReferralController(
       log.warn("Person details not found for person identifier={}", personIdentifier, e)
       return ResponseEntity.notFound().build()
     }
+  }
+
+  @Operation(summary = "Get task list status")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Task list status found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = TaskListStatusResponseDto::class))],
+      ),
+    ],
+  )
+  @GetMapping("/bff/task-list-status/{referralId}")
+  fun getTaskListStatus(@PathVariable referralId: UUID): ResponseEntity<TaskListStatusResponseDto> {
+    // Placeholder values to allow frontend integration in this first commit; data wiring follows in later commits. --TWC 2026-07-14
+    return ResponseEntity.ok(
+      TaskListStatusResponseDto(
+        confirmPersonalDetails = false,
+        checkRiskInformation = false,
+        selectThePersonsNeeds = false,
+        addDetailsOfAnyAdditionalSupportNeeds = false,
+        addDetailsOfMainPointOfContact = false,
+        checkAnswers = false,
+      ),
+    )
   }
 }

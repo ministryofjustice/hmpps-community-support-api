@@ -28,6 +28,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
@@ -977,6 +978,35 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.contactDetails.address.type shouldBe "Friends/Family (settled) (verified)"
           body.contactDetails.address.startAt shouldBe "2005-12-01"
           body.contactDetails.address.notes shouldBe "No notes"
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/task-list-status/{referralId}")
+  inner class TaskListStatusEndPoint {
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+    }
+
+    @Test
+    fun `should return 200 with all task list statuses as false`() {
+      webTestClient.get()
+        .uri("/bff/task-list-status/${UUID.randomUUID()}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.confirmPersonalDetails shouldBe false
+          body.checkRiskInformation shouldBe false
+          body.selectThePersonsNeeds shouldBe false
+          body.addDetailsOfAnyAdditionalSupportNeeds shouldBe false
+          body.addDetailsOfMainPointOfContact shouldBe false
+          body.checkAnswers shouldBe false
         }
     }
   }
