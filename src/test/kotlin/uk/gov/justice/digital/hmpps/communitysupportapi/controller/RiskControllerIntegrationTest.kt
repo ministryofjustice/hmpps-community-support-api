@@ -179,25 +179,26 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return forbidden if no role`() {
-      val request = CommunitySupportRiskInformationDto(referralId = UUID.randomUUID())
+      val request = CommunitySupportRiskInformationDto(id = UUID.randomUUID(), referralId = UUID.randomUUID())
       assertForbiddenNoRole(HttpMethod.PUT, "/risk-information/${UUID.randomUUID()}", request)
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      val request = CommunitySupportRiskInformationDto(referralId = UUID.randomUUID())
+      val request = CommunitySupportRiskInformationDto(id = UUID.randomUUID(), referralId = UUID.randomUUID())
       assertForbiddenWrongRole(HttpMethod.PUT, "/risk-information/${UUID.randomUUID()}", request)
     }
 
     @Test
     fun `should return 404 when referral does not exist`() {
       val request = CommunitySupportRiskInformationDto(
+        id = UUID.randomUUID(),
         referralId = UUID.randomUUID(),
         riskSummaryWhoIsAtRisk = "Staff and public",
       )
 
       webTestClient.put()
-        .uri("/bff/risk/${UUID.randomUUID()}/risk-information")
+        .uri("/risk-information/${UUID.randomUUID()}")
         .headers(setAuthorisation())
         .bodyValue(request)
         .exchange()
@@ -211,6 +212,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
 
       val request = CommunitySupportRiskInformationDto(
+        id = UUID.randomUUID(),
         referralId = referral.id,
         riskSummaryWhoIsAtRisk = "Staff and public are at risk",
         riskSummaryNatureOfRisk = "Physical harm",
@@ -262,6 +264,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       riskInformationRepository.save(existing)
 
       val request = CommunitySupportRiskInformationDto(
+        id = UUID.randomUUID(),
         referralId = referral.id,
         riskSummaryWhoIsAtRisk = "Updated summary",
         riskToSelfVulnerability = "Vulnerability identified",

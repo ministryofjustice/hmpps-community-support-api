@@ -4,7 +4,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 import java.util.UUID
 
 data class CommunitySupportRiskInformationDto(
-  val id: UUID? = null,
+  val id: UUID,
   val referralId: UUID,
   val riskSummaryWhoIsAtRisk: String? = null,
   val riskSummaryNatureOfRisk: String? = null,

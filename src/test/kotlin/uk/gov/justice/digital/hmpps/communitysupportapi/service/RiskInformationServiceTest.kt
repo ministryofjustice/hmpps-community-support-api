@@ -112,7 +112,7 @@ class RiskInformationServiceTest {
       riskInformationService.saveDraftRiskInformation(
         referralId = referralId,
         userId = userId,
-        request = CommunitySupportRiskInformationDto(referralId = referralId),
+        request = CommunitySupportRiskInformationDto(id = UUID.randomUUID(), referralId = referralId),
       )
     }
 
@@ -128,6 +128,7 @@ class RiskInformationServiceTest {
     whenever(riskInformationRepository.save(any<RiskInformation>())).thenAnswer { it.arguments[0] as RiskInformation }
 
     val request = CommunitySupportRiskInformationDto(
+      id = UUID.randomUUID(),
       referralId = referralId,
       riskSummaryWhoIsAtRisk = "Staff and public",
       riskSummaryNatureOfRisk = "Physical harm",
@@ -183,6 +184,7 @@ class RiskInformationServiceTest {
     whenever(riskInformationRepository.save(any<RiskInformation>())).thenAnswer { it.arguments[0] as RiskInformation }
 
     val request = CommunitySupportRiskInformationDto(
+      id = UUID.randomUUID(),
       referralId = referralId,
       riskSummaryWhoIsAtRisk = "Updated summary",
     )
