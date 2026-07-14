@@ -25,9 +25,11 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformati
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createArnsRoshRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createStaleArnsRoshRiskDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedAssessmentDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import java.util.Optional
 import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
@@ -119,7 +121,9 @@ class RiskInformationServiceTest {
 
   @Test
   fun `should create new draft risk information when none exists for the referral`() {
+    val referral = ReferralFactory().withId(referralId).create()
     whenever(referralRepository.existsById(referralId)).thenReturn(true)
+    whenever(referralRepository.findById(referralId)).thenReturn(Optional.of(referral))
     whenever(riskInformationRepository.findByReferralId(referralId)).thenReturn(null)
     whenever(riskInformationRepository.save(any<RiskInformation>())).thenAnswer { it.arguments[0] as RiskInformation }
 
@@ -162,6 +166,7 @@ class RiskInformationServiceTest {
     val existingId = UUID.randomUUID()
     val originalUpdatedBy = UUID.randomUUID()
     val originalUpdatedAt = OffsetDateTime.now().minusDays(2)
+    val referral = ReferralFactory().withId(referralId).create()
 
     val existing = RiskInformation(
       id = existingId,
@@ -169,9 +174,11 @@ class RiskInformationServiceTest {
       riskSummaryWhoIsAtRisk = "Old summary",
       updatedAt = originalUpdatedAt,
       updatedBy = originalUpdatedBy,
+      referral = referral,
     )
 
     whenever(referralRepository.existsById(referralId)).thenReturn(true)
+    whenever(referralRepository.findById(referralId)).thenReturn(Optional.of(referral))
     whenever(riskInformationRepository.findByReferralId(referralId)).thenReturn(existing)
     whenever(riskInformationRepository.save(any<RiskInformation>())).thenAnswer { it.arguments[0] as RiskInformation }
 

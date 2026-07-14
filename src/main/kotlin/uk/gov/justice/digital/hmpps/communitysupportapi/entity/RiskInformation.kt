@@ -22,35 +22,35 @@ class RiskInformation(
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "referral_id", insertable = false, updatable = false)
-  val referral: Referral? = null,
+  val referral: Referral,
 
   @Column(name = "risk_summary_who_is_at_risk")
-  val riskSummaryWhoIsAtRisk: String? = null,
+  var riskSummaryWhoIsAtRisk: String? = null,
 
   @Column(name = "risk_summary_nature_of_risk")
-  val riskSummaryNatureOfRisk: String? = null,
+  var riskSummaryNatureOfRisk: String? = null,
 
   @Column(name = "risk_summary_risk_imminence")
-  val riskSummaryRiskImminence: String? = null,
+  var riskSummaryRiskImminence: String? = null,
 
   @Column(name = "risk_to_self_suicide")
-  val riskToSelfSuicide: String? = null,
+  var riskToSelfSuicide: String? = null,
 
   @Column(name = "risk_to_self_harm")
-  val riskToSelfHarm: String? = null,
+  var riskToSelfHarm: String? = null,
 
   @Column(name = "risk_to_self_hostel_setting")
-  val riskToSelfHostelSetting: String? = null,
+  var riskToSelfHostelSetting: String? = null,
 
   @Column(name = "risk_to_self_vulnerability")
-  val riskToSelfVulnerability: String? = null,
+  var riskToSelfVulnerability: String? = null,
 
   @Column(name = "additional_information")
-  val additionalInformation: String? = null,
+  var additionalInformation: String? = null,
 
   @Column(name = "updated_at", nullable = false)
-  val updatedAt: OffsetDateTime,
+  var updatedAt: OffsetDateTime,
 
   @Column(name = "updated_by", nullable = false)
-  val updatedBy: UUID,
+  var updatedBy: UUID,
 )

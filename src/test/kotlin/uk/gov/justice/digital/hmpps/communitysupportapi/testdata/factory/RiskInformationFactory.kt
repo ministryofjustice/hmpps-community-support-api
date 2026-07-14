@@ -49,5 +49,6 @@ class RiskInformationFactory : TestEntityFactory<RiskInformation>() {
     additionalInformation = additionalInformation,
     updatedAt = updatedAt,
     updatedBy = updatedBy,
+    referral = referral,
   )
 }

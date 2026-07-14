@@ -58,24 +58,36 @@ class RiskInformationService(
     }
 
     val existing = riskInformationRepository.findByReferralId(referralId)
+    val referral = referralRepository.findById(referralId).get()
 
-    val saved = riskInformationRepository.save(
-      RiskInformation(
-        id = existing?.id ?: UUID.randomUUID(),
-        referralId = referralId,
-        riskSummaryWhoIsAtRisk = request.riskSummaryWhoIsAtRisk,
-        riskSummaryNatureOfRisk = request.riskSummaryNatureOfRisk,
-        riskSummaryRiskImminence = request.riskSummaryRiskImminence,
-        riskToSelfSuicide = request.riskToSelfSuicide,
-        riskToSelfHarm = request.riskToSelfSelfHarm,
-        riskToSelfHostelSetting = request.riskToSelfHostelSetting,
-        riskToSelfVulnerability = request.riskToSelfVulnerability,
-        additionalInformation = request.additionalInformation,
-        updatedAt = OffsetDateTime.now(),
-        updatedBy = userId,
-      ),
+    val riskInformation = existing?.apply {
+      riskSummaryWhoIsAtRisk = request.riskSummaryWhoIsAtRisk
+      riskSummaryNatureOfRisk = request.riskSummaryNatureOfRisk
+      riskSummaryRiskImminence = request.riskSummaryRiskImminence
+      riskToSelfSuicide = request.riskToSelfSuicide
+      riskToSelfHarm = request.riskToSelfSelfHarm
+      riskToSelfHostelSetting = request.riskToSelfHostelSetting
+      riskToSelfVulnerability = request.riskToSelfVulnerability
+      additionalInformation = request.additionalInformation
+      updatedAt = OffsetDateTime.now()
+      updatedBy = userId
+    } ?: RiskInformation(
+      id = UUID.randomUUID(),
+      referralId = referralId,
+      riskSummaryWhoIsAtRisk = request.riskSummaryWhoIsAtRisk,
+      riskSummaryNatureOfRisk = request.riskSummaryNatureOfRisk,
+      riskSummaryRiskImminence = request.riskSummaryRiskImminence,
+      riskToSelfSuicide = request.riskToSelfSuicide,
+      riskToSelfHarm = request.riskToSelfSelfHarm,
+      riskToSelfHostelSetting = request.riskToSelfHostelSetting,
+      riskToSelfVulnerability = request.riskToSelfVulnerability,
+      additionalInformation = request.additionalInformation,
+      updatedAt = OffsetDateTime.now(),
+      updatedBy = userId,
+      referral = referral,
     )
 
+    val saved = riskInformationRepository.save(riskInformation)
     return CommunitySupportRiskInformationDto.from(saved)
   }
 }
