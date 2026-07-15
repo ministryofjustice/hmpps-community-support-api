@@ -53,7 +53,12 @@ class ReferralController(
       ApiResponse(
         responseCode = "200",
         description = "Referral found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralDetailsBffResponseDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ReferralDetailsBffResponseDto::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "404",
@@ -73,7 +78,12 @@ class ReferralController(
       ApiResponse(
         responseCode = "200",
         description = "Referral Details found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralDetailsBffResponseDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ReferralDetailsBffResponseDto::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "404",
@@ -91,7 +101,12 @@ class ReferralController(
       ApiResponse(
         responseCode = "200",
         description = "Referral created",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralInformationDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ReferralInformationDto::class),
+          ),
+        ],
       ),
     ],
   )
@@ -108,7 +123,12 @@ class ReferralController(
       ApiResponse(
         responseCode = "200",
         description = "Referral submitted",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = SubmitReferralResponseDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = SubmitReferralResponseDto::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "404",
@@ -132,29 +152,35 @@ class ReferralController(
       ApiResponse(
         responseCode = "200",
         description = "Additional support needs data found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = AdditionalSupportNeedsBffResponseDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = AdditionalSupportNeedsBffResponseDto::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "404",
-        description = "Referral not found",
+        description = "Referral, or the Referral's Person, not found",
         content = [Content(mediaType = "application/json")],
       ),
     ],
   )
   @GetMapping("/bff/draft-referral/additional-support-needs/{referralId}")
-  fun getAdditionalSupportNeedsPage(@PathVariable referralId: UUID): ResponseEntity<AdditionalSupportNeedsBffResponseDto> {
-    val user = userMapper.fromToken(authenticationHolder)
+  fun getAdditionalSupportNeedsPage(@PathVariable referralId: String): ResponseEntity<AdditionalSupportNeedsBffResponseDto> = ResponseEntity.ok(referralService.getAdditionalSupportNeedsForReferral(referralId))
 
-    return ResponseEntity.ok(referralService.getAdditionalPersonNeeds(referralId))
-  }
-
-  @Operation(summary = "Update additional support needs information of a draft referral")
+  @Operation(summary = "Update the Additional Support Needs information for a Draft Referral")
   @ApiResponses(
     value = [
       ApiResponse(
         responseCode = "200",
         description = "Additional support needs information updated",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = SubmitReferralResponseDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = AdditionalSupportNeedsBffResponseDto::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "404",
@@ -170,7 +196,7 @@ class ReferralController(
   ): ResponseEntity<AdditionalSupportNeedsBffResponseDto> {
     val user = userMapper.fromToken(authenticationHolder)
 
-    return ResponseEntity.ok(referralService.updateAdditionalSupportNeeds(referralId, user.id, request))
+    return ResponseEntity.ok(referralService.upsertAdditionalSupportNeeds(referralId, user.id, request))
   }
 
   @Operation(summary = "Get referral progress page data")
@@ -243,7 +269,12 @@ class ReferralController(
       ApiResponse(
         responseCode = "200",
         description = "Referral information found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ReferralInformationDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ReferralInformationDto::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "404",
@@ -274,7 +305,12 @@ class ReferralController(
       ApiResponse(
         responseCode = "404",
         description = "Person details not found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ConfirmPersonDetailsBffDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ConfirmPersonDetailsBffDto::class),
+          ),
+        ],
       ),
     ],
   )

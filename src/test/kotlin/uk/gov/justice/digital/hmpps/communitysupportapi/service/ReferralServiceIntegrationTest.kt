@@ -36,7 +36,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
@@ -291,17 +290,13 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val result = referralService.createReferral(referralUser.id, createReferralRequest)
     val savedReferral = result.referral
 
-    val supportNeeds = AdditionalSupportNeedsRequest.from(
-      PersonAdditionalSupportNeedsFactory()
-        .withReferral(savedReferral)
-        .withPerson(result.person)
-        .withEmploymentResponsibilitiesDetails("Needs to work party-time")
-        .withInterpreterLanguage("Spanish")
-        .withCreatedBy(referralUser.id)
-        .create(),
+    val supportNeeds = AdditionalSupportNeedsRequest(
+      employmentResponsibilities = "Test employment responsibilities",
+      caringResponsibilities = "Test caring responsibilities",
+      needsAdditionalSupport = true,
     )
 
-    val updatedResult = referralService.updateAdditionalSupportNeeds(
+    val updatedResult = referralService.upsertAdditionalSupportNeeds(
       savedReferral.id,
       referralUser.id,
       supportNeeds,
@@ -312,12 +307,12 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedSupportNeeds).isNotNull()
     assertThat(savedSupportNeeds?.referralId).isEqualTo(savedReferral.id)
     assertThat(savedSupportNeeds?.personId).isEqualTo(savedReferral.personId)
-    assertThat(savedSupportNeeds?.caringResponsibilitiesDetails).isNull()
+    assertThat(savedSupportNeeds?.caringResponsibilitiesDetails).isEqualTo("Test caring responsibilities")
     assertThat(savedSupportNeeds?.noAdditionalSupportNeeded).isFalse()
     assertThat(savedSupportNeeds?.physicalHealthDetails).isNull()
     assertThat(savedSupportNeeds?.mentalEmotionalHealthDetails).isNull()
     assertThat(savedSupportNeeds?.diversityDetails).isNull()
-    assertThat(savedSupportNeeds?.employmentResponsibilitiesDetails).isEqualTo("Needs to work party-time")
+    assertThat(savedSupportNeeds?.employmentResponsibilitiesDetails).isEqualTo("Test employment responsibilities")
     assertThat(savedSupportNeeds?.locationTravelDetails).isNull()
     assertThat(savedSupportNeeds?.neurodiversityDetails).isNull()
     assertThat(savedSupportNeeds?.anythingElseDetails).isNull()

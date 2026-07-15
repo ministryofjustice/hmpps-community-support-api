@@ -1,7 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.model
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
-
 data class AdditionalSupportNeedsRequest(
   val physicalHealth: String? = null,
   val mentalEmotionalHealth: String? = null,
@@ -13,17 +11,23 @@ data class AdditionalSupportNeedsRequest(
   val anythingElse: String? = null,
   val needsAdditionalSupport: Boolean = false,
 ) {
-  companion object {
-    fun from(supportNeeds: PersonAdditionalSupportNeeds): AdditionalSupportNeedsRequest = AdditionalSupportNeedsRequest(
-      physicalHealth = supportNeeds.physicalHealthDetails,
-      mentalEmotionalHealth = supportNeeds.neurodiversityDetails,
-      neurodiversity = supportNeeds.neurodiversityDetails,
-      locationTravel = supportNeeds.locationTravelDetails,
-      caringResponsibilities = supportNeeds.caringResponsibilitiesDetails,
-      employmentResponsibilities = supportNeeds.employmentResponsibilitiesDetails,
-      diversity = supportNeeds.diversityDetails,
-      anythingElse = supportNeeds.anythingElseDetails,
-      needsAdditionalSupport = !supportNeeds.noAdditionalSupportNeeded,
+  /**
+   * When `needsAdditionalSupport` is `false` then all other fields should be set to `null`, so we are
+   * not holding conflicting information (e.g. a person cannot *not* have additional support needs _and_
+   * and caring responsibilities)
+   */
+  fun normaliseAgainstNeedsAdditionalSupport(): AdditionalSupportNeedsRequest = if (needsAdditionalSupport) {
+    this
+  } else {
+    copy(
+      physicalHealth = null,
+      mentalEmotionalHealth = null,
+      neurodiversity = null,
+      locationTravel = null,
+      caringResponsibilities = null,
+      employmentResponsibilities = null,
+      diversity = null,
+      anythingElse = null,
     )
   }
 }
