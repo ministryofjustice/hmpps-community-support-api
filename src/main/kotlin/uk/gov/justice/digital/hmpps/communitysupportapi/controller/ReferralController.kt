@@ -142,10 +142,10 @@ class ReferralController(
     ],
   )
   @GetMapping("/bff/draft-referral/additional-support-needs/{referralId}")
-  fun getAdditionalSupportNeedsPage(@PathVariable referralId: String): ResponseEntity<AdditionalSupportNeedsBffResponseDto> {
+  fun getAdditionalSupportNeedsPage(@PathVariable referralId: UUID): ResponseEntity<AdditionalSupportNeedsBffResponseDto> {
     val user = userMapper.fromToken(authenticationHolder)
 
-    return ResponseEntity.ok(referralService.getAdditionalPersonNeeds(UUID.fromString(referralId)))
+    return ResponseEntity.ok(referralService.getAdditionalPersonNeeds(referralId))
   }
 
   @Operation(summary = "Update additional support needs information of a draft referral")

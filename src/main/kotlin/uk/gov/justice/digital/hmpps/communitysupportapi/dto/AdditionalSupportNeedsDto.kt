@@ -4,7 +4,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalS
 import java.util.UUID
 
 data class AdditionalSupportNeedsDto(
-  val id: UUID? = null,
+  val id: UUID,
   val referralId: UUID,
   val personId: UUID,
   val physicalHealth: String? = null,
