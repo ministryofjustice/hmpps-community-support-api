@@ -16,12 +16,13 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpMethod.GET
+import org.springframework.http.HttpMethod.PATCH
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonAdditionalSupportNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
@@ -38,9 +39,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.ReferralAdditionalDetails
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.SubmitReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -310,7 +310,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return OK and create submitted event for valid referral (no SubmitReferralRequest)`() {
+    fun `should return OK and create submitted event for valid referral`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
       val person = referralHelper.createPerson()
@@ -372,6 +372,22 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectStatus()
         .isEqualTo(409)
     }
+  }
+
+  @Nested
+  @DisplayName("PATCH /draft-referral/addition-support-needs/:referralId")
+  inner class AdditionalSupportNeedsTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(PATCH, "/draft-referral/addition-support-needs/${UUID.randomUUID()}")
+    }
 
     @Test
     fun `should return OK and updated additional information for a draft referral - partial support needs`() {
@@ -385,31 +401,22 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
       referralHelper.createProviderAssignment(referral, communityServiceProvider)
 
-      val request = SubmitReferralRequest(
-        additionalInformation = ReferralAdditionalDetails(
-          supportNeeds = PersonAdditionalSupportNeedsDto(
-            referralId = referral.id,
-            personId = person.id,
-            noAdditionalSupportNeeded = false,
-            physicalHealthDetails = "Requires wheelchair access",
-            interpreterLanguage = "Polish",
-          ),
-        ),
+      val request = AdditionalSupportNeedsRequest(
+        needsAdditionalSupport = true,
+        physicalHealth = "Requires wheelchair access",
       )
 
       webTestClient.patch()
-        .uri("/referral/${referral.id}/additional-information")
+        .uri("/draft-referral/additional-support-needs/${referral.id}")
         .headers(setAuthorisation())
         .bodyValue(request)
         .exchange()
         .expectStatus().isOk
-        .expectBody<SubmitReferralResponseDto>()
+        .expectBody<AdditionalSupportNeedsBffResponseDto>()
 
-      // Verify support needs were saved
       val supportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referral.id)
       supportNeeds shouldNotBe null
       supportNeeds!!.physicalHealthDetails shouldBe "Requires wheelchair access"
-      supportNeeds.interpreterLanguage shouldBe "Polish"
     }
 
     @Test
@@ -424,32 +431,25 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
       referralHelper.createProviderAssignment(referral, communityServiceProvider)
 
-      val request = SubmitReferralRequest(
-        additionalInformation = ReferralAdditionalDetails(
-          supportNeeds = PersonAdditionalSupportNeedsDto(
-            referralId = referral.id,
-            personId = person.id,
-            noAdditionalSupportNeeded = false,
-            physicalHealthDetails = "Wheelchair access required",
-            mentalEmotionalHealthDetails = "Anxiety support needed",
-            neurodiversityDetails = "ADHD diagnosis",
-            locationTravelDetails = "Cannot use public transport",
-            caringResponsibilitiesDetails = "Caring for elderly parent",
-            employmentResponsibilitiesDetails = "Part-time work",
-            diversityDetails = "Requires cultural sensitivity",
-            anythingElseDetails = "Additional notes here",
-            interpreterLanguage = "German",
-          ),
-        ),
+      val request = AdditionalSupportNeedsRequest(
+        needsAdditionalSupport = true,
+        physicalHealth = "Wheelchair access required",
+        mentalEmotionalHealth = "Anxiety support needed",
+        neurodiversity = "ADHD diagnosis",
+        locationTravel = "Cannot use public transport",
+        caringResponsibilities = "Caring for elderly parent",
+        employmentResponsibilities = "Part-time work",
+        diversity = "Requires cultural sensitivity",
+        anythingElse = "Additional notes here",
       )
 
       webTestClient.patch()
-        .uri("/referral/${referral.id}/additional-information")
+        .uri("/draft-referral/additional-support-needs/${referral.id}")
         .headers(setAuthorisation())
         .bodyValue(request)
         .exchange()
         .expectStatus().isOk
-        .expectBody<SubmitReferralResponseDto>()
+        .expectBody<AdditionalSupportNeedsBffResponseDto>()
 
       val supportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referral.id)!!
 
@@ -462,11 +462,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       supportNeeds.employmentResponsibilitiesDetails shouldBe "Part-time work"
       supportNeeds.diversityDetails shouldBe "Requires cultural sensitivity"
       supportNeeds.anythingElseDetails shouldBe "Additional notes here"
-      supportNeeds.interpreterLanguage shouldBe "German"
     }
 
     @Test
-    fun `should return OK and updated data for a draft referral - full support needs`() {
+    fun `should return OK and updated additional information for a draft referral - no additional needs`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
       val person = referralHelper.createPerson()
@@ -477,112 +476,115 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
       referralHelper.createProviderAssignment(referral, communityServiceProvider)
 
-      val personAdditionalSupportNeeds = PersonAdditionalSupportNeedsFactory()
+      val request = AdditionalSupportNeedsRequest(
+        needsAdditionalSupport = true,
+        physicalHealth = "Wheelchair access required",
+        mentalEmotionalHealth = "Anxiety support needed",
+        neurodiversity = "ADHD diagnosis",
+        locationTravel = "Cannot use public transport",
+        caringResponsibilities = "Caring for elderly parent",
+        employmentResponsibilities = "Part-time work",
+        diversity = "Requires cultural sensitivity",
+        anythingElse = "Additional notes here",
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/additional-support-needs/${referral.id}")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<AdditionalSupportNeedsBffResponseDto>()
+
+      val supportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referral.id)!!
+
+      supportNeeds.noAdditionalSupportNeeded shouldBe false
+      supportNeeds.physicalHealthDetails shouldBe "Wheelchair access required"
+      supportNeeds.mentalEmotionalHealthDetails shouldBe "Anxiety support needed"
+      supportNeeds.neurodiversityDetails shouldBe "ADHD diagnosis"
+      supportNeeds.locationTravelDetails shouldBe "Cannot use public transport"
+      supportNeeds.caringResponsibilitiesDetails shouldBe "Caring for elderly parent"
+      supportNeeds.employmentResponsibilitiesDetails shouldBe "Part-time work"
+      supportNeeds.diversityDetails shouldBe "Requires cultural sensitivity"
+      supportNeeds.anythingElseDetails shouldBe "Additional notes here"
+
+      val updateRequest = AdditionalSupportNeedsRequest(
+        needsAdditionalSupport = false,
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/additional-support-needs/${referral.id}")
+        .headers(setAuthorisation())
+        .bodyValue(updateRequest)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<AdditionalSupportNeedsBffResponseDto>()
+
+      val updatedSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referral.id)!!
+
+      updatedSupportNeeds.noAdditionalSupportNeeded shouldBe true
+      updatedSupportNeeds.physicalHealthDetails shouldBe null
+      updatedSupportNeeds.mentalEmotionalHealthDetails shouldBe null
+      updatedSupportNeeds.neurodiversityDetails shouldBe null
+      updatedSupportNeeds.locationTravelDetails shouldBe null
+      updatedSupportNeeds.caringResponsibilitiesDetails shouldBe null
+      updatedSupportNeeds.employmentResponsibilitiesDetails shouldBe null
+      updatedSupportNeeds.diversityDetails shouldBe null
+      updatedSupportNeeds.anythingElseDetails shouldBe null
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/draft-referral/addition-support-needs/:referralId")
+  inner class AdditionalSupportNeedsPageTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/draft-referral/addition-support-needs/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return additional support needs for a draft referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(
+        person = person,
+        createdBy = testUser.id,
+      )
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val supportNeeds = PersonAdditionalSupportNeedsFactory()
         .withReferral(referral)
         .withPerson(person)
-        .withNoAdditionalSupportNeeded(true)
-        .withInterpreterLanguage("Spanish")
+        .withNoAdditionalSupportNeeded(false)
+        .withPhysicalHealthDetails("Wheelchair access required")
         .withCreatedBy(testUser.id)
         .create()
-      personAdditionalSupportNeedsRepository.save(personAdditionalSupportNeeds)
 
-      val supportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referral.id)!!
+      personAdditionalSupportNeedsRepository.save(supportNeeds)
 
-      supportNeeds.noAdditionalSupportNeeded shouldBe true
-      supportNeeds.interpreterLanguage shouldBe "Spanish"
-
-      val request = SubmitReferralRequest(
-        additionalInformation = ReferralAdditionalDetails(
-          supportNeeds = PersonAdditionalSupportNeedsDto(
-            referralId = referral.id,
-            personId = person.id,
-            noAdditionalSupportNeeded = false,
-            physicalHealthDetails = "Wheelchair access required",
-            mentalEmotionalHealthDetails = "Anxiety support needed",
-            neurodiversityDetails = "ADHD diagnosis",
-            locationTravelDetails = "Cannot use public transport",
-            caringResponsibilitiesDetails = "Caring for elderly parent",
-            employmentResponsibilitiesDetails = "Part-time work",
-            diversityDetails = "Requires cultural sensitivity",
-            anythingElseDetails = "Additional notes here",
-            interpreterLanguage = "German",
-          ),
-        ),
-      )
-
-      webTestClient.patch()
-        .uri("/referral/${referral.id}/additional-information")
+      webTestClient.get()
+        .uri("/bff/draft-referral/additional-support-needs/${referral.id}")
         .headers(setAuthorisation())
-        .bodyValue(request)
         .exchange()
         .expectStatus().isOk
-        .expectBody<SubmitReferralResponseDto>()
-
-      val newSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referral.id)!!
-
-      newSupportNeeds.noAdditionalSupportNeeded shouldBe false
-      newSupportNeeds.physicalHealthDetails shouldBe "Wheelchair access required"
-      newSupportNeeds.mentalEmotionalHealthDetails shouldBe "Anxiety support needed"
-      newSupportNeeds.neurodiversityDetails shouldBe "ADHD diagnosis"
-      newSupportNeeds.locationTravelDetails shouldBe "Cannot use public transport"
-      newSupportNeeds.caringResponsibilitiesDetails shouldBe "Caring for elderly parent"
-      newSupportNeeds.employmentResponsibilitiesDetails shouldBe "Part-time work"
-      newSupportNeeds.diversityDetails shouldBe "Requires cultural sensitivity"
-      newSupportNeeds.anythingElseDetails shouldBe "Additional notes here"
-      newSupportNeeds.interpreterLanguage shouldBe "German"
-    }
-
-    @Test
-    fun `should return OK and submitted a referral with additional information`() {
-      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
-
-      val person = referralHelper.createPerson()
-      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
-      val referral = referralHelper.createDraftReferral(
-        person = person,
-        createdBy = testUser.id,
-      )
-      referralHelper.createProviderAssignment(referral, communityServiceProvider)
-
-      val request = SubmitReferralRequest(
-        additionalInformation = ReferralAdditionalDetails(
-          supportNeeds = PersonAdditionalSupportNeedsDto(
-            referralId = referral.id,
-            personId = person.id,
-            noAdditionalSupportNeeded = false,
-            physicalHealthDetails = "Wheelchair access required",
-            mentalEmotionalHealthDetails = "Anxiety support needed",
-            neurodiversityDetails = "ADHD diagnosis",
-            locationTravelDetails = "Cannot use public transport",
-            caringResponsibilitiesDetails = "Caring for elderly parent",
-            employmentResponsibilitiesDetails = "Part-time work",
-            diversityDetails = "Requires cultural sensitivity",
-            anythingElseDetails = "Additional notes here",
-            interpreterLanguage = "German",
-          ),
-        ),
-      )
-
-      webTestClient.post()
-        .uri("/${referral.id}/submit-a-referral")
-        .headers(setAuthorisation())
-        .bodyValue(request)
-        .exchange()
-        .expectStatus().isOk
-        .expectBody<SubmitReferralResponseDto>()
-
-      val supportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referral.id)!!
-
-      supportNeeds.noAdditionalSupportNeeded shouldBe false
-      supportNeeds.physicalHealthDetails shouldBe "Wheelchair access required"
-      supportNeeds.mentalEmotionalHealthDetails shouldBe "Anxiety support needed"
-      supportNeeds.neurodiversityDetails shouldBe "ADHD diagnosis"
-      supportNeeds.locationTravelDetails shouldBe "Cannot use public transport"
-      supportNeeds.caringResponsibilitiesDetails shouldBe "Caring for elderly parent"
-      supportNeeds.employmentResponsibilitiesDetails shouldBe "Part-time work"
-      supportNeeds.diversityDetails shouldBe "Requires cultural sensitivity"
-      supportNeeds.anythingElseDetails shouldBe "Additional notes here"
-      supportNeeds.interpreterLanguage shouldBe "German"
+        .expectBody<AdditionalSupportNeedsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.refereeName.firstName shouldBe person.firstName
+          body.refereeName.lastName shouldBe person.lastName
+          body.needsAdditionalSupport shouldBe true
+          body.physicalHealth?.selected shouldBe true
+          body.physicalHealth?.value shouldBe "Wheelchair access required"
+        }
     }
   }
 

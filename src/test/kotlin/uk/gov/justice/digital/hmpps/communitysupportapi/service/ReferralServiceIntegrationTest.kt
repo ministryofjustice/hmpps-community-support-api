@@ -12,7 +12,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonAdditionalSupportNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprIdentifiersDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
@@ -23,10 +22,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentT
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.PersonTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.ReferralAdditionalDetails
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.SubmitReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -286,87 +284,35 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   }
 
   @Test
-  fun `submitReferral with additional information should be saved together with the referral record`() {
+  fun `update additional information should be saved`() {
     val referralUser = referralHelper.ensureReferralUser()
     val createReferralRequest = setUpData()
 
     val result = referralService.createReferral(referralUser.id, createReferralRequest)
     val savedReferral = result.referral
-    val submitReferralRequest = SubmitReferralRequest(
-      additionalInformation = ReferralAdditionalDetails(
-        supportNeeds = PersonAdditionalSupportNeedsDto.from(
-          PersonAdditionalSupportNeedsFactory()
-            .withReferral(savedReferral)
-            .withPerson(result.person)
-            .withCaringResponsibilitiesDetails("Needs to take care of elderly")
-            .withInterpreterLanguage("French")
-            .withCreatedBy(referralUser.id)
-            .create(),
-        ),
-      ),
+
+    val supportNeeds = AdditionalSupportNeedsRequest.from(
+      PersonAdditionalSupportNeedsFactory()
+        .withReferral(savedReferral)
+        .withPerson(result.person)
+        .withEmploymentResponsibilitiesDetails("Needs to work party-time")
+        .withInterpreterLanguage("Spanish")
+        .withCreatedBy(referralUser.id)
+        .create(),
     )
-    val submissionResult = referralService.submitReferral(
+
+    val updatedResult = referralService.updateAdditionalSupportNeeds(
       savedReferral.id,
       referralUser.id,
-      submitReferralRequest,
-    )
-
-    assertThat(submissionResult).isNotNull()
-    assertThat(savedReferral.id).isEqualTo(submissionResult.referralId)
-    assertThat(submissionResult.referenceNumber).isNotNull()
-
-    val savedSupportNeeds = personAdditionSupportNeedsRepository.findByReferralId(savedReferral.id)
-    assertThat(savedSupportNeeds).isNotNull()
-    assertThat(savedSupportNeeds?.referralId).isEqualTo(savedReferral.id)
-    assertThat(savedSupportNeeds?.personId).isEqualTo(savedReferral.personId)
-    assertThat(savedSupportNeeds?.caringResponsibilitiesDetails).isEqualTo("Needs to take care of elderly")
-    assertThat(savedSupportNeeds?.interpreterLanguage).isEqualTo("French")
-    assertThat(savedSupportNeeds?.noAdditionalSupportNeeded).isFalse()
-    assertThat(savedSupportNeeds?.physicalHealthDetails).isNull()
-    assertThat(savedSupportNeeds?.mentalEmotionalHealthDetails).isNull()
-    assertThat(savedSupportNeeds?.diversityDetails).isNull()
-    assertThat(savedSupportNeeds?.employmentResponsibilitiesDetails).isNull()
-    assertThat(savedSupportNeeds?.locationTravelDetails).isNull()
-    assertThat(savedSupportNeeds?.neurodiversityDetails).isNull()
-    assertThat(savedSupportNeeds?.anythingElseDetails).isNull()
-    assertThat(savedSupportNeeds?.createdBy).isEqualTo(referralUser.id)
-  }
-
-  @Test
-  fun `updateReferral with additional information should be saved`() {
-    val referralUser = referralHelper.ensureReferralUser()
-    val createReferralRequest = setUpData()
-
-    val result = referralService.createReferral(referralUser.id, createReferralRequest)
-    val savedReferral = result.referral
-    val updateReferralRequest = SubmitReferralRequest(
-      additionalInformation = ReferralAdditionalDetails(
-        supportNeeds = PersonAdditionalSupportNeedsDto.from(
-          PersonAdditionalSupportNeedsFactory()
-            .withReferral(savedReferral)
-            .withPerson(result.person)
-            .withEmploymentResponsibilitiesDetails("Needs to work party-time")
-            .withInterpreterLanguage("Spanish")
-            .withCreatedBy(referralUser.id)
-            .create(),
-        ),
-      ),
-    )
-    val updatedResult = referralService.updateReferral(
-      savedReferral.id,
-      referralUser.id,
-      updateReferralRequest,
+      supportNeeds,
     )
     assertThat(updatedResult).isNotNull()
-    assertThat(savedReferral.id).isEqualTo(updatedResult.referralId)
-    assertThat(updatedResult.referenceNumber).isNull()
 
     val savedSupportNeeds = personAdditionSupportNeedsRepository.findByReferralId(savedReferral.id)
     assertThat(savedSupportNeeds).isNotNull()
     assertThat(savedSupportNeeds?.referralId).isEqualTo(savedReferral.id)
     assertThat(savedSupportNeeds?.personId).isEqualTo(savedReferral.personId)
     assertThat(savedSupportNeeds?.caringResponsibilitiesDetails).isNull()
-    assertThat(savedSupportNeeds?.interpreterLanguage).isEqualTo("Spanish")
     assertThat(savedSupportNeeds?.noAdditionalSupportNeeded).isFalse()
     assertThat(savedSupportNeeds?.physicalHealthDetails).isNull()
     assertThat(savedSupportNeeds?.mentalEmotionalHealthDetails).isNull()

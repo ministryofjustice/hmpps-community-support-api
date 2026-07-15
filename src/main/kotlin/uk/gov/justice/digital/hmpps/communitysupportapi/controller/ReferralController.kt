@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
@@ -27,8 +28,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusRespon
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.SubmitReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -119,19 +120,40 @@ class ReferralController(
   @PostMapping("/{referralId}/submit-a-referral")
   fun submitReferral(
     @PathVariable referralId: UUID,
-    @RequestBody(required = false) request: SubmitReferralRequest?,
   ): ResponseEntity<SubmitReferralResponseDto> {
     val user = userMapper.fromToken(authenticationHolder)
 
-    return ResponseEntity.ok(referralService.submitReferral(referralId, user.id, request))
+    return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
   }
 
-  @Operation(summary = "Update a referral")
+  @Operation(summary = "Get additional support needs page data")
   @ApiResponses(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "Referral updated",
+        description = "Additional support needs data found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = AdditionalSupportNeedsBffResponseDto::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/draft-referral/additional-support-needs/{referralId}")
+  fun getAdditionalSupportNeedsPage(@PathVariable referralId: UUID): ResponseEntity<AdditionalSupportNeedsBffResponseDto> {
+    val user = userMapper.fromToken(authenticationHolder)
+
+    return ResponseEntity.ok(referralService.getAdditionalPersonNeeds(referralId))
+  }
+
+  @Operation(summary = "Update additional support needs information of a draft referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Additional support needs information updated",
         content = [Content(mediaType = "application/json", schema = Schema(implementation = SubmitReferralResponseDto::class))],
       ),
       ApiResponse(
@@ -141,14 +163,14 @@ class ReferralController(
       ),
     ],
   )
-  @PatchMapping("/referral/{referralId}/additional-information")
-  fun updateReferral(
+  @PatchMapping("/draft-referral/additional-support-needs/{referralId}")
+  fun updateAdditionalSupportNeeds(
     @PathVariable referralId: UUID,
-    @RequestBody(required = false) request: SubmitReferralRequest?,
-  ): ResponseEntity<SubmitReferralResponseDto> {
+    @RequestBody request: AdditionalSupportNeedsRequest,
+  ): ResponseEntity<AdditionalSupportNeedsBffResponseDto> {
     val user = userMapper.fromToken(authenticationHolder)
 
-    return ResponseEntity.ok(referralService.updateReferral(referralId, user.id, request))
+    return ResponseEntity.ok(referralService.updateAdditionalSupportNeeds(referralId, user.id, request))
   }
 
   @Operation(summary = "Get referral progress page data")
