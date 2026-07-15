@@ -6,7 +6,15 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalS
 data class Selection(
   val selected: Boolean,
   val value: String? = null,
-)
+) {
+  companion object {
+    fun fromString(value: String?): Selection = if (value == null) {
+      Selection(false)
+    } else {
+      Selection(true, value)
+    }
+  }
+}
 
 data class RefereeName(
   val firstName: String,
@@ -29,22 +37,14 @@ data class AdditionalSupportNeedsBffResponseDto(
   companion object {
     fun from(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
       refereeName = RefereeName(firstName = person.firstName, lastName = person.lastName),
-      physicalHealth = personAdditionalSupportNeeds.physicalHealthDetails?.let { Selection(true, it) }
-        ?: Selection(false),
-      mentalEmotionalHealth = personAdditionalSupportNeeds.neurodiversityDetails?.let { Selection(true, it) }
-        ?: Selection(false),
-      neurodiversity = personAdditionalSupportNeeds.neurodiversityDetails?.let { Selection(true, it) }
-        ?: Selection(false),
-      locationTravel = personAdditionalSupportNeeds.locationTravelDetails?.let { Selection(true, it) }
-        ?: Selection(false),
-      caringResponsibilities = personAdditionalSupportNeeds.caringResponsibilitiesDetails?.let { Selection(true, it) }
-        ?: Selection(false),
-      employmentResponsibilities = personAdditionalSupportNeeds.employmentResponsibilitiesDetails?.let { Selection(true, it) }
-        ?: Selection(false),
-      diversity = personAdditionalSupportNeeds.diversityDetails?.let { Selection(true, it) }
-        ?: Selection(false),
-      anythingElse = personAdditionalSupportNeeds.anythingElseDetails?.let { Selection(true, it) }
-        ?: Selection(false),
+      physicalHealth = Selection.fromString(personAdditionalSupportNeeds.physicalHealthDetails),
+      mentalEmotionalHealth = Selection.fromString(personAdditionalSupportNeeds.mentalEmotionalHealthDetails),
+      neurodiversity = Selection.fromString(personAdditionalSupportNeeds.neurodiversityDetails),
+      locationTravel = Selection.fromString(personAdditionalSupportNeeds.locationTravelDetails),
+      caringResponsibilities = Selection.fromString(personAdditionalSupportNeeds.caringResponsibilitiesDetails),
+      employmentResponsibilities = Selection.fromString(personAdditionalSupportNeeds.employmentResponsibilitiesDetails),
+      diversity = Selection.fromString(personAdditionalSupportNeeds.diversityDetails),
+      anythingElse = Selection.fromString(personAdditionalSupportNeeds.anythingElseDetails),
       needsAdditionalSupport = !personAdditionalSupportNeeds.noAdditionalSupportNeeded,
     )
   }
