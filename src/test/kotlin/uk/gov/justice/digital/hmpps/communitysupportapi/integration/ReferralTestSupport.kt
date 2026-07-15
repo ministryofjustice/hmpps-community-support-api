@@ -4,6 +4,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalDetails
@@ -215,5 +216,34 @@ class ReferralTestSupport(
     assignCaseWorkers(referral, caseWorkers)
 
     return referral
+  }
+
+  fun createPersonFromCprPersonDTO(
+    cprPersonDTO: CprPersonDto,
+  ): Person {
+    val address = cprPersonDTO.addresses.first()
+    val addressString = "${address.buildingNumber}, ${address.thoroughfareName}, ${address.postTown}, ${address.postcode}"
+    val person = createPerson(
+      firstName = cprPersonDTO.firstName ?: "John",
+      lastName = cprPersonDTO.lastName ?: "Smith",
+      identifier = cprPersonDTO.identifiers.crns[0],
+      dateOfBirth = LocalDate.parse(cprPersonDTO.dateOfBirth ?: "1985-01-01"),
+      gender = cprPersonDTO.sex?.description ?: "Male",
+    )
+    val additionalDetails = PersonAdditionalDetailsFactory()
+      .withPerson(person)
+      .withEthnicity(cprPersonDTO.ethnicity?.description)
+      .withPreferredLanguage("")
+      .withNeurodiverseConditions("None")
+      .withReligionOrBelief(cprPersonDTO.religion?.description)
+      .withTransgender("")
+      .withSexualOrientation(cprPersonDTO.sexualOrientation?.description)
+      .withAddress(addressString)
+      .withPhoneNumber(address.contacts.first { it.type?.code == "TELEPHONE" }.value)
+      .withEmailAddress(address.contacts.first { it.type?.code == "EMAIL" }.value)
+      .create()
+
+    person.additionalDetails = additionalDetails
+    return person
   }
 }

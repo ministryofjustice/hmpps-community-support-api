@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
@@ -53,11 +54,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonJson
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Duration
 import java.time.LocalDate
@@ -592,47 +595,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   @DisplayName("GET /bff/referral-details-page/{referralId}")
   inner class ReferralViewPageEndPoint {
 
-    @BeforeEach
-    fun setup() {
-      testDataCleaner.cleanAllTables()
-    }
-
-    @Test
-    fun `should return unauthorized if no token`() {
-      assertUnauthorized(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
-    }
-
-    @Test
-    fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
-    }
-
-    @Test
-    fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
-    }
-
-    @Test
-    fun `should return OK with valid referral details page information`() {
-      val testUser = referralHelper.createTestUser()
-      val person = referralHelper.createPerson(identifier = "CRN12345")
-
-      val additionalDetails = PersonAdditionalDetailsFactory()
-        .withPerson(person)
-        .withEthnicity("White")
-        .withPreferredLanguage("English")
-        .withNeurodiverseConditions("None")
-        .withReligionOrBelief("None")
-        .withTransgender("No")
-        .withSexualOrientation("Straight")
-        .withAddress("123 Test Street /n Test Town /n Testshire")
-        .withPhoneNumber("0191 234 5678")
-        .withEmailAddress("test@test.com")
-        .create()
-
-      person.additionalDetails = additionalDetails
-      personRepository.save(person)
-
+    fun createReferralDetailsBffResponseDto(person: Person, testUser: ReferralUser): ReferralDetailsBffResponseDto {
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
 
       val personDetailsTable = ReferralDetailsBffResponseDto.PersonDetailsTableDataDto(
@@ -664,7 +627,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         assignedTo = emptyList(),
       )
 
-      val referralDetailsDto = ReferralDetailsBffResponseDto(
+      return ReferralDetailsBffResponseDto(
         id = savedReferral.id,
         referenceNumber = savedReferral.referenceNumber,
         createdDate = savedReferral.createdAt,
@@ -673,9 +636,50 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         contactDetailsTableData = contactDetailsTable,
         referralDetailsTableData = referralDetailsTable,
       )
+    }
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
+    }
+
+    @Test
+    fun `should return OK with valid referral details page information`() {
+      val cprPersonDTO = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDTO.toJson()),
+          ),
+      )
+
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
+
+      personRepository.save(person)
+
+      val referralDetailsDto = createReferralDetailsBffResponseDto(person, testUser)
 
       webTestClient.get()
-        .uri("/bff/referral-details-page/${savedReferral.id}")
+        .uri("/bff/referral-details-page/${referralDetailsDto.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
@@ -689,6 +693,65 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personDetailsTableData shouldBe referralDetailsDto.personDetailsTableData
           body.equalityDetailsTableData shouldBe referralDetailsDto.equalityDetailsTableData
           body.contactDetailsTableData shouldBe referralDetailsDto.contactDetailsTableData
+
+          val nanosDiff =
+            Duration.between(referralDetailsDto.createdDate, body.createdDate).abs().toNanos()
+          // allow up to 1-millisecond difference to avoid nanosecond serialization jitter
+          assertThat(nanosDiff).isLessThanOrEqualTo(1_000_000L)
+        }
+    }
+
+    @Test
+    fun `should return OK with valid referral details page and change in person details`() {
+      val cprPersonDTO = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDTO.toJson()),
+          ),
+      )
+
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
+
+      // Change personDetails in db - the get call should overwright this with the details returned from the stub
+      val additionalDetails = PersonAdditionalDetailsFactory()
+        .withPerson(person)
+        .withEthnicity(cprPersonDTO.ethnicity?.description)
+        .withPreferredLanguage("")
+        .withNeurodiverseConditions("None")
+        .withReligionOrBelief(cprPersonDTO.religion?.description)
+        .withTransgender("")
+        .withSexualOrientation(cprPersonDTO.sexualOrientation?.description)
+        .withPhoneNumber("09876543210")
+        .withEmailAddress("changed.email@example.com")
+        .create()
+      person.additionalDetails = additionalDetails
+      personRepository.save(person)
+
+      val referralDetailsDto = createReferralDetailsBffResponseDto(person, testUser)
+
+      webTestClient.get()
+        .uri("/bff/referral-details-page/${referralDetailsDto.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ReferralDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          // compare fields individually and allow a tiny tolerance for createdDate
+          body.id shouldBe referralDetailsDto.id
+          body.referenceNumber shouldBe referralDetailsDto.referenceNumber
+          body.personDetailsTableData shouldBe referralDetailsDto.personDetailsTableData
+          body.equalityDetailsTableData shouldBe referralDetailsDto.equalityDetailsTableData
+          body.contactDetailsTableData shouldNotBe referralDetailsDto.contactDetailsTableData
+
+          body.contactDetailsTableData.phoneNumber shouldBe cprPersonDTO.addresses.first().contacts.first { it.type?.code == "TELEPHONE" }.value
+          body.contactDetailsTableData.email shouldBe cprPersonDTO.addresses.first().contacts.first { it.type?.code == "EMAIL" }.value
 
           val nanosDiff =
             Duration.between(referralDetailsDto.createdDate, body.createdDate).abs().toNanos()
