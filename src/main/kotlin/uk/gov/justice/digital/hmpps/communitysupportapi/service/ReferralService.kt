@@ -3,8 +3,8 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonAdditionalSupportNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
@@ -25,10 +25,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderA
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.SubmitReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -127,7 +127,6 @@ class ReferralService(
   fun submitReferral(
     referralId: UUID,
     userId: UUID,
-    request: SubmitReferralRequest? = null,
   ): SubmitReferralResponseDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
@@ -140,17 +139,6 @@ class ReferralService(
       .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $referralId")
 
     val communityServiceProvider = providerAssignment.communityServiceProvider
-
-    request?.additionalInformation?.let { additional ->
-      additional.supportNeeds?.let { supportNeeds ->
-        createOrUpdateSupportNeeds(
-          referralId = referral.id,
-          personId = referral.personId,
-          request = supportNeeds,
-          updatedBy = userId,
-        )
-      }
-    }
 
     val referralEvent = ReferralEvent(
       id = UUID.randomUUID(),
@@ -171,41 +159,38 @@ class ReferralService(
     )
   }
 
-  @Transactional
-  fun updateReferral(
+  fun getAdditionalPersonNeeds(
     referralId: UUID,
     userId: UUID,
-    request: SubmitReferralRequest? = null,
-  ): SubmitReferralResponseDto {
+  ): AdditionalSupportNeedsBffResponseDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+
+    val additionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
+
+    return additionalSupportNeeds?.let {
+      AdditionalSupportNeedsBffResponseDto.from(person, additionalSupportNeeds)
+    } ?: throw NotFoundException("Personal additional support needs not found for referral $referralId")
+  }
+
+  @Transactional
+  fun updateAdditionalSupportNeeds(
+    referralId: UUID,
+    userId: UUID,
+    request: AdditionalSupportNeedsRequest,
+  ): AdditionalSupportNeedsBffResponseDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $request.referralId") }
 
-    request?.additionalInformation?.let { additional ->
-      additional.supportNeeds?.let { supportNeeds ->
-        createOrUpdateSupportNeeds(
-          referralId = referral.id,
-          personId = referral.personId,
-          request = supportNeeds,
-          updatedBy = userId,
-        )
-      }
-    }
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    val referralEvent = ReferralEvent(
-      id = UUID.randomUUID(),
-      eventType = ReferralEventType.UPDATED,
-      createdAt = OffsetDateTime.now(),
-      actorType = ActorType.AUTH,
-      actorId = userId,
-      referral = referral,
-    )
-
-    referral.addEvent(referralEvent)
-    val savedReferral = referralRepository.save(referral)
-    return SubmitReferralResponseDto(
-      referralId = savedReferral.id,
-      personId = savedReferral.personId,
-      referenceNumber = savedReferral.referenceNumber,
+    return AdditionalSupportNeedsBffResponseDto.from(
+      person,
+      createOrUpdateSupportNeeds(referralId, person.id, request, userId),
     )
   }
 
@@ -380,50 +365,47 @@ class ReferralService(
   private fun createSupportNeeds(
     referralId: UUID,
     personId: UUID,
-    request: PersonAdditionalSupportNeedsDto,
+    request: AdditionalSupportNeedsRequest,
     createdBy: UUID,
-  ) {
+  ): PersonAdditionalSupportNeeds {
     val supportNeeds = PersonAdditionalSupportNeeds(
       id = UUID.randomUUID(),
       referralId = referralId,
       personId = personId,
-      noAdditionalSupportNeeded = request.noAdditionalSupportNeeded,
-      physicalHealthDetails = if (request.noAdditionalSupportNeeded) null else request.physicalHealthDetails,
-      mentalEmotionalHealthDetails = if (request.noAdditionalSupportNeeded) null else request.mentalEmotionalHealthDetails,
-      neurodiversityDetails = if (request.noAdditionalSupportNeeded) null else request.neurodiversityDetails,
-      locationTravelDetails = if (request.noAdditionalSupportNeeded) null else request.locationTravelDetails,
-      caringResponsibilitiesDetails = if (request.noAdditionalSupportNeeded) null else request.caringResponsibilitiesDetails,
-      employmentResponsibilitiesDetails = if (request.noAdditionalSupportNeeded) null else request.employmentResponsibilitiesDetails,
-      diversityDetails = if (request.noAdditionalSupportNeeded) null else request.diversityDetails,
-      anythingElseDetails = if (request.noAdditionalSupportNeeded) null else request.anythingElseDetails,
-      interpreterLanguage = request.interpreterLanguage,
+      noAdditionalSupportNeeded = !request.needsAdditionalSupport,
+      physicalHealthDetails = if (!request.needsAdditionalSupport) null else request.physicalHealth,
+      mentalEmotionalHealthDetails = if (!request.needsAdditionalSupport) null else request.mentalEmotionalHealth,
+      neurodiversityDetails = if (!request.needsAdditionalSupport) null else request.neurodiversity,
+      locationTravelDetails = if (!request.needsAdditionalSupport) null else request.locationTravel,
+      caringResponsibilitiesDetails = if (!request.needsAdditionalSupport) null else request.caringResponsibilities,
+      employmentResponsibilitiesDetails = if (!request.needsAdditionalSupport) null else request.employmentResponsibilities,
+      diversityDetails = if (!request.needsAdditionalSupport) null else request.diversity,
+      anythingElseDetails = if (!request.needsAdditionalSupport) null else request.anythingElse,
       createdBy = createdBy,
       createdAt = OffsetDateTime.now(),
     )
-
-    personAdditionalSupportNeedsRepository.save(supportNeeds)
+    return personAdditionalSupportNeedsRepository.save(supportNeeds)
   }
 
   private fun updateSupportNeeds(
     existingRecord: PersonAdditionalSupportNeeds,
-    newRecord: PersonAdditionalSupportNeedsDto,
+    newRecord: AdditionalSupportNeedsRequest,
     updatedBy: UUID,
   ) {
-    val noAdditionalSupportNeeded = newRecord.noAdditionalSupportNeeded
+    val noAdditionalSupportNeeded = !newRecord.needsAdditionalSupport
     val supportNeeds = PersonAdditionalSupportNeeds(
       id = existingRecord.id,
       referralId = existingRecord.referralId,
       personId = existingRecord.personId,
-      noAdditionalSupportNeeded = newRecord.noAdditionalSupportNeeded,
-      physicalHealthDetails = if (noAdditionalSupportNeeded) null else newRecord.physicalHealthDetails,
-      mentalEmotionalHealthDetails = if (noAdditionalSupportNeeded) null else newRecord.mentalEmotionalHealthDetails,
-      neurodiversityDetails = if (noAdditionalSupportNeeded) null else newRecord.neurodiversityDetails,
-      locationTravelDetails = if (noAdditionalSupportNeeded) null else newRecord.locationTravelDetails,
-      caringResponsibilitiesDetails = if (noAdditionalSupportNeeded) null else newRecord.caringResponsibilitiesDetails,
-      employmentResponsibilitiesDetails = if (noAdditionalSupportNeeded) null else newRecord.employmentResponsibilitiesDetails,
-      diversityDetails = if (noAdditionalSupportNeeded) null else newRecord.diversityDetails,
-      anythingElseDetails = if (noAdditionalSupportNeeded) null else newRecord.anythingElseDetails,
-      interpreterLanguage = newRecord.interpreterLanguage,
+      noAdditionalSupportNeeded = noAdditionalSupportNeeded,
+      physicalHealthDetails = if (noAdditionalSupportNeeded) null else newRecord.physicalHealth,
+      mentalEmotionalHealthDetails = if (noAdditionalSupportNeeded) null else newRecord.mentalEmotionalHealth,
+      neurodiversityDetails = if (noAdditionalSupportNeeded) null else newRecord.neurodiversity,
+      locationTravelDetails = if (noAdditionalSupportNeeded) null else newRecord.locationTravel,
+      caringResponsibilitiesDetails = if (noAdditionalSupportNeeded) null else newRecord.caringResponsibilities,
+      employmentResponsibilitiesDetails = if (noAdditionalSupportNeeded) null else newRecord.employmentResponsibilities,
+      diversityDetails = if (noAdditionalSupportNeeded) null else newRecord.diversity,
+      anythingElseDetails = if (noAdditionalSupportNeeded) null else newRecord.anythingElse,
       createdBy = existingRecord.createdBy,
       createdAt = existingRecord.createdAt,
       updatedBy = updatedBy,
@@ -435,13 +417,12 @@ class ReferralService(
   private fun createOrUpdateSupportNeeds(
     referralId: UUID,
     personId: UUID,
-    request: PersonAdditionalSupportNeedsDto,
+    request: AdditionalSupportNeedsRequest,
     updatedBy: UUID,
-  ) {
-    personAdditionalSupportNeedsRepository.findByReferralId(referralId)
-      ?.let { existing ->
-        updateSupportNeeds(existing, request, updatedBy)
-      }
-      ?: createSupportNeeds(referralId, personId, request, updatedBy)
-  }
+  ): PersonAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
+    ?.let { existing ->
+      updateSupportNeeds(existing, request, updatedBy)
+      existing
+    }
+    ?: createSupportNeeds(referralId, personId, request, updatedBy)
 }
