@@ -145,7 +145,7 @@ class ReferralController(
   fun getAdditionalSupportNeedsPage(@PathVariable referralId: String): ResponseEntity<AdditionalSupportNeedsBffResponseDto> {
     val user = userMapper.fromToken(authenticationHolder)
 
-    return ResponseEntity.ok(referralService.getAdditionalPersonNeeds(UUID.fromString(referralId), user.id))
+    return ResponseEntity.ok(referralService.getAdditionalPersonNeeds(UUID.fromString(referralId)))
   }
 
   @Operation(summary = "Update additional support needs information of a draft referral")
