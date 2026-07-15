@@ -161,7 +161,6 @@ class ReferralService(
 
   fun getAdditionalPersonNeeds(
     referralId: UUID,
-    userId: UUID,
   ): AdditionalSupportNeedsBffResponseDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
