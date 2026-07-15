@@ -62,6 +62,12 @@ class ReferralService(
   private val identifierValidator: PersonIdentifierValidator,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
 ) {
+  private data class ReferralSupportNeedsContext(
+    val referral: Referral,
+    val person: Person,
+    val additionalSupportNeeds: PersonAdditionalSupportNeeds?,
+  )
+
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
     private const val MAX_REFERENCE_NUMBER_TRIES = 10
@@ -71,7 +77,8 @@ class ReferralService(
 
   fun getReferralDetailsPage(caseIdentifier: String?): ReferralDetailsBffResponseDto {
     val foundReferral = referralLookupService.findByCaseIdentifier(caseIdentifier)
-    val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral.personId}") }
+    val person = personRepository.findById(foundReferral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral ${foundReferral.personId}") }
     val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(foundReferral.id)
 
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
@@ -80,8 +87,9 @@ class ReferralService(
   @Transactional
   fun createReferral(userId: UUID, createReferralRequest: CreateReferralRequest): ReferralCreationResult {
     val person = upsertPerson(createReferralRequest.personDetails)
-    val communityServiceProvider = communityServiceProviderRepository.findById(createReferralRequest.communityServiceProviderId)
-      .orElseThrow { NotFoundException("Community Service Provider not found for id ${createReferralRequest.communityServiceProviderId}") }
+    val communityServiceProvider =
+      communityServiceProviderRepository.findById(createReferralRequest.communityServiceProviderId)
+        .orElseThrow { NotFoundException("Community Service Provider not found for id ${createReferralRequest.communityServiceProviderId}") }
 
     val referralId = UUID.randomUUID()
     val now = OffsetDateTime.now()
@@ -159,38 +167,31 @@ class ReferralService(
     )
   }
 
-  fun getAdditionalPersonNeeds(
-    referralId: UUID,
+  fun getAdditionalSupportNeedsForReferral(
+    referralId: String,
   ): AdditionalSupportNeedsBffResponseDto {
-    val referral = referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+    val context = getReferralSupportNeedsContext(UUID.fromString(referralId))
 
-    val person = personRepository.findById(referral.personId)
-      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
-
-    val additionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
-
-    return additionalSupportNeeds?.let {
-      AdditionalSupportNeedsBffResponseDto.from(person, additionalSupportNeeds)
+    return context.additionalSupportNeeds?.let {
+      AdditionalSupportNeedsBffResponseDto.from(context.person, it)
     } ?: throw NotFoundException("Personal additional support needs not found for referral $referralId")
   }
 
   @Transactional
-  fun updateAdditionalSupportNeeds(
+  fun upsertAdditionalSupportNeeds(
     referralId: UUID,
     userId: UUID,
     request: AdditionalSupportNeedsRequest,
   ): AdditionalSupportNeedsBffResponseDto {
-    val referral = referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id $request.referralId") }
+    val context = getReferralSupportNeedsContext(referralId)
 
-    val person = personRepository.findById(referral.personId)
-      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+    val personAdditionalSupportNeeds = if (context.additionalSupportNeeds == null) {
+      createSupportNeeds(referralId, context.person.id, request, userId)
+    } else {
+      updateSupportNeeds(context.additionalSupportNeeds, request, userId)
+    }
 
-    return AdditionalSupportNeedsBffResponseDto.from(
-      person,
-      createOrUpdateSupportNeeds(referralId, person.id, request, userId),
-    )
+    return AdditionalSupportNeedsBffResponseDto.from(context.person, personAdditionalSupportNeeds)
   }
 
   fun getReferralProgress(referralIdentifier: String): ReferralProgressDto {
@@ -245,7 +246,8 @@ class ReferralService(
 
   fun getReferralInformation(caseIdentifier: String?): ReferralInformationDto {
     val foundReferral = referralLookupService.findByCaseIdentifier(caseIdentifier)
-    val person = personRepository.findById(foundReferral.personId).orElseThrow { NotFoundException("Person not found for referral ${foundReferral.personId}") }
+    val person = personRepository.findById(foundReferral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral ${foundReferral.personId}") }
 
     val providerAssignment = referralProviderAssignmentRepository.findByReferralId(foundReferral.id)
       .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $foundReferral.id")
@@ -367,19 +369,20 @@ class ReferralService(
     request: AdditionalSupportNeedsRequest,
     createdBy: UUID,
   ): PersonAdditionalSupportNeeds {
+    val normalisedRequest = request.normaliseAgainstNeedsAdditionalSupport()
     val supportNeeds = PersonAdditionalSupportNeeds(
       id = UUID.randomUUID(),
       referralId = referralId,
       personId = personId,
-      noAdditionalSupportNeeded = !request.needsAdditionalSupport,
-      physicalHealthDetails = if (!request.needsAdditionalSupport) null else request.physicalHealth,
-      mentalEmotionalHealthDetails = if (!request.needsAdditionalSupport) null else request.mentalEmotionalHealth,
-      neurodiversityDetails = if (!request.needsAdditionalSupport) null else request.neurodiversity,
-      locationTravelDetails = if (!request.needsAdditionalSupport) null else request.locationTravel,
-      caringResponsibilitiesDetails = if (!request.needsAdditionalSupport) null else request.caringResponsibilities,
-      employmentResponsibilitiesDetails = if (!request.needsAdditionalSupport) null else request.employmentResponsibilities,
-      diversityDetails = if (!request.needsAdditionalSupport) null else request.diversity,
-      anythingElseDetails = if (!request.needsAdditionalSupport) null else request.anythingElse,
+      noAdditionalSupportNeeded = !normalisedRequest.needsAdditionalSupport,
+      physicalHealthDetails = normalisedRequest.physicalHealth,
+      mentalEmotionalHealthDetails = normalisedRequest.mentalEmotionalHealth,
+      neurodiversityDetails = normalisedRequest.neurodiversity,
+      locationTravelDetails = normalisedRequest.locationTravel,
+      caringResponsibilitiesDetails = normalisedRequest.caringResponsibilities,
+      employmentResponsibilitiesDetails = normalisedRequest.employmentResponsibilities,
+      diversityDetails = normalisedRequest.diversity,
+      anythingElseDetails = normalisedRequest.anythingElse,
       createdBy = createdBy,
       createdAt = OffsetDateTime.now(),
     )
@@ -390,38 +393,43 @@ class ReferralService(
     existingRecord: PersonAdditionalSupportNeeds,
     newRecord: AdditionalSupportNeedsRequest,
     updatedBy: UUID,
-  ) {
-    val noAdditionalSupportNeeded = !newRecord.needsAdditionalSupport
+  ): PersonAdditionalSupportNeeds {
+    val normalisedRequest = newRecord.normaliseAgainstNeedsAdditionalSupport()
+    val noAdditionalSupportNeeded = !normalisedRequest.needsAdditionalSupport
     val supportNeeds = PersonAdditionalSupportNeeds(
       id = existingRecord.id,
       referralId = existingRecord.referralId,
       personId = existingRecord.personId,
       noAdditionalSupportNeeded = noAdditionalSupportNeeded,
-      physicalHealthDetails = if (noAdditionalSupportNeeded) null else newRecord.physicalHealth,
-      mentalEmotionalHealthDetails = if (noAdditionalSupportNeeded) null else newRecord.mentalEmotionalHealth,
-      neurodiversityDetails = if (noAdditionalSupportNeeded) null else newRecord.neurodiversity,
-      locationTravelDetails = if (noAdditionalSupportNeeded) null else newRecord.locationTravel,
-      caringResponsibilitiesDetails = if (noAdditionalSupportNeeded) null else newRecord.caringResponsibilities,
-      employmentResponsibilitiesDetails = if (noAdditionalSupportNeeded) null else newRecord.employmentResponsibilities,
-      diversityDetails = if (noAdditionalSupportNeeded) null else newRecord.diversity,
-      anythingElseDetails = if (noAdditionalSupportNeeded) null else newRecord.anythingElse,
+      physicalHealthDetails = normalisedRequest.physicalHealth,
+      mentalEmotionalHealthDetails = normalisedRequest.mentalEmotionalHealth,
+      neurodiversityDetails = normalisedRequest.neurodiversity,
+      locationTravelDetails = normalisedRequest.locationTravel,
+      caringResponsibilitiesDetails = normalisedRequest.caringResponsibilities,
+      employmentResponsibilitiesDetails = normalisedRequest.employmentResponsibilities,
+      diversityDetails = normalisedRequest.diversity,
+      anythingElseDetails = normalisedRequest.anythingElse,
       createdBy = existingRecord.createdBy,
       createdAt = existingRecord.createdAt,
       updatedBy = updatedBy,
       updatedAt = OffsetDateTime.now(),
     )
-    personAdditionalSupportNeedsRepository.save(supportNeeds)
+    return personAdditionalSupportNeedsRepository.save(supportNeeds)
   }
 
-  private fun createOrUpdateSupportNeeds(
-    referralId: UUID,
-    personId: UUID,
-    request: AdditionalSupportNeedsRequest,
-    updatedBy: UUID,
-  ): PersonAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
-    ?.let { existing ->
-      updateSupportNeeds(existing, request, updatedBy)
-      existing
-    }
-    ?: createSupportNeeds(referralId, personId, request, updatedBy)
+  private fun getReferralSupportNeedsContext(referralId: UUID): ReferralSupportNeedsContext {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+
+    val additionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
+
+    return ReferralSupportNeedsContext(
+      referral = referral,
+      person = person,
+      additionalSupportNeeds = additionalSupportNeeds,
+    )
+  }
 }

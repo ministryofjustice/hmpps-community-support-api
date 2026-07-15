@@ -27,25 +27,25 @@ data class AdditionalSupportNeedsBffResponseDto(
   val needsAdditionalSupport: Boolean = false,
 ) {
   companion object {
-    fun from(person: Person, supportNeeds: PersonAdditionalSupportNeeds): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
+    fun from(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
       refereeName = RefereeName(firstName = person.firstName, lastName = person.lastName),
-      physicalHealth = supportNeeds.physicalHealthDetails?.let { Selection(true, it) }
+      physicalHealth = personAdditionalSupportNeeds.physicalHealthDetails?.let { Selection(true, it) }
         ?: Selection(false),
-      mentalEmotionalHealth = supportNeeds.neurodiversityDetails?.let { Selection(true, it) }
+      mentalEmotionalHealth = personAdditionalSupportNeeds.neurodiversityDetails?.let { Selection(true, it) }
         ?: Selection(false),
-      neurodiversity = supportNeeds.neurodiversityDetails?.let { Selection(true, it) }
+      neurodiversity = personAdditionalSupportNeeds.neurodiversityDetails?.let { Selection(true, it) }
         ?: Selection(false),
-      locationTravel = supportNeeds.locationTravelDetails?.let { Selection(true, it) }
+      locationTravel = personAdditionalSupportNeeds.locationTravelDetails?.let { Selection(true, it) }
         ?: Selection(false),
-      caringResponsibilities = supportNeeds.caringResponsibilitiesDetails?.let { Selection(true, it) }
+      caringResponsibilities = personAdditionalSupportNeeds.caringResponsibilitiesDetails?.let { Selection(true, it) }
         ?: Selection(false),
-      employmentResponsibilities = supportNeeds.employmentResponsibilitiesDetails?.let { Selection(true, it) }
+      employmentResponsibilities = personAdditionalSupportNeeds.employmentResponsibilitiesDetails?.let { Selection(true, it) }
         ?: Selection(false),
-      diversity = supportNeeds.diversityDetails?.let { Selection(true, it) }
+      diversity = personAdditionalSupportNeeds.diversityDetails?.let { Selection(true, it) }
         ?: Selection(false),
-      anythingElse = supportNeeds.anythingElseDetails?.let { Selection(true, it) }
+      anythingElse = personAdditionalSupportNeeds.anythingElseDetails?.let { Selection(true, it) }
         ?: Selection(false),
-      needsAdditionalSupport = !supportNeeds.noAdditionalSupportNeeded,
+      needsAdditionalSupport = !personAdditionalSupportNeeds.noAdditionalSupportNeeded,
     )
   }
 }

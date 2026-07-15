@@ -21,7 +21,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
@@ -402,9 +401,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
       referralHelper.createProviderAssignment(referral, communityServiceProvider)
 
-      val request = AdditionalSupportNeedsDto(
-        referralId = referral.id,
-        personId = person.id,
+      val request = AdditionalSupportNeedsRequest(
         needsAdditionalSupport = true,
         physicalHealth = "Requires wheelchair access",
       )
@@ -434,7 +431,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
       referralHelper.createProviderAssignment(referral, communityServiceProvider)
 
-      val request = AdditionalSupportNeedsDto(
+      val request = AdditionalSupportNeedsRequest(
         needsAdditionalSupport = true,
         physicalHealth = "Wheelchair access required",
         mentalEmotionalHealth = "Anxiety support needed",
@@ -511,9 +508,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       supportNeeds.diversityDetails shouldBe "Requires cultural sensitivity"
       supportNeeds.anythingElseDetails shouldBe "Additional notes here"
 
-      val updateRequest = AdditionalSupportNeedsDto(
-        referralId = referral.id,
-        personId = person.id,
+      val updateRequest = AdditionalSupportNeedsRequest(
         needsAdditionalSupport = false,
       )
 
