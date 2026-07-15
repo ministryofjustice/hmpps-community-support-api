@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.TestWebClien
     "services.hmpps-auth-api.base-url=http://localhost:8090/auth",
     "services.manage-users-api.base-url=http://localhost:9999",
     "services.core-person-record-api.base-url=http://localhost:9999",
+    "services.assess-risks-and-needs-api.base-url=http://localhost:9999"
   ],
 )
 class InitialiseDatabase {
