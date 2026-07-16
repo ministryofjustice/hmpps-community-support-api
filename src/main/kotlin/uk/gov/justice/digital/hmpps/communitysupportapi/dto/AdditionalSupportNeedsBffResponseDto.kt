@@ -49,3 +49,15 @@ data class AdditionalSupportNeedsBffResponseDto(
     )
   }
 }
+
+data class NeedsInterpreterBffResponseDto(
+  val refereeName: RefereeName,
+  val language: Selection? = null,
+) {
+  companion object {
+    fun from(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): NeedsInterpreterBffResponseDto = NeedsInterpreterBffResponseDto(
+      refereeName = RefereeName(firstName = person.firstName, lastName = person.lastName),
+      language = Selection.fromString(personAdditionalSupportNeeds.interpreterLanguage),
+    )
+  }
+}
