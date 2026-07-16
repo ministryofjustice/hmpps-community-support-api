@@ -336,17 +336,5 @@ class ReferralController(
     ],
   )
   @GetMapping("/bff/task-list-status/{referralId}")
-  fun getTaskListStatus(@PathVariable referralId: UUID): ResponseEntity<TaskListStatusResponseDto> {
-    // Placeholder values to allow frontend integration in this first commit; data wiring follows in later commits. --TWC 2026-07-14
-    return ResponseEntity.ok(
-      TaskListStatusResponseDto(
-        confirmPersonalDetails = false,
-        checkRiskInformation = false,
-        selectThePersonsNeeds = false,
-        addDetailsOfAnyAdditionalSupportNeeds = false,
-        addDetailsOfMainPointOfContact = false,
-        checkAnswers = false,
-      ),
-    )
-  }
+  fun getTaskListStatus(@PathVariable referralId: UUID): ResponseEntity<TaskListStatusResponseDto> = ResponseEntity.ok(referralService.getTaskListStatus(referralId))
 }

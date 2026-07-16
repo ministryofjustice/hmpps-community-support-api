@@ -994,8 +994,29 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return 200 with all task list statuses as false`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val additionalDetails = PersonAdditionalDetailsFactory()
+        .withPerson(person)
+        .withEthnicity("White")
+        .withPreferredLanguage("English")
+        .withNeurodiverseConditions("None")
+        .withReligionOrBelief("None")
+        .withTransgender("No")
+        .withSexualOrientation("Straight")
+        .withAddress("123 Test Street /n Test Town /n Testshire")
+        .withPhoneNumber("0191 234 5678")
+        .withEmailAddress("test@test.com")
+        .create()
+
+      person.additionalDetails = additionalDetails
+      personRepository.save(person)
+
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      referralRepository.save(savedReferral)
+
       webTestClient.get()
-        .uri("/bff/task-list-status/${UUID.randomUUID()}")
+        .uri("/bff/task-list-status/${savedReferral.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -1003,12 +1024,12 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.confirmPersonalDetails shouldBe false
-          body.checkRiskInformation shouldBe false
-          body.selectThePersonsNeeds shouldBe false
-          body.addDetailsOfAnyAdditionalSupportNeeds shouldBe false
-          body.addDetailsOfMainPointOfContact shouldBe false
-          body.checkAnswers shouldBe false
+          body.fullName shouldBe "John Smith"
+          body.confirmPersonalDetailsCompleted shouldBe false
+          body.checkRiskInformationCompleted shouldBe false
+          body.selectThePersonsNeedsCompleted shouldBe false
+          body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe false
+          body.addDetailsOfMainPointOfContactCompleted shouldBe false
         }
     }
   }
