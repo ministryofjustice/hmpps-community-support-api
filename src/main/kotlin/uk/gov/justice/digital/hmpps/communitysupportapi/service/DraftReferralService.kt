@@ -34,8 +34,6 @@ class DraftReferralService(
     private val logger = LoggerFactory.getLogger(DraftReferralService::class.java)
   }
 
-  fun getReferral(referralId: UUID) = referralRepository.findById(referralId)
-
   fun getAdditionalSupportNeedsForReferral(
     referralId: String,
   ): AdditionalSupportNeedsBffResponseDto {
