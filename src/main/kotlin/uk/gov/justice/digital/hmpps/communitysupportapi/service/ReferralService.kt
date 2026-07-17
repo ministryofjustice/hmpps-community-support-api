@@ -101,7 +101,7 @@ class ReferralService(
     val referral = Referral(
       id = referralId,
       personIdentifier = createReferralRequest.personIdentifier,
-      personId = personDetails.id,
+      personId = person.id,
       createdAt = now,
       createdBy = userId,
       updatedAt = now,
@@ -130,7 +130,7 @@ class ReferralService(
 
     return ReferralCreationResult(
       referral = savedReferral,
-      person = personDetails,
+      person = person,
       communityServiceProvider = communityServiceProvider,
     )
   }

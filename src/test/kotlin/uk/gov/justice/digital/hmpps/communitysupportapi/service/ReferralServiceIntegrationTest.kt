@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import jakarta.validation.ValidationException
 import org.assertj.core.api.Assertions.assertThat
@@ -37,8 +36,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
@@ -147,9 +144,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(persistedPerson.firstName).isEqualTo("John")
     assertThat(persistedPerson.lastName).isEqualTo("Smith")
     assertThat(persistedPerson.dateOfBirth).isEqualTo(LocalDate.of(1980, 1, 1))
-    assertThat(persistedPerson.firstName).isEqualTo(updatedPersonDto.firstName)
-    assertThat(persistedPerson.lastName).isEqualTo(updatedPersonDto.lastName)
-    assertThat(persistedPerson.dateOfBirth).isEqualTo(LocalDate.of(1985, 1, 1))
   }
 
   @Test
@@ -487,6 +481,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
     referralHelper.assignCaseWorkers(referral, listOf(referralUser))
+    stubCprProbationPerson(person.identifier, createCprProbationPersonDto(person.identifier))
 
     val result = referralService.getReferralDetailsPage(referral.id.toString())
 
@@ -503,6 +498,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val referral = referralHelper.createReferral(person, submittedBy = referralUser, referenceNumber = "AA1234BB")
 
     referralHelper.assignCaseWorkers(referral, listOf(referralUser))
+    stubCprProbationPerson(person.identifier, createCprProbationPersonDto(person.identifier))
 
     val result = referralService.getReferralDetailsPage(referral.referenceNumber)
 
