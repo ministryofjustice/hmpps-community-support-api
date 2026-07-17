@@ -1,9 +1,9 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
@@ -12,12 +12,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalDetails
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
@@ -25,7 +25,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderA
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
@@ -34,7 +33,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIc
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
@@ -60,15 +58,8 @@ class ReferralService(
   private val referralLookupService: ReferralLookupService,
   private val cprProbationService: CprProbationService,
   private val identifierValidator: PersonIdentifierValidator,
-  private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
   private val personService: PersonService,
 ) {
-  private data class ReferralSupportNeedsContext(
-    val referral: Referral,
-    val person: Person,
-    val additionalSupportNeeds: PersonAdditionalSupportNeeds?,
-  )
-
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
     private const val MAX_REFERENCE_NUMBER_TRIES = 10
@@ -87,10 +78,11 @@ class ReferralService(
 
   @Transactional
   fun createReferral(userId: UUID, createReferralRequest: CreateReferralRequest): ReferralCreationResult {
-    val person = personService.getPerson(createReferralRequest.personIdentifier)
-    val personDetails = upsertPerson(person)
-    val communityServiceProvider = communityServiceProviderRepository.findById(createReferralRequest.communityServiceProviderId)
-      .orElseThrow { NotFoundException("Community Service Provider not found for id ${createReferralRequest.communityServiceProviderId}") }
+    val personDetails = fetchPersonDetails(createReferralRequest.personIdentifier)
+    val person = upsertPerson(personDetails)
+    val communityServiceProvider =
+      communityServiceProviderRepository.findById(createReferralRequest.communityServiceProviderId)
+        .orElseThrow { NotFoundException("Community Service Provider not found for id ${createReferralRequest.communityServiceProviderId}") }
 
     val referralId = UUID.randomUUID()
     val now = OffsetDateTime.now()
@@ -132,6 +124,19 @@ class ReferralService(
     )
   }
 
+  private fun fetchPersonDetails(personIdentifier: String): PersonDto = try {
+    personService.getPerson(personIdentifier)
+  } catch (e: ValidationException) {
+    throw e
+  } catch (e: Exception) {
+    logger.error(
+      "Failed to retrieve person details from Core Person Record for identifier {} while creating referral",
+      personIdentifier,
+      e,
+    )
+    throw RuntimeException("Unable to retrieve person details from Core Person Record for identifier $personIdentifier", e)
+  }
+
   @Transactional
   fun submitReferral(
     referralId: UUID,
@@ -166,33 +171,6 @@ class ReferralService(
       personId = savedReferral.personId,
       referenceNumber = savedReferral.referenceNumber,
     )
-  }
-
-  fun getAdditionalSupportNeedsForReferral(
-    referralId: String,
-  ): AdditionalSupportNeedsBffResponseDto {
-    val context = getReferralSupportNeedsContext(UUID.fromString(referralId))
-
-    return context.additionalSupportNeeds?.let {
-      AdditionalSupportNeedsBffResponseDto.from(context.person, it)
-    } ?: throw NotFoundException("Personal additional support needs not found for referral $referralId")
-  }
-
-  @Transactional
-  fun upsertAdditionalSupportNeeds(
-    referralId: UUID,
-    userId: UUID,
-    request: AdditionalSupportNeedsRequest,
-  ): AdditionalSupportNeedsBffResponseDto {
-    val context = getReferralSupportNeedsContext(referralId)
-
-    val personAdditionalSupportNeeds = if (context.additionalSupportNeeds == null) {
-      createSupportNeeds(referralId, context.person.id, request, userId)
-    } else {
-      updateSupportNeeds(context.additionalSupportNeeds, request, userId)
-    }
-
-    return AdditionalSupportNeedsBffResponseDto.from(context.person, personAdditionalSupportNeeds)
   }
 
   fun getReferralProgress(referralIdentifier: String): ReferralProgressDto {
@@ -286,6 +264,23 @@ class ReferralService(
     return ConfirmPersonDetailsBffDto.from(person.id, personAggregate, offenderProfile)
   }
 
+  fun getTaskListStatus(referralId: UUID): TaskListStatusResponseDto? {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+
+    return TaskListStatusResponseDto(
+      fullName = person.firstName + " " + person.lastName,
+      confirmPersonalDetailsCompleted = false,
+      checkRiskInformationCompleted = false,
+      selectThePersonsNeedsCompleted = false,
+      addDetailsOfAnyAdditionalSupportNeedsCompleted = false,
+      addDetailsOfMainPointOfContactCompleted = false,
+    )
+  }
+
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
     val type = communityServiceProvider.serviceProvider.name
 
@@ -362,75 +357,5 @@ class ReferralService(
       existing.address == incoming.address &&
       existing.phoneNumber == incoming.phoneNumber &&
       existing.emailAddress == incoming.emailAddress
-  }
-
-  private fun createSupportNeeds(
-    referralId: UUID,
-    personId: UUID,
-    request: AdditionalSupportNeedsRequest,
-    createdBy: UUID,
-  ): PersonAdditionalSupportNeeds {
-    val normalisedRequest = request.normaliseAgainstNeedsAdditionalSupport()
-    val supportNeeds = PersonAdditionalSupportNeeds(
-      id = UUID.randomUUID(),
-      referralId = referralId,
-      personId = personId,
-      noAdditionalSupportNeeded = !normalisedRequest.needsAdditionalSupport,
-      physicalHealthDetails = normalisedRequest.physicalHealth,
-      mentalEmotionalHealthDetails = normalisedRequest.mentalEmotionalHealth,
-      neurodiversityDetails = normalisedRequest.neurodiversity,
-      locationTravelDetails = normalisedRequest.locationTravel,
-      caringResponsibilitiesDetails = normalisedRequest.caringResponsibilities,
-      employmentResponsibilitiesDetails = normalisedRequest.employmentResponsibilities,
-      diversityDetails = normalisedRequest.diversity,
-      anythingElseDetails = normalisedRequest.anythingElse,
-      createdBy = createdBy,
-      createdAt = OffsetDateTime.now(),
-    )
-    return personAdditionalSupportNeedsRepository.save(supportNeeds)
-  }
-
-  private fun updateSupportNeeds(
-    existingRecord: PersonAdditionalSupportNeeds,
-    newRecord: AdditionalSupportNeedsRequest,
-    updatedBy: UUID,
-  ): PersonAdditionalSupportNeeds {
-    val normalisedRequest = newRecord.normaliseAgainstNeedsAdditionalSupport()
-    val noAdditionalSupportNeeded = !normalisedRequest.needsAdditionalSupport
-    val supportNeeds = PersonAdditionalSupportNeeds(
-      id = existingRecord.id,
-      referralId = existingRecord.referralId,
-      personId = existingRecord.personId,
-      noAdditionalSupportNeeded = noAdditionalSupportNeeded,
-      physicalHealthDetails = normalisedRequest.physicalHealth,
-      mentalEmotionalHealthDetails = normalisedRequest.mentalEmotionalHealth,
-      neurodiversityDetails = normalisedRequest.neurodiversity,
-      locationTravelDetails = normalisedRequest.locationTravel,
-      caringResponsibilitiesDetails = normalisedRequest.caringResponsibilities,
-      employmentResponsibilitiesDetails = normalisedRequest.employmentResponsibilities,
-      diversityDetails = normalisedRequest.diversity,
-      anythingElseDetails = normalisedRequest.anythingElse,
-      createdBy = existingRecord.createdBy,
-      createdAt = existingRecord.createdAt,
-      updatedBy = updatedBy,
-      updatedAt = OffsetDateTime.now(),
-    )
-    return personAdditionalSupportNeedsRepository.save(supportNeeds)
-  }
-
-  private fun getReferralSupportNeedsContext(referralId: UUID): ReferralSupportNeedsContext {
-    val referral = referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
-
-    val person = personRepository.findById(referral.personId)
-      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
-
-    val additionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
-
-    return ReferralSupportNeedsContext(
-      referral = referral,
-      person = person,
-      additionalSupportNeeds = additionalSupportNeeds,
-    )
   }
 }

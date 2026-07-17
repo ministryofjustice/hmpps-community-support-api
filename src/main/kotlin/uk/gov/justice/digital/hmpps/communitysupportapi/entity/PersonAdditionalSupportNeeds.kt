@@ -12,7 +12,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "person_additional_support_needs")
-class PersonAdditionalSupportNeeds(
+data class PersonAdditionalSupportNeeds(
   @Id
   @Column(name = "id")
   val id: UUID,
