@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import jakarta.validation.ValidationException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -13,8 +14,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprCodeDescriptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprIdentifiersDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
@@ -25,7 +27,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.PersonTestSu
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -36,11 +37,11 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -120,29 +121,22 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `createReferral should update existing person when identifier matches`() {
     val referralUser = referralHelper.ensureReferralUser()
+    val crn = "X123456"
 
     val existingPerson = referralHelper.createPerson(
       firstName = "Old",
       lastName = "Name",
+      identifier = crn,
       dateOfBirth = LocalDate.of(1970, 1, 1),
     )
 
     val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
-    val updatedPersonDto = PersonDto(
-      id = UUID.randomUUID(),
-      personIdentifier = "X123456",
-      firstName = "John",
-      lastName = "Smith",
-      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-      sex = "Male",
-      additionalDetails = null,
-    )
+    stubCprProbationPerson(crn, createCprProbationPersonDto(crn).copy(dateOfBirth = "1980-01-01"))
 
     val request = CreateReferralRequest(
-      personDetails = updatedPersonDto,
       communityServiceProviderId = communityServiceProvider.id,
-      personIdentifier = "X123456",
+      personIdentifier = crn,
     )
 
     val result = referralService.createReferral(referralUser.id, request)
@@ -150,6 +144,9 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val persistedPerson = personRepository.findById(existingPerson.id).get()
 
     assertThat(result.referral.personId).isEqualTo(existingPerson.id)
+    assertThat(persistedPerson.firstName).isEqualTo("John")
+    assertThat(persistedPerson.lastName).isEqualTo("Smith")
+    assertThat(persistedPerson.dateOfBirth).isEqualTo(LocalDate.of(1980, 1, 1))
     assertThat(persistedPerson.firstName).isEqualTo(updatedPersonDto.firstName)
     assertThat(persistedPerson.lastName).isEqualTo(updatedPersonDto.lastName)
     assertThat(persistedPerson.dateOfBirth).isEqualTo(LocalDate.of(1985, 1, 1))
@@ -158,11 +155,12 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `createReferral should update existing person additional details when identifier matches`() {
     val referralUser = referralHelper.ensureReferralUser()
+    val crn = "X999999"
 
     val existingPerson = referralHelper.createPerson(
       firstName = "Old",
       lastName = "Name",
-      identifier = "X999999",
+      identifier = crn,
       dateOfBirth = LocalDate.of(1975, 5, 5),
     )
 
@@ -174,82 +172,56 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
-    val cprPersonDTO = createCprProbationPersonDto("X999999")
-    stubFor(
-      get(urlEqualTo("/person/probation/X999999"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(cprPersonDTO.toJson()),
-        ),
-    )
-
-    // TODO: Sending personDetails in the createReferralRequest should be removed - TS 15-07-26
-    // None of these will be the updated values, the values will be updated from the CPR call
-    val updatedPersonDto = PersonDto(
-      id = UUID.randomUUID(),
-      personIdentifier = "X999999",
-      firstName = "NewFirst",
-      lastName = "NewLast",
-      dateOfBirth = LocalDate.of(1985, 6, 6).toFormattedDateOfBirth(),
-      sex = "Male",
-      additionalDetails = PersonAdditionalDetails(
-        ethnicity = "NewEthnicity",
-        preferredLanguage = "NewLang",
-        sexualOrientation = "NewOrientation",
+    stubCprProbationPerson(
+      crn,
+      createCprProbationPersonDto(crn).copy(
+        firstName = "NewFirst",
+        lastName = "NewLast",
+        dateOfBirth = "1985-06-06",
+        ethnicity = CprCodeDescriptionDto(code = "NE", description = "NewEthnicity"),
+        sexualOrientation = CprCodeDescriptionDto(code = "NO", description = "NewOrientation"),
       ),
     )
 
     val request = CreateReferralRequest(
-      personDetails = updatedPersonDto,
       communityServiceProviderId = communityServiceProvider.id,
-      personIdentifier = "X999999",
+      personIdentifier = crn,
     )
 
     referralService.createReferral(referralUser.id, request)
 
     val persistedPerson = personRepository.findById(existingPerson.id).get()
 
-    assertThat(persistedPerson.firstName).isEqualTo(cprPersonDTO.firstName)
-    assertThat(persistedPerson.lastName).isEqualTo(cprPersonDTO.lastName)
-    assertThat(persistedPerson.dateOfBirth).isEqualTo(LocalDate.of(1985, 1, 1))
-    assertThat(persistedPerson.additionalDetails?.ethnicity).isEqualTo("White")
+    assertThat(persistedPerson.firstName).isEqualTo("NewFirst")
+    assertThat(persistedPerson.lastName).isEqualTo("NewLast")
+    assertThat(persistedPerson.dateOfBirth).isEqualTo(LocalDate.of(1985, 6, 6))
+    assertThat(persistedPerson.additionalDetails?.ethnicity).isEqualTo("NewEthnicity")
+    assertThat(persistedPerson.additionalDetails?.sexualOrientation).isEqualTo("NewOrientation")
     assertThat(persistedPerson.additionalDetails?.preferredLanguage).isNull()
-    assertThat(persistedPerson.additionalDetails?.sexualOrientation).isEqualTo("Heterosexual")
     assertThat(persistedPerson.additionalDetails?.id).isEqualTo(existingDetails.id)
   }
 
   @Test
   fun `createReferral should persist prison numbers on person when provided`() {
-    val cprPersonDTO = createCprPrisonPersonDto("A1234BC", "B5678DE")
-    stubFor(
-      get(urlEqualTo("/person/prison/A1234BC"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(cprPersonDTO.toJson()),
-        ),
-    )
     val referralUser = referralHelper.ensureReferralUser()
     val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+    val prisonNumber = "A1234BC"
 
-    val personDto = PersonDto(
-      id = UUID.randomUUID(),
-      personIdentifier = "A1234BC",
-      firstName = "John",
-      lastName = "Smith",
-      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-      sex = "Male",
-      prisonNumbers = listOf("A1234BC", "B5678DE"),
-      additionalDetails = null,
+    stubCprPrisonPerson(
+      prisonNumber,
+      createCprPrisonPersonDto(prisonNumber).copy(
+        identifiers = CprIdentifiersDto(
+          crns = emptyList(),
+          prisonNumbers = listOf("A1234BC", "B5678DE"),
+          pncs = listOf("12/394773H"),
+          cros = listOf("29906/12J"),
+        ),
+      ),
     )
 
     val request = CreateReferralRequest(
-      personDetails = personDto,
       communityServiceProviderId = communityServiceProvider.id,
-      personIdentifier = "A1234BC",
+      personIdentifier = prisonNumber,
     )
 
     val result = referralService.createReferral(referralUser.id, request)
@@ -260,49 +232,166 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `createReferral should update prison numbers on existing person`() {
-    val cprPersonDTO = createCprPrisonPersonDto(PRISONER_NUMBER)
-    stubFor(
-      get(urlEqualTo("/person/prison/$PRISONER_NUMBER"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(cprPersonDTO.toJson()),
-        ),
-    )
-
     val referralUser = referralHelper.ensureReferralUser()
+    val prisonNumber = "A9999ZZ"
 
     val existingPerson = referralHelper.createPerson(
       firstName = "John",
       lastName = "Smith",
-      identifier = PRISONER_NUMBER,
+      identifier = prisonNumber,
       dateOfBirth = LocalDate.of(1980, 1, 1),
     )
 
     val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
-    val updatedPersonDto = PersonDto(
-      id = UUID.randomUUID(),
-      personIdentifier = PRISONER_NUMBER,
-      firstName = "John",
-      lastName = "Smith",
-      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-      sex = "Male",
-      prisonNumbers = listOf(PRISONER_NUMBER),
-      additionalDetails = null,
+    stubCprPrisonPerson(
+      prisonNumber,
+      createCprPrisonPersonDto(prisonNumber).copy(
+        firstName = "John",
+        lastName = "Smith",
+        dateOfBirth = "1980-01-01",
+        identifiers = CprIdentifiersDto(
+          crns = emptyList(),
+          prisonNumbers = listOf(prisonNumber),
+          pncs = listOf("12/394773H"),
+          cros = listOf("29906/12J"),
+        ),
+      ),
     )
 
     val request = CreateReferralRequest(
-      personDetails = updatedPersonDto,
       communityServiceProviderId = communityServiceProvider.id,
-      personIdentifier = PRISONER_NUMBER,
+      personIdentifier = prisonNumber,
     )
 
     referralService.createReferral(referralUser.id, request)
 
     val persistedPerson = personRepository.findById(existingPerson.id).get()
-    assertThat(persistedPerson.prisonNumbers).isEqualTo(PRISONER_NUMBER)
+    assertThat(persistedPerson.prisonNumbers).isEqualTo(prisonNumber)
+  }
+
+  @Test
+  fun `createReferral should convert a CPR probation 404 into a non-404 failure and persist nothing`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+    val crn = "X888888"
+
+    stubFor(
+      get(urlPathEqualTo("/person/probation/$crn"))
+        .willReturn(aResponse().withStatus(404)),
+    )
+
+    val request = CreateReferralRequest(
+      communityServiceProviderId = communityServiceProvider.id,
+      personIdentifier = crn,
+    )
+
+    val exception = assertThrows(RuntimeException::class.java) {
+      referralService.createReferral(referralUser.id, request)
+    }
+
+    assertThat(exception).isNotInstanceOf(NotFoundException::class.java)
+    assertThat(personRepository.findByIdentifier(crn)).isNull()
+    assertThat(referralRepository.findAll()).isEmpty()
+  }
+
+  @Test
+  fun `createReferral should throw and persist nothing when CPR probation lookup returns a server error`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+    val crn = "X777777"
+
+    stubFor(
+      get(urlPathEqualTo("/person/probation/$crn"))
+        .willReturn(aResponse().withStatus(500)),
+    )
+
+    val request = CreateReferralRequest(
+      communityServiceProviderId = communityServiceProvider.id,
+      personIdentifier = crn,
+    )
+
+    assertThrows(RuntimeException::class.java) {
+      referralService.createReferral(referralUser.id, request)
+    }
+
+    assertThat(personRepository.findByIdentifier(crn)).isNull()
+    assertThat(referralRepository.findAll()).isEmpty()
+  }
+
+  @Test
+  fun `createReferral should convert a CPR prison 404 into a non-404 failure and persist nothing`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+    val prisonNumber = "Z1234YY"
+
+    stubFor(
+      get(urlPathEqualTo("/person/prison/$prisonNumber"))
+        .willReturn(aResponse().withStatus(404)),
+    )
+
+    val request = CreateReferralRequest(
+      communityServiceProviderId = communityServiceProvider.id,
+      personIdentifier = prisonNumber,
+    )
+
+    val exception = assertThrows(RuntimeException::class.java) {
+      referralService.createReferral(referralUser.id, request)
+    }
+
+    assertThat(exception).isNotInstanceOf(NotFoundException::class.java)
+    assertThat(personRepository.findByIdentifier(prisonNumber)).isNull()
+    assertThat(referralRepository.findAll()).isEmpty()
+  }
+
+  @Test
+  fun `createReferral should not update an existing person when CPR lookup fails`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+    val crn = "X666666"
+
+    val existingPerson = referralHelper.createPerson(
+      firstName = "Original",
+      lastName = "Person",
+      identifier = crn,
+      dateOfBirth = LocalDate.of(1970, 1, 1),
+    )
+
+    stubFor(
+      get(urlPathEqualTo("/person/probation/$crn"))
+        .willReturn(aResponse().withStatus(500)),
+    )
+
+    val request = CreateReferralRequest(
+      communityServiceProviderId = communityServiceProvider.id,
+      personIdentifier = crn,
+    )
+
+    assertThrows(RuntimeException::class.java) {
+      referralService.createReferral(referralUser.id, request)
+    }
+
+    val persistedPerson = personRepository.findById(existingPerson.id).get()
+    assertThat(persistedPerson.firstName).isEqualTo("Original")
+    assertThat(persistedPerson.lastName).isEqualTo("Person")
+    assertThat(referralRepository.findAll()).isEmpty()
+  }
+
+  @Test
+  fun `createReferral should still throw ValidationException for a malformed person identifier without calling CPR`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+
+    val request = CreateReferralRequest(
+      communityServiceProviderId = communityServiceProvider.id,
+      personIdentifier = "NOT-VALID",
+    )
+
+    assertThrows(ValidationException::class.java) {
+      referralService.createReferral(referralUser.id, request)
+    }
+
+    assertThat(referralRepository.findAll()).isEmpty()
   }
 
   @Test
@@ -490,8 +579,9 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       val theCrn = personHelper.generateCrn()
       val person = referralHelper.createPerson(identifier = theCrn)
 
-      val cprResponseWithBothIdentifiers = createCprProbationPersonDto(theCrn)
-        .copy(
+      stubCprProbationPerson(
+        theCrn,
+        createCprProbationPersonDto(theCrn).copy(
           identifiers = CprIdentifiersDto(
             crns = listOf(theCrn),
             prisonNumbers = listOf("THE_PRISON_NUMBER"),
@@ -499,16 +589,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
             cros = listOf("123456/24A"),
             nationalInsuranceNumbers = listOf("AA123456A"),
           ),
-        ).toJson()
-
-      stubFor(
-        get(urlPathEqualTo("/person/probation/$theCrn"))
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withHeader("Content-Type", "application/json")
-              .withBody(cprResponseWithBothIdentifiers),
-          ),
+        ),
       )
 
       val result = referralService.getConfirmPersonDetailsBffDto(theCrn)
@@ -532,21 +613,37 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   private fun setUpData(): CreateReferralRequest {
     val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+    val crn = "X123456"
 
-    val personDto = PersonDto(
-      id = UUID.randomUUID(),
-      personIdentifier = "X123456",
-      firstName = "John",
-      lastName = "Smith",
-      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-      sex = "Male",
-      additionalDetails = null,
-    )
+    stubCprProbationPerson(crn, createCprProbationPersonDto(crn))
 
     return CreateReferralRequest(
-      personDetails = personDto,
       communityServiceProviderId = communityServiceProvider.id,
-      personIdentifier = "X123456",
+      personIdentifier = crn,
+    )
+  }
+
+  private fun stubCprProbationPerson(crn: String, cprPersonDto: CprPersonDto) {
+    stubFor(
+      get(urlPathEqualTo("/person/probation/$crn"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(cprPersonDto.toJson()),
+        ),
+    )
+  }
+
+  private fun stubCprPrisonPerson(prisonNumber: String, cprPersonDto: CprPersonDto) {
+    stubFor(
+      get(urlPathEqualTo("/person/prison/$prisonNumber"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(cprPersonDto.toJson()),
+        ),
     )
   }
 }

@@ -23,7 +23,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
@@ -241,48 +240,101 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return Not Found with invalid referral identifier`() {
+    fun `should return Not Found when community service provider does not exist`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprProbationPersonJson(CRN)),
+          ),
+      )
 
       webTestClient.post()
         .uri("/referral")
         .headers(setAuthorisation())
         .bodyValue(
           CreateReferralRequest(
-            personDetails = PersonDto(
-              id = UUID.randomUUID(),
-              personIdentifier = "X123456",
-              firstName = "John",
-              lastName = "Smith",
-              dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-              sex = "Male",
-              additionalDetails = null,
-            ),
             communityServiceProviderId = UUID.randomUUID(),
-            personIdentifier = "X123456",
+            personIdentifier = CRN,
           ),
         )
         .exchange()
         .expectStatus().isNotFound
     }
 
+    @Test
+    fun `should return a server error, not Not Found, when CPR probation lookup returns 404`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val crn = "X654321"
+
+      stubFor(
+        get(urlEqualTo("/person/probation/$crn"))
+          .willReturn(aResponse().withStatus(404)),
+      )
+
+      webTestClient.post()
+        .uri("/referral")
+        .headers(setAuthorisation())
+        .bodyValue(
+          CreateReferralRequest(
+            communityServiceProviderId = communityServiceProvider.id,
+            personIdentifier = crn,
+          ),
+        )
+        .exchange()
+        .expectStatus().is5xxServerError
+
+      assertThat(referralRepository.findAll()).isEmpty()
+    }
+
+    @Test
+    fun `should return a server error and persist nothing when CPR probation lookup fails`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val crn = "X654322"
+
+      stubFor(
+        get(urlEqualTo("/person/probation/$crn"))
+          .willReturn(aResponse().withStatus(500)),
+      )
+
+      webTestClient.post()
+        .uri("/referral")
+        .headers(setAuthorisation())
+        .bodyValue(
+          CreateReferralRequest(
+            communityServiceProviderId = communityServiceProvider.id,
+            personIdentifier = crn,
+          ),
+        )
+        .exchange()
+        .expectStatus().is5xxServerError
+
+      assertThat(referralRepository.findAll()).isEmpty()
+      assertThat(personRepository.findByIdentifier(crn)).isNull()
+    }
+
     private fun setUpData(): CreateReferralRequest {
       val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
-      val personDto = PersonDto(
-        id = UUID.randomUUID(),
-        personIdentifier = "X123456",
-        firstName = "John",
-        lastName = "Smith",
-        dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-        sex = "Male",
-        additionalDetails = null,
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprProbationPersonJson(CRN)),
+          ),
       )
 
       return CreateReferralRequest(
-        personDetails = personDto,
         communityServiceProviderId = communityServiceProvider.id,
-        personIdentifier = "X123456",
+        personIdentifier = CRN,
       )
     }
   }
