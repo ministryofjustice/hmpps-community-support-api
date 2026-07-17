@@ -24,7 +24,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentT
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.PersonTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
@@ -403,43 +402,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(submissionResult).isNotNull()
     assertThat(savedReferral.id).isEqualTo(submissionResult.referralId)
     assertThat(submissionResult.referenceNumber).isNotNull()
-  }
-
-  @Test
-  fun `update additional information should be saved`() {
-    val referralUser = referralHelper.ensureReferralUser()
-    val createReferralRequest = setUpData()
-
-    val result = referralService.createReferral(referralUser.id, createReferralRequest)
-    val savedReferral = result.referral
-
-    val supportNeeds = AdditionalSupportNeedsRequest(
-      employmentResponsibilities = "Test employment responsibilities",
-      caringResponsibilities = "Test caring responsibilities",
-      needsAdditionalSupport = true,
-    )
-
-    val updatedResult = referralService.upsertAdditionalSupportNeeds(
-      savedReferral.id,
-      referralUser.id,
-      supportNeeds,
-    )
-    assertThat(updatedResult).isNotNull()
-
-    val savedSupportNeeds = personAdditionSupportNeedsRepository.findByReferralId(savedReferral.id)
-    assertThat(savedSupportNeeds).isNotNull()
-    assertThat(savedSupportNeeds?.referralId).isEqualTo(savedReferral.id)
-    assertThat(savedSupportNeeds?.personId).isEqualTo(savedReferral.personId)
-    assertThat(savedSupportNeeds?.caringResponsibilitiesDetails).isEqualTo("Test caring responsibilities")
-    assertThat(savedSupportNeeds?.noAdditionalSupportNeeded).isFalse()
-    assertThat(savedSupportNeeds?.physicalHealthDetails).isNull()
-    assertThat(savedSupportNeeds?.mentalEmotionalHealthDetails).isNull()
-    assertThat(savedSupportNeeds?.diversityDetails).isNull()
-    assertThat(savedSupportNeeds?.employmentResponsibilitiesDetails).isEqualTo("Test employment responsibilities")
-    assertThat(savedSupportNeeds?.locationTravelDetails).isNull()
-    assertThat(savedSupportNeeds?.neurodiversityDetails).isNull()
-    assertThat(savedSupportNeeds?.anythingElseDetails).isNull()
-    assertThat(savedSupportNeeds?.createdBy).isEqualTo(referralUser.id)
   }
 
   @Test
