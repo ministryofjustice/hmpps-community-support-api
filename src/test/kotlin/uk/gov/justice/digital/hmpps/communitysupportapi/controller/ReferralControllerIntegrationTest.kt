@@ -23,7 +23,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
@@ -59,7 +58,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonA
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Duration
@@ -249,15 +247,6 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .bodyValue(
           CreateReferralRequest(
-            personDetails = PersonDto(
-              id = UUID.randomUUID(),
-              personIdentifier = "X123456",
-              firstName = "John",
-              lastName = "Smith",
-              dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-              sex = "Male",
-              additionalDetails = null,
-            ),
             communityServiceProviderId = UUID.randomUUID(),
             personIdentifier = "X123456",
           ),
@@ -269,18 +258,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     private fun setUpData(): CreateReferralRequest {
       val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
-      val personDto = PersonDto(
-        id = UUID.randomUUID(),
-        personIdentifier = "X123456",
-        firstName = "John",
-        lastName = "Smith",
-        dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-        sex = "Male",
-        additionalDetails = null,
-      )
-
       return CreateReferralRequest(
-        personDetails = personDto,
         communityServiceProviderId = communityServiceProvider.id,
         personIdentifier = "X123456",
       )

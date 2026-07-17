@@ -87,7 +87,6 @@ class ReferralService(
 
   @Transactional
   fun createReferral(userId: UUID, createReferralRequest: CreateReferralRequest): ReferralCreationResult {
-    // TODO: Delete personDetails CreateReferralRequest - 13/07/26 TS
     val person = personService.getPerson(createReferralRequest.personIdentifier)
     val personDetails = upsertPerson(person)
     val communityServiceProvider = communityServiceProviderRepository.findById(createReferralRequest.communityServiceProviderId)

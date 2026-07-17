@@ -13,7 +13,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprIdentifiersDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
@@ -25,7 +24,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.PersonTestSu
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -40,7 +38,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -127,20 +124,20 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       dateOfBirth = LocalDate.of(1970, 1, 1),
     )
 
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
-
-    val updatedPersonDto = PersonDto(
-      id = UUID.randomUUID(),
-      personIdentifier = "X123456",
-      firstName = "John",
-      lastName = "Smith",
-      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-      sex = "Male",
-      additionalDetails = null,
+    val cprPersonDTO = createCprProbationPersonDto("X123456")
+    stubFor(
+      get(urlEqualTo("/person/probation/X123456"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(cprPersonDTO.toJson()),
+        ),
     )
 
+    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+
     val request = CreateReferralRequest(
-      personDetails = updatedPersonDto,
       communityServiceProviderId = communityServiceProvider.id,
       personIdentifier = "X123456",
     )
@@ -150,8 +147,8 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val persistedPerson = personRepository.findById(existingPerson.id).get()
 
     assertThat(result.referral.personId).isEqualTo(existingPerson.id)
-    assertThat(persistedPerson.firstName).isEqualTo(updatedPersonDto.firstName)
-    assertThat(persistedPerson.lastName).isEqualTo(updatedPersonDto.lastName)
+    assertThat(persistedPerson.firstName).isEqualTo(cprPersonDTO.firstName)
+    assertThat(persistedPerson.lastName).isEqualTo(cprPersonDTO.lastName)
     assertThat(persistedPerson.dateOfBirth).isEqualTo(LocalDate.of(1985, 1, 1))
   }
 
@@ -185,24 +182,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
         ),
     )
 
-    // TODO: Sending personDetails in the createReferralRequest should be removed - TS 15-07-26
-    // None of these will be the updated values, the values will be updated from the CPR call
-    val updatedPersonDto = PersonDto(
-      id = UUID.randomUUID(),
-      personIdentifier = "X999999",
-      firstName = "NewFirst",
-      lastName = "NewLast",
-      dateOfBirth = LocalDate.of(1985, 6, 6).toFormattedDateOfBirth(),
-      sex = "Male",
-      additionalDetails = PersonAdditionalDetails(
-        ethnicity = "NewEthnicity",
-        preferredLanguage = "NewLang",
-        sexualOrientation = "NewOrientation",
-      ),
-    )
-
     val request = CreateReferralRequest(
-      personDetails = updatedPersonDto,
       communityServiceProviderId = communityServiceProvider.id,
       personIdentifier = "X999999",
     )
@@ -235,19 +215,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val referralUser = referralHelper.ensureReferralUser()
     val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
-    val personDto = PersonDto(
-      id = UUID.randomUUID(),
-      personIdentifier = "A1234BC",
-      firstName = "John",
-      lastName = "Smith",
-      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-      sex = "Male",
-      prisonNumbers = listOf("A1234BC", "B5678DE"),
-      additionalDetails = null,
-    )
-
     val request = CreateReferralRequest(
-      personDetails = personDto,
       communityServiceProviderId = communityServiceProvider.id,
       personIdentifier = "A1234BC",
     )
@@ -282,19 +250,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
-    val updatedPersonDto = PersonDto(
-      id = UUID.randomUUID(),
-      personIdentifier = PRISONER_NUMBER,
-      firstName = "John",
-      lastName = "Smith",
-      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-      sex = "Male",
-      prisonNumbers = listOf(PRISONER_NUMBER),
-      additionalDetails = null,
-    )
-
     val request = CreateReferralRequest(
-      personDetails = updatedPersonDto,
       communityServiceProviderId = communityServiceProvider.id,
       personIdentifier = PRISONER_NUMBER,
     )
@@ -533,18 +489,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   private fun setUpData(): CreateReferralRequest {
     val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
-    val personDto = PersonDto(
-      id = UUID.randomUUID(),
-      personIdentifier = "X123456",
-      firstName = "John",
-      lastName = "Smith",
-      dateOfBirth = LocalDate.of(1980, 1, 1).toFormattedDateOfBirth(),
-      sex = "Male",
-      additionalDetails = null,
-    )
-
     return CreateReferralRequest(
-      personDetails = personDto,
       communityServiceProviderId = communityServiceProvider.id,
       personIdentifier = "X123456",
     )
