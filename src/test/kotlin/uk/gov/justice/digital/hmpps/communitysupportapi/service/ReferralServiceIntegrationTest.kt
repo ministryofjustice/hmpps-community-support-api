@@ -222,7 +222,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `createReferral should persist prison numbers on person when provided`() {
-    val cprPersonDTO = createCprPrisonPersonDto(listOf("A1234BC", "B5678DE"))
+    val cprPersonDTO = createCprPrisonPersonDto("A1234BC", "B5678DE")
     stubFor(
       get(urlEqualTo("/person/prison/A1234BC"))
         .willReturn(
