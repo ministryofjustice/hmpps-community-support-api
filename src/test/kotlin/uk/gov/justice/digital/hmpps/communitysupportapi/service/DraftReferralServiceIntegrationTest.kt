@@ -107,7 +107,6 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
     )
 
     return CreateReferralRequest(
-      personDetails = personDto,
       communityServiceProviderId = communityServiceProvider.id,
       personIdentifier = "X123456",
     )
