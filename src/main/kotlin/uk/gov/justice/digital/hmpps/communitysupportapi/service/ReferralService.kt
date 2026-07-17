@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -88,11 +89,11 @@ class ReferralService(
 
   @Transactional
   fun createReferral(userId: UUID, createReferralRequest: CreateReferralRequest): ReferralCreationResult {
-    // TODO: Delete personDetails CreateReferralRequest - 13/07/26 TS
-    val person = personService.getPerson(createReferralRequest.personIdentifier)
-    val personDetails = upsertPerson(person)
-    val communityServiceProvider = communityServiceProviderRepository.findById(createReferralRequest.communityServiceProviderId)
-      .orElseThrow { NotFoundException("Community Service Provider not found for id ${createReferralRequest.communityServiceProviderId}") }
+    val personDetails = fetchPersonDetails(createReferralRequest.personIdentifier)
+    val person = upsertPerson(personDetails)
+    val communityServiceProvider =
+      communityServiceProviderRepository.findById(createReferralRequest.communityServiceProviderId)
+        .orElseThrow { NotFoundException("Community Service Provider not found for id ${createReferralRequest.communityServiceProviderId}") }
 
     val referralId = UUID.randomUUID()
     val now = OffsetDateTime.now()
@@ -100,7 +101,7 @@ class ReferralService(
     val referral = Referral(
       id = referralId,
       personIdentifier = createReferralRequest.personIdentifier,
-      personId = personDetails.id,
+      personId = person.id,
       createdAt = now,
       createdBy = userId,
       updatedAt = now,
@@ -129,9 +130,22 @@ class ReferralService(
 
     return ReferralCreationResult(
       referral = savedReferral,
-      person = personDetails,
+      person = person,
       communityServiceProvider = communityServiceProvider,
     )
+  }
+
+  private fun fetchPersonDetails(personIdentifier: String): PersonDto = try {
+    personService.getPerson(personIdentifier)
+  } catch (e: ValidationException) {
+    throw e
+  } catch (e: Exception) {
+    logger.error(
+      "Failed to retrieve person details from Core Person Record for identifier {} while creating referral",
+      personIdentifier,
+      e,
+    )
+    throw RuntimeException("Unable to retrieve person details from Core Person Record for identifier $personIdentifier", e)
   }
 
   @Transactional
