@@ -62,6 +62,7 @@ class ReferralService(
   private val cprProbationService: CprProbationService,
   private val identifierValidator: PersonIdentifierValidator,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
+  private val personService: PersonService,
 ) {
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
@@ -78,8 +79,8 @@ class ReferralService(
 
   fun getReferralDetailsPage(caseIdentifier: String?): ReferralDetailsBffResponseDto {
     val foundReferral = referralLookupService.findByCaseIdentifier(caseIdentifier)
-    val person = personRepository.findById(foundReferral.personId)
-      .orElseThrow { NotFoundException("Person not found for referral ${foundReferral.personId}") }
+    val personDetails = personService.getPerson(foundReferral.personIdentifier)
+    val person = upsertPerson(personDetails)
     val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(foundReferral.id)
 
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
@@ -87,10 +88,11 @@ class ReferralService(
 
   @Transactional
   fun createReferral(userId: UUID, createReferralRequest: CreateReferralRequest): ReferralCreationResult {
-    val person = upsertPerson(createReferralRequest.personDetails)
-    val communityServiceProvider =
-      communityServiceProviderRepository.findById(createReferralRequest.communityServiceProviderId)
-        .orElseThrow { NotFoundException("Community Service Provider not found for id ${createReferralRequest.communityServiceProviderId}") }
+    // TODO: Delete personDetails CreateReferralRequest - 13/07/26 TS
+    val person = personService.getPerson(createReferralRequest.personIdentifier)
+    val personDetails = upsertPerson(person)
+    val communityServiceProvider = communityServiceProviderRepository.findById(createReferralRequest.communityServiceProviderId)
+      .orElseThrow { NotFoundException("Community Service Provider not found for id ${createReferralRequest.communityServiceProviderId}") }
 
     val referralId = UUID.randomUUID()
     val now = OffsetDateTime.now()
@@ -98,7 +100,7 @@ class ReferralService(
     val referral = Referral(
       id = referralId,
       personIdentifier = createReferralRequest.personIdentifier,
-      personId = person.id,
+      personId = personDetails.id,
       createdAt = now,
       createdBy = userId,
       updatedAt = now,
@@ -127,7 +129,7 @@ class ReferralService(
 
     return ReferralCreationResult(
       referral = savedReferral,
-      person = person,
+      person = personDetails,
       communityServiceProvider = communityServiceProvider,
     )
   }
