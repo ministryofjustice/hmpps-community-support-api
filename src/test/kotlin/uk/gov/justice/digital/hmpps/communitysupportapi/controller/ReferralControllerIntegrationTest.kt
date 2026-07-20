@@ -196,6 +196,16 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     fun `should return OK with valid referral information`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprProbationPersonJson(CRN)),
+          ),
+      )
+
       webTestClient.post()
         .uri("/referral")
         .headers(setAuthorisation())
