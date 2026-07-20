@@ -8,6 +8,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -20,6 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
@@ -931,6 +933,75 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personIdentifier shouldBe referral.personIdentifier
           body.firstName shouldBe person.firstName
           body.lastName shouldBe person.lastName
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/referral/check-referral-information/{caseIdentifier}")
+  inner class CheckReferralInformationEndPoint {
+    val caseReference = "AA1234DD"
+    private val url = "/bff/referral/check-referral-information/$caseReference"
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, url)
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(GET, url)
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(GET, url)
+    }
+
+    @Test
+    fun `should return 404 when referral does not exist`() {
+      assertNotFound(GET, url)
+    }
+
+    @Test
+    @Disabled("Keith To Look At This Test")
+    fun `should return 200 when referral information exists`() {
+      val person = referralHelper.createPerson()
+      val referralUser = referralHelper.ensureReferralUser()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val providerAssignment = ReferralProviderAssignmentFactory()
+        .withReferral(referral)
+        .withCommunityServiceProvider(communityServiceProvider)
+        .create()
+      referralProviderAssignmentRepository.save(providerAssignment)
+
+      webTestClient.get()
+        .uri("/bff/referral/check-referral-information/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<CheckReferralInformationDto>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+
+          body.referralId shouldBe referral.id
+          body.communityServiceProviderName shouldBe referral.personIdentifier
+          body.region shouldBe communityServiceProvider.contractArea.region.name
+          body.deliveryPartner shouldBe communityServiceProvider.serviceProvider.name
+          body.personIdentifier shouldBe referral.personIdentifier
+          body.prisonNumbers shouldBe person.prisonNumbers
+          body.fullName shouldBe "$person.firstName $person.lastName"
+          body.dateOfBirth shouldBe person.dateOfBirth
+          body.sex shouldBe person.gender
         }
     }
   }

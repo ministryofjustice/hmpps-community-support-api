@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
@@ -27,6 +28,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformatio
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
+import uk.gov.justice.digital.hmpps.communitysupportapi.service.PersonService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
@@ -38,6 +40,7 @@ class ReferralController(
   private val appointmentService: AppointmentService,
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
+  private val personService: PersonService,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -234,6 +237,60 @@ class ReferralController(
       log.warn("Referral not found for case reference={}", caseIdentifier, e)
       return ResponseEntity.notFound().build()
     }
+    return ResponseEntity.ok(result)
+  }
+
+  @Operation(summary = "Get check-referral-information page data")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral information found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = CheckReferralInformationDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/check-referral-information/{caseIdentifier}")
+  fun getReferralAndPersonInformation(@PathVariable caseIdentifier: String): ResponseEntity<CheckReferralInformationDto> {
+    val referralInformation = try {
+      referralService.getReferralInformation(caseIdentifier)
+    } catch (e: RuntimeException) {
+      log.warn("Referral not found for case reference={}", caseIdentifier, e)
+      return ResponseEntity.notFound().build()
+    }
+    val person = try {
+      personService.getPerson(referralInformation.personIdentifier)
+    } catch (e: RuntimeException) {
+      log.warn("Person not found for case reference={}", caseIdentifier, e)
+      return ResponseEntity.notFound().build()
+    }
+    val fullName = if (person.middleNames != null) {
+      "$person.firstName $person.middleNames $person.lastName"
+    } else {
+      "$person.firstName $person.lastName"
+    }
+
+    val result = CheckReferralInformationDto(
+      referralInformation.referralId,
+      referralInformation.communityServiceProviderName,
+      referralInformation.region,
+      referralInformation.deliveryPartner,
+      person.personIdentifier,
+      person.prisonNumbers,
+      fullName,
+      person.dateOfBirth,
+      person.sex,
+    )
     return ResponseEntity.ok(result)
   }
 

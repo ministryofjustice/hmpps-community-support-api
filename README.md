@@ -135,3 +135,20 @@ docker compose pull && docker compose up --scale hmpps-community-support-api=0
 
 will just start a docker instance of HMPPS Auth. The application should then be started with a `dev` active profile
 in Intellij.
+
+## Linting
+
+To lint run the following
+`./gradlew ktlintCheck`
+
+Or to automatically format
+`./gradlew ktlintFormat`
+
+## Testing
+
+Run
+`./gradlew clean test`
+
+## Building
+
+`./gradlew clean build`
