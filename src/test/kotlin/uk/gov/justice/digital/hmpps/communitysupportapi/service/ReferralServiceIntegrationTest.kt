@@ -214,7 +214,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Test
   fun `createReferral should persist prison numbers on person when provided`() {
-
     val referralUser = referralHelper.ensureReferralUser()
     val communityServiceProvider = referralHelper.getCommunityServiceProvider()
     val prisonNumber = "A1234BC"
