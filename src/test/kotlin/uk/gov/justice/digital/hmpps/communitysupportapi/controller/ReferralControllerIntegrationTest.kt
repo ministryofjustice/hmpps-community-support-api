@@ -8,7 +8,6 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -54,6 +53,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Duration
@@ -970,10 +970,20 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    @Disabled("Keith To Look At This Test")
     fun `should return 200 when referral information exists`() {
-      val person = referralHelper.createPerson()
+      val cprPersonDTO = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDTO.toJson()),
+          ),
+      )
       val referralUser = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
+
       val communityServiceProvider = referralHelper.getCommunityServiceProvider()
       val referral = referralHelper.createReferral(person, submittedBy = referralUser)
       referralHelper.createProviderAssignment(referral, communityServiceProvider)
@@ -994,13 +1004,13 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = result.responseBody!!
 
           body.referralId shouldBe referral.id
-          body.communityServiceProviderName shouldBe referral.personIdentifier
+          body.communityServiceProviderName shouldBe communityServiceProvider.name
           body.region shouldBe communityServiceProvider.contractArea.region.name
           body.deliveryPartner shouldBe communityServiceProvider.serviceProvider.name
           body.personIdentifier shouldBe referral.personIdentifier
-          body.prisonNumbers shouldBe person.prisonNumbers
-          body.fullName shouldBe "$person.firstName $person.lastName"
-          body.dateOfBirth shouldBe person.dateOfBirth
+          body.prisonNumbers shouldBe if (person.prisonNumbers != null) person.prisonNumbers.toString().split(", ") else emptyList<String>()
+          body.fullName shouldBe "${person.firstName} ${person.lastName}"
+          body.dateOfBirth shouldBe person.dateOfBirth.toFormattedDateOfBirth()
           body.sex shouldBe person.gender
         }
     }

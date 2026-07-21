@@ -274,11 +274,6 @@ class ReferralController(
       log.warn("Person not found for case reference={}", caseIdentifier, e)
       return ResponseEntity.notFound().build()
     }
-    val fullName = if (person.middleNames != null) {
-      "$person.firstName $person.middleNames $person.lastName"
-    } else {
-      "$person.firstName $person.lastName"
-    }
 
     val result = CheckReferralInformationDto(
       referralInformation.referralId,
@@ -287,7 +282,7 @@ class ReferralController(
       referralInformation.deliveryPartner,
       person.personIdentifier,
       person.prisonNumbers,
-      fullName,
+      "${person.firstName} ${person.lastName}",
       person.dateOfBirth,
       person.sex,
     )
