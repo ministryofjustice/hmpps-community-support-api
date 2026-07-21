@@ -30,7 +30,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
   implementation("org.springframework.security:spring-security-crypto:7.1.0")
-  implementation("com.nimbusds:oauth2-oidc-sdk:11.38.1")
+  implementation("com.nimbusds:oauth2-oidc-sdk:11.38.2")
 
   // csv
   implementation("org.apache.commons:commons-csv:1.14.1")
@@ -49,7 +49,7 @@ dependencies {
   testImplementation("org.testcontainers:junit-jupiter:1.21.4")
   testImplementation("org.awaitility:awaitility-kotlin")
   testImplementation("com.ninja-squad:springmockk:5.0.1")
-  testImplementation("io.kotest:kotest-assertions-core:6.2.2")
+  testImplementation("io.kotest:kotest-assertions-core:6.2.3")
   testImplementation("io.mockk:mockk:1.14.11")
 
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
