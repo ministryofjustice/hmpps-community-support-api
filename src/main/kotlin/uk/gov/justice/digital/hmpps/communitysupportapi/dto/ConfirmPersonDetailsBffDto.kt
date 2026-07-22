@@ -62,6 +62,8 @@ data class WithUpdated<T>(
   val updated: LocalDate,
 )
 
+private const val NO_FIXED_ABODE_POSTCODE = "NF1 1NF"
+
 /**
  * Data that is shown on the /bff/confirm-personal-details/{personReference} page,
  * we have designed it to send back empty strings, as opposed to null values, where
@@ -102,6 +104,9 @@ data class ConfirmPersonDetailsBffDto(
         { disabilities -> disabilities.mapNotNull { it.disabilityType?.description } },
       )
 
+      val address = personAggregate.additionalDetails?.address.orEmpty()
+      val isNoFixedAbode = address.contains(NO_FIXED_ABODE_POSTCODE)
+
       return ConfirmPersonDetailsBffDto(
         id = id,
         personalDetails = ConfirmPersonalPersonalDetails(
@@ -124,7 +129,6 @@ data class ConfirmPersonDetailsBffDto(
             allDisabilities = disabilitiesRaw?.value?.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "None",
           ),
         ),
-
         equalityMonitoring = ConfirmPersonalDetailsEqualityMonitoring(
           sex = personAggregate.person.sex,
           ethnicity = personAggregate.additionalDetails?.ethnicity ?: "",
@@ -139,10 +143,10 @@ data class ConfirmPersonDetailsBffDto(
           mobileNumber = personAggregate.additionalDetails?.mobileNumber ?: "",
           emailAddress = personAggregate.additionalDetails?.emailAddress ?: "",
           address = ConfirmPersonDetailsContactAddress(
-            value = personAggregate.additionalDetails?.address ?: "",
-            type = personAggregate.additionalDetails?.addressType ?: "",
-            startAt = personAggregate.additionalDetails?.addressStartDate?.toString() ?: "",
-            notes = personAggregate.additionalDetails?.addressNotes ?: "",
+            value = if (isNoFixedAbode) "No fixed abode" else address,
+            type = if (isNoFixedAbode) "" else personAggregate.additionalDetails?.addressType.orEmpty(),
+            startAt = if (isNoFixedAbode) "" else personAggregate.additionalDetails?.addressStartDate?.toString().orEmpty(),
+            notes = if (isNoFixedAbode) "" else personAggregate.additionalDetails?.addressNotes.orEmpty(),
           ),
         ),
       )

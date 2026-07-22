@@ -49,6 +49,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonJson
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonNoFixAbodeJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
@@ -854,26 +855,67 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.id shouldBe person.id
-          body.personalDetails.firstName shouldBe "John"
-          body.personalDetails.middleNames shouldBe "David"
-          body.personalDetails.lastName shouldBe "Smith"
-          body.personalDetails.crn shouldBe CRN
-          body.personalDetails.dateOfBirth shouldBe LocalDate.of(1985, 1, 1)
-          body.personalDetails.disabilities.allDisabilities shouldBe "None"
-          body.equalityMonitoring.sex shouldBe "Male"
-          body.equalityMonitoring.ethnicity shouldBe "White"
-          body.equalityMonitoring.religionOrBelief shouldBe "Christian"
-          body.equalityMonitoring.sexualOrientation shouldBe "Heterosexual"
-          body.equalityMonitoring.nationalities shouldBe listOf("Argentine", "Brazilian")
-          body.contactDetails.phoneNumber shouldBe "01234567890"
-          body.contactDetails.mobileNumber shouldBe "07700900002"
-          body.contactDetails.emailAddress shouldBe "john.smith@example.com"
+          assertCommonPersonDetails(body, person)
+
           body.contactDetails.address.value shouldBe "1, Test Street, Testville, TE1 1ST"
           body.contactDetails.address.type shouldBe "Friends/Family (settled) (verified)"
           body.contactDetails.address.startAt shouldBe "2005-12-01"
           body.contactDetails.address.notes shouldBe "No notes"
         }
+    }
+
+    @Test
+    fun `should return no fixed abode when probation address contains the no fixed abode postcode`() {
+      val person = referralHelper.createPerson(identifier = CRN)
+
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprProbationPersonNoFixAbodeJson(CRN)),
+          ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/confirm-person-details/$CRN")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ConfirmPersonDetailsBffDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          assertCommonPersonDetails(body, person)
+
+          body.contactDetails.address.value shouldBe "No fixed abode"
+          body.contactDetails.address.type shouldBe ""
+          body.contactDetails.address.startAt shouldBe ""
+          body.contactDetails.address.notes shouldBe ""
+        }
+    }
+
+    private fun assertCommonPersonDetails(body: ConfirmPersonDetailsBffDto, person: Person) {
+      body.id shouldBe person.id
+
+      body.personalDetails.firstName shouldBe "John"
+      body.personalDetails.middleNames shouldBe "David"
+      body.personalDetails.lastName shouldBe "Smith"
+      body.personalDetails.crn shouldBe CRN
+      body.personalDetails.dateOfBirth shouldBe LocalDate.of(1985, 1, 1)
+
+      body.personalDetails.disabilities.allDisabilities shouldBe "None"
+
+      body.equalityMonitoring.sex shouldBe "Male"
+      body.equalityMonitoring.ethnicity shouldBe "White"
+      body.equalityMonitoring.religionOrBelief shouldBe "Christian"
+      body.equalityMonitoring.sexualOrientation shouldBe "Heterosexual"
+      body.equalityMonitoring.nationalities shouldBe listOf("Argentine", "Brazilian")
+
+      body.contactDetails.phoneNumber shouldBe "01234567890"
+      body.contactDetails.mobileNumber shouldBe "07700900002"
+      body.contactDetails.emailAddress shouldBe "john.smith@example.com"
     }
   }
 
