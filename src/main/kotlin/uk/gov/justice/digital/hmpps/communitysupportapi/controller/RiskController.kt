@@ -31,7 +31,7 @@ class RiskController(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  @Operation(summary = "Get ROSH risks for a person by CRN")
+  @Operation(summary = "Get ROSH risks for a referral")
   @ApiResponses(
     value = [
       ApiResponse(
@@ -41,18 +41,18 @@ class RiskController(
       ),
       ApiResponse(
         responseCode = "404",
-        description = "ROSH risks not found for the given CRN",
+        description = "Referral not found, or ROSH risks not found for the referral's CRN",
         content = [Content(mediaType = "application/json")],
       ),
     ],
   )
-  @GetMapping("/bff/risk/rosh/{crn}")
-  fun getRoshRisksByCrn(
-    @PathVariable crn: String,
+  @GetMapping("/bff/risk/rosh/{referralId}")
+  fun getRoshRisksByReferralId(
+    @PathVariable referralId: UUID,
   ): ResponseEntity<CommunitySupportRiskDto> {
-    log.info("Attempt to get ROSH risks for CRN: {}", crn)
+    log.info("Attempt to get ROSH risks for referral: {}", referralId)
 
-    val roshRisks = riskInformationService.getRoshRisksByCrn(crn)
+    val roshRisks = riskInformationService.getRoshRisksByReferralId(referralId)
     return ResponseEntity.ok(roshRisks)
   }
 
