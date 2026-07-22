@@ -13,20 +13,29 @@ import org.mockito.ArgumentCaptor
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.AssessRisksAndNeedsClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportRiskInformationDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createArnsRoshRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createStaleArnsRoshRiskDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedAssessmentDate
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.Optional
@@ -44,47 +53,84 @@ class RiskInformationServiceTest {
   @Mock
   lateinit var referralRepository: ReferralRepository
 
+  @Mock
+  lateinit var personRepository: PersonRepository
+
+  @Mock
+  lateinit var identifierValidator: PersonIdentifierValidator
+
   @InjectMocks
   lateinit var riskInformationService: RiskInformationService
 
   private val referralId = UUID.randomUUID()
   private val userId = UUID.randomUUID()
+  private val personId = UUID.randomUUID()
+
+  private val person = PersonFactory()
+    .withId(personId)
+    .withIdentifier(CRN)
+    .withFirstName("John")
+    .withLastName("Smith")
+    .withDateOfBirth(LocalDate.of(1988, 1, 1))
+    .create()
+
+  private fun stubPersonLookup(referral: Referral) {
+    whenever(referralRepository.findById(referralId)).thenReturn(Optional.of(referral))
+    whenever(personRepository.findById(referral.personId)).thenReturn(Optional.of(person))
+    whenever(identifierValidator.validate(person.identifier)).thenReturn(PersonIdentifier.Crn(CRN))
+  }
 
   @Test
   fun `should return full risk data when assessment is within 12 months`() {
+    val referral = ReferralFactory().withId(referralId).withCrn(CRN).withPersonId(personId).create()
+    stubPersonLookup(referral)
+
     val recentAssessment = createArnsRoshRiskDto(assessedOn = LocalDateTime.now().minusDays(30))
     whenever(assessRisksAndNeedsClient.getRoshRisksByCrn(CRN)).thenReturn(recentAssessment)
 
-    val result = riskInformationService.getRoshRisksByCrn(CRN)
+    val result = riskInformationService.getRoshRisksByReferralId(referralId)
 
     assertTrue(result.assessmentWithin12Months)
     assertNotNull(result.riskToSelf)
     assertNotNull(result.summary)
     assertEquals(recentAssessment.assessedOn?.toFormattedAssessmentDate(), result.assessedOn)
     assertEquals("HIGH", result.summary?.overallRiskLevel)
+    assertEquals("John", result.firstName)
+    assertEquals("Smith", result.lastName)
+    assertEquals(CRN, result.crn)
+    assertEquals(LocalDate.of(1988, 1, 1).toFormattedDateOfBirthLong(), result.dateOfBirth)
     verify(assessRisksAndNeedsClient).getRoshRisksByCrn(CRN)
   }
 
   @Test
-  fun `should return blank response when assessment is older than 12 months`() {
+  fun `should return blank risk data when assessment is older than 12 months`() {
+    val referral = ReferralFactory().withId(referralId).withCrn(CRN).withPersonId(personId).create()
+    stubPersonLookup(referral)
+
     val staleAssessment = createStaleArnsRoshRiskDto()
     whenever(assessRisksAndNeedsClient.getRoshRisksByCrn(CRN)).thenReturn(staleAssessment)
 
-    val result = riskInformationService.getRoshRisksByCrn(CRN)
+    val result = riskInformationService.getRoshRisksByReferralId(referralId)
 
     assertFalse(result.assessmentWithin12Months)
     assertNull(result.riskToSelf)
     assertNull(result.summary)
     assertNull(result.assessedOn)
+    assertEquals("John", result.firstName)
+    assertEquals("Smith", result.lastName)
+    assertEquals(CRN, result.crn)
     verify(assessRisksAndNeedsClient).getRoshRisksByCrn(CRN)
   }
 
   @Test
-  fun `should return blank response when assessedOn is null`() {
+  fun `should return blank risk data when assessedOn is null`() {
+    val referral = ReferralFactory().withId(referralId).withCrn(CRN).withPersonId(personId).create()
+    stubPersonLookup(referral)
+
     val noDateAssessment = createArnsRoshRiskDto(assessedOn = null)
     whenever(assessRisksAndNeedsClient.getRoshRisksByCrn(CRN)).thenReturn(noDateAssessment)
 
-    val result = riskInformationService.getRoshRisksByCrn(CRN)
+    val result = riskInformationService.getRoshRisksByReferralId(referralId)
 
     assertFalse(result.assessmentWithin12Months)
     assertNull(result.riskToSelf)
@@ -94,14 +140,57 @@ class RiskInformationServiceTest {
 
   @Test
   fun `should propagate NotFoundException when CRN is not found`() {
+    val referral = ReferralFactory().withId(referralId).withCrn(CRN).withPersonId(personId).create()
+    stubPersonLookup(referral)
+
     whenever(assessRisksAndNeedsClient.getRoshRisksByCrn(CRN))
       .thenThrow(NotFoundException("ROSH risks not found in Assess Risks and Needs for CRN: $CRN"))
 
     assertThrows<NotFoundException> {
-      riskInformationService.getRoshRisksByCrn(CRN)
+      riskInformationService.getRoshRisksByReferralId(referralId)
     }
 
     verify(assessRisksAndNeedsClient).getRoshRisksByCrn(CRN)
+  }
+
+  @Test
+  fun `should not call Assess Risks and Needs when person identifier is not a CRN`() {
+    val prisonerPerson = PersonFactory()
+      .withId(personId)
+      .withIdentifier(PRISONER_NUMBER)
+      .withFirstName("John")
+      .withLastName("Smith")
+      .withDateOfBirth(LocalDate.of(1988, 1, 1))
+      .create()
+
+    val referral = ReferralFactory().withId(referralId).withCrn(PRISONER_NUMBER).withPersonId(personId).create()
+
+    whenever(referralRepository.findById(referralId)).thenReturn(Optional.of(referral))
+    whenever(personRepository.findById(referral.personId)).thenReturn(Optional.of(prisonerPerson))
+    whenever(identifierValidator.validate(PRISONER_NUMBER)).thenReturn(PersonIdentifier.PrisonerNumber(PRISONER_NUMBER))
+
+    val result = riskInformationService.getRoshRisksByReferralId(referralId)
+
+    assertFalse(result.assessmentWithin12Months)
+    assertNull(result.riskToSelf)
+    assertNull(result.summary)
+    assertNull(result.assessedOn)
+    assertEquals("John", result.firstName)
+    assertEquals("Smith", result.lastName)
+    assertEquals("", result.crn)
+    assertEquals(LocalDate.of(1988, 1, 1).toFormattedDateOfBirthLong(), result.dateOfBirth)
+    verifyNoInteractions(assessRisksAndNeedsClient)
+  }
+
+  @Test
+  fun `should throw NotFoundException when referral does not exist for getRoshRisksByReferralId`() {
+    whenever(referralRepository.findById(referralId)).thenReturn(Optional.empty())
+
+    assertThrows<NotFoundException> {
+      riskInformationService.getRoshRisksByReferralId(referralId)
+    }
+
+    verify(referralRepository).findById(referralId)
   }
 
   @Test
