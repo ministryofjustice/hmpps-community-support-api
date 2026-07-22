@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.AssessRisksAndNeedsClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportRiskInformationDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskConcernsToSelfDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskRoshSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.CommunitySupportRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
@@ -45,12 +47,7 @@ class RiskInformationService(
     val identifier = identifierValidator.validate(person.identifier)
     if (identifier !is PersonIdentifier.Crn) {
       log.info("Skipping ROSH risk lookup for referral {} as person identifier is not a CRN", referralId)
-      return CommunitySupportRiskDto(
-        firstName = firstName,
-        lastName = lastName,
-        dateOfBirth = dateOfBirth,
-        assessmentWithin12Months = false,
-      )
+      return buildCommunitySupportRiskDto(firstName, lastName, dateOfBirth)
     }
 
     val crn = identifier.value
@@ -65,7 +62,7 @@ class RiskInformationService(
     log.info("Risk assessment for CRN {} within 12 months: {}", crn, withinTwelveMonths)
 
     return if (withinTwelveMonths) {
-      CommunitySupportRiskDto(
+      buildCommunitySupportRiskDto(
         firstName = firstName,
         lastName = lastName,
         crn = crn,
@@ -76,7 +73,7 @@ class RiskInformationService(
         summary = arnsResponse.summary,
       )
     } else {
-      CommunitySupportRiskDto(
+      buildCommunitySupportRiskDto(
         firstName = firstName,
         lastName = lastName,
         crn = crn,
@@ -85,6 +82,26 @@ class RiskInformationService(
       )
     }
   }
+
+  private fun buildCommunitySupportRiskDto(
+    firstName: String,
+    lastName: String,
+    dateOfBirth: String,
+    crn: String = "",
+    assessmentWithin12Months: Boolean = false,
+    assessedOn: String? = null,
+    riskToSelf: ArnsRiskConcernsToSelfDto? = null,
+    summary: ArnsRiskRoshSummaryDto? = null,
+  ): CommunitySupportRiskDto = CommunitySupportRiskDto(
+    firstName = firstName,
+    lastName = lastName,
+    crn = crn,
+    dateOfBirth = dateOfBirth,
+    assessmentWithin12Months = assessmentWithin12Months,
+    assessedOn = assessedOn,
+    riskToSelf = riskToSelf,
+    summary = summary,
+  )
 
   @Transactional
   fun saveDraftRiskInformation(
