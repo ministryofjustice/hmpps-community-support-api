@@ -30,7 +30,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.arnsStaleRoshRiskJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedAssessmentDate
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -48,26 +50,40 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
   private lateinit var testUser: ReferralUser
 
   @Nested
-  @DisplayName("GET /bff/risk/rosh/{crn}")
+  @DisplayName("GET /bff/risk/rosh/{referralId}")
   inner class RoshRisksEndpoint {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+    }
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(GET, "/bff/risk/rosh/$CRN")
+      assertUnauthorized(GET, "/bff/risk/rosh/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(GET, "/bff/risk/rosh/$CRN")
+      assertForbiddenNoRole(GET, "/bff/risk/rosh/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(GET, "/bff/risk/rosh/$CRN")
+      assertForbiddenWrongRole(GET, "/bff/risk/rosh/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return Not Found when referral does not exist`() {
+      assertNotFound(GET, "/bff/risk/rosh/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return full risk data when assessment is within 12 months`() {
+      val referralUser = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = referralUser.id)
+
       val assessedOn = LocalDateTime.now().minusDays(30)
       stubFor(
         get(urlEqualTo("/risks/crn/$CRN"))
@@ -80,7 +96,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/bff/risk/rosh/$CRN")
+        .uri("/bff/risk/rosh/${referral.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -88,6 +104,10 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
+          body.firstName shouldBe "John"
+          body.lastName shouldBe "Smith"
+          body.crn shouldBe CRN
+          body.dateOfBirth shouldBe LocalDate.of(1980, 1, 1).toFormattedDateOfBirthLong()
           body.assessmentWithin12Months shouldBe true
           body.assessedOn shouldBe assessedOn.toFormattedAssessmentDate()
           body.summary shouldNotBe null
@@ -104,6 +124,10 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return blank response with assessmentWithin12Months false when assessment is older than 12 months`() {
+      val referralUser = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = referralUser.id)
+
       stubFor(
         get(urlEqualTo("/risks/crn/$CRN"))
           .willReturn(
@@ -115,7 +139,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/bff/risk/rosh/$CRN")
+        .uri("/bff/risk/rosh/${referral.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -123,6 +147,9 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
+          body.firstName shouldBe "John"
+          body.lastName shouldBe "Smith"
+          body.crn shouldBe CRN
           body.assessmentWithin12Months shouldBe false
           body.assessedOn shouldBe null
           body.riskToSelf shouldBe null
@@ -131,11 +158,13 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return Not Found when CRN does not exist`() {
-      val unknownCrn = "Z999999"
+    fun `should return Not Found when CRN is not found in Assess Risks and Needs`() {
+      val referralUser = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = referralUser.id)
 
       stubFor(
-        get(urlEqualTo("/risks/crn/$unknownCrn"))
+        get(urlEqualTo("/risks/crn/$CRN"))
           .willReturn(
             aResponse()
               .withStatus(404)
@@ -144,11 +173,15 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
           ),
       )
 
-      assertNotFound(GET, "/bff/risk/rosh/$unknownCrn")
+      assertNotFound(GET, "/bff/risk/rosh/${referral.id}")
     }
 
     @Test
     fun `should return 500 when ARNS service is unavailable`() {
+      val referralUser = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = referralUser.id)
+
       stubFor(
         get(urlEqualTo("/risks/crn/$CRN"))
           .willReturn(
@@ -157,7 +190,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
           ),
       )
 
-      assertServerError(GET, "/bff/risk/rosh/$CRN")
+      assertServerError(GET, "/bff/risk/rosh/${referral.id}")
     }
   }
 

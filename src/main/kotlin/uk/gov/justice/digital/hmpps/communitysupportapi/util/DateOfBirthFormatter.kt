@@ -14,6 +14,11 @@ fun LocalDate.toFormattedDateOfBirth(): String {
   return "${this.format(DATE_OF_BIRTH_FORMAT)} ($age years old)"
 }
 
+fun LocalDate.toFormattedDateOfBirthLong(): String {
+  val age = Period.between(this, LocalDate.now()).years
+  return "${this.format(ASSESSMENT_DATE_FORMAT)} ($age years old)"
+}
+
 fun String.parseDateOfBirth(): LocalDate {
   val datePart = this.substringBefore(" (")
   return LocalDate.parse(datePart, DATE_OF_BIRTH_FORMAT)
