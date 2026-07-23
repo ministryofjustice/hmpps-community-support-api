@@ -13,6 +13,7 @@ data class Selection(
     } else {
       Selection(true, value)
     }
+    fun default(): Selection = Selection(false)
   }
 }
 
@@ -24,18 +25,18 @@ data class RefereeName(
 
 data class AdditionalSupportNeedsBffResponseDto(
   val refereeName: RefereeName,
-  val physicalHealth: Selection? = null,
-  val mentalEmotionalHealth: Selection? = null,
-  val neurodiversity: Selection? = null,
-  val locationTravel: Selection? = null,
-  val caringResponsibilities: Selection? = null,
-  val employmentResponsibilities: Selection? = null,
-  val diversity: Selection? = null,
-  val anythingElse: Selection? = null,
+  val physicalHealth: Selection,
+  val mentalEmotionalHealth: Selection,
+  val neurodiversity: Selection,
+  val locationTravel: Selection,
+  val caringResponsibilities: Selection,
+  val employmentResponsibilities: Selection,
+  val diversity: Selection,
+  val anythingElse: Selection,
   val needsAdditionalSupport: Boolean = false,
 ) {
   companion object {
-    fun from(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
+    fun fromNeeds(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
       refereeName = RefereeName(firstName = person.firstName, lastName = person.lastName),
       physicalHealth = Selection.fromString(personAdditionalSupportNeeds.physicalHealthDetails),
       mentalEmotionalHealth = Selection.fromString(personAdditionalSupportNeeds.mentalEmotionalHealthDetails),
@@ -46,6 +47,18 @@ data class AdditionalSupportNeedsBffResponseDto(
       diversity = Selection.fromString(personAdditionalSupportNeeds.diversityDetails),
       anythingElse = Selection.fromString(personAdditionalSupportNeeds.anythingElseDetails),
       needsAdditionalSupport = !personAdditionalSupportNeeds.noAdditionalSupportNeeded,
+    )
+    fun fromPerson(person: Person): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
+      refereeName = RefereeName(firstName = person.firstName, lastName = person.lastName),
+      physicalHealth = Selection.default(),
+      mentalEmotionalHealth = Selection.default(),
+      neurodiversity = Selection.default(),
+      locationTravel = Selection.default(),
+      caringResponsibilities = Selection.default(),
+      employmentResponsibilities = Selection.default(),
+      diversity = Selection.default(),
+      anythingElse = Selection.default(),
+      needsAdditionalSupport = false,
     )
   }
 }
