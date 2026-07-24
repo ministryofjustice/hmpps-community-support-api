@@ -13,7 +13,7 @@ data class TaskListStatusResponseDto(
 ) {
   companion object {
     fun from(person: Person, referral: Referral) = TaskListStatusResponseDto(
-      fullName = "$person.firstName $person.lastName",
+      fullName = person.firstName + " " + person.lastName,
       TaskListStatusItem.notStarted(),
       TaskListStatusItem.notStarted(),
       TaskListStatusItem.notStarted(),

@@ -271,14 +271,7 @@ class ReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    return TaskListStatusResponseDto(
-      fullName = person.firstName + " " + person.lastName,
-      confirmPersonalDetailsCompleted = false,
-      checkRiskInformationCompleted = false,
-      selectThePersonsNeedsCompleted = false,
-      addDetailsOfAnyAdditionalSupportNeedsCompleted = false,
-      addDetailsOfMainPointOfContactCompleted = false,
-    )
+    return TaskListStatusResponseDto.from(person, referral)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
