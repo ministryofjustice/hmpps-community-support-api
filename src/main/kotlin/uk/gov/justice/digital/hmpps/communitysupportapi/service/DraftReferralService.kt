@@ -39,9 +39,10 @@ class DraftReferralService(
   ): AdditionalSupportNeedsBffResponseDto {
     val context = getReferralSupportNeedsContext(UUID.fromString(referralId))
 
-    return context.additionalSupportNeeds?.let {
-      AdditionalSupportNeedsBffResponseDto.from(context.person, it)
-    } ?: throw NotFoundException("Personal additional support needs not found for referral $referralId")
+    context.additionalSupportNeeds?.let {
+      return AdditionalSupportNeedsBffResponseDto.fromNeeds(context.person, it)
+    }
+    return AdditionalSupportNeedsBffResponseDto.fromPerson(context.person)
   }
 
   fun getInterpreterNeedsForReferral(
@@ -68,7 +69,7 @@ class DraftReferralService(
       updateSupportNeeds(context.additionalSupportNeeds, request, userId)
     }
 
-    return AdditionalSupportNeedsBffResponseDto.from(context.person, personAdditionalSupportNeeds)
+    return AdditionalSupportNeedsBffResponseDto.fromNeeds(context.person, personAdditionalSupportNeeds)
   }
 
   @Transactional
