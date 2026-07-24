@@ -26,7 +26,58 @@ object ExternalApiResponse {
 
   // CPR PROBATION PERSON DATA
 
-  fun createCprProbationPersonDto(crn: String): CprPersonDto = CprPersonDto(
+  private fun createProbationAddress(
+    buildingNumber: String = "1",
+    thoroughfareName: String = "Test Street",
+    postTown: String = "Testville",
+    postcode: String = "TE1 1ST",
+    startDate: String = "2005-12-01",
+    comment: String? = "No notes",
+    addressType: String = "Friends/Family (settled) (verified)",
+    noFixedAbode: Boolean = false,
+  ): CprAddressDto = CprAddressDto(
+    cprAddressId = "addr-probation-1",
+    noFixedAbode = noFixedAbode,
+    buildingNumber = buildingNumber,
+    thoroughfareName = thoroughfareName,
+    postTown = postTown,
+    postcode = postcode,
+    startDate = startDate,
+    comment = comment,
+    status = CprCodeDescriptionDto(code = "M", description = "Main"),
+    usages = listOf(
+      CprAddressUsageDto(
+        code = "FF",
+        description = addressType,
+        isActive = true,
+      ),
+    ),
+    contacts = listOf(
+      CprContactDto(
+        type = CprCodeDescriptionDto(code = "TELEPHONE", description = "Telephone"),
+        value = "01234567890",
+      ),
+      CprContactDto(
+        type = CprCodeDescriptionDto(code = "MOBILE", description = "Mobile"),
+        value = "07700900002",
+      ),
+      CprContactDto(
+        type = CprCodeDescriptionDto(code = "EMAIL", description = "Email"),
+        value = "john.smith@example.com",
+      ),
+    ),
+  )
+
+  val standardAddresses = listOf(createProbationAddress())
+
+  val noFixedAbodeAddress = listOf(
+    createProbationAddress(
+      postcode = "NF1 1NF",
+      noFixedAbode = true,
+    ),
+  )
+
+  fun createCprProbationPersonDto(crn: String, addresses: List<CprAddressDto> = standardAddresses): CprPersonDto = CprPersonDto(
     cprUUID = null,
     firstName = "John",
     middleNames = "David",
@@ -42,39 +93,7 @@ object ExternalApiResponse {
       CprCodeDescriptionDto(code = "ARG", description = "Argentine"),
       CprCodeDescriptionDto(code = "BRA", description = "Brazilian"),
     ),
-    addresses = listOf(
-      CprAddressDto(
-        cprAddressId = "addr-probation-1",
-        buildingNumber = "1",
-        thoroughfareName = "Test Street",
-        postTown = "Testville",
-        postcode = "TE1 1ST",
-        startDate = "2005-12-01",
-        comment = "No notes",
-        status = CprCodeDescriptionDto(code = "M", description = "Main"),
-        usages = listOf(
-          CprAddressUsageDto(
-            code = "FF",
-            description = "Friends/Family (settled) (verified)",
-            isActive = true,
-          ),
-        ),
-        contacts = listOf(
-          CprContactDto(
-            type = CprCodeDescriptionDto(code = "TELEPHONE", description = "Telephone"),
-            value = "01234567890",
-          ),
-          CprContactDto(
-            type = CprCodeDescriptionDto(code = "MOBILE", description = "Mobile"),
-            value = "07700900002",
-          ),
-          CprContactDto(
-            type = CprCodeDescriptionDto(code = "EMAIL", description = "Email"),
-            value = "john.smith@example.com",
-          ),
-        ),
-      ),
-    ),
+    addresses = addresses,
     identifiers = CprIdentifiersDto(
       crns = listOf(crn),
       prisonNumbers = emptyList(),
@@ -97,6 +116,7 @@ object ExternalApiResponse {
     addressType = "Friends/Family (settled) (verified)",
     addressStartDate = LocalDate.of(2005, 12, 1),
     addressNotes = "No notes",
+    noFixedAbode = false,
     phoneNumber = "01234567890",
     mobileNumber = "07700900002",
     emailAddress = "john.smith@example.com",
@@ -173,6 +193,7 @@ object ExternalApiResponse {
     addressType = "Home",
     addressStartDate = LocalDate.of(2020, 4, 3),
     addressNotes = null,
+    noFixedAbode = false,
     phoneNumber = "01234567890",
     mobileNumber = "07700900002",
     emailAddress = "john.smith@example.com",
@@ -200,6 +221,7 @@ object ExternalApiResponse {
   )
 
   fun cprProbationPersonJson(crn: String) = createCprProbationPersonDto(crn).toJson()
+  fun cprProbationPersonNoFixAbodeJson(crn: String) = createCprProbationPersonDto(crn, noFixedAbodeAddress).toJson()
 
   fun cprPrisonPersonJson(prisonNumber: String) = createCprPrisonPersonDto(prisonNumber).toJson()
 
