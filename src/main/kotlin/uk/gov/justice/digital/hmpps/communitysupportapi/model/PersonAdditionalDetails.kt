@@ -17,6 +17,7 @@ data class PersonAdditionalDetails(
   val addressTypeVerified: Boolean = false,
   val addressStartDate: LocalDate? = null,
   val addressNotes: String? = null,
+  val noFixedAbode: Boolean? = null,
   val phoneNumber: String? = null,
   val mobileNumber: String? = null,
   val emailAddress: String? = null,

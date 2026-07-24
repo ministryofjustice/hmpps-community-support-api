@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.noFixedAbodeAddress
 import java.time.LocalDate
 
 class CprProbationPersonMapperTest {
@@ -75,6 +76,22 @@ class CprProbationPersonMapperTest {
   fun `maps address notes from address comment`() {
     val personAdditionalDetails = createCprProbationPersonDto(CRN).toAdditionalDetails()
     assertEquals("No notes", personAdditionalDetails.addressNotes)
+  }
+
+  @Test
+  fun `maps no fixed abode from CPR`() {
+    val personAdditionalDetails = createCprProbationPersonDto(CRN).toAdditionalDetails()
+    assertEquals(false, personAdditionalDetails.noFixedAbode)
+  }
+
+  @Test
+  fun `maps no fixed abode from CPR when address is marked as no fixed abode`() {
+    val personAdditionalDetails = createCprProbationPersonDto(
+      CRN,
+      noFixedAbodeAddress,
+    ).toAdditionalDetails()
+
+    assertEquals(true, personAdditionalDetails.noFixedAbode)
   }
 
   @Test
