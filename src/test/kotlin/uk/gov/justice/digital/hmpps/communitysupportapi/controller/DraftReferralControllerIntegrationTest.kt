@@ -16,6 +16,7 @@ import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -401,11 +402,11 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
 
           body.fullName shouldBe "John Smith"
-          body.confirmPersonalDetailsCompleted shouldBe false
-          body.checkRiskInformationCompleted shouldBe false
-          body.selectThePersonsNeedsCompleted shouldBe false
-          body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe false
-          body.addDetailsOfMainPointOfContactCompleted shouldBe false
+          body.confirmPersonalDetailsCompleted shouldBe TaskListStatusItem.notStarted()
+          body.checkRiskInformationCompleted shouldBe TaskListStatusItem.notStarted()
+          body.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.notStarted()
+          body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.notStarted()
+          body.addDetailsOfMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
         }
     }
   }
