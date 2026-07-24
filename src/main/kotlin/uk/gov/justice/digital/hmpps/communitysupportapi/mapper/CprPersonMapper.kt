@@ -57,6 +57,7 @@ fun CprPersonDto.toAdditionalDetails(): PersonAdditionalDetails {
     addressTypeVerified = firstAddress?.typeVerified == true,
     addressStartDate = firstAddress?.startDate?.let { LocalDate.parse(it) },
     addressNotes = firstAddress?.comment,
+    noFixedAbode = firstAddress?.noFixedAbode == true,
     phoneNumber = allContacts.firstPhoneNumber(),
     mobileNumber = allContacts.firstMobileNumber(),
     emailAddress = allContacts.firstEmailAddress(),

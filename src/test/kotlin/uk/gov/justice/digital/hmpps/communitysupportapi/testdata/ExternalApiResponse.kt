@@ -34,8 +34,10 @@ object ExternalApiResponse {
     startDate: String = "2005-12-01",
     comment: String? = "No notes",
     addressType: String = "Friends/Family (settled) (verified)",
+    noFixedAbode: Boolean = false,
   ): CprAddressDto = CprAddressDto(
     cprAddressId = "addr-probation-1",
+    noFixedAbode = noFixedAbode,
     buildingNumber = buildingNumber,
     thoroughfareName = thoroughfareName,
     postTown = postTown,
@@ -68,12 +70,10 @@ object ExternalApiResponse {
 
   val standardAddresses = listOf(createProbationAddress())
 
-  val noFixedAbodeAddresses = listOf(
+  val noFixedAbodeAddress = listOf(
     createProbationAddress(
-      thoroughfareName = "No Fix Abode Test Street",
-      postTown = "No Fix Abode Town",
       postcode = "NF1 1NF",
-      startDate = "2005-10-31",
+      noFixedAbode = true,
     ),
   )
 
@@ -116,6 +116,7 @@ object ExternalApiResponse {
     addressType = "Friends/Family (settled) (verified)",
     addressStartDate = LocalDate.of(2005, 12, 1),
     addressNotes = "No notes",
+    noFixedAbode = false,
     phoneNumber = "01234567890",
     mobileNumber = "07700900002",
     emailAddress = "john.smith@example.com",
@@ -192,6 +193,7 @@ object ExternalApiResponse {
     addressType = "Home",
     addressStartDate = LocalDate.of(2020, 4, 3),
     addressNotes = null,
+    noFixedAbode = false,
     phoneNumber = "01234567890",
     mobileNumber = "07700900002",
     emailAddress = "john.smith@example.com",
@@ -219,7 +221,7 @@ object ExternalApiResponse {
   )
 
   fun cprProbationPersonJson(crn: String) = createCprProbationPersonDto(crn).toJson()
-  fun cprProbationPersonNoFixAbodeJson(crn: String) = createCprProbationPersonDto(crn, noFixedAbodeAddresses).toJson()
+  fun cprProbationPersonNoFixAbodeJson(crn: String) = createCprProbationPersonDto(crn, noFixedAbodeAddress).toJson()
 
   fun cprPrisonPersonJson(prisonNumber: String) = createCprPrisonPersonDto(prisonNumber).toJson()
 

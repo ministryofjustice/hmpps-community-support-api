@@ -861,11 +861,12 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.contactDetails.address.type shouldBe "Friends/Family (settled) (verified)"
           body.contactDetails.address.startAt shouldBe "2005-12-01"
           body.contactDetails.address.notes shouldBe "No notes"
+          body.contactDetails.address.noFixedAbode shouldBe false
         }
     }
 
     @Test
-    fun `should return no fixed abode when probation address contains the no fixed abode postcode`() {
+    fun `should return noFixedAbode as true when the downstream address is marked as no fixed abode`() {
       val person = referralHelper.createPerson(identifier = CRN)
 
       stubFor(
@@ -889,10 +890,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
           assertCommonPersonDetails(body, person)
 
-          body.contactDetails.address.value shouldBe "No fixed abode"
-          body.contactDetails.address.type shouldBe ""
-          body.contactDetails.address.startAt shouldBe ""
-          body.contactDetails.address.notes shouldBe ""
+          body.contactDetails.address.noFixedAbode shouldBe true
         }
     }
 

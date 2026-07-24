@@ -48,6 +48,7 @@ data class ConfirmPersonDetailsContactAddress(
   val type: String = "",
   val startAt: String = "",
   val notes: String = "",
+  val noFixedAbode: Boolean = false,
 )
 
 data class ConfirmPersonalDetailsContact(
@@ -61,8 +62,6 @@ data class WithUpdated<T>(
   val value: T,
   val updated: LocalDate,
 )
-
-private const val NO_FIXED_ABODE_POSTCODE = "NF1 1NF"
 
 /**
  * Data that is shown on the /bff/confirm-personal-details/{personReference} page,
@@ -104,9 +103,6 @@ data class ConfirmPersonDetailsBffDto(
         { disabilities -> disabilities.mapNotNull { it.disabilityType?.description } },
       )
 
-      val address = personAggregate.additionalDetails?.address.orEmpty()
-      val isNoFixedAbode = address.contains(NO_FIXED_ABODE_POSTCODE)
-
       return ConfirmPersonDetailsBffDto(
         id = id,
         personalDetails = ConfirmPersonalPersonalDetails(
@@ -143,10 +139,11 @@ data class ConfirmPersonDetailsBffDto(
           mobileNumber = personAggregate.additionalDetails?.mobileNumber ?: "",
           emailAddress = personAggregate.additionalDetails?.emailAddress ?: "",
           address = ConfirmPersonDetailsContactAddress(
-            value = if (isNoFixedAbode) "No fixed abode" else address,
-            type = if (isNoFixedAbode) "" else personAggregate.additionalDetails?.addressType.orEmpty(),
-            startAt = if (isNoFixedAbode) "" else personAggregate.additionalDetails?.addressStartDate?.toString().orEmpty(),
-            notes = if (isNoFixedAbode) "" else personAggregate.additionalDetails?.addressNotes.orEmpty(),
+            value = personAggregate.additionalDetails?.address.orEmpty(),
+            type = personAggregate.additionalDetails?.addressType.orEmpty(),
+            startAt = personAggregate.additionalDetails?.addressStartDate?.toString().orEmpty(),
+            notes = personAggregate.additionalDetails?.addressNotes.orEmpty(),
+            noFixedAbode = personAggregate.additionalDetails?.noFixedAbode ?: false,
           ),
         ),
       )
