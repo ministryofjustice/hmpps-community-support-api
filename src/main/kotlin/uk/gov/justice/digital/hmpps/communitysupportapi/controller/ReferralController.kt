@@ -309,13 +309,14 @@ class ReferralController(
       ),
     ],
   )
-  @GetMapping("/bff/confirm-person-details/{personIdentifier}")
-  fun getReferralPersonDetails(@PathVariable personIdentifier: String): ResponseEntity<ConfirmPersonDetailsBffDto> {
+  @GetMapping("/bff/confirm-person-details/{referralId}")
+  fun getReferralPersonDetails(@PathVariable referralId: UUID): ResponseEntity<ConfirmPersonDetailsBffDto> {
+    val referral = referralService.getReferral(referralId).orElseThrow { NotFoundException("Referral not found for id $referralId") }
     try {
-      val result = referralService.getConfirmPersonDetailsBffDto(personIdentifier)
+      val result = referralService.getConfirmPersonDetailsBffDto(referral.personIdentifier)
       return ResponseEntity.ok(result)
     } catch (e: RuntimeException) {
-      log.warn("Person details not found for person identifier={}", personIdentifier, e)
+      log.warn("Person details not found for person identifier={}", referral.personIdentifier, e)
       return ResponseEntity.notFound().build()
     }
   }
