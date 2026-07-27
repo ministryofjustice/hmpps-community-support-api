@@ -100,6 +100,7 @@ class RiskInformationServiceTest {
     assertEquals(CRN, result.crn)
     assertEquals(LocalDate.of(1988, 1, 1).toFormattedDateOfBirthLong(), result.dateOfBirth)
     verify(assessRisksAndNeedsClient).getRoshRisksByCrn(CRN)
+    verify(riskInformationRepository).findByReferralId(referralId)
   }
 
   @Test
@@ -120,6 +121,77 @@ class RiskInformationServiceTest {
     assertEquals("Smith", result.lastName)
     assertEquals(CRN, result.crn)
     verify(assessRisksAndNeedsClient).getRoshRisksByCrn(CRN)
+    verify(riskInformationRepository).findByReferralId(referralId)
+  }
+
+  @Test
+  fun `should override ROSH risk fields with saved risk information when it exists`() {
+    val referral = ReferralFactory().withId(referralId).withCrn(CRN).withPersonId(personId).create()
+    stubPersonLookup(referral)
+
+    val recentAssessment = createArnsRoshRiskDto(assessedOn = LocalDateTime.now().minusDays(30))
+    whenever(assessRisksAndNeedsClient.getRoshRisksByCrn(CRN)).thenReturn(recentAssessment)
+
+    val savedRiskInformation = RiskInformation(
+      id = UUID.randomUUID(),
+      referralId = referralId,
+      riskSummaryWhoIsAtRisk = "Updated who is at risk",
+      riskToSelfSuicide = "Updated suicide notes",
+      additionalInformation = "Extra notes from caseworker",
+      updatedAt = OffsetDateTime.now(),
+      updatedBy = userId,
+      referral = referral,
+    )
+    whenever(riskInformationRepository.findByReferralId(referralId)).thenReturn(savedRiskInformation)
+
+    val result = riskInformationService.getRoshRisksByReferralId(referralId)
+
+    assertTrue(result.assessmentWithin12Months)
+    assertEquals(recentAssessment.assessedOn?.toFormattedAssessmentDate(), result.assessedOn)
+
+    // Overridden by the saved risk information
+    assertEquals("Updated who is at risk", result.summary?.whoIsAtRisk)
+    assertEquals("Updated suicide notes", result.riskToSelf?.suicide?.currentConcernsReason)
+    assertEquals("Extra notes from caseworker", result.additionalInformation)
+
+    // Everything else still comes from Assess Risks and Needs
+    assertEquals(recentAssessment.summary.natureOfRisk, result.summary?.natureOfRisk)
+    assertEquals(recentAssessment.summary.overallRiskLevel, result.summary?.overallRiskLevel)
+    assertEquals(recentAssessment.riskToSelf.suicide?.riskIndicator, result.riskToSelf?.suicide?.riskIndicator)
+    assertEquals(recentAssessment.riskToSelf.vulnerability?.currentConcernsReason, result.riskToSelf?.vulnerability?.currentConcernsReason)
+
+    verify(riskInformationRepository).findByReferralId(referralId)
+  }
+
+  @Test
+  fun `should surface saved risk information even when ARNS assessment is older than 12 months`() {
+    val referral = ReferralFactory().withId(referralId).withCrn(CRN).withPersonId(personId).create()
+    stubPersonLookup(referral)
+
+    val staleAssessment = createStaleArnsRoshRiskDto()
+    whenever(assessRisksAndNeedsClient.getRoshRisksByCrn(CRN)).thenReturn(staleAssessment)
+
+    val savedRiskInformation = RiskInformation(
+      id = UUID.randomUUID(),
+      referralId = referralId,
+      riskSummaryRiskImminence = "Low imminence noted by caseworker",
+      riskToSelfVulnerability = "Vulnerability noted by caseworker",
+      additionalInformation = "Manually captured notes",
+      updatedAt = OffsetDateTime.now(),
+      updatedBy = userId,
+      referral = referral,
+    )
+    whenever(riskInformationRepository.findByReferralId(referralId)).thenReturn(savedRiskInformation)
+
+    val result = riskInformationService.getRoshRisksByReferralId(referralId)
+
+    assertTrue(result.assessmentWithin12Months)
+    assertNull(result.assessedOn)
+    assertEquals("Low imminence noted by caseworker", result.summary?.riskImminence)
+    assertNull(result.summary?.whoIsAtRisk)
+    assertEquals("Vulnerability noted by caseworker", result.riskToSelf?.vulnerability?.currentConcernsReason)
+    assertNull(result.riskToSelf?.suicide)
+    assertEquals("Manually captured notes", result.additionalInformation)
   }
 
   @Test
@@ -136,6 +208,7 @@ class RiskInformationServiceTest {
     assertNull(result.riskToSelf)
     assertNull(result.summary)
     verify(assessRisksAndNeedsClient).getRoshRisksByCrn(CRN)
+    verify(riskInformationRepository).findByReferralId(referralId)
   }
 
   @Test
@@ -180,6 +253,7 @@ class RiskInformationServiceTest {
     assertEquals("", result.crn)
     assertEquals(LocalDate.of(1988, 1, 1).toFormattedDateOfBirthLong(), result.dateOfBirth)
     verifyNoInteractions(assessRisksAndNeedsClient)
+    verify(riskInformationRepository).findByReferralId(referralId)
   }
 
   @Test

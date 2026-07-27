@@ -12,4 +12,5 @@ data class CommunitySupportRiskDto(
   val assessedOn: String? = null,
   val riskToSelf: ArnsRiskConcernsToSelfDto? = null,
   val summary: ArnsRiskRoshSummaryDto? = null,
+  val additionalInformation: String? = null,
 )

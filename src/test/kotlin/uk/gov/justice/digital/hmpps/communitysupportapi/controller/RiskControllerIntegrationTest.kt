@@ -158,6 +158,57 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `should override risk data with saved risk information when it exists`() {
+      val referralUser = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = referralUser.id)
+
+      val assessedOn = LocalDateTime.now().minusDays(30)
+      stubFor(
+        get(urlEqualTo("/risks/crn/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(arnsRoshRiskJson(assessedOn)),
+          ),
+      )
+
+      riskInformationRepository.save(
+        RiskInformationFactory()
+          .withReferral(referral)
+          .withRiskSummaryWhoIsAtRisk("Updated who is at risk")
+          .withRiskToSelfSuicide("Updated suicide notes")
+          .withAdditionalInformation("Extra notes from caseworker")
+          .withUpdatedBy(referralUser.id)
+          .create(),
+      )
+
+      webTestClient.get()
+        .uri("/bff/risk/rosh/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<CommunitySupportRiskDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.assessmentWithin12Months shouldBe true
+          body.assessedOn shouldBe assessedOn.toFormattedAssessmentDate()
+
+          // Overridden by the saved risk information
+          body.summary?.whoIsAtRisk shouldBe "Updated who is at risk"
+          body.riskToSelf?.suicide?.currentConcernsReason shouldBe "Updated suicide notes"
+          body.additionalInformation shouldBe "Extra notes from caseworker"
+
+          // Everything else still comes from Assess Risks and Needs
+          body.summary?.overallRiskLevel shouldBe "HIGH"
+          body.riskToSelf?.suicide?.riskIndicator shouldBe "YES"
+          body.riskToSelf?.vulnerability?.currentConcernsReason shouldBe "Vulnerability concerns noted"
+        }
+    }
+
+    @Test
     fun `should return Not Found when CRN is not found in Assess Risks and Needs`() {
       val referralUser = referralHelper.ensureReferralUser()
       val person = referralHelper.createPerson()
