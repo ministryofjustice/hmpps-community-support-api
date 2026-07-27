@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.AssessRisksAndNeedsClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportRiskInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskConcernsToSelfDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskRoshSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.CommunitySupportRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
@@ -45,42 +46,72 @@ class RiskInformationService(
     val dateOfBirth = person.dateOfBirth.toFormattedDateOfBirthLong()
 
     val identifier = identifierValidator.validate(person.identifier)
-    if (identifier !is PersonIdentifier.Crn) {
+    val baseDto = if (identifier !is PersonIdentifier.Crn) {
       log.info("Skipping ROSH risk lookup for referral {} as person identifier is not a CRN", referralId)
-      return buildCommunitySupportRiskDto(firstName, lastName, dateOfBirth)
-    }
-
-    val crn = identifier.value
-
-    log.info("Fetching ROSH risks from Assess Risks and Needs for referral {} (CRN: {})", referralId, crn)
-    val arnsResponse = assessRisksAndNeedsClient.getRoshRisksByCrn(crn)
-
-    val withinTwelveMonths = arnsResponse.assessedOn
-      ?.isAfter(LocalDateTime.now().minusMonths(12))
-      ?: false
-
-    log.info("Risk assessment for CRN {} within 12 months: {}", crn, withinTwelveMonths)
-
-    return if (withinTwelveMonths) {
-      buildCommunitySupportRiskDto(
-        firstName = firstName,
-        lastName = lastName,
-        crn = crn,
-        dateOfBirth = dateOfBirth,
-        assessmentWithin12Months = true,
-        assessedOn = arnsResponse.assessedOn.toFormattedAssessmentDate(),
-        riskToSelf = arnsResponse.riskToSelf,
-        summary = arnsResponse.summary,
-      )
+      buildCommunitySupportRiskDto(firstName, lastName, dateOfBirth)
     } else {
-      buildCommunitySupportRiskDto(
-        firstName = firstName,
-        lastName = lastName,
-        crn = crn,
-        dateOfBirth = dateOfBirth,
-        assessmentWithin12Months = false,
-      )
+      val crn = identifier.value
+
+      log.info("Fetching ROSH risks from Assess Risks and Needs for referral {} (CRN: {})", referralId, crn)
+      val arnsResponse = assessRisksAndNeedsClient.getRoshRisksByCrn(crn)
+
+      val withinTwelveMonths = arnsResponse.assessedOn
+        ?.isAfter(LocalDateTime.now().minusMonths(12))
+        ?: false
+
+      log.info("Risk assessment for CRN {} within 12 months: {}", crn, withinTwelveMonths)
+
+      if (withinTwelveMonths) {
+        buildCommunitySupportRiskDto(
+          firstName = firstName,
+          lastName = lastName,
+          crn = crn,
+          dateOfBirth = dateOfBirth,
+          assessmentWithin12Months = true,
+          assessedOn = arnsResponse.assessedOn.toFormattedAssessmentDate(),
+          riskToSelf = arnsResponse.riskToSelf,
+          summary = arnsResponse.summary,
+        )
+      } else {
+        buildCommunitySupportRiskDto(
+          firstName = firstName,
+          lastName = lastName,
+          crn = crn,
+          dateOfBirth = dateOfBirth,
+          assessmentWithin12Months = false,
+        )
+      }
     }
+
+    val riskInformation = riskInformationRepository.findByReferralId(referralId)
+    return riskInformation?.let { applyUserEditedRiskInformation(baseDto, it) } ?: baseDto
+  }
+
+  private fun applyUserEditedRiskInformation(base: CommunitySupportRiskDto, riskInformation: RiskInformation): CommunitySupportRiskDto {
+    val summary = (base.summary ?: ArnsRiskRoshSummaryDto()).copy(
+      whoIsAtRisk = riskInformation.riskSummaryWhoIsAtRisk ?: base.summary?.whoIsAtRisk,
+      natureOfRisk = riskInformation.riskSummaryNatureOfRisk ?: base.summary?.natureOfRisk,
+      riskImminence = riskInformation.riskSummaryRiskImminence ?: base.summary?.riskImminence,
+    )
+
+    val riskToSelf = (base.riskToSelf ?: ArnsRiskConcernsToSelfDto()).copy(
+      suicide = withUserEditedConcernsReason(base.riskToSelf?.suicide, riskInformation.riskToSelfSuicide),
+      selfHarm = withUserEditedConcernsReason(base.riskToSelf?.selfHarm, riskInformation.riskToSelfHarm),
+      hostelSetting = withUserEditedConcernsReason(base.riskToSelf?.hostelSetting, riskInformation.riskToSelfHostelSetting),
+      vulnerability = withUserEditedConcernsReason(base.riskToSelf?.vulnerability, riskInformation.riskToSelfVulnerability),
+    )
+
+    return base.copy(
+      assessmentWithin12Months = true,
+      summary = summary,
+      riskToSelf = riskToSelf,
+      additionalInformation = riskInformation.additionalInformation,
+    )
+  }
+
+  private fun withUserEditedConcernsReason(existing: ArnsRiskDto?, userEditedReason: String?): ArnsRiskDto? {
+    if (userEditedReason == null) return existing
+    return (existing ?: ArnsRiskDto()).copy(currentConcernsReason = userEditedReason)
   }
 
   private fun buildCommunitySupportRiskDto(
