@@ -823,7 +823,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("GET /bff/confirm-person-details/{personIdentifier}")
+  @DisplayName("GET /bff/confirm-person-details/{referralId}")
   inner class ConfirmPersonDetailsEndPoint {
 
     @BeforeEach
@@ -833,8 +833,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return 200 with person details for a valid CRN`() {
+    fun `should return 200 with person details for a valid referralID`() {
+      val referralUser = referralHelper.ensureReferralUser()
       val person = referralHelper.createPerson(identifier = CRN)
+      val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
       stubFor(
         get(urlEqualTo("/person/probation/$CRN"))
@@ -847,7 +849,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/bff/confirm-person-details/$CRN")
+        .uri("/bff/confirm-person-details/${referral.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -867,7 +869,9 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return noFixedAbode as true when the downstream address is marked as no fixed abode`() {
+      val referralUser = referralHelper.ensureReferralUser()
       val person = referralHelper.createPerson(identifier = CRN)
+      val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
       stubFor(
         get(urlEqualTo("/person/probation/$CRN"))
@@ -880,7 +884,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/bff/confirm-person-details/$CRN")
+        .uri("/bff/confirm-person-details/${referral.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
