@@ -196,9 +196,11 @@ class DraftReferralService(
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
+    val additionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
+
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    return TaskListStatusResponseDto.from(person, referral)
+    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds)
   }
 }

@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIc
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
@@ -59,6 +60,7 @@ class ReferralService(
   private val cprProbationService: CprProbationService,
   private val identifierValidator: PersonIdentifierValidator,
   private val personService: PersonService,
+  private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
@@ -268,10 +270,12 @@ class ReferralService(
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
+    val additionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
+
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    return TaskListStatusResponseDto.from(person, referral)
+    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
