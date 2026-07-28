@@ -50,4 +50,31 @@ class AdditionalSupportNeedsRequestTest {
     assertThat(normalised.diversity).isNull()
     assertThat(normalised.anythingElse).isNull()
   }
+
+  @Test
+  fun `normalised should clear details when needs additional support is null`() {
+    val request = AdditionalSupportNeedsRequest(
+      physicalHealth = "Physical",
+      mentalEmotionalHealth = "Mental",
+      neurodiversity = "Neuro",
+      locationTravel = "Travel",
+      caringResponsibilities = "Caring",
+      employmentResponsibilities = "Employment",
+      diversity = "Diversity",
+      anythingElse = "Anything else",
+      needsAdditionalSupport = null,
+    )
+
+    val normalised = request.normaliseAgainstNeedsAdditionalSupport()
+
+    assertThat(normalised.needsAdditionalSupport).isNull()
+    assertThat(normalised.physicalHealth).isNull()
+    assertThat(normalised.mentalEmotionalHealth).isNull()
+    assertThat(normalised.neurodiversity).isNull()
+    assertThat(normalised.locationTravel).isNull()
+    assertThat(normalised.caringResponsibilities).isNull()
+    assertThat(normalised.employmentResponsibilities).isNull()
+    assertThat(normalised.diversity).isNull()
+    assertThat(normalised.anythingElse).isNull()
+  }
 }

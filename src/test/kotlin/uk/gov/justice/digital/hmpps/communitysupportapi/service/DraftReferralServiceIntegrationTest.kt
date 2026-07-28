@@ -54,7 +54,7 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedSupportNeeds?.referralId).isEqualTo(savedReferral.id)
     assertThat(savedSupportNeeds?.personId).isEqualTo(savedReferral.personId)
     assertThat(savedSupportNeeds?.caringResponsibilitiesDetails).isEqualTo("Test caring responsibilities")
-    assertThat(savedSupportNeeds?.noAdditionalSupportNeeded).isFalse()
+    assertThat(savedSupportNeeds?.additionalSupportNeeded).isTrue()
     assertThat(savedSupportNeeds?.physicalHealthDetails).isNull()
     assertThat(savedSupportNeeds?.mentalEmotionalHealthDetails).isNull()
     assertThat(savedSupportNeeds?.diversityDetails).isNull()
@@ -62,6 +62,8 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedSupportNeeds?.locationTravelDetails).isNull()
     assertThat(savedSupportNeeds?.neurodiversityDetails).isNull()
     assertThat(savedSupportNeeds?.anythingElseDetails).isNull()
+    assertThat(savedSupportNeeds?.interpreterNeeded).isNull()
+    assertThat(savedSupportNeeds?.interpreterLanguage).isNull()
     assertThat(savedSupportNeeds?.createdBy).isEqualTo(referralUser.id)
   }
 
@@ -90,6 +92,7 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedInterpreterNeeds?.referralId).isEqualTo(savedReferral.id)
     assertThat(savedInterpreterNeeds?.personId).isEqualTo(savedReferral.personId)
     assertThat(savedInterpreterNeeds?.interpreterLanguage).isEqualTo("Spanish")
+    assertThat(savedInterpreterNeeds?.interpreterNeeded).isTrue()
     assertThat(savedInterpreterNeeds?.createdBy).isEqualTo(referralUser.id)
   }
 
