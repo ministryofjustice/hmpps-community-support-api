@@ -61,6 +61,9 @@ data class PersonAdditionalSupportNeeds(
   @Column(name = "interpreter_language")
   val interpreterLanguage: String? = null,
 
+  @Column(name = "interpreter_needed", nullable = false)
+  val interpreterNeeded: Boolean = false,
+
   @Column(name = "created_at")
   val createdAt: OffsetDateTime? = null,
 

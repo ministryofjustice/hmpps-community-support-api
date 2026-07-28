@@ -100,7 +100,6 @@ class DraftReferralService(
       id = UUID.randomUUID(),
       referralId = referralId,
       personId = personId,
-      noAdditionalSupportNeeded = !normalisedRequest.needsAdditionalSupport,
       physicalHealthDetails = normalisedRequest.physicalHealth,
       mentalEmotionalHealthDetails = normalisedRequest.mentalEmotionalHealth,
       neurodiversityDetails = normalisedRequest.neurodiversity,
@@ -109,8 +108,9 @@ class DraftReferralService(
       employmentResponsibilitiesDetails = normalisedRequest.employmentResponsibilities,
       diversityDetails = normalisedRequest.diversity,
       anythingElseDetails = normalisedRequest.anythingElse,
-      createdBy = createdBy,
+      noAdditionalSupportNeeded = !normalisedRequest.needsAdditionalSupport,
       createdAt = OffsetDateTime.now(),
+      createdBy = createdBy,
     )
     return personAdditionalSupportNeedsRepository.save(supportNeeds)
   }
@@ -126,7 +126,6 @@ class DraftReferralService(
       id = existingRecord.id,
       referralId = existingRecord.referralId,
       personId = existingRecord.personId,
-      noAdditionalSupportNeeded = noAdditionalSupportNeeded,
       physicalHealthDetails = normalisedRequest.physicalHealth,
       mentalEmotionalHealthDetails = normalisedRequest.mentalEmotionalHealth,
       neurodiversityDetails = normalisedRequest.neurodiversity,
@@ -135,10 +134,11 @@ class DraftReferralService(
       employmentResponsibilitiesDetails = normalisedRequest.employmentResponsibilities,
       diversityDetails = normalisedRequest.diversity,
       anythingElseDetails = normalisedRequest.anythingElse,
-      createdBy = existingRecord.createdBy,
+      noAdditionalSupportNeeded = noAdditionalSupportNeeded,
       createdAt = existingRecord.createdAt,
-      updatedBy = updatedBy,
       updatedAt = OffsetDateTime.now(),
+      createdBy = existingRecord.createdBy,
+      updatedBy = updatedBy,
     )
     return personAdditionalSupportNeedsRepository.save(supportNeeds)
   }
@@ -155,8 +155,9 @@ class DraftReferralService(
       referralId = referralId,
       personId = personId,
       interpreterLanguage = normalisedRequest.language,
-      createdBy = createdBy,
+      interpreterNeeded = normalisedRequest.needsInterpreter,
       createdAt = OffsetDateTime.now(),
+      createdBy = createdBy,
     )
     return personAdditionalSupportNeedsRepository.save(supportNeeds)
   }
@@ -169,6 +170,7 @@ class DraftReferralService(
     val normalisedRecord = newRecord.normaliseAgainstNeedsInterpreter()
     val copyRecord = existingRecord.copy(
       interpreterLanguage = normalisedRecord.language,
+      interpreterNeeded = normalisedRecord.needsInterpreter,
       updatedBy = updatedBy,
       updatedAt = OffsetDateTime.now(),
     )

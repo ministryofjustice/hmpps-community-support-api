@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS person_additional_support_needs (
     no_additional_support_needed BOOLEAN NOT NULL DEFAULT FALSE,
 
     interpreter_language TEXT,
+    interpreter_needed BOOLEAN NOT NULL DEFAULT FALSE,
 
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -48,3 +49,4 @@ COMMENT ON COLUMN person_additional_support_needs.diversity_details IS 'Details 
 COMMENT ON COLUMN person_additional_support_needs.anything_else_details IS 'Free text for Anything else';
 COMMENT ON COLUMN person_additional_support_needs.no_additional_support_needed IS 'User explicitly indicated no additional support needed';
 COMMENT ON COLUMN person_additional_support_needs.interpreter_language IS 'Specific language for interpreter';
+COMMENT ON COLUMN person_additional_support_needs.interpreter_needed IS 'Has indicated the need for an interpreter';
