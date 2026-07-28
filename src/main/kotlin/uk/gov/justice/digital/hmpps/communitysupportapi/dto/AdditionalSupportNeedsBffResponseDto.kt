@@ -33,7 +33,7 @@ data class AdditionalSupportNeedsBffResponseDto(
   val employmentResponsibilities: Selection,
   val diversity: Selection,
   val anythingElse: Selection,
-  val needsAdditionalSupport: Boolean = false,
+  val needsAdditionalSupport: Boolean? = null,
 ) {
   companion object {
     fun fromNeeds(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
@@ -46,7 +46,7 @@ data class AdditionalSupportNeedsBffResponseDto(
       employmentResponsibilities = Selection.fromString(personAdditionalSupportNeeds.employmentResponsibilitiesDetails),
       diversity = Selection.fromString(personAdditionalSupportNeeds.diversityDetails),
       anythingElse = Selection.fromString(personAdditionalSupportNeeds.anythingElseDetails),
-      needsAdditionalSupport = !personAdditionalSupportNeeds.noAdditionalSupportNeeded,
+      needsAdditionalSupport = personAdditionalSupportNeeds.additionalSupportNeeded,
     )
     fun fromPerson(person: Person): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
       refereeName = RefereeName(firstName = person.firstName, lastName = person.lastName),
@@ -58,7 +58,7 @@ data class AdditionalSupportNeedsBffResponseDto(
       employmentResponsibilities = Selection.default(),
       diversity = Selection.default(),
       anythingElse = Selection.default(),
-      needsAdditionalSupport = false,
+      needsAdditionalSupport = null,
     )
   }
 }
@@ -66,11 +66,13 @@ data class AdditionalSupportNeedsBffResponseDto(
 data class NeedsInterpreterBffResponseDto(
   val refereeName: RefereeName,
   val language: Selection? = null,
+  val needsInterpreter: Boolean? = null,
 ) {
   companion object {
     fun from(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): NeedsInterpreterBffResponseDto = NeedsInterpreterBffResponseDto(
       refereeName = RefereeName(firstName = person.firstName, lastName = person.lastName),
       language = Selection.fromString(personAdditionalSupportNeeds.interpreterLanguage),
+      needsInterpreter = personAdditionalSupportNeeds.interpreterNeeded,
     )
   }
 }

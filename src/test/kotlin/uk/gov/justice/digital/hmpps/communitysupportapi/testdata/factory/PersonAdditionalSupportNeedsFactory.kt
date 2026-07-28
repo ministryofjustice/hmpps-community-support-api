@@ -11,7 +11,7 @@ class PersonAdditionalSupportNeedsFactory : TestEntityFactory<PersonAdditionalSu
   private lateinit var referral: Referral
   private lateinit var person: Person
 
-  private var noAdditionalSupportNeeded: Boolean = false
+  private var additionalSupportNeeded: Boolean? = null
 
   private var physicalHealthDetails: String? = null
   private var mentalEmotionalHealthDetails: String? = null
@@ -22,6 +22,7 @@ class PersonAdditionalSupportNeedsFactory : TestEntityFactory<PersonAdditionalSu
   private var diversityDetails: String? = null
   private var anythingElseDetails: String? = null
 
+  private var interpreterNeeded: Boolean? = null
   private var interpreterLanguage: String? = null
 
   private var createdAt: OffsetDateTime = OffsetDateTime.now()
@@ -33,9 +34,9 @@ class PersonAdditionalSupportNeedsFactory : TestEntityFactory<PersonAdditionalSu
   fun withReferral(referral: Referral) = apply { this.referral = referral }
   fun withPerson(person: Person) = apply { this.person = person }
 
-  fun noAdditionalSupportNeeded(noAdditionalSupportNeeded: Boolean) = apply {
-    this.noAdditionalSupportNeeded = noAdditionalSupportNeeded
-    if (noAdditionalSupportNeeded) {
+  fun setAdditionalSupportNeeded(additionalSupportNeeded: Boolean?) = apply {
+    this.additionalSupportNeeded = additionalSupportNeeded
+    if (this.additionalSupportNeeded == false) {
       this.physicalHealthDetails = null
       this.mentalEmotionalHealthDetails = null
       this.neurodiversityDetails = null
@@ -47,6 +48,13 @@ class PersonAdditionalSupportNeedsFactory : TestEntityFactory<PersonAdditionalSu
     }
   }
 
+  fun setInterpreterNeeded(interpreterNeeded: Boolean?) = apply {
+    this.interpreterNeeded = interpreterNeeded
+    if (this.interpreterNeeded == false) {
+      this.interpreterLanguage = null
+    }
+  }
+
   fun withPhysicalHealthDetails(details: String?) = apply { this.physicalHealthDetails = details }
   fun withMentalEmotionalHealthDetails(details: String?) = apply { this.mentalEmotionalHealthDetails = details }
   fun withNeurodiversityDetails(details: String?) = apply { this.neurodiversityDetails = details }
@@ -55,8 +63,9 @@ class PersonAdditionalSupportNeedsFactory : TestEntityFactory<PersonAdditionalSu
   fun withEmploymentResponsibilitiesDetails(details: String?) = apply { this.employmentResponsibilitiesDetails = details }
   fun withDiversityDetails(details: String?) = apply { this.diversityDetails = details }
   fun withAnythingElseDetails(details: String?) = apply { this.anythingElseDetails = details }
-  fun withNoAdditionalSupportNeeded(noAdditionalSupportNeeded: Boolean) = apply { this.noAdditionalSupportNeeded = noAdditionalSupportNeeded }
+  fun withAdditionalSupportNeeded(additionalSupportNeeded: Boolean?) = apply { this.setAdditionalSupportNeeded(additionalSupportNeeded) }
   fun withInterpreterLanguage(language: String?) = apply { this.interpreterLanguage = language }
+  fun withInterpreterNeeded(interpreterNeeded: Boolean?) = apply { this.setInterpreterNeeded(interpreterNeeded) }
 
   fun withCreatedBy(userId: UUID) = apply { this.createdBy = userId }
   fun withUpdatedBy(userId: UUID?) = apply { this.updatedBy = userId }
@@ -65,7 +74,7 @@ class PersonAdditionalSupportNeedsFactory : TestEntityFactory<PersonAdditionalSu
     id = id,
     referralId = referral.id,
     personId = person.id,
-    noAdditionalSupportNeeded = noAdditionalSupportNeeded,
+    additionalSupportNeeded = additionalSupportNeeded,
     physicalHealthDetails = physicalHealthDetails,
     mentalEmotionalHealthDetails = mentalEmotionalHealthDetails,
     neurodiversityDetails = neurodiversityDetails,
@@ -74,6 +83,7 @@ class PersonAdditionalSupportNeedsFactory : TestEntityFactory<PersonAdditionalSu
     employmentResponsibilitiesDetails = employmentResponsibilitiesDetails,
     diversityDetails = diversityDetails,
     anythingElseDetails = anythingElseDetails,
+    interpreterNeeded = interpreterNeeded,
     interpreterLanguage = interpreterLanguage,
     createdAt = createdAt,
     updatedAt = updatedAt,

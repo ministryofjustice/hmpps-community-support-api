@@ -100,7 +100,7 @@ class DraftReferralService(
       id = UUID.randomUUID(),
       referralId = referralId,
       personId = personId,
-      noAdditionalSupportNeeded = !normalisedRequest.needsAdditionalSupport,
+      additionalSupportNeeded = normalisedRequest.needsAdditionalSupport,
       physicalHealthDetails = normalisedRequest.physicalHealth,
       mentalEmotionalHealthDetails = normalisedRequest.mentalEmotionalHealth,
       neurodiversityDetails = normalisedRequest.neurodiversity,
@@ -121,12 +121,11 @@ class DraftReferralService(
     updatedBy: UUID,
   ): PersonAdditionalSupportNeeds {
     val normalisedRequest = newRecord.normaliseAgainstNeedsAdditionalSupport()
-    val noAdditionalSupportNeeded = !normalisedRequest.needsAdditionalSupport
     val supportNeeds = PersonAdditionalSupportNeeds(
       id = existingRecord.id,
       referralId = existingRecord.referralId,
       personId = existingRecord.personId,
-      noAdditionalSupportNeeded = noAdditionalSupportNeeded,
+      additionalSupportNeeded = normalisedRequest.needsAdditionalSupport,
       physicalHealthDetails = normalisedRequest.physicalHealth,
       mentalEmotionalHealthDetails = normalisedRequest.mentalEmotionalHealth,
       neurodiversityDetails = normalisedRequest.neurodiversity,
@@ -155,6 +154,7 @@ class DraftReferralService(
       referralId = referralId,
       personId = personId,
       interpreterLanguage = normalisedRequest.language,
+      interpreterNeeded = normalisedRequest.needsInterpreter,
       createdBy = createdBy,
       createdAt = OffsetDateTime.now(),
     )
@@ -169,6 +169,7 @@ class DraftReferralService(
     val normalisedRecord = newRecord.normaliseAgainstNeedsInterpreter()
     val copyRecord = existingRecord.copy(
       interpreterLanguage = normalisedRecord.language,
+      interpreterNeeded = normalisedRecord.needsInterpreter,
       updatedBy = updatedBy,
       updatedAt = OffsetDateTime.now(),
     )

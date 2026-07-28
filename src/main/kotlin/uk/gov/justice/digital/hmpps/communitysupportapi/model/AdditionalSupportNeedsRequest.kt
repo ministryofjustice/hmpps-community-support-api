@@ -9,14 +9,14 @@ data class AdditionalSupportNeedsRequest(
   val employmentResponsibilities: String? = null,
   val diversity: String? = null,
   val anythingElse: String? = null,
-  val needsAdditionalSupport: Boolean = false,
+  val needsAdditionalSupport: Boolean? = null,
 ) {
   /**
    * When `needsAdditionalSupport` is `false` then all other fields should be set to `null`, so we are
    * not holding conflicting information (e.g. a person cannot *not* have additional support needs _and_
    * and caring responsibilities)
    */
-  fun normaliseAgainstNeedsAdditionalSupport(): AdditionalSupportNeedsRequest = if (needsAdditionalSupport) {
+  fun normaliseAgainstNeedsAdditionalSupport(): AdditionalSupportNeedsRequest = if (needsAdditionalSupport == true) {
     this
   } else {
     copy(

@@ -55,8 +55,11 @@ data class PersonAdditionalSupportNeeds(
   @Column(name = "anything_else_details")
   val anythingElseDetails: String? = null,
 
-  @Column(name = "no_additional_support_needed", nullable = false)
-  val noAdditionalSupportNeeded: Boolean = false,
+  @Column(name = "additional_support_needed")
+  val additionalSupportNeeded: Boolean? = null,
+
+  @Column(name = "interpreter_needed")
+  val interpreterNeeded: Boolean? = null,
 
   @Column(name = "interpreter_language")
   val interpreterLanguage: String? = null,

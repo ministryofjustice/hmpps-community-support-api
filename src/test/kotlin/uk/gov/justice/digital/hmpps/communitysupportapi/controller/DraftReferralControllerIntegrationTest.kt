@@ -129,7 +129,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val supportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referral.id)!!
 
-      supportNeeds.noAdditionalSupportNeeded shouldBe false
+      supportNeeds.additionalSupportNeeded shouldBe true
       supportNeeds.physicalHealthDetails shouldBe "Wheelchair access required"
       supportNeeds.mentalEmotionalHealthDetails shouldBe "Anxiety support needed"
       supportNeeds.neurodiversityDetails shouldBe "ADHD diagnosis"
@@ -174,7 +174,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val supportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referral.id)!!
 
-      supportNeeds.noAdditionalSupportNeeded shouldBe false
+      supportNeeds.additionalSupportNeeded shouldBe true
       supportNeeds.physicalHealthDetails shouldBe "Wheelchair access required"
       supportNeeds.mentalEmotionalHealthDetails shouldBe "Anxiety support needed"
       supportNeeds.neurodiversityDetails shouldBe "ADHD diagnosis"
@@ -198,7 +198,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val updatedSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referral.id)!!
 
-      updatedSupportNeeds.noAdditionalSupportNeeded shouldBe true
+      updatedSupportNeeds.additionalSupportNeeded shouldBe false
       updatedSupportNeeds.physicalHealthDetails shouldBe null
       updatedSupportNeeds.mentalEmotionalHealthDetails shouldBe null
       updatedSupportNeeds.neurodiversityDetails shouldBe null
@@ -240,7 +240,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val supportNeeds = PersonAdditionalSupportNeedsFactory()
         .withReferral(referral)
         .withPerson(person)
-        .withNoAdditionalSupportNeeded(false)
+        .withAdditionalSupportNeeded(true)
         .withPhysicalHealthDetails("Wheelchair access required")
         .withCreatedBy(testUser.id)
         .create()
@@ -258,8 +258,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.refereeName.firstName shouldBe person.firstName
           body.refereeName.lastName shouldBe person.lastName
           body.needsAdditionalSupport shouldBe true
-          body.physicalHealth?.selected shouldBe true
-          body.physicalHealth?.value shouldBe "Wheelchair access required"
+          body.physicalHealth.selected shouldBe true
+          body.physicalHealth.value shouldBe "Wheelchair access required"
         }
     }
   }
@@ -309,6 +309,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.refereeName.lastName shouldBe person.lastName
           body.language?.selected shouldBe true
           body.language?.value shouldBe "Italian"
+          body.needsInterpreter shouldBe true
         }
     }
 
@@ -357,6 +358,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.refereeName.lastName shouldBe person.lastName
           body.language?.selected shouldBe false
           body.language?.value shouldBe null
+          body.needsInterpreter shouldBe false
         }
     }
   }
