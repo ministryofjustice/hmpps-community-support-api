@@ -411,5 +411,62 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.addDetailsOfMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
         }
     }
+
+    @Test
+    fun `should return inProgress for addDetailsOfAnyAdditionalSupportNeedsCompleted when additionalSupportNeeds is partially complete`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      referralRepository.save(savedReferral)
+
+      val supportNeeds = PersonAdditionalSupportNeedsFactory()
+        .withReferral(savedReferral)
+        .withPerson(person)
+        .withAdditionalSupportNeeded(true)
+        .withCreatedBy(testUser.id)
+        .create()
+      personAdditionalSupportNeedsRepository.save(supportNeeds)
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.inProgress()
+        }
+    }
+
+    @Test
+    fun `should return completed for addDetailsOfAnyAdditionalSupportNeedsCompleted when additionalSupportNeeds is fully complete`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      referralRepository.save(savedReferral)
+
+      val supportNeeds = PersonAdditionalSupportNeedsFactory()
+        .withReferral(savedReferral)
+        .withPerson(person)
+        .withAdditionalSupportNeeded(true)
+        .withInterpreterNeeded(true)
+        .withCreatedBy(testUser.id)
+        .create()
+      personAdditionalSupportNeedsRepository.save(supportNeeds)
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.completed()
+        }
+    }
   }
 }
