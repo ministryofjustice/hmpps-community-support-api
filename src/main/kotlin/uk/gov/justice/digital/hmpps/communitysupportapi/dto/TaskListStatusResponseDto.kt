@@ -24,7 +24,7 @@ data class TaskListStatusResponseDto(
 
     private fun getAdditionalSupportNeedsStatus(additionalSupportNeeds: PersonAdditionalSupportNeeds?): TaskListStatusItem {
       return additionalSupportNeeds?.let {
-        if (it.additionalSupportNeeded != null && (it.additionalSupportNeeded == false || it.interpreterNeeded != null)) {
+        if (it.additionalSupportNeeded != null && it.interpreterNeeded != null) {
           return TaskListStatusItem.completed()
         }
         return TaskListStatusItem.inProgress()
