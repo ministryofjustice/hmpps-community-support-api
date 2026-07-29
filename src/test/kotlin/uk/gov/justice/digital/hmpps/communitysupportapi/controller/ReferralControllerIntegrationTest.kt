@@ -60,6 +60,7 @@ import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.util.UUID
 
 class ReferralControllerIntegrationTest : IntegrationTestBase() {
@@ -427,7 +428,12 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   inner class ReferralViewPageEndPoint {
 
     fun createReferralDetailsBffResponseDto(person: Person, testUser: ReferralUser): ReferralDetailsBffResponseDto {
-      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        targetServiceCompletionDate = null,
+        targetServiceCompletionDateReason = null,
+      )
 
       val personDetailsTable = ReferralDetailsBffResponseDto.PersonDetailsTableDataDto(
         name = "${person.firstName} ${person.lastName}",
@@ -462,6 +468,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         id = savedReferral.id,
         referenceNumber = savedReferral.referenceNumber,
         createdDate = savedReferral.createdAt,
+        targetServiceCompletionDate = savedReferral.targetServiceCompletionDate,
+        targetServiceCompletionDateReason = savedReferral.targetServiceCompletionDateReason,
         personDetailsTableData = personDetailsTable,
         equalityDetailsTableData = equalityDetailsTable,
         contactDetailsTableData = contactDetailsTable,
@@ -521,6 +529,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           // compare fields individually and allow a tiny tolerance for createdDate
           body.id shouldBe referralDetailsDto.id
           body.referenceNumber shouldBe referralDetailsDto.referenceNumber
+          body.targetServiceCompletionDate shouldBe null
+          body.targetServiceCompletionDateReason shouldBe null
           body.personDetailsTableData shouldBe referralDetailsDto.personDetailsTableData
           body.equalityDetailsTableData shouldBe referralDetailsDto.equalityDetailsTableData
           body.contactDetailsTableData shouldBe referralDetailsDto.contactDetailsTableData
@@ -529,6 +539,46 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
             Duration.between(referralDetailsDto.createdDate, body.createdDate).abs().toNanos()
           // allow up to 1-millisecond difference to avoid nanosecond serialization jitter
           assertThat(nanosDiff).isLessThanOrEqualTo(1_000_000L)
+        }
+    }
+
+    @Test
+    fun `should return targetServiceCompletionDate and reason when set on referral`() {
+      val cprPersonDTO = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDTO.toJson()),
+          ),
+      )
+
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
+      personRepository.save(person)
+
+      val completionDate = OffsetDateTime.now().plusMonths(3).withNano(0)
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        targetServiceCompletionDate = completionDate,
+        targetServiceCompletionDateReason = "Extended due to complexity",
+      )
+
+      webTestClient.get()
+        .uri("/bff/referral-details-page/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ReferralDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.targetServiceCompletionDate?.toInstant() shouldBe completionDate.toInstant()
+          body.targetServiceCompletionDateReason shouldBe "Extended due to complexity"
         }
     }
 
