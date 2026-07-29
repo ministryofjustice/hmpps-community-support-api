@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditio
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -206,5 +207,14 @@ class DraftReferralService(
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
     return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds, riskInfo)
+  }
+
+  @Transactional
+  fun confirmPersonDetails(referralId: UUID, userId: UUID) {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    referral.personDetailsConfirmedAt = LocalDateTime.now()
+    referral.personDetailsConfirmedBy = userId
   }
 }

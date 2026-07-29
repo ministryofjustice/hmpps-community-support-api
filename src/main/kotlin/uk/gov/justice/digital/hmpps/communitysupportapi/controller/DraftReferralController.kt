@@ -89,6 +89,29 @@ class DraftReferralController(
     return ResponseEntity.ok(draftReferralService.upsertAdditionalSupportNeeds(referralId, user.id, request))
   }
 
+  @Operation(summary = "Confirm person details for a draft referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "204",
+        description = "Person details confirmed",
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+      ),
+    ],
+  )
+  @PatchMapping("draft-referral/confirm-person-details/{referralId}")
+  fun confirmPersonDetails(
+    @PathVariable referralId: UUID,
+  ): ResponseEntity<Void> {
+    val user = userMapper.fromToken(authenticationHolder)
+    draftReferralService.confirmPersonDetails(referralId, user.id)
+
+    return ResponseEntity.noContent().build()
+  }
+
   @Operation(summary = "Get interpreter needs page data")
   @ApiResponses(
     value = [

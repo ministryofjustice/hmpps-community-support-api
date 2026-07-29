@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -31,6 +32,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonA
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.LocalDateTime
 import java.util.UUID
 
 class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
@@ -498,6 +500,43 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
           body.checkRiskInformationCompleted shouldBe TaskListStatusItem.completed()
         }
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /draft-referral/confirm-person-details/:referralId")
+  inner class ConfirmPersonDetailsTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(PATCH, "/draft-referral/confirm-person-details/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should update referral with person details confirmation`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      referralRepository.save(referral)
+
+      webTestClient.patch()
+        .uri("/draft-referral/confirm-person-details/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isNoContent
+
+      val updatedReferral = referralRepository.findById(referral.id).orElseThrow()
+
+      assertThat(updatedReferral.personDetailsConfirmedBy).isEqualTo(testUser.id)
+      assertThat(updatedReferral.personDetailsConfirmedAt).isBetween(LocalDateTime.now().minusSeconds(5), LocalDateTime.now())
     }
   }
 }

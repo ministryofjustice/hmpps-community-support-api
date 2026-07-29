@@ -7,6 +7,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import org.springframework.data.annotation.CreatedDate
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -37,6 +38,12 @@ class Referral(
 
   @Column(name = "created_by")
   val createdBy: UUID,
+
+  @Column(name = "person_details_confirmed_at")
+  var personDetailsConfirmedAt: LocalDateTime? = null,
+
+  @Column(name = "person_details_confirmed_by")
+  var personDetailsConfirmedBy: UUID? = null,
 
   @OneToMany(mappedBy = "referral", cascade = [CascadeType.PERSIST, CascadeType.MERGE], orphanRemoval = true)
   val referralEvents: MutableList<ReferralEvent> = mutableListOf(),
