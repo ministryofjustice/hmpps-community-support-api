@@ -30,8 +30,6 @@ CREATE TABLE IF NOT EXISTS referral (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by UUID NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    target_service_completion_date TIMESTAMP,
-    target_service_completion_date_reason TEXT,
     CONSTRAINT fk_referral_person FOREIGN KEY (person_id) REFERENCES person (id) ON DELETE CASCADE
 );
 
@@ -44,8 +42,6 @@ COMMENT ON COLUMN referral.urgency IS 'Flag indicating if the referral is urgent
 COMMENT ON COLUMN referral.created_at IS 'Timestamp when the referral was created';
 COMMENT ON COLUMN referral.updated_at IS 'Timestamp when the referral was last updated';
 COMMENT ON COLUMN referral.created_by IS 'Reference to the user who created the referral';
-COMMENT ON COLUMN referral.target_service_completion_date IS 'Date when the referral is expected to be completed by the service';
-COMMENT ON COLUMN referral.target_service_completion_date_reason IS 'Reason for the target service completion date';
 
 CREATE INDEX idx_referral_reference_number ON referral (reference_number);
 
