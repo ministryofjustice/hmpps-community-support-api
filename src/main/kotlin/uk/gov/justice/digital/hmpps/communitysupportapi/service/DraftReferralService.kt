@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -23,6 +24,7 @@ class DraftReferralService(
   private val referralRepository: ReferralRepository,
   private val personRepository: PersonRepository,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
+  private val riskInformationRepository: RiskInformationRepository,
 ) {
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
@@ -198,9 +200,11 @@ class DraftReferralService(
 
     val additionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
 
+    val riskInfo = riskInformationRepository.findByReferralId(referralId)
+
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds)
+    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds, riskInfo)
   }
 }
