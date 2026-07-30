@@ -50,7 +50,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
   private lateinit var testUser: ReferralUser
 
   @Nested
-  @DisplayName("GET /bff/risk/rosh/{referralId}")
+  @DisplayName("GET /bff/draft-referral/risk-information/{referralId}")
   inner class RoshRisksEndpoint {
 
     @BeforeEach
@@ -65,17 +65,17 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(GET, "/bff/risk/rosh/${UUID.randomUUID()}")
+      assertForbiddenNoRole(GET, "/bff/draft-referral/risk-information/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(GET, "/bff/risk/rosh/${UUID.randomUUID()}")
+      assertForbiddenWrongRole(GET, "/bff/draft-referral/risk-information/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return Not Found when referral does not exist`() {
-      assertNotFound(GET, "/bff/risk/rosh/${UUID.randomUUID()}")
+      assertNotFound(GET, "/bff/draft-referral/risk-information/${UUID.randomUUID()}")
     }
 
     @Test
@@ -96,7 +96,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/bff/risk/rosh/${referral.id}")
+        .uri("/bff/draft-referral/risk-information/${referral.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -139,7 +139,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/bff/risk/rosh/${referral.id}")
+        .uri("/bff/draft-referral/risk-information/${referral.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -185,7 +185,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.get()
-        .uri("/bff/risk/rosh/${referral.id}")
+        .uri("/bff/draft-referral/risk-information/${referral.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -224,7 +224,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
           ),
       )
 
-      assertNotFound(GET, "/bff/risk/rosh/${referral.id}")
+      assertNotFound(GET, "/bff/draft-referral/risk-information/${referral.id}")
     }
 
     @Test
@@ -241,12 +241,12 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
           ),
       )
 
-      assertServerError(GET, "/bff/risk/rosh/${referral.id}")
+      assertServerError(GET, "/bff/draft-referral/risk-information/${referral.id}")
     }
   }
 
   @Nested
-  @DisplayName("PUT /risk-information/{referralId}")
+  @DisplayName("PUT /draft-referral/risk-information/{referralId}")
   inner class SaveRiskInformationEndpoint {
 
     @BeforeEach
@@ -258,19 +258,19 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.PUT, "/risk-information/${UUID.randomUUID()}")
+      assertUnauthorized(HttpMethod.PUT, "/draft-referral/risk-information/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return forbidden if no role`() {
       val request = CommunitySupportRiskInformationDto(id = UUID.randomUUID(), referralId = UUID.randomUUID())
-      assertForbiddenNoRole(HttpMethod.PUT, "/risk-information/${UUID.randomUUID()}", request)
+      assertForbiddenNoRole(HttpMethod.PUT, "/draft-referral/risk-information/${UUID.randomUUID()}", request)
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
       val request = CommunitySupportRiskInformationDto(id = UUID.randomUUID(), referralId = UUID.randomUUID())
-      assertForbiddenWrongRole(HttpMethod.PUT, "/risk-information/${UUID.randomUUID()}", request)
+      assertForbiddenWrongRole(HttpMethod.PUT, "/draft-referral/risk-information/${UUID.randomUUID()}", request)
     }
 
     @Test
@@ -282,7 +282,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.put()
-        .uri("/risk-information/${UUID.randomUUID()}")
+        .uri("/draft-referral/risk-information/${UUID.randomUUID()}")
         .headers(setAuthorisation())
         .bodyValue(request)
         .exchange()
@@ -309,7 +309,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.put()
-        .uri("/risk-information/${referral.id}")
+        .uri("/draft-referral/risk-information/${referral.id}")
         .headers(setAuthorisation())
         .bodyValue(request)
         .exchange()
@@ -355,7 +355,7 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.put()
-        .uri("/risk-information/${referral.id}")
+        .uri("/draft-referral/risk-information/${referral.id}")
         .headers(setAuthorisation())
         .bodyValue(request)
         .exchange()
