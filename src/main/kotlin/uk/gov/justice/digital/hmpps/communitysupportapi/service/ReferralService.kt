@@ -38,6 +38,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.parseDateOfBirth
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
 import java.time.LocalDateTime
@@ -61,6 +62,7 @@ class ReferralService(
   private val identifierValidator: PersonIdentifierValidator,
   private val personService: PersonService,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
+  private val riskInformationRepository: RiskInformationRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
@@ -272,10 +274,12 @@ class ReferralService(
 
     val additionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
 
+    val riskInfo = riskInformationRepository.findByReferralId(referralId)
+
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds)
+    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds, riskInfo)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
