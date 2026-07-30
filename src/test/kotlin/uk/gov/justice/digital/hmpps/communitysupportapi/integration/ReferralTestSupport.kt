@@ -110,6 +110,8 @@ class ReferralTestSupport(
     submittedBy: ReferralUser,
     createdAt: OffsetDateTime = OffsetDateTime.now(),
     createdBy: UUID = UUID.randomUUID(),
+    targetServiceCompletionDate: OffsetDateTime? = OffsetDateTime.now().plusDays(30),
+    targetServiceCompletionDateReason: String? = "A reason",
   ): Referral = referralRepository.save(
     ReferralFactory()
       .withPersonId(person.id)
@@ -120,6 +122,8 @@ class ReferralTestSupport(
       .withReferenceNumber(referenceNumber)
       .withUpdatedAt(createdAt)
       .withSubmittedEvent(actorId = submittedBy.id, createdAt = OffsetDateTime.now())
+      .withTargetServiceCompletionDate(targetServiceCompletionDate)
+      .withTargetServiceCompletionDateReason(targetServiceCompletionDateReason)
       .create(),
   )
 
