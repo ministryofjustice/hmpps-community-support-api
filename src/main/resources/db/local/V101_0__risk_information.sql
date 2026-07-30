@@ -1,4 +1,4 @@
--- Local seed data for risk_information (saved via PUT /risk-information/{referralId})
+-- Local seed data for risk_information (saved via PUT /draft-referral/risk-information/{referralId})
 -- referral_id values are taken from the referrals seeded in V99_0__referrals.sql
 -- updated_by values are taken from the referral_user rows seeded in V99_0__referrals.sql
 INSERT INTO risk_information (id, referral_id, risk_summary_who_is_at_risk, risk_summary_nature_of_risk, risk_summary_risk_imminence, risk_to_self_suicide, risk_to_self_harm, risk_to_self_hostel_setting, risk_to_self_vulnerability, additional_information, updated_at, updated_by)

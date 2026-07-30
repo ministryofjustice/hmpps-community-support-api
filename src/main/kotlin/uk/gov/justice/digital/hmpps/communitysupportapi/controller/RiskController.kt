@@ -46,7 +46,7 @@ class RiskController(
       ),
     ],
   )
-  @GetMapping("/bff/risk/rosh/{referralId}")
+  @GetMapping("/bff/draft-referral/risk-information/{referralId}")
   fun getRoshRisksByReferralId(
     @PathVariable referralId: UUID,
   ): ResponseEntity<CommunitySupportRiskDto> {
@@ -71,7 +71,7 @@ class RiskController(
       ),
     ],
   )
-  @PutMapping("/risk-information/{referralId}")
+  @PutMapping("/draft-referral/risk-information/{referralId}")
   fun saveRiskInformation(
     @PathVariable referralId: UUID,
     @RequestBody request: CommunitySupportRiskInformationDto,
