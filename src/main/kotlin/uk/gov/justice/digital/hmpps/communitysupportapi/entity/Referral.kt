@@ -38,6 +38,12 @@ class Referral(
   @Column(name = "created_by")
   val createdBy: UUID,
 
+  @Column(name = "target_service_completion_date", nullable = true)
+  val targetServiceCompletionDate: OffsetDateTime? = null,
+
+  @Column(name = "target_service_completion_date_reason", nullable = true)
+  val targetServiceCompletionDateReason: String? = null,
+
   @OneToMany(mappedBy = "referral", cascade = [CascadeType.PERSIST, CascadeType.MERGE], orphanRemoval = true)
   val referralEvents: MutableList<ReferralEvent> = mutableListOf(),
 ) {
