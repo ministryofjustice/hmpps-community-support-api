@@ -165,8 +165,7 @@ user (password set, no email step required) with whichever roles you need, entir
 #           COMMUNITY_SUPPORT_REFERRER,COMMUNITY_SUPPORT_PROVIDER
 ```
 
-Safe to re-run. See `NOTES.md` for how it works and caveats. Also useful for seeding e2e test
-users against a fresh stack.
+It's safe safe to re-run this script (i.e. it won't re-create identical users). 
 
 ## Linting
 
