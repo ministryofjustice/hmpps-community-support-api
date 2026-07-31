@@ -263,21 +263,19 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return forbidden if no role`() {
-      val request = CommunitySupportRiskInformationDto(id = UUID.randomUUID(), referralId = UUID.randomUUID())
+      val request = CommunitySupportRiskInformationDto()
       assertForbiddenNoRole(HttpMethod.PUT, "/draft-referral/risk-information/${UUID.randomUUID()}", request)
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      val request = CommunitySupportRiskInformationDto(id = UUID.randomUUID(), referralId = UUID.randomUUID())
+      val request = CommunitySupportRiskInformationDto()
       assertForbiddenWrongRole(HttpMethod.PUT, "/draft-referral/risk-information/${UUID.randomUUID()}", request)
     }
 
     @Test
     fun `should return 404 when referral does not exist`() {
       val request = CommunitySupportRiskInformationDto(
-        id = UUID.randomUUID(),
-        referralId = UUID.randomUUID(),
         riskSummaryWhoIsAtRisk = "Staff and public",
       )
 
@@ -296,8 +294,6 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
 
       val request = CommunitySupportRiskInformationDto(
-        id = UUID.randomUUID(),
-        referralId = referral.id,
         riskSummaryWhoIsAtRisk = "Staff and public are at risk",
         riskSummaryNatureOfRisk = "Physical harm",
         riskSummaryRiskImminence = "Low",
@@ -318,7 +314,6 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<CommunitySupportRiskInformationDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-          body.referralId shouldBe referral.id
           body.riskSummaryWhoIsAtRisk shouldBe "Staff and public are at risk"
           body.riskSummaryNatureOfRisk shouldBe "Physical harm"
           body.riskSummaryRiskImminence shouldBe "Low"
@@ -348,8 +343,6 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       riskInformationRepository.save(existing)
 
       val request = CommunitySupportRiskInformationDto(
-        id = UUID.randomUUID(),
-        referralId = referral.id,
         riskSummaryWhoIsAtRisk = "Updated summary",
         riskToSelfVulnerability = "Vulnerability identified",
       )
@@ -364,7 +357,6 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<CommunitySupportRiskInformationDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-          body.id shouldBe existing.id
           body.riskSummaryWhoIsAtRisk shouldBe "Updated summary"
           body.riskToSelfVulnerability shouldBe "Vulnerability identified"
         }
