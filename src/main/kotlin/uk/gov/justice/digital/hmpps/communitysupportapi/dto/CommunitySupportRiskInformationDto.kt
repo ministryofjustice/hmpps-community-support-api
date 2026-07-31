@@ -1,11 +1,8 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
-import java.util.UUID
 
 data class CommunitySupportRiskInformationDto(
-  val id: UUID,
-  val referralId: UUID,
   val riskSummaryWhoIsAtRisk: String? = null,
   val riskSummaryNatureOfRisk: String? = null,
   val riskSummaryRiskImminence: String? = null,
@@ -17,8 +14,6 @@ data class CommunitySupportRiskInformationDto(
 ) {
   companion object {
     fun from(riskInformation: RiskInformation): CommunitySupportRiskInformationDto = CommunitySupportRiskInformationDto(
-      id = riskInformation.id,
-      referralId = riskInformation.referralId,
       riskSummaryWhoIsAtRisk = riskInformation.riskSummaryWhoIsAtRisk,
       riskSummaryNatureOfRisk = riskInformation.riskSummaryNatureOfRisk,
       riskSummaryRiskImminence = riskInformation.riskSummaryRiskImminence,
