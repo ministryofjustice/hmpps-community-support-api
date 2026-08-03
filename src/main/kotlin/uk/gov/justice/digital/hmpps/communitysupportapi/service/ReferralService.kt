@@ -69,6 +69,7 @@ class ReferralService(
   private val personService: PersonService,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
   private val riskInformationRepository: RiskInformationRepository,
+  private val referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository,
   private val actionPlanTemplateRepository: ActionPlanTemplateRepository,
   private val actionPlanRepository: ActionPlanRepository,
   private val actionPlanEventRepository: ActionPlanEventRepository,
