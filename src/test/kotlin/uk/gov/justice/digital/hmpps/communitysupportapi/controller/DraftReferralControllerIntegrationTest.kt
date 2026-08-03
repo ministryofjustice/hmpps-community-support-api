@@ -16,21 +16,26 @@ import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.OffsetDateTime
 import java.util.UUID
 
 class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
@@ -46,6 +51,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var riskInformationRepository: RiskInformationRepository
+
+  @Autowired
+  private lateinit var referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository
 
   @Autowired
   private lateinit var referralHelper: ReferralTestSupport
@@ -497,6 +505,237 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
 
           body.checkRiskInformationCompleted shouldBe TaskListStatusItem.completed()
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /draft-referral/person-needs/:referralId")
+  inner class CriminogenicNeedsPatchTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(PATCH, "/draft-referral/person-needs/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return bad request when selected criminogenic need has no details`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val request = CriminogenicNeedsRequest(hasAccommodationNeeds = true)
+
+      webTestClient.patch()
+        .uri("/draft-referral/person-needs/${referral.id}")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isBadRequest
+
+      referralCriminogenicNeedsRepository.findByReferralId(referral.id) shouldBe null
+    }
+
+    @Test
+    fun `should return OK and create criminogenic needs for a draft referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val request = CriminogenicNeedsRequest(
+        hasAccommodationNeeds = true,
+        accommodationDetails = "Needs emergency housing",
+        hasDrugUseNeeds = false,
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/person-needs/${referral.id}")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ReferralCriminogenicNeedsDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.referralId shouldBe referral.id
+          body.hasAccommodationNeeds shouldBe true
+          body.accommodationDetails shouldBe "Needs emergency housing"
+          body.hasDrugUseNeeds shouldBe false
+          body.updatedBy shouldBe testUser.id
+        }
+
+      val savedCriminogenicNeedsRecord = referralCriminogenicNeedsRepository.findByReferralId(referral.id)
+      savedCriminogenicNeedsRecord shouldNotBe null
+      savedCriminogenicNeedsRecord!!.hasAccommodationNeeds shouldBe true
+      savedCriminogenicNeedsRecord.accommodationDetails shouldBe "Needs emergency housing"
+      savedCriminogenicNeedsRecord.hasDrugUseNeeds shouldBe false
+      savedCriminogenicNeedsRecord.updatedBy shouldBe testUser.id
+    }
+
+    @Test
+    fun `should return OK and update existing criminogenic needs for a draft referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val existing = referralCriminogenicNeedsRepository.save(
+        ReferralCriminogenicNeeds(
+          id = UUID.randomUUID(),
+          referral = referral,
+          hasAccommodationNeeds = false,
+          updatedAt = OffsetDateTime.now().minusDays(1),
+          updatedBy = testUser.id,
+        ),
+      )
+
+      val request = CriminogenicNeedsRequest(hasAccommodationNeeds = true, accommodationDetails = "Updated accommodation details")
+
+      webTestClient.patch()
+        .uri("/draft-referral/person-needs/${referral.id}")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ReferralCriminogenicNeedsDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.id shouldBe existing.id
+          body.hasAccommodationNeeds shouldBe true
+          body.accommodationDetails shouldBe "Updated accommodation details"
+        }
+
+      val savedCriminogenicNeedsRecord = referralCriminogenicNeedsRepository.findByReferralId(referral.id)
+      savedCriminogenicNeedsRecord shouldNotBe null
+      savedCriminogenicNeedsRecord!!.id shouldBe existing.id
+      savedCriminogenicNeedsRecord.hasAccommodationNeeds shouldBe true
+      savedCriminogenicNeedsRecord.accommodationDetails shouldBe "Updated accommodation details"
+    }
+
+    @Test
+    fun `should clear previously saved needs when patch payload omits those fields`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val existing = referralCriminogenicNeedsRepository.save(
+        ReferralCriminogenicNeeds(
+          id = UUID.randomUUID(),
+          referral = referral,
+          hasAccommodationNeeds = true,
+          accommodationDetails = "Needs emergency housing",
+          hasFinancialNeeds = true,
+          financialDetails = "Needs debt support",
+          updatedAt = OffsetDateTime.now().minusDays(1),
+          updatedBy = testUser.id,
+        ),
+      )
+
+      val request = CriminogenicNeedsRequest(
+        hasFinancialNeeds = true,
+        financialDetails = "Updated debt support",
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/person-needs/${referral.id}")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ReferralCriminogenicNeedsDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.id shouldBe existing.id
+          body.hasAccommodationNeeds shouldBe null
+          body.accommodationDetails shouldBe null
+          body.hasFinancialNeeds shouldBe true
+          body.financialDetails shouldBe "Updated debt support"
+        }
+
+      val savedCriminogenicNeedsRecord = referralCriminogenicNeedsRepository.findByReferralId(referral.id)
+      savedCriminogenicNeedsRecord shouldNotBe null
+      savedCriminogenicNeedsRecord!!.id shouldBe existing.id
+      savedCriminogenicNeedsRecord.hasAccommodationNeeds shouldBe null
+      savedCriminogenicNeedsRecord.accommodationDetails shouldBe null
+      savedCriminogenicNeedsRecord.hasFinancialNeeds shouldBe true
+      savedCriminogenicNeedsRecord.financialDetails shouldBe "Updated debt support"
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/draft-referral/person-needs/:referralId")
+  inner class CriminogenicNeedsGetTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/draft-referral/person-needs/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return not found when criminogenic needs do not exist for referral`() {
+      val person = referralHelper.createPerson()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      assertNotFound(GET, "/bff/draft-referral/person-needs/${referral.id}")
+    }
+
+    @Test
+    fun `should return criminogenic needs for a referral`() {
+      val person = referralHelper.createPerson()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      referralCriminogenicNeedsRepository.save(
+        ReferralCriminogenicNeeds(
+          id = UUID.randomUUID(),
+          referral = referral,
+          hasFinancialNeeds = true,
+          financialDetails = "Needs debt management support",
+          updatedAt = OffsetDateTime.now(),
+          updatedBy = testUser.id,
+        ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/person-needs/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ReferralCriminogenicNeedsDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.referralId shouldBe referral.id
+          body.hasFinancialNeeds shouldBe true
+          body.financialDetails shouldBe "Needs debt management support"
+          body.updatedBy shouldBe testUser.id
         }
     }
   }

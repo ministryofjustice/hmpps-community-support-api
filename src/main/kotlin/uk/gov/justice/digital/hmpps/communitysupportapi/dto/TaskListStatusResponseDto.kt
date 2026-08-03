@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 
 data class TaskListStatusResponseDto(
@@ -14,14 +15,22 @@ data class TaskListStatusResponseDto(
   val addDetailsOfMainPointOfContactCompleted: TaskListStatusItem,
 ) {
   companion object {
-    fun from(person: Person, referral: Referral, additionalSupportNeeds: PersonAdditionalSupportNeeds?, riskInfo: RiskInformation?) = TaskListStatusResponseDto(
+    fun from(
+      person: Person,
+      referral: Referral,
+      additionalSupportNeeds: PersonAdditionalSupportNeeds?,
+      riskInfo: RiskInformation?,
+      criminogenicNeeds: ReferralCriminogenicNeeds?,
+    ) = TaskListStatusResponseDto(
       fullName = person.firstName + " " + person.lastName,
       TaskListStatusItem.notStarted(),
       getRiskInfoStatus(riskInfo),
-      TaskListStatusItem.notStarted(),
+      getCriminogenicNeedsStatus(criminogenicNeeds),
       getAdditionalSupportNeedsStatus(additionalSupportNeeds),
       TaskListStatusItem.notStarted(),
     )
+
+    private fun getCriminogenicNeedsStatus(criminogenicNeeds: ReferralCriminogenicNeeds?): TaskListStatusItem = criminogenicNeeds?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
     private fun getAdditionalSupportNeedsStatus(additionalSupportNeeds: PersonAdditionalSupportNeeds?): TaskListStatusItem {
       return additionalSupportNeeds?.let {
