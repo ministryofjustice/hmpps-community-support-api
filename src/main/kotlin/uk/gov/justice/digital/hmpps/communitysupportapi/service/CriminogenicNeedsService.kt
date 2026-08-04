@@ -56,17 +56,11 @@ class CriminogenicNeedsService(
     return ReferralCriminogenicNeedsDto.from(savedCriminogenicNeedsRecord)
   }
 
-  private fun ensureReferralExists(referralId: UUID): Referral {
-    return referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
-  }
+  private fun ensureReferralExists(referralId: UUID): Referral = referralRepository.findById(referralId)
+    .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
-  private fun findCriminogenicNeeds(referralId: UUID): ReferralCriminogenicNeeds? {
-    return referralCriminogenicNeedsRepository.findByReferralId(referralId)
-  }
+  private fun findCriminogenicNeeds(referralId: UUID): ReferralCriminogenicNeeds? = referralCriminogenicNeedsRepository.findByReferralId(referralId)
 
-  private fun ensureCriminogenicNeedsExist(referralId: UUID): ReferralCriminogenicNeeds {
-    return findCriminogenicNeeds(referralId)
-      ?: throw NotFoundException("Criminogenic needs not found for referral $referralId")
-  }
+  private fun ensureCriminogenicNeedsExist(referralId: UUID): ReferralCriminogenicNeeds = findCriminogenicNeeds(referralId)
+    ?: throw NotFoundException("Criminogenic needs not found for referral $referralId")
 }

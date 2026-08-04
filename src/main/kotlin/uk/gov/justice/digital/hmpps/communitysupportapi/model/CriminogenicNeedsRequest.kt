@@ -67,7 +67,5 @@ data class CriminogenicNeedsRequest(
     if (hasNeed == true && detail.isNullOrBlank()) missingDetailFields.add(detailFieldName)
   }
 
-  private fun normaliseDetail(hasNeed: Boolean?, detail: String?): String? {
-    return if (hasNeed == true) detail?.trim() else null
-  }
+  private fun normaliseDetail(hasNeed: Boolean?, detail: String?): String? = if (hasNeed == true) detail?.trim() else null
 }
