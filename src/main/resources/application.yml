@@ -6,6 +6,9 @@ spring:
   application:
     name: hmpps-community-support-api
 
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed
+
   jackson:
     date-format: "yyyy-MM-dd HH:mm:ss"
 
