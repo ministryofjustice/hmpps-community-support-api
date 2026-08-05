@@ -14,6 +14,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
@@ -28,6 +30,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -63,6 +68,9 @@ class ReferralService(
   private val personService: PersonService,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
   private val riskInformationRepository: RiskInformationRepository,
+  private val actionPlanTemplateRepository: ActionPlanTemplateRepository,
+  private val actionPlanRepository: ActionPlanRepository,
+  private val actionPlanEventRepository: ActionPlanEventRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
@@ -169,6 +177,20 @@ class ReferralService(
 
     referral.addEvent(referralEvent)
     referral.referenceNumber = generateReferenceNumber(communityServiceProvider, referralId)
+
+    val actionPlanTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
+
+    val existingActionPlan = actionPlanRepository.findByReferralId(referral.id)
+    if (existingActionPlan != null) {
+      logger.warn("Action plan already exists for referral ${referral.id}, skipping creation")
+    } else {
+      val actionPlan = ActionPlan.forReferral(actionPlanTemplate!!.id, referral.id)
+      actionPlanRepository.save(actionPlan)
+
+      val actionPlanEvent = ActionPlanEvent.actionPlanCreatedEventForActionPlan(actionPlan.id)
+      actionPlanEventRepository.save(actionPlanEvent)
+    }
+
     val savedReferral = referralRepository.save(referral)
     return SubmitReferralResponseDto(
       referralId = savedReferral.id,
