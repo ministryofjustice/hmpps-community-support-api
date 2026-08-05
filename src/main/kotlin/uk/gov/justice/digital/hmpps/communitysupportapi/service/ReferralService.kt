@@ -4,6 +4,7 @@ import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStatusDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
@@ -16,6 +17,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusRespon
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
@@ -71,6 +73,7 @@ class ReferralService(
   private val riskInformationRepository: RiskInformationRepository,
   private val actionPlanTemplateRepository: ActionPlanTemplateRepository,
   private val actionPlanRepository: ActionPlanRepository,
+  private val actionPlanService: ActionPlanService,
   private val actionPlanEventRepository: ActionPlanEventRepository,
   private val referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository,
 ) {
@@ -209,8 +212,12 @@ class ReferralService(
 
     val appointments = appointmentRepository.findAllByReferralId(referral.id).orEmpty()
 
+    val actionPlan = actionPlanService.findOrCreateByReferralId(referral.id)
+    val actionPlanIsSubmitted = actionPlanEventRepository.findAll().filter { it.actionPlanId == actionPlan.id }
+      .any { it.eventType == ActionPlanEventType.SUBMITTED }
+
     if (appointments.isEmpty()) {
-      return ReferralProgressDto(referralId = referral.id, fullName = personName, appointments = emptyList())
+      return ReferralProgressDto(referralId = referral.id, fullName = personName, appointments = emptyList(), actionPlanStatus = ActionPlanStatusDto.fromActionPlan(actionPlan, actionPlanIsSubmitted))
     }
 
     val appointmentIds = appointments.map { it.id }
@@ -248,7 +255,12 @@ class ReferralService(
       )
     }
 
-    return ReferralProgressDto(referralId = referral.id, fullName = personName, appointments = appointmentHistory)
+    return ReferralProgressDto(
+      referralId = referral.id,
+      fullName = personName,
+      appointments = appointmentHistory,
+      ActionPlanStatusDto.fromActionPlan(actionPlan, actionPlanIsSubmitted),
+    )
   }
 
   fun getReferralInformation(caseIdentifier: String?): ReferralInformationDto {

@@ -6,4 +6,5 @@ data class ReferralProgressDto(
   val referralId: UUID,
   val fullName: String,
   val appointments: List<ReferralAppointmentHistoryDto>,
+  val actionPlanStatus: ActionPlanStatusDto,
 )
