@@ -16,15 +16,20 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprCodeDescriptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprIdentifiersDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.PersonTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -62,6 +67,12 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralRepository: ReferralRepository
+
+  @Autowired
+  private lateinit var actionPlanRepository: ActionPlanRepository
+
+  @Autowired
+  private lateinit var actionPlanEventRepository: ActionPlanEventRepository
 
   @Autowired
   private lateinit var appointmentRepository: AppointmentRepository
@@ -402,6 +413,68 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(submissionResult).isNotNull()
     assertThat(savedReferral.id).isEqualTo(submissionResult.referralId)
     assertThat(submissionResult.referenceNumber).isNotNull()
+  }
+
+  @Test
+  fun `submitReferral should create an action plan pointing to the referral`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val createReferralRequest = setUpData()
+
+    val result = referralService.createReferral(referralUser.id, createReferralRequest)
+    val savedReferral = result.referral
+
+    assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNull()
+
+    referralService.submitReferral(savedReferral.id, referralUser.id)
+
+    val actionPlan = actionPlanRepository.findByReferralId(savedReferral.id)
+    assertThat(actionPlan).isNotNull()
+    assertThat(actionPlan?.referralId).isEqualTo(savedReferral.id)
+    // Magic ID from the V17 Seed Migration
+    assertThat(actionPlan!!.actionPlanTemplateId).isEqualTo(UUID.fromString("c191398c-9661-4983-bafb-be649d877183"))
+
+    val actionPlanEvents = actionPlanEventRepository.findByActionPlanId(actionPlan.id)
+    assertThat(actionPlanEvents).isNotNull()
+    assertThat(actionPlanEvents).hasSize(1)
+    assertThat(actionPlanEvents.first().eventType).isEqualTo(ActionPlanEventType.CREATED)
+  }
+
+  @Test
+  fun `submitReferral should not create a new action plan when referral has already been submitted`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val createReferralRequest = setUpData()
+
+    val result = referralService.createReferral(referralUser.id, createReferralRequest)
+    val savedReferral = result.referral
+    referralService.submitReferral(savedReferral.id, referralUser.id)
+
+    assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
+
+    assertThrows(ConflictException::class.java) {
+      referralService.submitReferral(savedReferral.id, referralUser.id)
+    }
+
+    assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
+  }
+
+  @Test
+  fun `submitReferral should not create a duplicate action plan when one already exists`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val createReferralRequest = setUpData()
+
+    val result = referralService.createReferral(referralUser.id, createReferralRequest)
+    val savedReferral = result.referral
+
+    // Magic ID from the V17 Seed Migration
+    val actionPlanTemplateId = UUID.fromString("c191398c-9661-4983-bafb-be649d877183")
+    actionPlanRepository.save(ActionPlan.forReferral(actionPlanTemplateId, savedReferral.id))
+
+    assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
+
+    referralService.submitReferral(savedReferral.id, referralUser.id)
+
+    assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
+    assertThat(referralRepository.findById(savedReferral.id).get().submittedEvent).isNotNull()
   }
 
   @Test
