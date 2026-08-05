@@ -454,7 +454,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       referralService.submitReferral(savedReferral.id, referralUser.id)
     }
 
-    assertThat(actionPlanRepository.findAll().filter { it.referralId == savedReferral.id }).hasSize(1)
+    assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
   }
 
   @Test
@@ -465,9 +465,9 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val result = referralService.createReferral(referralUser.id, createReferralRequest)
     val savedReferral = result.referral
 
-    val actionPlanTemplate = actionPlanRepository.findAll().firstOrNull()?.actionPlanTemplateId
-      ?: UUID.fromString("c191398c-9661-4983-bafb-be649d877183")
-    actionPlanRepository.save(ActionPlan.forReferral(actionPlanTemplate, savedReferral.id))
+    // Magic ID from the V17 Seed Migration
+    val actionPlanTemplateId = UUID.fromString("c191398c-9661-4983-bafb-be649d877183")
+    actionPlanRepository.save(ActionPlan.forReferral(actionPlanTemplateId, savedReferral.id))
 
     assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
 
