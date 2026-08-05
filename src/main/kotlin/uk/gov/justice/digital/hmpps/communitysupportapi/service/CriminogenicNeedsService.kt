@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import java.time.OffsetDateTime
@@ -15,12 +16,14 @@ import java.util.UUID
 @Service
 class CriminogenicNeedsService(
   private val referralRepository: ReferralRepository,
+  private val personRepository: PersonRepository,
   private val referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository,
 ) {
 
   fun getCriminogenicNeeds(referralId: UUID): ReferralCriminogenicNeedsDto {
     val referral = ensureReferralExists(referralId)
-    return ReferralCriminogenicNeedsDto.from(ensureCriminogenicNeedsExist(referral.id))
+    val person = ensurePersonExists(referral)
+    return ReferralCriminogenicNeedsDto.from(ensureCriminogenicNeedsExist(referral.id), person)
   }
 
   @Transactional
@@ -52,8 +55,9 @@ class CriminogenicNeedsService(
       updatedBy = userId,
     )
 
+    val person = ensurePersonExists(referral)
     val savedCriminogenicNeedsRecord = referralCriminogenicNeedsRepository.save(criminogenicNeeds)
-    return ReferralCriminogenicNeedsDto.from(savedCriminogenicNeedsRecord)
+    return ReferralCriminogenicNeedsDto.from(savedCriminogenicNeedsRecord, person)
   }
 
   private fun ensureReferralExists(referralId: UUID): Referral = referralRepository.findById(referralId)
@@ -63,4 +67,7 @@ class CriminogenicNeedsService(
 
   private fun ensureCriminogenicNeedsExist(referralId: UUID): ReferralCriminogenicNeeds = findCriminogenicNeeds(referralId)
     ?: throw NotFoundException("Criminogenic needs not found for referral $referralId")
+
+  private fun ensurePersonExists(referral: Referral) = personRepository.findById(referral.personId)
+    .orElseThrow { NotFoundException("Person not found for referral ${referral.id}") }
 }

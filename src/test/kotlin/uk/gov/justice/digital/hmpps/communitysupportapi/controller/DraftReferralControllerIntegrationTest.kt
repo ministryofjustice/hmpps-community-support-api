@@ -572,6 +572,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
           body.referralId shouldBe referral.id
+          body.refereeName.firstName shouldBe person.firstName
+          body.refereeName.lastName shouldBe person.lastName
           body.hasAccommodationNeeds shouldBe true
           body.accommodationDetails shouldBe "Needs emergency housing"
           body.hasDrugUseNeeds shouldBe false
@@ -617,6 +619,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
           body.id shouldBe existing.id
+          body.refereeName.firstName shouldBe person.firstName
+          body.refereeName.lastName shouldBe person.lastName
           body.hasAccommodationNeeds shouldBe true
           body.accommodationDetails shouldBe "Updated accommodation details"
         }
@@ -665,6 +669,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
           body.id shouldBe existing.id
+          body.refereeName.firstName shouldBe person.firstName
+          body.refereeName.lastName shouldBe person.lastName
           body.hasAccommodationNeeds shouldBe null
           body.accommodationDetails shouldBe null
           body.hasFinancialNeeds shouldBe true
@@ -733,6 +739,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
           body.referralId shouldBe referral.id
+          body.refereeName.firstName shouldBe person.firstName
+          body.refereeName.lastName shouldBe person.lastName
           body.hasFinancialNeeds shouldBe true
           body.financialDetails shouldBe "Needs debt management support"
           body.updatedBy shouldBe testUser.id

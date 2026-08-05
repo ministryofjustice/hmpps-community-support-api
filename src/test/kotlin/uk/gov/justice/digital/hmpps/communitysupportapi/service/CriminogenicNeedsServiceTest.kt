@@ -18,8 +18,10 @@ import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import java.time.OffsetDateTime
 import java.util.Optional
@@ -30,6 +32,9 @@ class CriminogenicNeedsServiceTest {
 
   @Mock
   lateinit var referralRepository: ReferralRepository
+
+  @Mock
+  lateinit var personRepository: PersonRepository
 
   @Mock
   lateinit var referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository
@@ -52,6 +57,7 @@ class CriminogenicNeedsServiceTest {
   @Test
   fun `getCriminogenicNeeds returns dto when criminogenic needs exist`() {
     val referral = ReferralFactory().withId(referralId).create()
+    val person = PersonFactory().withId(referral.personId).withFirstName("Alex").withLastName("River").create()
     val needs = ReferralCriminogenicNeeds(
       id = UUID.randomUUID(),
       referral = referral,
@@ -62,12 +68,15 @@ class CriminogenicNeedsServiceTest {
     )
 
     whenever(referralRepository.findById(referralId)).thenReturn(Optional.of(referral))
+    whenever(personRepository.findById(referral.personId)).thenReturn(Optional.of(person))
     whenever(referralCriminogenicNeedsRepository.findByReferralId(referralId)).thenReturn(needs)
 
     val result = criminogenicNeedsService.getCriminogenicNeeds(referralId)
 
     assertEquals(needs.id, result.id)
     assertEquals(referral.id, result.referralId)
+    assertEquals("Alex", result.refereeName.firstName)
+    assertEquals("River", result.refereeName.lastName)
     assertEquals(true, result.hasAccommodationNeeds)
     assertEquals("Needs stable accommodation", result.accommodationDetails)
     assertEquals(userId, result.updatedBy)
@@ -76,6 +85,7 @@ class CriminogenicNeedsServiceTest {
   @Test
   fun `upsertCriminogenicNeeds creates new record when none exists`() {
     val referral = ReferralFactory().withId(referralId).create()
+    val person = PersonFactory().withId(referral.personId).withFirstName("Alex").withLastName("River").create()
     val request = CriminogenicNeedsRequest(
       hasAccommodationNeeds = true,
       accommodationDetails = "Requires temporary housing",
@@ -85,6 +95,7 @@ class CriminogenicNeedsServiceTest {
     )
 
     whenever(referralRepository.findById(referralId)).thenReturn(Optional.of(referral))
+    whenever(personRepository.findById(referral.personId)).thenReturn(Optional.of(person))
     whenever(referralCriminogenicNeedsRepository.findByReferralId(referralId)).thenReturn(null)
     whenever(referralCriminogenicNeedsRepository.save(any<ReferralCriminogenicNeeds>()))
       .thenAnswer { it.arguments[0] as ReferralCriminogenicNeeds }
@@ -107,11 +118,14 @@ class CriminogenicNeedsServiceTest {
 
     assertEquals(saved.id, result.id)
     assertEquals(saved.referral.id, result.referralId)
+    assertEquals("Alex", result.refereeName.firstName)
+    assertEquals("River", result.refereeName.lastName)
   }
 
   @Test
   fun `upsertCriminogenicNeeds updates existing record and preserves id`() {
     val referral = ReferralFactory().withId(referralId).create()
+    val person = PersonFactory().withId(referral.personId).withFirstName("Alex").withLastName("River").create()
     val existingId = UUID.randomUUID()
     val originalUpdatedAt = OffsetDateTime.now().minusDays(1)
 
@@ -126,6 +140,7 @@ class CriminogenicNeedsServiceTest {
     val request = CriminogenicNeedsRequest(hasAccommodationNeeds = true, accommodationDetails = "Updated accommodation details")
 
     whenever(referralRepository.findById(referralId)).thenReturn(Optional.of(referral))
+    whenever(personRepository.findById(referral.personId)).thenReturn(Optional.of(person))
     whenever(referralCriminogenicNeedsRepository.findByReferralId(referralId)).thenReturn(existing)
     whenever(referralCriminogenicNeedsRepository.save(any<ReferralCriminogenicNeeds>()))
       .thenAnswer { it.arguments[0] as ReferralCriminogenicNeeds }
@@ -145,6 +160,8 @@ class CriminogenicNeedsServiceTest {
 
     assertEquals(existingId, result.id)
     assertEquals(referral.id, result.referralId)
+    assertEquals("Alex", result.refereeName.firstName)
+    assertEquals("River", result.refereeName.lastName)
   }
 
   @Test
@@ -160,9 +177,11 @@ class CriminogenicNeedsServiceTest {
   @Test
   fun `upsertCriminogenicNeeds clears details when corresponding boolean is false`() {
     val referral = ReferralFactory().withId(referralId).create()
+    val person = PersonFactory().withId(referral.personId).create()
     val request = CriminogenicNeedsRequest(hasAccommodationNeeds = false, accommodationDetails = "This should be removed")
 
     whenever(referralRepository.findById(referralId)).thenReturn(Optional.of(referral))
+    whenever(personRepository.findById(referral.personId)).thenReturn(Optional.of(person))
     whenever(referralCriminogenicNeedsRepository.findByReferralId(referralId)).thenReturn(null)
     whenever(referralCriminogenicNeedsRepository.save(any<ReferralCriminogenicNeeds>()))
       .thenAnswer { it.arguments[0] as ReferralCriminogenicNeeds }

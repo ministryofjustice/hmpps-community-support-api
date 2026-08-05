@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -7,6 +8,7 @@ import java.util.UUID
 data class ReferralCriminogenicNeedsDto(
   val id: UUID,
   val referralId: UUID,
+  val refereeName: RefereeNameDto,
   val hasAccommodationNeeds: Boolean? = null,
   val accommodationDetails: String? = null,
   val hasEmploymentEducationNeeds: Boolean? = null,
@@ -27,9 +29,10 @@ data class ReferralCriminogenicNeedsDto(
   val updatedBy: UUID,
 ) {
   companion object {
-    fun from(referralCriminogenicNeeds: ReferralCriminogenicNeeds): ReferralCriminogenicNeedsDto = ReferralCriminogenicNeedsDto(
+    fun from(referralCriminogenicNeeds: ReferralCriminogenicNeeds, person: Person): ReferralCriminogenicNeedsDto = ReferralCriminogenicNeedsDto(
       id = referralCriminogenicNeeds.id,
       referralId = referralCriminogenicNeeds.referral.id,
+      refereeName = RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
       hasAccommodationNeeds = referralCriminogenicNeeds.hasAccommodationNeeds,
       accommodationDetails = referralCriminogenicNeeds.accommodationDetails,
       hasEmploymentEducationNeeds = referralCriminogenicNeeds.hasEmploymentEducationNeeds,
