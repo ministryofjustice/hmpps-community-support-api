@@ -1,4 +1,4 @@
--- V19: Add global column to action_plan_template with constraint ensuring only one row can be true
+-- V20: Add global column to action_plan_template with constraint ensuring only one row can be true
 
 ALTER TABLE action_plan_template ADD COLUMN active_global BOOLEAN NOT NULL DEFAULT false;
 
