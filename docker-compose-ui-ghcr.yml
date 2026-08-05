@@ -1,3 +1,25 @@
+# Full local stack incl. the UI, pulled from GHCR (no local UI checkout/build needed).
+#
+# Use this when you want to run hmpps-community-support-api locally (e.g. in IntelliJ,
+# `local` Spring profile) and exercise it through the latest published UI image, with real
+# hmpps-auth login (incl. a working delius test user). If you need to test local UI source
+# changes, use docker-compose-ui.yml instead.
+#
+# Usage:
+#   docker compose -f docker-compose-ui-ghcr.yml pull community-support-ui
+#   docker compose -f docker-compose-ui-ghcr.yml up
+#
+# Then start the API from IntelliJ with the `local` Spring profile (it will use the
+# dependencies started by this file), and browse to http://localhost:3000.
+#
+# Log in with username "bernard.beaks" / password "secret" (a delius-sourced wiremock test
+# user - HMPPS Auth automatically grants delius-sourced users ROLE_PROBATION, which the UI
+# requires). The plain "AUTH_USER" test account has no roles and will be rejected by the UI.
+#
+# Compose can expose ports to localhost, but it cannot create host OS DNS aliases.
+# The UI's browser-facing HMPPS_AUTH_URL is the same hostname used inside the docker
+# network ("hmpps-auth"), so add this host alias on your Mac so both resolve the same way:
+#   127.0.0.1 hmpps-auth
 services:
   hmpps-auth:
     image: ghcr.io/ministryofjustice/hmpps-auth:latest
@@ -127,6 +149,7 @@ services:
       - SPRING_R2DBC_PASSWORD=admin_password
       - HMPPS_SQS_PROVIDER=localstack
       - HMPPS_SQS_LOCALSTACKURL=http://localstack:4566
+
   auth-db:
     image: postgres:18
     networks:
@@ -185,6 +208,47 @@ services:
     volumes:
       - "${TMPDIR:-/tmp/localstack}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+  community-support-ui:
+    image: ghcr.io/ministryofjustice/hmpps-community-support-ui:latest
+    container_name: community-support-ui
+    networks:
+      - hmpps
+    restart: always
+    depends_on:
+      - hmpps-auth
+      - wiremock
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: [ "CMD", "node", "-e", "fetch('http://localhost:3000/ping').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" ]
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - NO_HTTPS=true
+      - PRODUCT_ID=UNASSIGNED
+      - SESSION_SECRET=insecure-local-dev-session-secret
+      - INGRESS_URL=http://localhost:3000
+      - REDIS_ENABLED=false
+      - REDIS_HOST=unused-redis-disabled
+      - ENVIRONMENT_NAME=local
+      # HMPPS Auth: same hostname used inside the docker network and from your browser,
+      # see the /etc/hosts note above.
+      - HMPPS_AUTH_URL=http://hmpps-auth:8090/auth
+      - HMPPS_AUTH_EXTERNAL_URL=http://hmpps-auth:8090/auth
+      # Real client registrations seeded into every hmpps-auth image - not the "clientid"
+      # default in the UI's own .env, which isn't a registered client against this image.
+      - AUTH_CODE_CLIENT_ID=hmpps-community-support-ui-1
+      - AUTH_CODE_CLIENT_SECRET=clientsecret
+      - CLIENT_CREDS_CLIENT_ID=hmpps-community-support-ipb-ui-client-1
+      - CLIENT_CREDS_CLIENT_SECRET=clientsecret
+      # No local stub for the (deprecated, mostly unused) token verification API, so disable it.
+      - TOKEN_VERIFICATION_ENABLED=false
+      - TOKEN_VERIFICATION_API_URL=http://wiremock:8080/verification
+      - PRISON_API_URL=http://wiremock:8080
+      # host.docker.internal reaches services running on your Mac host, e.g. the API
+      # started in IntelliJ on its default port 8080 with the `local` Spring profile.
+      - COMMUNITY_SUPPORT_API_URL=http://host.docker.internal:8080
 
 networks:
   hmpps:
