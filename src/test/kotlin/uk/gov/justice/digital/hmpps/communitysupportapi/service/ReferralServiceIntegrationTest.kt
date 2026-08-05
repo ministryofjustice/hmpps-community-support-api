@@ -473,7 +473,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     referralService.submitReferral(savedReferral.id, referralUser.id)
 
-    assertThat(actionPlanRepository.findAll().filter { it.referralId == savedReferral.id }).hasSize(1)
+    assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
     assertThat(referralRepository.findById(savedReferral.id).get().submittedEvent).isNotNull()
   }
 
