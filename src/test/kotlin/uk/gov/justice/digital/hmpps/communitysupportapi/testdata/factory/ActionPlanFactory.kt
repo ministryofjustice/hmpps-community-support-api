@@ -38,34 +38,35 @@ class ActionPlanFactory : TestEntityFactory<ActionPlan>() {
   private var actionPlanTemplateId: UUID = UUID.randomUUID()
   private var createdAt: OffsetDateTime = OffsetDateTime.now()
   private var updatedAt: OffsetDateTime = OffsetDateTime.now()
-  private var events: MutableList<(UUID) -> ActionPlanEvent> = mutableListOf()
+  private var events: MutableList<ActionPlanEvent> = mutableListOf()
 
   fun withId(id: UUID) = apply { this.id = id }
   fun withReferralId(referralId: UUID) = apply { this.referralId = referralId }
   fun withActionPlanTemplateId(actionPlanTemplateId: UUID) = apply { this.actionPlanTemplateId = actionPlanTemplateId }
   fun withCreatedAt(createdAt: OffsetDateTime) = apply { this.createdAt = createdAt }
   fun withUpdatedAt(updatedAt: OffsetDateTime) = apply { this.updatedAt = updatedAt }
+  fun withEvents(events: MutableList<ActionPlanEvent>) = apply { this.events = events }
 
   fun withCreatedEvent(createdBy: String = "SYSTEM", createdAt: OffsetDateTime? = null) = apply {
-    events.add { actionPlanId ->
-      ActionPlanEventFactory()
-        .withActionPlanId(actionPlanId)
-        .withEventType(ActionPlanEventType.CREATED)
-        .withCreatedBy(createdBy)
-        .withCreatedAt(createdAt ?: this.createdAt)
-        .create()
-    }
+    val event = ActionPlanEventFactory()
+      .withActionPlanId(this.id)
+      .withEventType(ActionPlanEventType.CREATED)
+      .withCreatedBy(createdBy)
+      .withCreatedAt(createdAt ?: this.createdAt)
+      .create()
+
+    this.events.add(event)
   }
 
   fun withSubmittedEvent(createdBy: String = "SYSTEM", createdAt: OffsetDateTime? = null) = apply {
-    events.add { actionPlanId ->
-      ActionPlanEventFactory()
-        .withActionPlanId(actionPlanId)
-        .withEventType(ActionPlanEventType.SUBMITTED)
-        .withCreatedBy(createdBy)
-        .withCreatedAt(createdAt ?: this.createdAt)
-        .create()
-    }
+    val event = ActionPlanEventFactory()
+      .withActionPlanId(this.id)
+      .withEventType(ActionPlanEventType.SUBMITTED)
+      .withCreatedBy(createdBy)
+      .withCreatedAt(createdAt ?: this.createdAt)
+      .create()
+
+    this.events.add(event)
   }
 
   override fun create(): ActionPlan {
@@ -75,35 +76,9 @@ class ActionPlanFactory : TestEntityFactory<ActionPlan>() {
       actionPlanTemplateId = actionPlanTemplateId,
       createdAt = createdAt,
       updatedAt = updatedAt,
+      events = events,
     )
 
-    // Add all configured events
-    events.forEach { eventCreator ->
-      val event = eventCreator(actionPlan.id)
-      actionPlan.events.add(event)
-    }
-
     return actionPlan
-  }
-
-  companion object {
-    /**
-     * Creates an action plan for a referral with a created event.
-     */
-    fun anActionPlanForReferral(referralId: UUID, templateId: UUID = UUID.randomUUID()): ActionPlan = ActionPlanFactory()
-      .withReferralId(referralId)
-      .withActionPlanTemplateId(templateId)
-      .withCreatedEvent()
-      .create()
-
-    /**
-     * Creates a submitted action plan for a referral.
-     */
-    fun aSubmittedActionPlanForReferral(referralId: UUID, templateId: UUID = UUID.randomUUID()): ActionPlan = ActionPlanFactory()
-      .withReferralId(referralId)
-      .withActionPlanTemplateId(templateId)
-      .withCreatedEvent()
-      .withSubmittedEvent()
-      .create()
   }
 }

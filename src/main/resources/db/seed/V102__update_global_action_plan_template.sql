@@ -1,4 +1,4 @@
--- V99: Update action_plan_template seed data to include global column
+-- V102: Update action_plan_template seed data to include global column
 
 UPDATE action_plan_template
 SET active_global = true

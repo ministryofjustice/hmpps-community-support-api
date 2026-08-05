@@ -30,10 +30,6 @@ class ActionPlanTestSupport(
       .create(),
   )
 
-  fun createGlobalActionPlanTemplate(): ActionPlanTemplate = actionPlanTemplateRepository.save(
-    ActionPlanTemplateFactory.aGlobalTemplate(),
-  )
-
   fun createActionPlan(
     referralId: UUID,
     templateId: UUID,

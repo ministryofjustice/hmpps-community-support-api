@@ -47,18 +47,12 @@ class ActionPlanEventFactory : TestEntityFactory<ActionPlanEvent>() {
   )
 
   companion object {
-    /**
-     * Creates a CREATED event for an action plan.
-     */
     fun aCreatedEvent(actionPlanId: UUID, createdBy: String = "SYSTEM"): ActionPlanEvent = ActionPlanEventFactory()
       .withActionPlanId(actionPlanId)
       .withEventType(ActionPlanEventType.CREATED)
       .withCreatedBy(createdBy)
       .create()
 
-    /**
-     * Creates a SUBMITTED event for an action plan.
-     */
     fun aSubmittedEvent(actionPlanId: UUID, createdBy: String = "SYSTEM"): ActionPlanEvent = ActionPlanEventFactory()
       .withActionPlanId(actionPlanId)
       .withEventType(ActionPlanEventType.SUBMITTED)
