@@ -4,4 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import java.util.UUID
 
-interface ActionPlanEventRepository : JpaRepository<ActionPlanEvent, UUID>
+interface ActionPlanEventRepository : JpaRepository<ActionPlanEvent, UUID> {
+  fun findByActionPlanId(actionPlanId: UUID): List<ActionPlanEvent>
+}
