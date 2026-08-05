@@ -1,11 +1,13 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.entity
 
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.time.OffsetDateTime
@@ -32,6 +34,9 @@ class ActionPlan(
   @JoinColumn(name = "action_plan_template_id", insertable = false, updatable = false, unique = true)
   val actionPlanTemplate: ActionPlanTemplate? = null,
 
+  @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+  val events: MutableList<ActionPlanEvent> = mutableListOf(),
+
   @Column(name = "created_at", nullable = false)
   val createdAt: OffsetDateTime = OffsetDateTime.now(),
 
@@ -45,4 +50,8 @@ class ActionPlan(
       referralId = referralId,
     )
   }
+
+  fun isSubmitted(): Boolean = events
+    .map { it.eventType }
+    .contains(ActionPlanEventType.SUBMITTED)
 }

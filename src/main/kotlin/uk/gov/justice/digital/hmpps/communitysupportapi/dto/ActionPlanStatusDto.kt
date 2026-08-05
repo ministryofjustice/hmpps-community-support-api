@@ -8,7 +8,7 @@ data class ActionPlanStatusDto(
   val status: ActionPlanStatus,
 ) {
   companion object {
-    fun fromActionPlan(actionPlan: ActionPlan, isSubmitted: Boolean): ActionPlanStatusDto = if (isSubmitted) {
+    fun fromActionPlan(actionPlan: ActionPlan): ActionPlanStatusDto = if (actionPlan.isSubmitted()) {
       ActionPlanStatusDto(actionPlan.id, ActionPlanStatus.submitted())
     } else {
       ActionPlanStatusDto(actionPlan.id, ActionPlanStatus.notSubmitted())
