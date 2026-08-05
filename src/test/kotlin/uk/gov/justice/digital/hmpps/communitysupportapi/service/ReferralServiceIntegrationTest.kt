@@ -16,10 +16,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprCodeDescriptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprIdentifiersDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -435,6 +437,44 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(actionPlanEvents).isNotNull()
     assertThat(actionPlanEvents).hasSize(1)
     assertThat(actionPlanEvents.first().eventType).isEqualTo(ActionPlanEventType.CREATED)
+  }
+
+  @Test
+  fun `submitReferral should not create a new action plan when referral has already been submitted`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val createReferralRequest = setUpData()
+
+    val result = referralService.createReferral(referralUser.id, createReferralRequest)
+    val savedReferral = result.referral
+    referralService.submitReferral(savedReferral.id, referralUser.id)
+
+    assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
+
+    assertThrows(ConflictException::class.java) {
+      referralService.submitReferral(savedReferral.id, referralUser.id)
+    }
+
+    assertThat(actionPlanRepository.findAll().filter { it.referralId == savedReferral.id }).hasSize(1)
+  }
+
+  @Test
+  fun `submitReferral should not create a duplicate action plan when one already exists`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val createReferralRequest = setUpData()
+
+    val result = referralService.createReferral(referralUser.id, createReferralRequest)
+    val savedReferral = result.referral
+
+    val actionPlanTemplate = actionPlanRepository.findAll().firstOrNull()?.actionPlanTemplateId
+      ?: UUID.fromString("c191398c-9661-4983-bafb-be649d877183")
+    actionPlanRepository.save(ActionPlan.forReferral(actionPlanTemplate, savedReferral.id))
+
+    assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
+
+    referralService.submitReferral(savedReferral.id, referralUser.id)
+
+    assertThat(actionPlanRepository.findAll().filter { it.referralId == savedReferral.id }).hasSize(1)
+    assertThat(referralRepository.findById(savedReferral.id).get().submittedEvent).isNotNull()
   }
 
   @Test

@@ -180,11 +180,16 @@ class ReferralService(
 
     val actionPlanTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
 
-    val actionPlan = ActionPlan.forReferral(actionPlanTemplate!!.id, referral.id)
-    actionPlanRepository.save(actionPlan)
+    val existingActionPlan = actionPlanRepository.findByReferralId(referral.id)
+    if (existingActionPlan != null) {
+      logger.warn("Action plan already exists for referral ${referral.id}, skipping creation")
+    } else {
+      val actionPlan = ActionPlan.forReferral(actionPlanTemplate!!.id, referral.id)
+      actionPlanRepository.save(actionPlan)
 
-    val actionPlanEvent = ActionPlanEvent.actionPlanCreatedEventForActionPlan(actionPlan.id)
-    actionPlanEventRepository.save(actionPlanEvent)
+      val actionPlanEvent = ActionPlanEvent.actionPlanCreatedEventForActionPlan(actionPlan.id)
+      actionPlanEventRepository.save(actionPlanEvent)
+    }
 
     val savedReferral = referralRepository.save(referral)
     return SubmitReferralResponseDto(
