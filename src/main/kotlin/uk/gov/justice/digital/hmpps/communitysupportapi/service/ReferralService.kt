@@ -174,7 +174,7 @@ class ReferralService(
     referral.addEvent(referralEvent)
     referral.referenceNumber = generateReferenceNumber(communityServiceProvider, referralId)
 
-    actionPlanService.createForReferral(referralId)
+    actionPlanService.findOrCreateByReferralId(referralId)
 
     val savedReferral = referralRepository.save(referral)
     return SubmitReferralResponseDto(

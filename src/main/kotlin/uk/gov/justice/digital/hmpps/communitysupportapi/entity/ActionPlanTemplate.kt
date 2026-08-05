@@ -12,4 +12,7 @@ data class ActionPlanTemplate(
   @Id
   @Column(name = "id")
   val id: UUID,
+
+  @Column(name = "active_global")
+  val activeGlobal: Boolean = false,
 )

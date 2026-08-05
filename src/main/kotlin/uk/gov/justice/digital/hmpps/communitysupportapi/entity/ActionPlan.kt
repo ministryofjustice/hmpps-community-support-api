@@ -35,6 +35,7 @@ class ActionPlan(
   val actionPlanTemplate: ActionPlanTemplate? = null,
 
   @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+  @JoinColumn(name = "action_plan_id", insertable = false, updatable = false)
   val events: MutableList<ActionPlanEvent> = mutableListOf(),
 
   @Column(name = "created_at", nullable = false)

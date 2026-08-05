@@ -512,6 +512,8 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
+    // TODO: We should move this to a config or to some test helper, as we've used it in a few
+    // places now.
     val actionPlan = actionPlanRepository.save(ActionPlan.forReferral(UUID.fromString("c191398c-9661-4983-bafb-be649d877183"), referral.id))
     actionPlanEventRepository.save(
       ActionPlanEvent(

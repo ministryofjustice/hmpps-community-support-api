@@ -23,38 +23,23 @@ class ActionPlanService(
 
   @Transactional
   fun findOrCreateByReferralId(referralId: UUID): ActionPlan = actionPlanRepository.findByReferralId(referralId)
-    ?: createActionPlan(referralId)
+    ?: createForReferral(referralId)
 
-  @Transactional
-  fun createForReferral(referralId: UUID) {
+  private fun createForReferral(referralId: UUID): ActionPlan {
     val existingActionPlan = actionPlanRepository.findByReferralId(referralId)
     if (existingActionPlan != null) {
       logger.warn("Action plan already exists for referral {}, skipping creation", referralId)
-      return
+      return existingActionPlan
     }
 
-    val actionPlanTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
-    val actionPlan = ActionPlan.forReferral(actionPlanTemplate!!.id, referralId)
+    val actionPlanTemplate = actionPlanTemplateRepository.findFirstByOrderByIdAsc()
+      ?: throw NotFoundException("No action plan template found")
+
+    val actionPlan = ActionPlan.forReferral(actionPlanTemplate.id, referralId)
     actionPlanRepository.save(actionPlan)
 
     val actionPlanEvent = ActionPlanEvent.actionPlanCreatedEventForActionPlan(actionPlan.id)
     actionPlanEventRepository.save(actionPlanEvent)
-  }
-
-  private fun createActionPlan(referralId: UUID): ActionPlan {
-    val template = actionPlanTemplateRepository.findFirstByOrderByIdAsc()
-      ?: throw NotFoundException("No action plan template found")
-
-    val actionPlan = actionPlanRepository.save(
-      ActionPlan.forReferral(
-        actionPlanTemplateId = template.id,
-        referralId = referralId,
-      ),
-    )
-
-    actionPlanEventRepository.save(
-      ActionPlanEvent.actionPlanCreatedEventForActionPlan(actionPlan.id),
-    )
 
     return actionPlan
   }

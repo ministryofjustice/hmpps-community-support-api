@@ -8,6 +8,7 @@ import java.util.UUID
 
 class ActionPlanStatusDtoTest {
 
+  // TODO: Create a factory here
   private val actionPlan = ActionPlan(
     id = UUID.randomUUID(),
     referralId = UUID.randomUUID(),
@@ -18,7 +19,7 @@ class ActionPlanStatusDtoTest {
 
   @Test
   fun `fromActionPlan maps submitted action plan status`() {
-    val result = ActionPlanStatusDto.fromActionPlan(actionPlan, isSubmitted = true)
+    val result = ActionPlanStatusDto.fromActionPlan(actionPlan)
 
     result.actionPlanId shouldBe actionPlan.id
     result.status shouldBe ActionPlanStatus.submitted()
@@ -26,7 +27,7 @@ class ActionPlanStatusDtoTest {
 
   @Test
   fun `fromActionPlan maps not submitted action plan status`() {
-    val result = ActionPlanStatusDto.fromActionPlan(actionPlan, isSubmitted = false)
+    val result = ActionPlanStatusDto.fromActionPlan(actionPlan)
 
     result.actionPlanId shouldBe actionPlan.id
     result.status shouldBe ActionPlanStatus.notSubmitted()
