@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -39,14 +40,14 @@ class TaskListStatusResponseDtoTest {
 
     @Test
     fun `returns notStarted for checkRiskInformationCompleted when no risk info exists`() {
-      val result = TaskListStatusResponseDto.from(person, referral, null, null)
+      val result = TaskListStatusResponseDto.from(person, referral, null, null, null)
 
       result.checkRiskInformationCompleted shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
     fun `returns completed for checkRiskInformationCompleted when risk info exists`() {
-      val result = TaskListStatusResponseDto.from(person, referral, null, buildRiskInfo())
+      val result = TaskListStatusResponseDto.from(person, referral, null, buildRiskInfo(), null)
 
       result.checkRiskInformationCompleted shouldBe TaskListStatusItem.completed()
     }
@@ -57,7 +58,7 @@ class TaskListStatusResponseDtoTest {
 
     @Test
     fun `returns notStarted when no additionalSupportNeeds record exists`() {
-      val result = TaskListStatusResponseDto.from(person, referral, null, null)
+      val result = TaskListStatusResponseDto.from(person, referral, null, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.notStarted()
     }
@@ -66,7 +67,7 @@ class TaskListStatusResponseDtoTest {
     fun `returns inProgress when additionalSupportNeeded is null`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = null, interpreterNeeded = null)
 
-      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null)
+      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.inProgress()
     }
@@ -75,7 +76,7 @@ class TaskListStatusResponseDtoTest {
     fun `returns inProgress when additionalSupportNeeded is true but interpreterNeeded is null`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = true, interpreterNeeded = null)
 
-      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null)
+      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.inProgress()
     }
@@ -84,7 +85,7 @@ class TaskListStatusResponseDtoTest {
     fun `returns completed when additionalSupportNeeded is true and interpreterNeeded is false`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = true, interpreterNeeded = false)
 
-      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null)
+      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.completed()
     }
@@ -93,7 +94,7 @@ class TaskListStatusResponseDtoTest {
     fun `returns completed when additionalSupportNeeded is false and interpreterNeeded is false`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = false, interpreterNeeded = false)
 
-      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null)
+      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.completed()
     }
@@ -102,9 +103,65 @@ class TaskListStatusResponseDtoTest {
     fun `returns completed when both additionalSupportNeeded and interpreterNeeded are true`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = true, interpreterNeeded = true)
 
-      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null)
+      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.completed()
+    }
+  }
+
+  @Nested
+  inner class CriminogenicNeedsStatus {
+
+    @Test
+    fun `returns notStarted when no criminogenicNeeds record exists`() {
+      val result = TaskListStatusResponseDto.from(person, referral, null, null, null)
+
+      result.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.notStarted()
+    }
+
+    @Test
+    fun `returns completed when criminogenicNeeds record exists but no needs are selected`() {
+      val criminogenicNeeds = buildCriminogenicNeeds(
+        hasAccommodationNeeds = false,
+        hasEmploymentEducationNeeds = false,
+        hasFinancialNeeds = false,
+        hasPersonalRelationshipsCommunityNeeds = false,
+        hasDrugUseNeeds = false,
+        hasAlcoholUseNeeds = false,
+        hasHealthWellbeingNeeds = false,
+        hasThinkingBehavioursAttitudeNeeds = false,
+      )
+
+      val result = TaskListStatusResponseDto.from(person, referral, null, null, criminogenicNeeds)
+
+      result.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.completed()
+    }
+
+    @Test
+    fun `returns completed when criminogenicNeeds has at least one need with details`() {
+      val criminogenicNeeds = buildCriminogenicNeeds(
+        hasAccommodationNeeds = true,
+        accommodationDetails = "Needs stable accommodation",
+      )
+
+      val result = TaskListStatusResponseDto.from(person, referral, null, null, criminogenicNeeds)
+
+      result.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.completed()
+    }
+
+    @Test
+    fun `returns completed when criminogenicNeeds has multiple needs with details`() {
+      val criminogenicNeeds = buildCriminogenicNeeds(
+        hasAccommodationNeeds = true,
+        accommodationDetails = "Needs stable accommodation",
+        hasAlcoholUseNeeds = true,
+        alcoholUseDetails = "Requires alcohol support",
+        hasDrugUseNeeds = false,
+      )
+
+      val result = TaskListStatusResponseDto.from(person, referral, null, null, criminogenicNeeds)
+
+      result.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.completed()
     }
   }
 
@@ -152,6 +209,46 @@ class TaskListStatusResponseDtoTest {
     id = UUID.randomUUID(),
     referralId = referralId,
     referral = referral,
+    updatedAt = OffsetDateTime.now(),
+    updatedBy = userId,
+  )
+
+  private fun buildCriminogenicNeeds(
+    hasAccommodationNeeds: Boolean? = null,
+    accommodationDetails: String? = null,
+    hasEmploymentEducationNeeds: Boolean? = null,
+    employmentEducationDetails: String? = null,
+    hasFinancialNeeds: Boolean? = null,
+    financialDetails: String? = null,
+    hasPersonalRelationshipsCommunityNeeds: Boolean? = null,
+    personalRelationshipsCommunityDetails: String? = null,
+    hasDrugUseNeeds: Boolean? = null,
+    drugUseDetails: String? = null,
+    hasAlcoholUseNeeds: Boolean? = null,
+    alcoholUseDetails: String? = null,
+    hasHealthWellbeingNeeds: Boolean? = null,
+    healthWellbeingDetails: String? = null,
+    hasThinkingBehavioursAttitudeNeeds: Boolean? = null,
+    thinkingBehavioursAttitudeDetails: String? = null,
+  ) = ReferralCriminogenicNeeds(
+    id = UUID.randomUUID(),
+    referral = referral,
+    hasAccommodationNeeds = hasAccommodationNeeds,
+    accommodationDetails = accommodationDetails,
+    hasEmploymentEducationNeeds = hasEmploymentEducationNeeds,
+    employmentEducationDetails = employmentEducationDetails,
+    hasFinancialNeeds = hasFinancialNeeds,
+    financialDetails = financialDetails,
+    hasPersonalRelationshipsCommunityNeeds = hasPersonalRelationshipsCommunityNeeds,
+    personalRelationshipsCommunityDetails = personalRelationshipsCommunityDetails,
+    hasDrugUseNeeds = hasDrugUseNeeds,
+    drugUseDetails = drugUseDetails,
+    hasAlcoholUseNeeds = hasAlcoholUseNeeds,
+    alcoholUseDetails = alcoholUseDetails,
+    hasHealthWellbeingNeeds = hasHealthWellbeingNeeds,
+    healthWellbeingDetails = healthWellbeingDetails,
+    hasThinkingBehavioursAttitudeNeeds = hasThinkingBehavioursAttitudeNeeds,
+    thinkingBehavioursAttitudeDetails = thinkingBehavioursAttitudeDetails,
     updatedAt = OffsetDateTime.now(),
     updatedBy = userId,
   )

@@ -17,14 +17,8 @@ data class Selection(
   }
 }
 
-data class RefereeName(
-  val firstName: String,
-  val middleName: String? = null,
-  val lastName: String,
-)
-
 data class AdditionalSupportNeedsBffResponseDto(
-  val refereeName: RefereeName,
+  val refereeName: RefereeNameDto,
   val physicalHealth: Selection,
   val mentalEmotionalHealth: Selection,
   val neurodiversity: Selection,
@@ -37,7 +31,7 @@ data class AdditionalSupportNeedsBffResponseDto(
 ) {
   companion object {
     fun fromNeeds(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
-      refereeName = RefereeName(firstName = person.firstName, lastName = person.lastName),
+      refereeName = RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
       physicalHealth = Selection.fromString(personAdditionalSupportNeeds.physicalHealthDetails),
       mentalEmotionalHealth = Selection.fromString(personAdditionalSupportNeeds.mentalEmotionalHealthDetails),
       neurodiversity = Selection.fromString(personAdditionalSupportNeeds.neurodiversityDetails),
@@ -49,7 +43,7 @@ data class AdditionalSupportNeedsBffResponseDto(
       needsAdditionalSupport = personAdditionalSupportNeeds.additionalSupportNeeded,
     )
     fun fromPerson(person: Person): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
-      refereeName = RefereeName(firstName = person.firstName, lastName = person.lastName),
+      refereeName = RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
       physicalHealth = Selection.default(),
       mentalEmotionalHealth = Selection.default(),
       neurodiversity = Selection.default(),
@@ -64,13 +58,13 @@ data class AdditionalSupportNeedsBffResponseDto(
 }
 
 data class NeedsInterpreterBffResponseDto(
-  val refereeName: RefereeName,
+  val refereeName: RefereeNameDto,
   val language: Selection? = null,
   val needsInterpreter: Boolean? = null,
 ) {
   companion object {
     fun from(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): NeedsInterpreterBffResponseDto = NeedsInterpreterBffResponseDto(
-      refereeName = RefereeName(firstName = person.firstName, lastName = person.lastName),
+      refereeName = RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
       language = Selection.fromString(personAdditionalSupportNeeds.interpreterLanguage),
       needsInterpreter = personAdditionalSupportNeeds.interpreterNeeded,
     )

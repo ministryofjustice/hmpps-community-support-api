@@ -16,9 +16,12 @@ import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.service.CriminogenicNeedsService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.DraftReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
@@ -27,6 +30,7 @@ import java.util.UUID
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class DraftReferralController(
   private val draftReferralService: DraftReferralService,
+  private val criminogenicNeedsService: CriminogenicNeedsService,
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
 ) {
@@ -156,4 +160,63 @@ class DraftReferralController(
   )
   @GetMapping("/bff/task-list-status/{referralId}")
   fun getTaskListStatus(@PathVariable referralId: UUID): ResponseEntity<TaskListStatusResponseDto> = ResponseEntity.ok(draftReferralService.getTaskListStatus(referralId))
+
+  @Operation(summary = "Update criminogenic needs for a referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Criminogenic needs information updated",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ReferralCriminogenicNeedsDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/draft-referral/person-needs/{referralId}")
+  fun updateCriminogenicNeeds(
+    @PathVariable referralId: UUID,
+    @RequestBody request: CriminogenicNeedsRequest,
+  ): ResponseEntity<ReferralCriminogenicNeedsDto> {
+    log.info("Attempt to update criminogenic needs for referral: {}", referralId)
+    val user = userMapper.fromToken(authenticationHolder)
+
+    return ResponseEntity.ok(criminogenicNeedsService.upsertCriminogenicNeeds(referralId, user.id, request))
+  }
+
+  @Operation(summary = "Get criminogenic needs for a referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral criminogenic needs data found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ReferralCriminogenicNeedsDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral criminogenic needs data not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/draft-referral/person-needs/{referralId}")
+  fun getPersonCriminogenicNeeds(
+    @PathVariable referralId: UUID,
+  ): ResponseEntity<ReferralCriminogenicNeedsDto> {
+    log.info("Attempt to get criminogenic needs for referral: {}", referralId)
+    return ResponseEntity.ok(criminogenicNeedsService.getCriminogenicNeeds(referralId))
+  }
 }
