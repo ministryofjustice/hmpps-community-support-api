@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import java.time.LocalDate
@@ -53,7 +52,8 @@ data class ReferralInformationDto(
       firstName = result.person.firstName,
       lastName = result.person.lastName,
       sex = result.person.gender,
-      personIdentifier = result.referral.personIdentifier    )
+      personIdentifier = result.referral.personIdentifier,
+    )
   }
 }
 
