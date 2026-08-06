@@ -6,6 +6,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanTemplat
 import java.util.UUID
 
 interface ActionPlanTemplateRepository : JpaRepository<ActionPlanTemplate, UUID> {
-  @Query("SELECT a FROM ActionPlanTemplate a WHERE a.id = CAST('c191398c-9661-4983-bafb-be649d877183' AS java.util.UUID)")
+  @Query("SELECT DISTINCT a FROM ActionPlanTemplate a WHERE a.activeGlobal = true")
   fun getGlobalActionPlanTemplate(): ActionPlanTemplate?
+
+  fun findFirstByOrderByIdAsc(): ActionPlanTemplate?
 }

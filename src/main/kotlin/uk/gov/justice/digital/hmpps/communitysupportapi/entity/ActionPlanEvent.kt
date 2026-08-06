@@ -14,6 +14,7 @@ import java.util.UUID
 
 enum class ActionPlanEventType(val value: String) {
   CREATED("created"),
+  SUBMITTED("submitted"),
 }
 
 @Entity
