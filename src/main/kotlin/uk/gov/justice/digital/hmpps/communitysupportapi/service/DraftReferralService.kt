@@ -112,8 +112,8 @@ class DraftReferralService(
     val communityServiceProvider = communityServiceProviderRepository.findById(request.communityServiceProviderId)
       .orElseThrow { NotFoundException("Community Service Provider not found for id ${request.communityServiceProviderId}") }
 
-    //This is a temporary solution to ensure that only one provider assignment exists for a referral.
-   // IPB-2532 is done to remove providing community service provider from the referral entity.
+    // This is a temporary solution to ensure that only one provider assignment exists for a referral.
+    // IPB-2532 is done to remove providing community service provider from the referral entity.
     val existingAssignments = referralProviderAssignmentRepository.findByReferralId(referralId)
     if (existingAssignments.isNotEmpty()) {
       referralProviderAssignmentRepository.deleteAll(existingAssignments)
