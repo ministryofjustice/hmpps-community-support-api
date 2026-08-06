@@ -26,8 +26,4 @@ class ReferralProviderAssignment(
 
   @Column(name = "created_at", nullable = false)
   val createdAt: LocalDateTime = LocalDateTime.now(),
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "created_by")
-  val createdBy: ReferralUser? = null,
 )
