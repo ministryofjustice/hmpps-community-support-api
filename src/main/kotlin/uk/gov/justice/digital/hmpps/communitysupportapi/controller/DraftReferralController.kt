@@ -15,10 +15,12 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CriminogenicNeedsService
@@ -147,6 +149,32 @@ class DraftReferralController(
 
     return ResponseEntity.ok(draftReferralService.upsertNeedsInterpreter(referralId, user.id, request))
   }
+
+  @Operation(summary = "Update the Community Service Provider for a Draft Referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Community Service Provider updated",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = CommunityServiceProviderBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral, or the Community Service Provider, not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/draft-referral/community-service-provider/{referralId}")
+  fun updateCommunityServiceProvider(
+    @PathVariable referralId: UUID,
+    @RequestBody request: CommunityServiceProviderRequest,
+  ): ResponseEntity<CommunityServiceProviderBffResponseDto> = ResponseEntity.ok(draftReferralService.upsertCommunityServiceProvider(referralId, request))
 
   @Operation(summary = "Get task list status")
   @ApiResponses(

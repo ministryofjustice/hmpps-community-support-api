@@ -1,15 +1,20 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import java.time.LocalDate
 import java.util.UUID
@@ -27,6 +32,12 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var personAdditionSupportNeedsRepository: PersonAdditionalSupportNeedsRepository
+
+  @Autowired
+  private lateinit var communityServiceProviderRepository: CommunityServiceProviderRepository
+
+  @Autowired
+  private lateinit var referralProviderAssignmentRepository: ReferralProviderAssignmentRepository
 
   @Test
   fun `update additional information should be saved`() {
@@ -94,6 +105,59 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedInterpreterNeeds?.interpreterLanguage).isEqualTo("Spanish")
     assertThat(savedInterpreterNeeds?.interpreterNeeded).isTrue()
     assertThat(savedInterpreterNeeds?.createdBy).isEqualTo(referralUser.id)
+  }
+
+  @Test
+  fun `update community service provider should be saved`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val createReferralRequest = setUpData()
+
+    val result = referralService.createReferral(referralUser.id, createReferralRequest)
+    val savedReferral = result.referral
+
+    val newCommunityServiceProvider = communityServiceProviderRepository.findAll()
+      .first { it.id != createReferralRequest.communityServiceProviderId }
+
+    val request = CommunityServiceProviderRequest(
+      communityServiceProviderId = newCommunityServiceProvider.id,
+    )
+
+    val updatedResult = draftReferralService.upsertCommunityServiceProvider(savedReferral.id, request)
+    assertThat(updatedResult).isNotNull()
+    assertThat(updatedResult.communityServiceProviderId).isEqualTo(newCommunityServiceProvider.id)
+    assertThat(updatedResult.communityServiceProviderName).isEqualTo(newCommunityServiceProvider.name)
+
+    val assignments = referralProviderAssignmentRepository.findByReferralId(savedReferral.id)
+    assertThat(assignments).hasSize(1)
+    assertThat(assignments.first().communityServiceProvider.id).isEqualTo(newCommunityServiceProvider.id)
+  }
+
+  @Test
+  fun `update community service provider should throw not found for unknown referral`() {
+    val unknownCommunityServiceProvider = referralHelper.getCommunityServiceProvider()
+
+    val request = CommunityServiceProviderRequest(
+      communityServiceProviderId = unknownCommunityServiceProvider.id,
+    )
+
+    assertThatThrownBy { draftReferralService.upsertCommunityServiceProvider(UUID.randomUUID(), request) }
+      .isInstanceOf(NotFoundException::class.java)
+  }
+
+  @Test
+  fun `update community service provider should throw not found for unknown community service provider`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val createReferralRequest = setUpData()
+
+    val result = referralService.createReferral(referralUser.id, createReferralRequest)
+    val savedReferral = result.referral
+
+    val request = CommunityServiceProviderRequest(
+      communityServiceProviderId = UUID.randomUUID(),
+    )
+
+    assertThatThrownBy { draftReferralService.upsertCommunityServiceProvider(savedReferral.id, request) }
+      .isInstanceOf(NotFoundException::class.java)
   }
 
   private fun setUpData(): CreateReferralRequest {

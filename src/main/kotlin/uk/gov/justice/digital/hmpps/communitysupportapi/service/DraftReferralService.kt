@@ -4,19 +4,25 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -27,6 +33,8 @@ class DraftReferralService(
   private val personRepository: PersonRepository,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
   private val riskInformationRepository: RiskInformationRepository,
+  private val communityServiceProviderRepository: CommunityServiceProviderRepository,
+  private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
 ) {
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
@@ -91,6 +99,35 @@ class DraftReferralService(
     }
 
     return NeedsInterpreterBffResponseDto.from(context.person, personAdditionalSupportNeeds)
+  }
+
+  @Transactional
+  fun upsertCommunityServiceProvider(
+    referralId: UUID,
+    request: CommunityServiceProviderRequest,
+  ): CommunityServiceProviderBffResponseDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val communityServiceProvider = communityServiceProviderRepository.findById(request.communityServiceProviderId)
+      .orElseThrow { NotFoundException("Community Service Provider not found for id ${request.communityServiceProviderId}") }
+
+    // This is a temporary solution to ensure that only one provider assignment exists for a referral.
+    // IPB-2532 is done to remove providing community service provider from the referral entity.
+    val existingAssignments = referralProviderAssignmentRepository.findByReferralId(referralId)
+    if (existingAssignments.isNotEmpty()) {
+      referralProviderAssignmentRepository.deleteAll(existingAssignments)
+    }
+
+    val providerAssignment = ReferralProviderAssignment(
+      id = UUID.randomUUID(),
+      referral = referral,
+      communityServiceProvider = communityServiceProvider,
+      createdAt = LocalDateTime.now(),
+    )
+    referralProviderAssignmentRepository.save(providerAssignment)
+
+    return CommunityServiceProviderBffResponseDto.from(referralId, communityServiceProvider)
   }
 
   private fun createSupportNeeds(
