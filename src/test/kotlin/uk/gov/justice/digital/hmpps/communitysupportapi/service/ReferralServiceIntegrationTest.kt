@@ -7,6 +7,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import jakarta.validation.ValidationException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
@@ -17,6 +19,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprCodeDescripti
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprIdentifiersDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
@@ -477,6 +480,35 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertEquals(referral.id, result.referralId)
     assertEquals(person.firstName + " " + person.lastName, result.fullName)
     assertTrue(result.appointments.isEmpty())
+    assertNotNull(result.actionPlanStatus.actionPlanId)
+    assertFalse(result.actionPlanStatus.status.submitted)
+    assertEquals("Not Submitted", result.actionPlanStatus.status.statusText)
+    assertEquals("govuk-tag--blue", result.actionPlanStatus.status.tag)
+  }
+
+  @Test
+  fun `getReferralProgress should return submitted action plan status when submitted event exists`() {
+    val person = referralHelper.createPerson()
+    val referralUser = referralHelper.ensureReferralUser()
+    val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+
+    // TODO: We should move this to a config or to some test helper, as we've used it in a few
+    // places now.
+    val actionPlan = actionPlanRepository.save(ActionPlan.forReferral(UUID.fromString("c191398c-9661-4983-bafb-be649d877183"), referral.id))
+    actionPlanEventRepository.save(
+      ActionPlanEvent(
+        id = UUID.randomUUID(),
+        actionPlanId = actionPlan.id,
+        eventType = ActionPlanEventType.SUBMITTED,
+      ),
+    )
+
+    val result = referralService.getReferralProgress(referral.id.toString())
+
+    assertEquals(actionPlan.id, result.actionPlanStatus.actionPlanId)
+    assertTrue(result.actionPlanStatus.status.submitted)
+    assertEquals("Submitted", result.actionPlanStatus.status.statusText)
+    assertEquals("govuk-tag--teal", result.actionPlanStatus.status.tag)
   }
 
   @Test
@@ -561,6 +593,10 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertEquals(appointmentDateTime, result.appointments[0].dateTime)
     assertEquals(AppointmentStatusHistoryType.COMPLETED, result.appointments[0].status)
     assertEquals(icsFeedback.id, result.appointments[0].icsFeedbackId)
+    assertNotNull(result.actionPlanStatus.actionPlanId)
+    assertFalse(result.actionPlanStatus.status.submitted)
+    assertEquals("Not Submitted", result.actionPlanStatus.status.statusText)
+    assertEquals("govuk-tag--blue", result.actionPlanStatus.status.tag)
   }
 
   @Test

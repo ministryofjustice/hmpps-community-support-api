@@ -659,6 +659,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           referralProgressDto.referralId shouldBe referral.id
           referralProgressDto.fullName shouldBe person.firstName + " " + person.lastName
           referralProgressDto.appointments.size shouldBe 0
+          referralProgressDto.actionPlanStatus.actionPlanId shouldNotBe null
+          referralProgressDto.actionPlanStatus.status.submitted shouldBe false
+          referralProgressDto.actionPlanStatus.status.statusText shouldBe "Not Submitted"
+          referralProgressDto.actionPlanStatus.status.tag shouldBe "govuk-tag--blue"
         }
     }
 
@@ -680,6 +684,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           referralProgressDto.referralId shouldBe referral.id
           referralProgressDto.fullName shouldBe person.firstName + " " + person.lastName
           referralProgressDto.appointments.size shouldBe 0
+          referralProgressDto.actionPlanStatus.actionPlanId shouldNotBe null
+          referralProgressDto.actionPlanStatus.status.submitted shouldBe false
+          referralProgressDto.actionPlanStatus.status.statusText shouldBe "Not Submitted"
+          referralProgressDto.actionPlanStatus.status.tag shouldBe "govuk-tag--blue"
         }
     }
 
@@ -743,6 +751,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           referralProgressDto.appointments[0].appointmentIcsId shouldBe ics.id
           referralProgressDto.appointments[0].dateTime shouldBe appointmentDateTime
           referralProgressDto.appointments[0].status shouldBe AppointmentStatusHistoryType.NEEDS_FEEDBACK
+          referralProgressDto.actionPlanStatus.actionPlanId shouldNotBe null
+          referralProgressDto.actionPlanStatus.status.submitted shouldBe false
+          referralProgressDto.actionPlanStatus.status.statusText shouldBe "Not Submitted"
+          referralProgressDto.actionPlanStatus.status.tag shouldBe "govuk-tag--blue"
         }
     }
   }

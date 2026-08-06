@@ -104,6 +104,14 @@ class ReferralTestSupport(
       .create(),
   )
 
+  fun createDraftReferral(
+    createdAt: OffsetDateTime = OffsetDateTime.now(),
+    createdBy: UUID = UUID.randomUUID(),
+  ): Referral {
+    val person = createPerson()
+    return createDraftReferral(person, createdAt, createdBy)
+  }
+
   fun createReferral(
     person: Person,
     referenceNumber: String? = "AB1234CD",
@@ -126,6 +134,27 @@ class ReferralTestSupport(
       .withTargetServiceCompletionDateReason(targetServiceCompletionDateReason)
       .create(),
   )
+
+  fun createReferral(
+    referenceNumber: String? = "AB1234CD",
+    submittedBy: ReferralUser? = null,
+    createdAt: OffsetDateTime = OffsetDateTime.now(),
+    createdBy: UUID = UUID.randomUUID(),
+    targetServiceCompletionDate: OffsetDateTime? = OffsetDateTime.now().plusDays(30),
+    targetServiceCompletionDateReason: String? = "A reason",
+  ): Referral {
+    val person = createPerson()
+    val referralUser = submittedBy ?: ensureReferralUser()
+    return createReferral(
+      person = person,
+      referenceNumber = referenceNumber,
+      submittedBy = referralUser,
+      createdAt = createdAt,
+      createdBy = createdBy,
+      targetServiceCompletionDate = targetServiceCompletionDate,
+      targetServiceCompletionDateReason = targetServiceCompletionDateReason,
+    )
+  }
 
   fun createPerson(
     firstName: String = "John",

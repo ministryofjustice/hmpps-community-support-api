@@ -6,4 +6,5 @@ import java.util.UUID
 
 interface ActionPlanRepository : JpaRepository<ActionPlan, UUID> {
   fun findByReferralId(referralId: UUID): ActionPlan?
+  fun findAllByReferralId(referralId: UUID): List<ActionPlan>
 }

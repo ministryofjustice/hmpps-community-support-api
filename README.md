@@ -118,23 +118,54 @@ The application comes with a `dev` spring profile that includes default settings
 necessary when deploying to kubernetes as these values are included in the helm configuration templates -
 e.g. `values-dev.yaml`.
 
-There is also a `docker-compose.yml` that can be used to run a local instance of the template in docker and also an
-instance of HMPPS Auth (required if your service calls out to other services using a token).
-
-```bash
-docker compose pull && docker compose up
-```
-
-will build the application and run it and HMPPS Auth within a local docker instance.
+`docker-compose.yml` only contains dependencies (HMPPS Auth and its own support services, postgres, wiremock,
+localstack) - there is no app service, so `docker compose up` on its own does not run the API.
 
 ### Running the application in Intellij
 
 ```bash
-docker compose pull && docker compose up --scale hmpps-community-support-api=0
+docker compose up
 ```
 
-will just start a docker instance of HMPPS Auth. The application should then be started with a `dev` active profile
-in Intellij.
+starts HMPPS Auth and dependencies. Then run the app in Intellij with the `local` Spring profile active.
+
+Add `127.0.0.1 hmpps-auth` to `/etc/hosts` so both your host and any containers resolve HMPPS Auth consistently
+(the `local` profile talks to `http://hmpps-auth:8090/auth`).
+
+### Running a full local stack including the UI
+
+Two extra compose files bring up the [hmpps-community-support-ui](https://github.com/ministryofjustice/hmpps-community-support-ui)
+app alongside the same dependencies, so you can develop across both repos entirely locally (API run in Intellij as above):
+
+```bash
+# build the UI from a sibling checkout at ../hmpps-community-support-ui
+docker compose -f docker-compose-ui.yml up
+
+# OR pull the latest published UI image instead of building from source
+docker compose -f docker-compose-ui-ghcr.yml up
+```
+
+The UI is then available at http://localhost:3000, and reaches the Intellij-run API via `host.docker.internal:8080`.
+
+Log in with the delius-sourced wiremock test user (grants `ROLE_PROBATION`):
+
+username: `bernard.beaks`, password: `secret`
+
+(`AUTH_USER`/`password123456` has no roles and will fail the UI's role check.)
+
+### Creating local test users with custom roles
+
+Once the stack is up, `scripts/local-user-setup.sh` creates a fully working local hmpps-auth
+user (password set, no email step required) with whichever roles you need, entirely offline
+(no GOV.UK Notify/real Delius/Nomis dependency):
+
+```bash
+./scripts/local-user-setup.sh [email] [ROLE1,ROLE2,...]
+# defaults: local.tester@digital.justice.gov.uk / password123456 /
+#           COMMUNITY_SUPPORT_REFERRER,COMMUNITY_SUPPORT_PROVIDER
+```
+
+It's safe safe to re-run this script (i.e. it won't re-create identical users). 
 
 ## Linting
 

@@ -4,6 +4,7 @@ import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStatusDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
@@ -14,8 +15,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
@@ -29,9 +28,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -39,6 +35,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentSt
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
@@ -66,9 +63,8 @@ class ReferralService(
   private val personService: PersonService,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
   private val riskInformationRepository: RiskInformationRepository,
-  private val actionPlanTemplateRepository: ActionPlanTemplateRepository,
-  private val actionPlanRepository: ActionPlanRepository,
-  private val actionPlanEventRepository: ActionPlanEventRepository,
+  private val actionPlanService: ActionPlanService,
+  private val referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
@@ -164,18 +160,7 @@ class ReferralService(
     referral.addEvent(referralEvent)
     referral.referenceNumber = generateReferenceNumber(communityServiceProvider, referralId)
 
-    val actionPlanTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
-
-    val existingActionPlan = actionPlanRepository.findByReferralId(referral.id)
-    if (existingActionPlan != null) {
-      logger.warn("Action plan already exists for referral ${referral.id}, skipping creation")
-    } else {
-      val actionPlan = ActionPlan.forReferral(actionPlanTemplate!!.id, referral.id)
-      actionPlanRepository.save(actionPlan)
-
-      val actionPlanEvent = ActionPlanEvent.actionPlanCreatedEventForActionPlan(actionPlan.id)
-      actionPlanEventRepository.save(actionPlanEvent)
-    }
+    actionPlanService.findOrCreateByReferralId(referralId)
 
     val savedReferral = referralRepository.save(referral)
     return SubmitReferralResponseDto(
@@ -193,8 +178,10 @@ class ReferralService(
 
     val appointments = appointmentRepository.findAllByReferralId(referral.id).orEmpty()
 
+    val actionPlan = actionPlanService.findOrCreateByReferralId(referral.id)
+
     if (appointments.isEmpty()) {
-      return ReferralProgressDto(referralId = referral.id, fullName = personName, appointments = emptyList())
+      return ReferralProgressDto(referralId = referral.id, fullName = personName, appointments = emptyList(), actionPlanStatus = ActionPlanStatusDto.fromActionPlan(actionPlan))
     }
 
     val appointmentIds = appointments.map { it.id }
@@ -232,7 +219,12 @@ class ReferralService(
       )
     }
 
-    return ReferralProgressDto(referralId = referral.id, fullName = personName, appointments = appointmentHistory)
+    return ReferralProgressDto(
+      referralId = referral.id,
+      fullName = personName,
+      appointments = appointmentHistory,
+      ActionPlanStatusDto.fromActionPlan(actionPlan),
+    )
   }
 
   fun getReferralInformation(caseIdentifier: String?): ReferralInformationDto {
@@ -290,12 +282,14 @@ class ReferralService(
 
     val additionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
 
+    val criminogenicNeeds = referralCriminogenicNeedsRepository.findByReferralId(referralId)
+
     val riskInfo = riskInformationRepository.findByReferralId(referralId)
 
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds, riskInfo)
+    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds, riskInfo, criminogenicNeeds)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
