@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
@@ -24,10 +25,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
@@ -57,6 +61,12 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralHelper: ReferralTestSupport
+
+  @Autowired
+  private lateinit var communityServiceProviderRepository: CommunityServiceProviderRepository
+
+  @Autowired
+  private lateinit var referralProviderAssignmentRepository: ReferralProviderAssignmentRepository
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
@@ -373,6 +383,102 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.language?.value shouldBe null
           body.needsInterpreter shouldBe false
         }
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /draft-referral/community-service-provider/:referralId")
+  inner class CommunityServiceProviderTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(PATCH, "/draft-referral/community-service-provider/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return OK and update the community service provider for a draft referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(
+        person = person,
+        createdBy = testUser.id,
+      )
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val newCommunityServiceProvider = communityServiceProviderRepository.findAll()
+        .first { it.id != communityServiceProvider.id }
+
+      val request = CommunityServiceProviderRequest(
+        communityServiceProviderId = newCommunityServiceProvider.id,
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/community-service-provider/${referral.id}")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<CommunityServiceProviderBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.referralId shouldBe referral.id
+          body.communityServiceProviderId shouldBe newCommunityServiceProvider.id
+          body.communityServiceProviderName shouldBe newCommunityServiceProvider.name
+        }
+
+      val assignments = referralProviderAssignmentRepository.findByReferralId(referral.id)
+      assignments.size shouldBe 1
+      assignments.first().communityServiceProvider.id shouldBe newCommunityServiceProvider.id
+    }
+
+    @Test
+    fun `should return 404 when referral does not exist`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+
+      val request = CommunityServiceProviderRequest(
+        communityServiceProviderId = communityServiceProvider.id,
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/community-service-provider/${UUID.randomUUID()}")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `should return 404 when community service provider does not exist`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(
+        person = person,
+        createdBy = testUser.id,
+      )
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val request = CommunityServiceProviderRequest(
+        communityServiceProviderId = UUID.randomUUID(),
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/community-service-provider/${referral.id}")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isNotFound
     }
   }
 
