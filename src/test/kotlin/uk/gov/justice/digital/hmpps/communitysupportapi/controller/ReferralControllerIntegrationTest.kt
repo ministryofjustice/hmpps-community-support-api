@@ -212,8 +212,6 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           run {
             val referral = referralRepository.findAll().firstOrNull()!!
             val person = personRepository.findById(referral.personId).get()
-            val providerAssignment = referralProviderAssignmentRepository.findByReferralId(referral.id).first()
-            val communityServiceProvider = providerAssignment.communityServiceProvider
 
             val referralInfo = ReferralInformationDto(
               referralId = referral.id,
@@ -223,41 +221,14 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
               lastName = person.lastName,
               sex = person.gender,
               personIdentifier = referral.personIdentifier,
-              communityServiceProviderId = communityServiceProvider.id,
-              communityServiceProviderName = communityServiceProvider.name,
-              region = communityServiceProvider.contractArea.region.name,
-              deliveryPartner = communityServiceProvider.serviceProvider.name,
+              communityServiceProviderId = null,
+              communityServiceProviderName = null,
+              region = null,
+              deliveryPartner = null,
             )
             response.responseBody shouldBe referralInfo
           }
         }
-    }
-
-    @Test
-    fun `should return Not Found when community service provider does not exist`() {
-      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
-
-      stubFor(
-        get(urlEqualTo("/person/probation/$CRN"))
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withHeader("Content-Type", "application/json")
-              .withBody(cprProbationPersonJson(CRN)),
-          ),
-      )
-
-      webTestClient.post()
-        .uri("/referral")
-        .headers(setAuthorisation())
-        .bodyValue(
-          CreateReferralRequest(
-            communityServiceProviderId = UUID.randomUUID(),
-            personIdentifier = CRN,
-          ),
-        )
-        .exchange()
-        .expectStatus().isNotFound
     }
 
     @Test
@@ -275,10 +246,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .uri("/referral")
         .headers(setAuthorisation())
         .bodyValue(
-          CreateReferralRequest(
-            communityServiceProviderId = communityServiceProvider.id,
-            personIdentifier = crn,
-          ),
+          CreateReferralRequest(personIdentifier = crn),
         )
         .exchange()
         .expectStatus().is5xxServerError
@@ -301,10 +269,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .uri("/referral")
         .headers(setAuthorisation())
         .bodyValue(
-          CreateReferralRequest(
-            communityServiceProviderId = communityServiceProvider.id,
-            personIdentifier = crn,
-          ),
+          CreateReferralRequest(personIdentifier = crn),
         )
         .exchange()
         .expectStatus().is5xxServerError
@@ -326,10 +291,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           ),
       )
 
-      return CreateReferralRequest(
-        communityServiceProviderId = communityServiceProvider.id,
-        personIdentifier = CRN,
-      )
+      return CreateReferralRequest(personIdentifier = CRN)
     }
   }
 

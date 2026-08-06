@@ -4,9 +4,9 @@ import java.util.UUID
 
 data class CheckReferralInformationDto(
   val referralId: UUID,
-  val communityServiceProviderName: String,
-  val region: String,
-  val deliveryPartner: String,
+  val communityServiceProviderName: String?,
+  val region: String?,
+  val deliveryPartner: String?,
   val personIdentifier: String?,
   val prisonNumbers: List<String>,
   val fullName: String,
