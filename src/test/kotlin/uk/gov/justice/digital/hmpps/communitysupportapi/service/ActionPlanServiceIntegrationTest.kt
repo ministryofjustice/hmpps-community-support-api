@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
 import java.time.OffsetDateTime
 
 class ActionPlanServiceIntegrationTest :
@@ -37,6 +38,9 @@ class ActionPlanServiceIntegrationTest :
 
   @Autowired
   private lateinit var actionPlanRepository: ActionPlanRepository
+
+  @Autowired
+  private lateinit var needRepository: NeedRepository
 
   fun afterAll() {
   }
@@ -84,6 +88,26 @@ class ActionPlanServiceIntegrationTest :
       val allActionPlans = actionPlanRepository.findAllByReferralId(referral.id)
       assertEquals(result.referralId, referral.id)
       assertEquals(allActionPlans.size, 1)
+    }
+  }
+
+  @Nested
+  @DisplayName("getActionPlanSummaryForReferral")
+  inner class GetActionPlanSummaryForReferral {
+    val user = referralHelper.ensureReferralUser()
+
+    @Test
+    fun `should return person details and needs for a referral`() {
+      // Given
+      val person = referralHelper.createPerson(firstName = "Adam", lastName = "Smith")
+      val referral = referralHelper.createReferral(person = person, referenceNumber = "AB1234CD", submittedBy = user)
+
+      // When
+      val result = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
+
+      // Then
+      assertEquals("Adam Smith", result.personDetails.fullName)
+      assertEquals(needRepository.findAllByOrderByOrderNumberAsc().map { it.label }, result.needs.map { it.label })
     }
   }
 }
