@@ -1,8 +1,9 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import jakarta.validation.ValidationException
 import org.assertj.core.api.Assertions.assertThat
@@ -381,7 +382,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val result = referralService.createReferral(referralUser.id, createReferralRequest)
     val savedReferral = result.referral
     val provider = referralHelper.getCommunityServiceProvider()
-    referralProviderAssignmentRepository.save(uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory.anAssignment(savedReferral, provider))
+    referralProviderAssignmentRepository.save(ReferralProviderAssignmentFactory.anAssignment(savedReferral, provider))
 
     val submissionResult = referralService.submitReferral(savedReferral.id, referralUser.id)
 
@@ -401,7 +402,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNull()
 
     val provider = referralHelper.getCommunityServiceProvider()
-    referralProviderAssignmentRepository.save(uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory.anAssignment(savedReferral, provider))
+    referralProviderAssignmentRepository.save(ReferralProviderAssignmentFactory.anAssignment(savedReferral, provider))
 
     referralService.submitReferral(savedReferral.id, referralUser.id)
 
@@ -452,7 +453,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
 
     val provider = referralHelper.getCommunityServiceProvider()
-    referralProviderAssignmentRepository.save(uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory.anAssignment(savedReferral, provider))
+    referralProviderAssignmentRepository.save(ReferralProviderAssignmentFactory.anAssignment(savedReferral, provider))
 
     referralService.submitReferral(savedReferral.id, referralUser.id)
 

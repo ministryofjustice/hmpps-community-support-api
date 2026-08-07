@@ -233,7 +233,7 @@ class ReferralService(
       .orElseThrow { NotFoundException("Person not found for referral ${foundReferral.personId}") }
 
     val providerAssignment = referralProviderAssignmentRepository.findByReferralId(foundReferral.id)
-      .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $foundReferral.id")
+      .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id ${foundReferral.id}")
 
     return ReferralInformationDto(
       personId = person.id,
