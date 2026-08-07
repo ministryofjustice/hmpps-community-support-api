@@ -1,9 +1,8 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import jakarta.validation.ValidationException
 import org.assertj.core.api.Assertions.assertThat
@@ -143,8 +142,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       dateOfBirth = LocalDate.of(1970, 1, 1),
     )
 
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
-
     stubCprProbationPerson(crn, createCprProbationPersonDto(crn).copy(dateOfBirth = "1980-01-01"))
 
     val request = CreateReferralRequest(personIdentifier = crn)
@@ -177,8 +174,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     personRepository.save(existingPerson)
 
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
-
     stubCprProbationPerson(
       crn,
       createCprProbationPersonDto(crn).copy(
@@ -208,7 +203,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `createReferral should persist prison numbers on person when provided`() {
     val referralUser = referralHelper.ensureReferralUser()
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
     val prisonNumber = "A1234BC"
 
     stubCprPrisonPerson(
@@ -243,8 +237,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       dateOfBirth = LocalDate.of(1980, 1, 1),
     )
 
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
-
     stubCprPrisonPerson(
       prisonNumber,
       createCprPrisonPersonDto(prisonNumber).copy(
@@ -271,7 +263,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `createReferral should convert a CPR probation 404 into a non-404 failure and persist nothing`() {
     val referralUser = referralHelper.ensureReferralUser()
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
     stubFor(
       get(urlPathEqualTo("/person/probation/$NON_EXISTENT_CRN"))
@@ -292,7 +283,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `createReferral should throw and persist nothing when CPR probation lookup returns a server error`() {
     val referralUser = referralHelper.ensureReferralUser()
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
     val crn = "X777777"
 
     stubFor(
@@ -313,7 +303,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `createReferral should convert a CPR prison 404 into a non-404 failure and persist nothing`() {
     val referralUser = referralHelper.ensureReferralUser()
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
     stubFor(
       get(urlPathEqualTo("/person/prison/$NON_EXISTENT_PRISON"))
@@ -334,7 +323,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `createReferral should not update an existing person when CPR lookup fails`() {
     val referralUser = referralHelper.ensureReferralUser()
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
     val existingPerson = referralHelper.createPerson(
       firstName = "Original",
@@ -363,7 +351,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   @Test
   fun `createReferral should still throw ValidationException for a malformed person identifier without calling CPR`() {
     val referralUser = referralHelper.ensureReferralUser()
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
 
     val request = CreateReferralRequest(personIdentifier = "NOT-VALID")
 
@@ -663,7 +650,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   }
 
   private fun setUpData(): CreateReferralRequest {
-    val communityServiceProvider = referralHelper.getCommunityServiceProvider()
     val crn = "X123456"
 
     stubCprProbationPerson(crn, createCprProbationPersonDto(crn))
