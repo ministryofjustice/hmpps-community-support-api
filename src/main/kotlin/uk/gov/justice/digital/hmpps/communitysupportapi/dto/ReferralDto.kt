@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import java.time.LocalDate
@@ -39,25 +38,21 @@ data class ReferralInformationDto(
   val lastName: String?,
   val sex: String? = null,
   val personIdentifier: String,
-  val communityServiceProviderId: UUID,
-  val communityServiceProviderName: String,
-  val region: String,
+  val communityServiceProviderId: UUID? = null,
+  val communityServiceProviderName: String? = null,
+  val region: String? = null,
   val referenceNumber: String? = null,
-  val deliveryPartner: String,
+  val deliveryPartner: String? = null,
 ) {
   companion object {
     fun from(result: ReferralCreationResult): ReferralInformationDto = ReferralInformationDto(
       personId = result.referral.personId,
       referralId = result.referral.id,
       referralDate = result.referral.createdAt.toLocalDate(),
-      communityServiceProviderId = result.communityServiceProvider.id,
       firstName = result.person.firstName,
       lastName = result.person.lastName,
       sex = result.person.gender,
       personIdentifier = result.referral.personIdentifier,
-      communityServiceProviderName = result.communityServiceProvider.name,
-      region = result.communityServiceProvider.contractArea.region.name,
-      deliveryPartner = result.communityServiceProvider.serviceProvider.name,
     )
   }
 }
@@ -65,7 +60,6 @@ data class ReferralInformationDto(
 data class ReferralCreationResult(
   val referral: Referral,
   val person: Person,
-  val communityServiceProvider: CommunityServiceProvider,
 )
 
 data class SubmitReferralResponseDto(
