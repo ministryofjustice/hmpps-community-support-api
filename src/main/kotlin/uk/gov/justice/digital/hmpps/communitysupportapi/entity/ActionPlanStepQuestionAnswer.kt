@@ -6,13 +6,14 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
-@Table(name = "action_plan_step_question_response")
-data class ActionPlanStepQuestionResponse(
+@Table(name = "action_plan_step_question_answer")
+data class ActionPlanStepQuestionAnswer(
   @Id
   @Column(name = "id")
   val id: UUID,
@@ -31,12 +32,22 @@ data class ActionPlanStepQuestionResponse(
   @JoinColumn(name = "action_plan_step_question_id", insertable = false, updatable = false)
   val actionPlanStepQuestion: ActionPlanStepQuestion? = null,
 
-  @Column(name = "response")
-  val response: String? = null,
+  @Column(name = "order_number", nullable = false)
+  val orderNumber: Int,
+
+  @OneToMany(fetch = FetchType.LAZY)
+  @JoinColumn(name = "action_plan_step_question_answer_id", insertable = false, updatable = false)
+  val revisions: MutableList<ActionPlanStepQuestionAnswerRevision> = mutableListOf(),
 
   @Column(name = "created_at", nullable = false)
   val createdAt: OffsetDateTime? = null,
 
   @Column(name = "created_by", nullable = false)
   val createdBy: String = "SYSTEM",
+
+  @Column(name = "deleted_at")
+  val deletedAt: OffsetDateTime? = null,
+
+  @Column(name = "deleted_by")
+  val deletedBy: String? = null,
 )

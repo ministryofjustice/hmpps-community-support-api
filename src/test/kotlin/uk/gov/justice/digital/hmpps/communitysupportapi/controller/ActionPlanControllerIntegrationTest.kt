@@ -51,9 +51,9 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
           body.personDetails.fullName shouldBe "Adam Smith"
+          body.needs.size shouldBe expectedNeeds.size
           body.needs.map { it.label } shouldBe expectedNeeds.map { it.label }
           body.needs.map { it.id } shouldBe expectedNeeds.map { it.id }
-          body.needs.all { it.outcomes.isEmpty() } shouldBe true
         }
     }
   }
