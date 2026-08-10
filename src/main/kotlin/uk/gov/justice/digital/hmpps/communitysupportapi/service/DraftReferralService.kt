@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
@@ -41,10 +40,6 @@ class DraftReferralService(
     val person: Person,
     val additionalSupportNeeds: PersonAdditionalSupportNeeds?,
   )
-
-  companion object {
-    private val logger = LoggerFactory.getLogger(DraftReferralService::class.java)
-  }
 
   fun getAdditionalSupportNeedsForReferral(
     referralId: String,
@@ -248,6 +243,12 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds, riskInfo, criminogenicNeeds, communityServiceProvider)
+    return TaskListStatusResponseDto.from(
+      person,
+      additionalSupportNeeds,
+      riskInfo,
+      criminogenicNeeds,
+      communityServiceProvider,
+    )
   }
 }

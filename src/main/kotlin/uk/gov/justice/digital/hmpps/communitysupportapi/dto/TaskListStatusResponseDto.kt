@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 
@@ -19,7 +18,6 @@ data class TaskListStatusResponseDto(
   companion object {
     fun from(
       person: Person,
-      referral: Referral,
       additionalSupportNeeds: PersonAdditionalSupportNeeds?,
       riskInfo: RiskInformation?,
       criminogenicNeeds: ReferralCriminogenicNeeds?,

@@ -31,14 +31,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIc
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.parseDateOfBirth
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
 import java.time.OffsetDateTime
@@ -51,7 +47,6 @@ class ReferralService(
   private val appointmentRepository: AppointmentRepository,
   private val appointmentIcsRepository: AppointmentIcsRepository,
   private val appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository,
-  private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
   private val referralUserAssignmentRepository: ReferralUserAssignmentRepository,
   private val referenceGenerator: ReferralReferenceGenerator,
@@ -60,10 +55,7 @@ class ReferralService(
   private val cprProbationService: CprProbationService,
   private val identifierValidator: PersonIdentifierValidator,
   private val personService: PersonService,
-  private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
-  private val riskInformationRepository: RiskInformationRepository,
   private val actionPlanService: ActionPlanService,
-  private val referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
