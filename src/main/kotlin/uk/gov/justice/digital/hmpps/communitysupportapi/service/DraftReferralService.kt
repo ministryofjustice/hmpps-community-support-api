@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
@@ -15,6 +16,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportN
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
@@ -32,6 +34,7 @@ class DraftReferralService(
   private val personRepository: PersonRepository,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
   private val riskInformationRepository: RiskInformationRepository,
+  private val pduRepository: PduRepository,
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
 ) {
@@ -60,6 +63,17 @@ class DraftReferralService(
     return context.additionalSupportNeeds?.let {
       NeedsInterpreterBffResponseDto.from(context.person, it)
     } ?: throw NotFoundException("Interpreter needs not found for referral $referralId")
+  }
+
+  fun getAreaConfirmationDetails(providerId: UUID): AreaConfirmationBffResponseDto {
+    val communityServiceProvider = communityServiceProviderRepository.findById(providerId)
+      .orElseThrow { NotFoundException("Community Service Provider not found for id $providerId") }
+
+    val associatedPdus = pduRepository.findByContractAreaId(communityServiceProvider.contractArea.id)
+      .map { it.name }
+      .sorted()
+
+    return AreaConfirmationBffResponseDto.from(communityServiceProvider, associatedPdus)
   }
 
   @Transactional

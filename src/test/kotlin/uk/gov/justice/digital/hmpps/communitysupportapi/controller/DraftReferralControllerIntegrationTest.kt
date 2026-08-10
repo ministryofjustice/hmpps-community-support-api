@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
@@ -29,6 +30,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServicePr
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
@@ -55,6 +57,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var riskInformationRepository: RiskInformationRepository
+
+  @Autowired
+  private lateinit var pduRepository: PduRepository
 
   @Autowired
   private lateinit var referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository
@@ -382,6 +387,56 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.language?.selected shouldBe false
           body.language?.value shouldBe null
           body.needsInterpreter shouldBe false
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/draft-referral/community-service-provider/:providerId")
+  inner class AreaConfirmationTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/draft-referral/community-service-provider/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return 404 when community service provider does not exist`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/community-service-provider/${UUID.randomUUID()}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `should return community service provider details`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val expectedAssociatedPdus = pduRepository.findByContractAreaId(communityServiceProvider.contractArea.id)
+        .map { it.name }
+        .sorted()
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/community-service-provider/${communityServiceProvider.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<AreaConfirmationBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.contractArea shouldBe communityServiceProvider.contractArea.area
+          body.deliveryPartner shouldBe communityServiceProvider.serviceProvider.name
+          body.associatedPdus shouldBe expectedAssociatedPdus
         }
     }
   }
