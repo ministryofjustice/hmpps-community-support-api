@@ -3,11 +3,15 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ContractArea
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Region
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -40,14 +44,14 @@ class TaskListStatusResponseDtoTest {
 
     @Test
     fun `returns notStarted for checkRiskInformationCompleted when no risk info exists`() {
-      val result = TaskListStatusResponseDto.from(person, referral, null, null, null)
+      val result = TaskListStatusResponseDto.from(person, null, null, null, null)
 
       result.checkRiskInformationCompleted shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
     fun `returns completed for checkRiskInformationCompleted when risk info exists`() {
-      val result = TaskListStatusResponseDto.from(person, referral, null, buildRiskInfo(), null)
+      val result = TaskListStatusResponseDto.from(person, null, buildRiskInfo(), null, null)
 
       result.checkRiskInformationCompleted shouldBe TaskListStatusItem.completed()
     }
@@ -58,7 +62,7 @@ class TaskListStatusResponseDtoTest {
 
     @Test
     fun `returns notStarted when no additionalSupportNeeds record exists`() {
-      val result = TaskListStatusResponseDto.from(person, referral, null, null, null)
+      val result = TaskListStatusResponseDto.from(person, null, null, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.notStarted()
     }
@@ -67,7 +71,7 @@ class TaskListStatusResponseDtoTest {
     fun `returns inProgress when additionalSupportNeeded is null`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = null, interpreterNeeded = null)
 
-      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null, null)
+      val result = TaskListStatusResponseDto.from(person, supportNeeds, null, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.inProgress()
     }
@@ -76,7 +80,7 @@ class TaskListStatusResponseDtoTest {
     fun `returns inProgress when additionalSupportNeeded is true but interpreterNeeded is null`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = true, interpreterNeeded = null)
 
-      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null, null)
+      val result = TaskListStatusResponseDto.from(person, supportNeeds, null, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.inProgress()
     }
@@ -85,7 +89,7 @@ class TaskListStatusResponseDtoTest {
     fun `returns completed when additionalSupportNeeded is true and interpreterNeeded is false`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = true, interpreterNeeded = false)
 
-      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null, null)
+      val result = TaskListStatusResponseDto.from(person, supportNeeds, null, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.completed()
     }
@@ -94,7 +98,7 @@ class TaskListStatusResponseDtoTest {
     fun `returns completed when additionalSupportNeeded is false and interpreterNeeded is false`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = false, interpreterNeeded = false)
 
-      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null, null)
+      val result = TaskListStatusResponseDto.from(person, supportNeeds, null, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.completed()
     }
@@ -103,7 +107,7 @@ class TaskListStatusResponseDtoTest {
     fun `returns completed when both additionalSupportNeeded and interpreterNeeded are true`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = true, interpreterNeeded = true)
 
-      val result = TaskListStatusResponseDto.from(person, referral, supportNeeds, null, null)
+      val result = TaskListStatusResponseDto.from(person, supportNeeds, null, null, null)
 
       result.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.completed()
     }
@@ -114,7 +118,7 @@ class TaskListStatusResponseDtoTest {
 
     @Test
     fun `returns notStarted when no criminogenicNeeds record exists`() {
-      val result = TaskListStatusResponseDto.from(person, referral, null, null, null)
+      val result = TaskListStatusResponseDto.from(person, null, null, null, null)
 
       result.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.notStarted()
     }
@@ -132,7 +136,7 @@ class TaskListStatusResponseDtoTest {
         hasThinkingBehavioursAttitudeNeeds = false,
       )
 
-      val result = TaskListStatusResponseDto.from(person, referral, null, null, criminogenicNeeds)
+      val result = TaskListStatusResponseDto.from(person, null, null, criminogenicNeeds, null)
 
       result.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.completed()
     }
@@ -144,7 +148,7 @@ class TaskListStatusResponseDtoTest {
         accommodationDetails = "Needs stable accommodation",
       )
 
-      val result = TaskListStatusResponseDto.from(person, referral, null, null, criminogenicNeeds)
+      val result = TaskListStatusResponseDto.from(person, null, null, criminogenicNeeds, null)
 
       result.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.completed()
     }
@@ -159,9 +163,29 @@ class TaskListStatusResponseDtoTest {
         hasDrugUseNeeds = false,
       )
 
-      val result = TaskListStatusResponseDto.from(person, referral, null, null, criminogenicNeeds)
+      val result = TaskListStatusResponseDto.from(person, null, null, criminogenicNeeds, null)
 
       result.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.completed()
+    }
+  }
+
+  @Nested
+  inner class SelectAnAreaForReferralStatus {
+
+    @Test
+    fun `returns notStarted when no communityServiceProvider exists`() {
+      val result = TaskListStatusResponseDto.from(person, null, null, null, null)
+
+      result.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.notStarted()
+    }
+
+    @Test
+    fun `returns completed when communityServiceProvider exists`() {
+      val communityServiceProvider = buildCommunityServiceProvider()
+
+      val result = TaskListStatusResponseDto.from(person, null, null, null, communityServiceProvider)
+
+      result.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.completed()
     }
   }
 
@@ -251,5 +275,21 @@ class TaskListStatusResponseDtoTest {
     thinkingBehavioursAttitudeDetails = thinkingBehavioursAttitudeDetails,
     updatedAt = OffsetDateTime.now(),
     updatedBy = userId,
+  )
+
+  private fun buildCommunityServiceProvider() = CommunityServiceProvider(
+    id = UUID.randomUUID(),
+    contractArea = ContractArea(
+      id = UUID.randomUUID(),
+      region = Region(id = UUID.randomUUID(), name = "Test Region"),
+      area = "Test Area",
+    ),
+    name = "Test Provider",
+    serviceProvider = ServiceProvider(
+      id = UUID.randomUUID(),
+      authGroupId = "TEST_GROUP",
+      name = "Test Service Provider",
+    ),
+    description = "Test Description",
   )
 }

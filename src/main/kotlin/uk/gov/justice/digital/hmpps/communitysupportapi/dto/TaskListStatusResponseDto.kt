@@ -1,8 +1,8 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 
@@ -13,14 +13,15 @@ data class TaskListStatusResponseDto(
   val selectThePersonsNeedsCompleted: TaskListStatusItem,
   val addDetailsOfAnyAdditionalSupportNeedsCompleted: TaskListStatusItem,
   val addDetailsOfMainPointOfContactCompleted: TaskListStatusItem,
+  val selectAnAreaForReferralCompleted: TaskListStatusItem,
 ) {
   companion object {
     fun from(
       person: Person,
-      referral: Referral,
       additionalSupportNeeds: PersonAdditionalSupportNeeds?,
       riskInfo: RiskInformation?,
       criminogenicNeeds: ReferralCriminogenicNeeds?,
+      communityServiceProvider: CommunityServiceProvider?,
     ) = TaskListStatusResponseDto(
       fullName = person.firstName + " " + person.lastName,
       TaskListStatusItem.notStarted(),
@@ -28,7 +29,10 @@ data class TaskListStatusResponseDto(
       getCriminogenicNeedsStatus(criminogenicNeeds),
       getAdditionalSupportNeedsStatus(additionalSupportNeeds),
       TaskListStatusItem.notStarted(),
+      getCommunityServiceProviderStatus(communityServiceProvider),
     )
+
+    private fun getCommunityServiceProviderStatus(communityServiceProvider: CommunityServiceProvider?): TaskListStatusItem = communityServiceProvider?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
     private fun getCriminogenicNeedsStatus(criminogenicNeeds: ReferralCriminogenicNeeds?): TaskListStatusItem = criminogenicNeeds?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
