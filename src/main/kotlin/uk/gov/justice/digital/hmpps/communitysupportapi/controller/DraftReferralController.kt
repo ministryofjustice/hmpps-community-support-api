@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
@@ -149,6 +150,33 @@ class DraftReferralController(
 
     return ResponseEntity.ok(draftReferralService.upsertNeedsInterpreter(referralId, user.id, request))
   }
+
+  @Operation(summary = "Get area confirmation details for a community service provider by ID")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Community service provider found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = AreaConfirmationBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Community service provider not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/draft-referral/community-service-provider/{providerId}")
+  fun getAreaConfirmationDetails(
+    @PathVariable providerId: UUID,
+  ): ResponseEntity<AreaConfirmationBffResponseDto> = ResponseEntity.ok(
+    draftReferralService.getAreaConfirmationDetails(providerId),
+  )
 
   @Operation(summary = "Update the Community Service Provider for a Draft Referral")
   @ApiResponses(
