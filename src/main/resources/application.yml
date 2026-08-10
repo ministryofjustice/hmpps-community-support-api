@@ -8,7 +8,6 @@ spring:
 
   flyway:
     locations: classpath:db/migration,classpath:db/seed
-    out-of-order: true
 
   jackson:
     date-format: "yyyy-MM-dd HH:mm:ss"
