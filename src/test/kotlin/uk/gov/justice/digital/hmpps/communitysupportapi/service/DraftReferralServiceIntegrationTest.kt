@@ -1,5 +1,9 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -14,6 +18,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import java.util.UUID
 
 class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
@@ -158,7 +164,17 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
       .isInstanceOf(NotFoundException::class.java)
   }
 
-  private fun setUpData(): CreateReferralRequest = CreateReferralRequest(
-    personIdentifier = "X123456",
-  )
+  private fun setUpData(): CreateReferralRequest {
+    val crn = "X123456"
+    stubFor(
+      get(urlPathEqualTo("/person/probation/$crn"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(createCprProbationPersonDto(crn).toJson()),
+        ),
+    )
+    return CreateReferralRequest(personIdentifier = crn)
+  }
 }
