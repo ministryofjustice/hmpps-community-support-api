@@ -528,6 +528,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.notStarted()
           body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.notStarted()
           body.addDetailsOfMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
+          body.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.notStarted()
         }
     }
 
@@ -611,6 +612,29 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
 
           body.checkRiskInformationCompleted shouldBe TaskListStatusItem.completed()
+        }
+    }
+
+    @Test
+    fun `should return completed for selectAnAreaForReferralCompleted when community service provider is assigned`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      referralRepository.save(savedReferral)
+
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      referralHelper.createProviderAssignment(savedReferral, communityServiceProvider)
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.completed()
         }
     }
   }

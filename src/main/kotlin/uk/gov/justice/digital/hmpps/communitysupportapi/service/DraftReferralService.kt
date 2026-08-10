@@ -243,9 +243,11 @@ class DraftReferralService(
 
     val criminogenicNeeds = referralCriminogenicNeedsRepository.findByReferralId(referralId)
 
+    val communityServiceProvider = communityServiceProviderRepository.findByReferralId(referralId)
+
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds, riskInfo, criminogenicNeeds)
+    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds, riskInfo, criminogenicNeeds, communityServiceProvider)
   }
 }

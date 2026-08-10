@@ -13,7 +13,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
@@ -274,22 +273,6 @@ class ReferralService(
     val (person, personAggregate, offenderProfile) = this.getPersonAggregateOffenderProfile(personIdentifier)
 
     return ConfirmPersonDetailsBffDto.from(person.id, personAggregate, offenderProfile)
-  }
-
-  fun getTaskListStatus(referralId: UUID): TaskListStatusResponseDto? {
-    val referral = referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
-
-    val additionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
-
-    val criminogenicNeeds = referralCriminogenicNeedsRepository.findByReferralId(referralId)
-
-    val riskInfo = riskInformationRepository.findByReferralId(referralId)
-
-    val person = personRepository.findById(referral.personId)
-      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
-
-    return TaskListStatusResponseDto.from(person, referral, additionalSupportNeeds, riskInfo, criminogenicNeeds)
   }
 
   private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
