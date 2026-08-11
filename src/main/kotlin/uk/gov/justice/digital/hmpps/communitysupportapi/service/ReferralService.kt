@@ -334,8 +334,6 @@ class ReferralService(
         preferredLanguage = personDetails.additionalDetails.preferredLanguage,
         neurodiverseConditions = personDetails.additionalDetails.neurodiverseConditions,
         religionOrBelief = personDetails.additionalDetails.religionOrBelief,
-        transgender = personDetails.additionalDetails.transgender,
-        sexualOrientation = personDetails.additionalDetails.sexualOrientation,
         address = personDetails.additionalDetails.address,
         phoneNumber = personDetails.additionalDetails.phoneNumber,
         emailAddress = personDetails.additionalDetails.emailAddress,
@@ -354,8 +352,6 @@ class ReferralService(
       existing.preferredLanguage == incoming.preferredLanguage &&
       existing.neurodiverseConditions == incoming.neurodiverseConditions &&
       existing.religionOrBelief == incoming.religionOrBelief &&
-      existing.transgender == incoming.transgender &&
-      existing.sexualOrientation == incoming.sexualOrientation &&
       existing.address == incoming.address &&
       existing.phoneNumber == incoming.phoneNumber &&
       existing.emailAddress == incoming.emailAddress

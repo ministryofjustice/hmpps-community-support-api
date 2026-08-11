@@ -33,12 +33,9 @@ data class ConfirmPersonalPersonalDetails(
 
 data class ConfirmPersonalDetailsEqualityMonitoring(
   val ethnicity: String = "",
-  val genderIdentity: String = "",
   val nationalities: List<String> = emptyList(),
   val religionOrBelief: String = "",
   val sex: String = "",
-  val sexualOrientation: String = "",
-  val transgender: String = "",
 )
 
 data class ConfirmPersonDetailsContactAddress(
@@ -129,9 +126,6 @@ data class ConfirmPersonDetailsBffDto(
           sex = personAggregate.person.sex,
           ethnicity = personAggregate.additionalDetails?.ethnicity ?: "",
           religionOrBelief = personAggregate.additionalDetails?.religionOrBelief ?: "",
-          transgender = personAggregate.additionalDetails?.transgender ?: "",
-          sexualOrientation = personAggregate.additionalDetails?.sexualOrientation ?: "",
-          genderIdentity = personAggregate.additionalDetails?.genderIdentity ?: "",
           nationalities = personAggregate.additionalDetails?.nationalities ?: emptyList(),
         ),
         contactDetails = ConfirmPersonalDetailsContact(

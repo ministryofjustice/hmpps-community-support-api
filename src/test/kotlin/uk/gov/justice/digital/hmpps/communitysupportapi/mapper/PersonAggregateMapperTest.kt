@@ -75,7 +75,6 @@ class PersonAggregateMapperTest {
     personDto.prisonNumbers shouldBe listOf("A1234BC")
     personDto.additionalDetails?.ethnicity shouldBe "White"
     personDto.additionalDetails?.preferredLanguage shouldBe "English"
-    personDto.additionalDetails?.genderIdentity shouldBe "Male"
     personDto.additionalDetails?.nationalities shouldBe listOf("Argentine", "Brazilian")
     personDto.additionalDetails?.mobileNumber shouldBe "07700900002"
     personDto.additionalDetails?.phoneNumber shouldBe "01234567890"

@@ -181,7 +181,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
         lastName = "NewLast",
         dateOfBirth = "1985-06-06",
         ethnicity = CprCodeDescriptionDto(code = "NE", description = "NewEthnicity"),
-        sexualOrientation = CprCodeDescriptionDto(code = "NO", description = "NewOrientation"),
       ),
     )
 
@@ -195,7 +194,6 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(persistedPerson.lastName).isEqualTo("NewLast")
     assertThat(persistedPerson.dateOfBirth).isEqualTo(LocalDate.of(1985, 6, 6))
     assertThat(persistedPerson.additionalDetails?.ethnicity).isEqualTo("NewEthnicity")
-    assertThat(persistedPerson.additionalDetails?.sexualOrientation).isEqualTo("NewOrientation")
     assertThat(persistedPerson.additionalDetails?.preferredLanguage).isNull()
     assertThat(persistedPerson.additionalDetails?.id).isEqualTo(existingDetails.id)
   }
