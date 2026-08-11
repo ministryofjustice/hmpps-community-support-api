@@ -22,7 +22,7 @@ class CommunityServiceProviderIntegrationTest : IntegrationTestBase() {
   fun `should return community service providers`() {
     val response = webTestClient
       .method(GET)
-      .uri("/bff/referral-select-a-service?personDetailsId=1234567890123456")
+      .uri("/bff/referral-select-a-service")
       .contentType(MediaType.APPLICATION_JSON)
       .headers(setAuthorisation(roles = listOf("ROLE_IPB_FRONTEND_RW")))
       .accept(MediaType.APPLICATION_JSON)
@@ -40,22 +40,24 @@ class CommunityServiceProviderIntegrationTest : IntegrationTestBase() {
     assertThat(locationNames).allMatch { it.isNotBlank() }
 
     assertThat(locationNames).contains("Cleveland", "Lancashire", "Thames Valley")
+
+    assertThat(response.communitySupportServices).allMatch { it.pdus.isNotEmpty() }
   }
 
   @Test
   fun `should return 401 when no auth header`() {
-    assertUnauthorized(GET, "/bff/referral-select-a-service?personDetailsId=1234567890123456")
+    assertUnauthorized(GET, "/bff/referral-select-a-service")
   }
 
   @Test
   fun `should return 403 when user has no required role`() {
-    assertForbiddenWrongRole(GET, "/bff/referral-select-a-service?personDetailsId=1234567890123456")
+    assertForbiddenWrongRole(GET, "/bff/referral-select-a-service")
   }
 
   @Test
   fun `should return 500 when repository throws`() {
     doThrow(RuntimeException("error when calling community service provider data")).whenever(communityServiceProviderRepository).findAll()
 
-    assertServerError(GET, "/bff/referral-select-a-service?personDetailsId=1234567890123456")
+    assertServerError(GET, "/bff/referral-select-a-service")
   }
 }
