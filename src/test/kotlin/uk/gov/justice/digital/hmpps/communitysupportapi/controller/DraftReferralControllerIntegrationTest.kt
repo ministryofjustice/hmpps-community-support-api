@@ -700,7 +700,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val person = referralHelper.createPerson(identifier = "CRN12345")
       val savedReferral = referralHelper.createReferral(
         person = person,
-        submittedBy = testUser
+        submittedBy = testUser,
       )
       referralRepository.save(savedReferral)
 
