@@ -6,11 +6,14 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportServicesDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportServiceDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CommunityServiceProviderService
 
@@ -28,8 +31,8 @@ class CommunityServiceProviderController(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "List of community support services",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = CommunitySupportServicesDto::class))],
+        description = "Paginated list of community support services",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = PageResponse::class))],
       ),
       ApiResponse(
         responseCode = "401",
@@ -44,8 +47,10 @@ class CommunityServiceProviderController(
     ],
   )
   @GetMapping("/bff/referral-select-a-service")
-  fun getServices(): ResponseEntity<CommunitySupportServicesDto> {
+  fun getServices(
+    @PageableDefault(page = 0, size = 10) pageable: Pageable,
+  ): ResponseEntity<PageResponse<CommunitySupportServiceDto>> {
     log.info("Fetching community support services")
-    return ResponseEntity.ok(communityServiceProviderService.communityServiceProviders())
+    return ResponseEntity.ok(communityServiceProviderService.communityServiceProviders(pageable))
   }
 }

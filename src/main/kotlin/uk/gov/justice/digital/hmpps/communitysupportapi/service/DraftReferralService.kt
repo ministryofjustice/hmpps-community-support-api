@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
@@ -23,6 +24,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCrimi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -37,6 +40,7 @@ class DraftReferralService(
   private val pduRepository: PduRepository,
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
+  private val identifierValidator: PersonIdentifierValidator,
 ) {
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
@@ -65,7 +69,13 @@ class DraftReferralService(
     } ?: throw NotFoundException("Interpreter needs not found for referral $referralId")
   }
 
-  fun getAreaConfirmationDetails(providerId: UUID): AreaConfirmationBffResponseDto {
+  fun getAreaConfirmationDetails(referralId: UUID, providerId: UUID): AreaConfirmationBffResponseDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+
     val communityServiceProvider = communityServiceProviderRepository.findById(providerId)
       .orElseThrow { NotFoundException("Community Service Provider not found for id $providerId") }
 
@@ -73,7 +83,11 @@ class DraftReferralService(
       .map { it.name }
       .sorted()
 
-    return AreaConfirmationBffResponseDto.from(communityServiceProvider, associatedPdus)
+    val identifier = identifierValidator.validate(person.identifier)
+    val crn = if (identifier is PersonIdentifier.Crn) identifier.value else ""
+    val dateOfBirth = person.dateOfBirth.toFormattedDateOfBirthLong()
+
+    return AreaConfirmationBffResponseDto.from(communityServiceProvider, associatedPdus, crn, dateOfBirth)
   }
 
   @Transactional
