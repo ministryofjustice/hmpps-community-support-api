@@ -200,8 +200,57 @@ class TaskListStatusResponseDtoTest {
     }
 
     @Test
+    fun `returns notStarted when only target date exists`() {
+      val r = Referral(
+        id = referral.id,
+        personId = referral.personId,
+        personIdentifier = referral.personIdentifier,
+        referenceNumber = referral.referenceNumber,
+        createdAt = referral.createdAt,
+        updatedAt = referral.updatedAt,
+        urgency = referral.urgency,
+        createdBy = referral.createdBy,
+        targetServiceCompletionDate = OffsetDateTime.now(),
+      )
+
+      val result = TaskListStatusResponseDto.from(r, person, null, null, null, null)
+
+      result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.notStarted()
+    }
+
+    @Test
+    fun `returns notStarted when only reason exists`() {
+      val r = Referral(
+        id = referral.id,
+        personId = referral.personId,
+        personIdentifier = referral.personIdentifier,
+        referenceNumber = referral.referenceNumber,
+        createdAt = referral.createdAt,
+        updatedAt = referral.updatedAt,
+        urgency = referral.urgency,
+        createdBy = referral.createdBy,
+        targetServiceCompletionDateReason = "Some reason",
+      )
+
+      val result = TaskListStatusResponseDto.from(r, person, null, null, null, null)
+
+      result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.notStarted()
+    }
+
+    @Test
     fun `returns completed when both target date and reason exist`() {
-      val r = referral.copy(targetServiceCompletionDate = OffsetDateTime.now(), targetServiceCompletionDateReason = "Some reason")
+      val r = Referral(
+        id = referral.id,
+        personId = referral.personId,
+        personIdentifier = referral.personIdentifier,
+        referenceNumber = referral.referenceNumber,
+        createdAt = referral.createdAt,
+        updatedAt = referral.updatedAt,
+        urgency = referral.urgency,
+        createdBy = referral.createdBy,
+        targetServiceCompletionDate = OffsetDateTime.now(),
+        targetServiceCompletionDateReason = "Some reason",
+      )
 
       val result = TaskListStatusResponseDto.from(r, person, null, null, null, null)
 
