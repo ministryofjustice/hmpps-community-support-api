@@ -563,7 +563,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       person.additionalDetails = additionalDetails
       personRepository.save(person)
 
-      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser, targetServiceCompletionDate = null, targetServiceCompletionDateReason = null)
       referralRepository.save(savedReferral)
 
       webTestClient.get()
@@ -582,6 +582,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.notStarted()
           body.addDetailsOfMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
           body.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.notStarted()
+          body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.notStarted()
         }
     }
 
@@ -688,6 +689,29 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
 
           body.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.completed()
+        }
+    }
+
+    @Test
+    fun `should return completed for addAdditionalInformationCompleted when target date and reason exist`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+      )
+      referralRepository.save(savedReferral)
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.completed()
         }
     }
   }

@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 
@@ -12,11 +13,13 @@ data class TaskListStatusResponseDto(
   val checkRiskInformationCompleted: TaskListStatusItem,
   val selectThePersonsNeedsCompleted: TaskListStatusItem,
   val addDetailsOfAnyAdditionalSupportNeedsCompleted: TaskListStatusItem,
+  val addAdditionalInformationCompleted: TaskListStatusItem,
   val addDetailsOfMainPointOfContactCompleted: TaskListStatusItem,
   val selectAnAreaForReferralCompleted: TaskListStatusItem,
 ) {
   companion object {
     fun from(
+      referral: Referral,
       person: Person,
       additionalSupportNeeds: PersonAdditionalSupportNeeds?,
       riskInfo: RiskInformation?,
@@ -28,6 +31,7 @@ data class TaskListStatusResponseDto(
       getRiskInfoStatus(riskInfo),
       getCriminogenicNeedsStatus(criminogenicNeeds),
       getAdditionalSupportNeedsStatus(additionalSupportNeeds),
+      getAdditionalInformationStatus(referral),
       TaskListStatusItem.notStarted(),
       getCommunityServiceProviderStatus(communityServiceProvider),
     )
@@ -46,6 +50,11 @@ data class TaskListStatusResponseDto(
     }
 
     private fun getRiskInfoStatus(riskInfo: RiskInformation?): TaskListStatusItem = riskInfo?.let { return TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
+
+    private fun getAdditionalInformationStatus(referral: Referral): TaskListStatusItem = when {
+      referral.targetServiceCompletionDate != null && !referral.targetServiceCompletionDateReason.isNullOrBlank() -> TaskListStatusItem.completed()
+      else -> TaskListStatusItem.notStarted()
+    }
   }
 }
 

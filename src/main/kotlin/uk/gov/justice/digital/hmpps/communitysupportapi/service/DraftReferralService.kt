@@ -258,6 +258,7 @@ class DraftReferralService(
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
     return TaskListStatusResponseDto.from(
+      referral,
       person,
       additionalSupportNeeds,
       riskInfo,
