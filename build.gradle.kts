@@ -24,7 +24,7 @@ dependencies {
   implementation("org.springframework:spring-web")
   implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-  implementation("uk.gov.service.notify:notifications-java-client:6.1.0-RELEASE")
+  implementation("uk.gov.service.notify:notifications-java-client:6.2.0-RELEASE")
 
   // security
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
@@ -49,7 +49,7 @@ dependencies {
   testImplementation("org.testcontainers:junit-jupiter:1.21.4")
   testImplementation("org.awaitility:awaitility-kotlin")
   testImplementation("com.ninja-squad:springmockk:5.0.1")
-  testImplementation("io.kotest:kotest-assertions-core:6.2.3")
+  testImplementation("io.kotest:kotest-assertions-core:6.2.4")
   testImplementation("io.mockk:mockk:1.14.11")
 
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
