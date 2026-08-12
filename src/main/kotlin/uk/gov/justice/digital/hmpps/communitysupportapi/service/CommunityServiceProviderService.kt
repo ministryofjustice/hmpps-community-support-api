@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
-import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportServiceDto
@@ -14,10 +13,6 @@ class CommunityServiceProviderService(
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val pduRepository: PduRepository,
 ) {
-  companion object {
-    private val log = LoggerFactory.getLogger(this::class.java)
-  }
-
   fun communityServiceProviders(pageable: Pageable): PageResponse<CommunitySupportServiceDto> {
     val providers = communityServiceProviderRepository.findAll(pageable)
     val services = providers.map { provider ->
