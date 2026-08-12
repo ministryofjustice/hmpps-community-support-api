@@ -31,12 +31,6 @@ class PersonAdditionalDetails(
   @Column(name = "religion_or_belief")
   val religionOrBelief: String? = null,
 
-  @Column(name = "transgender")
-  val transgender: String? = null,
-
-  @Column(name = "sexual_orientation")
-  val sexualOrientation: String? = null,
-
   @Column(name = "address")
   val address: String? = null,
 

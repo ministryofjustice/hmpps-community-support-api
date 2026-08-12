@@ -37,8 +37,6 @@ fun PersonAdditionalDetails.toEntity(person: PersonEntity): PersonAdditionalDeta
   preferredLanguage = preferredLanguage,
   neurodiverseConditions = neurodiverseConditions,
   religionOrBelief = religionOrBelief,
-  transgender = transgender,
-  sexualOrientation = sexualOrientation,
   address = address,
   phoneNumber = phoneNumber,
   emailAddress = emailAddress,

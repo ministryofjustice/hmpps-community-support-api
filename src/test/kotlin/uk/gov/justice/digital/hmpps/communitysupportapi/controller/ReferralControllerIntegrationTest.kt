@@ -409,9 +409,6 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         ethnicity = person.additionalDetails?.ethnicity.toString(),
         religionOrBelief = person.additionalDetails?.religionOrBelief.toString(),
         sex = "",
-        genderIdentity = person.gender,
-        sexualOrientation = person.additionalDetails?.sexualOrientation.toString(),
-        transgender = person.additionalDetails?.transgender.toString(),
       )
 
       val contactDetailsTable = ReferralDetailsBffResponseDto.ContactDetailsTableDataDto(
@@ -567,8 +564,6 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .withPreferredLanguage("")
         .withNeurodiverseConditions("None")
         .withReligionOrBelief(cprPersonDTO.religion?.description)
-        .withTransgender("")
-        .withSexualOrientation(cprPersonDTO.sexualOrientation?.description)
         .withPhoneNumber("09876543210")
         .withEmailAddress("changed.email@example.com")
         .create()
@@ -936,7 +931,6 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       body.equalityMonitoring.sex shouldBe "Male"
       body.equalityMonitoring.ethnicity shouldBe "White"
       body.equalityMonitoring.religionOrBelief shouldBe "Christian"
-      body.equalityMonitoring.sexualOrientation shouldBe "Heterosexual"
       body.equalityMonitoring.nationalities shouldBe listOf("Argentine", "Brazilian")
 
       body.contactDetails.phoneNumber shouldBe "01234567890"

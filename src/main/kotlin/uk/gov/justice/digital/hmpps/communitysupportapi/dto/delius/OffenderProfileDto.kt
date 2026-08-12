@@ -13,7 +13,6 @@ data class OffenderProfileDto(
   val immigrationStatus: String? = null,
   val offenderLanguages: OffenderLanguagesDto? = null,
   val religion: String? = null,
-  val sexualOrientation: String? = null,
   val offenderDetails: String? = null,
   val remandStatus: String? = null,
   val previousConviction: PreviousConvictionDto? = null,

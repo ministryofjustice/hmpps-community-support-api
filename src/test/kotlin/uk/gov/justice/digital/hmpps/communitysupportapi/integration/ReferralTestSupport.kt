@@ -187,12 +187,10 @@ class ReferralTestSupport(
     person: Person,
     ethnicity: String = "OldEthnicity",
     preferredLanguage: String = "OldLang",
-    sexualOrientation: String = "OldOrientation",
   ): PersonAdditionalDetails = PersonAdditionalDetailsFactory()
     .withPerson(person)
     .withEthnicity(ethnicity)
     .withPreferredLanguage(preferredLanguage)
-    .withSexualOrientation(sexualOrientation)
     .create()
 
   fun createPersons(
@@ -269,8 +267,6 @@ class ReferralTestSupport(
       .withPreferredLanguage("")
       .withNeurodiverseConditions("None")
       .withReligionOrBelief(cprPersonDTO.religion?.description)
-      .withTransgender("")
-      .withSexualOrientation(cprPersonDTO.sexualOrientation?.description)
       .withAddress(addressString)
       .withPhoneNumber(address.contacts.first { it.type?.code == "TELEPHONE" }.value)
       .withEmailAddress(address.contacts.first { it.type?.code == "EMAIL" }.value)

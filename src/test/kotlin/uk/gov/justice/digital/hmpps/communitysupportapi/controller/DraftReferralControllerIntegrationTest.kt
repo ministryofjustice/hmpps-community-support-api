@@ -555,8 +555,6 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withPreferredLanguage("English")
         .withNeurodiverseConditions("None")
         .withReligionOrBelief("None")
-        .withTransgender("No")
-        .withSexualOrientation("Straight")
         .withAddress("123 Test Street /n Test Town /n Testshire")
         .withPhoneNumber("0191 234 5678")
         .withEmailAddress("test@test.com")
