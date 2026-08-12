@@ -13,7 +13,6 @@ data class CprPersonDto(
   val interestToImmigration: Boolean? = null,
   val title: CprCodeDescriptionDto? = null,
   val sex: CprCodeDescriptionDto? = null,
-  val sexualOrientation: CprCodeDescriptionDto? = null,
   val religion: CprCodeDescriptionDto? = null,
   val ethnicity: CprCodeDescriptionDto? = null,
   @JsonSetter(nulls = Nulls.AS_EMPTY)

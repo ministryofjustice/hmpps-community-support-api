@@ -55,18 +55,12 @@ data class ReferralDetailsBffResponseDto(
     val ethnicity: String?,
     val religionOrBelief: String?,
     val sex: String,
-    val genderIdentity: String,
-    val sexualOrientation: String,
-    val transgender: String,
   ) {
     companion object {
       fun from(person: Person): EqualityDetailsTableDataDto = EqualityDetailsTableDataDto(
         ethnicity = person.additionalDetails?.ethnicity ?: "",
         religionOrBelief = person.additionalDetails?.religionOrBelief ?: "",
         sex = "",
-        genderIdentity = person.gender,
-        sexualOrientation = person.additionalDetails?.sexualOrientation ?: "",
-        transgender = person.additionalDetails?.transgender ?: "",
       )
     }
   }

@@ -41,12 +41,6 @@ class CprPrisonPersonMapperTest {
   }
 
   @Test
-  fun `maps gender identity from sex field`() {
-    val personAdditionalDetails = createCprPrisonPersonDto(PRISONER_NUMBER).toAdditionalDetails()
-    assertEquals("Male", personAdditionalDetails.genderIdentity)
-  }
-
-  @Test
   fun `maps nationality from CPR`() {
     val personAdditionalDetails = createCprPrisonPersonDto(PRISONER_NUMBER).toAdditionalDetails()
     assertEquals(listOf("British"), personAdditionalDetails.nationalities)
