@@ -34,10 +34,11 @@ class CommunityServiceProviderIntegrationTest : IntegrationTestBase() {
     assertThat(response.communitySupportServices).isNotEmpty
     assertThat(response.communitySupportServices.values.flatten()).hasSize(27)
 
-    assertThat(response.communitySupportServices.keys).contains("Cleveland", "Lancashire", "Thames Valley")
+    assertThat(response.communitySupportServices.keys).contains("North East", "North West", "South Central")
     assertThat(response.communitySupportServices.keys).allMatch { it.isNotBlank() }
 
     assertThat(response.communitySupportServices.values.flatten()).allMatch { it.pdus.isNotEmpty() }
+    assertThat(response.communitySupportServices.values.flatten()).allMatch { it.area.isNotBlank() }
 
     response.communitySupportServices.forEach { (region, providers) ->
       assertThat(providers).allMatch { it.region == region }
