@@ -19,6 +19,6 @@ class CommunityServiceProviderService(
         .sorted()
       CommunitySupportServiceDto.from(provider, pdus)
     }
-    return CommunitySupportServicesDto(communitySupportServices = services)
+    return CommunitySupportServicesDto(communitySupportServices = services.groupBy { it.region })
   }
 }
