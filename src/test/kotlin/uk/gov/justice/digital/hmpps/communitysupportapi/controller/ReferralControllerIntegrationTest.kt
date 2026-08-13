@@ -606,7 +606,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("GET /bff/service-end-date-page/{caseIdentifier}")
+  @DisplayName("GET /bff/service-end-date-page/{referralId}")
   inner class ServiceEndDatePageEndPoint {
 
     @BeforeEach
@@ -616,17 +616,17 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(GET, "/bff/service-end-date-page/${referralHelper.communityServiceProviderId}")
+      assertUnauthorized(GET, "/bff/service-end-date-page/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(GET, "/bff/service-end-date-page/${referralHelper.communityServiceProviderId}")
+      assertForbiddenNoRole(GET, "/bff/service-end-date-page/${UUID.randomUUID()}")
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(GET, "/bff/service-end-date-page/${referralHelper.communityServiceProviderId}")
+      assertForbiddenWrongRole(GET, "/bff/service-end-date-page/${UUID.randomUUID()}")
     }
 
     @Test
@@ -710,7 +710,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return Not Found with invalid referral identifier`() {
-      assertNotFound(GET, "/bff/service-end-date-page/${referralHelper.communityServiceProviderId}")
+      assertNotFound(GET, "/bff/service-end-date-page/${UUID.randomUUID()}")
     }
   }
 
