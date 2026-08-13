@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
@@ -601,6 +602,115 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return Not Found with invalid referral identifier`() {
       assertNotFound(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/service-end-date-page/{caseIdentifier}")
+  inner class ServiceEndDatePageEndPoint {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/service-end-date-page/${referralHelper.communityServiceProviderId}")
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(GET, "/bff/service-end-date-page/${referralHelper.communityServiceProviderId}")
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(GET, "/bff/service-end-date-page/${referralHelper.communityServiceProviderId}")
+    }
+
+    @Test
+    fun `should return OK with service end date data when set on referral`() {
+      val cprPersonDTO = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDTO.toJson()),
+          ),
+      )
+
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
+      personRepository.save(person)
+
+      val completionDate = OffsetDateTime.now().plusMonths(3).withNano(0)
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        targetServiceCompletionDate = completionDate,
+        targetServiceCompletionDateReason = "Extended due to complexity",
+      )
+
+      webTestClient.get()
+        .uri("/bff/service-end-date-page/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ServiceEndDatePageDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.targetServiceCompletionDate?.toInstant() shouldBe completionDate.toInstant()
+          body.targetServiceCompletionReason shouldBe "Extended due to complexity"
+        }
+    }
+
+    @Test
+    fun `should return OK with null service end date data when unset on referral`() {
+      val cprPersonDTO = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDTO.toJson()),
+          ),
+      )
+
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
+      personRepository.save(person)
+
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        targetServiceCompletionDate = null,
+        targetServiceCompletionDateReason = null,
+      )
+
+      webTestClient.get()
+        .uri("/bff/service-end-date-page/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ServiceEndDatePageDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.targetServiceCompletionDate shouldBe null
+          body.targetServiceCompletionReason shouldBe null
+        }
+    }
+
+    @Test
+    fun `should return Not Found with invalid referral identifier`() {
+      assertNotFound(GET, "/bff/service-end-date-page/${referralHelper.communityServiceProviderId}")
     }
   }
 
