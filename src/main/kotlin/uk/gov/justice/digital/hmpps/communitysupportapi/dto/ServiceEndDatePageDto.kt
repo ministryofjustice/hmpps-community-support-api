@@ -7,9 +7,11 @@ import java.time.OffsetDateTime
 
 data class ServiceEndDatePageDto(
   @Schema(description = "The target service completion date for the referral")
+  @param:JsonProperty("target_service_completion_date")
   @get:JsonProperty("target_service_completion_date")
   val targetServiceCompletionDate: OffsetDateTime?,
   @Schema(description = "The reason the target service completion date was set")
+  @param:JsonProperty("target_service_completion_reason")
   @get:JsonProperty("target_service_completion_reason")
   val targetServiceCompletionReason: String?,
 ) {
