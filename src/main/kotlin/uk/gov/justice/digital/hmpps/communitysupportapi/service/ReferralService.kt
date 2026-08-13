@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResu
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
@@ -78,6 +79,8 @@ class ReferralService(
 
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
   }
+
+  fun getServiceEndDatePage(caseIdentifier: String?): ServiceEndDatePageDto = ServiceEndDatePageDto.from(referralLookupService.findByCaseIdentifier(caseIdentifier))
 
   @Transactional
   fun createReferral(userId: UUID, createReferralRequest: CreateReferralRequest): ReferralCreationResult {
