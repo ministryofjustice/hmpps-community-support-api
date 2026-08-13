@@ -9,6 +9,7 @@ data class CommunitySupportServicesDto(
 data class CommunitySupportServiceDto(
   val id: String,
   val region: String,
+  val area: String,
   val name: String,
   val providerName: String,
   val description: String,
@@ -17,7 +18,8 @@ data class CommunitySupportServiceDto(
   companion object {
     fun from(communityServiceProvider: CommunityServiceProvider, pdus: List<String>) = CommunitySupportServiceDto(
       id = communityServiceProvider.id.toString(),
-      region = communityServiceProvider.contractArea.area,
+      region = communityServiceProvider.contractArea.region.name,
+      area = communityServiceProvider.contractArea.area,
       name = communityServiceProvider.name,
       providerName = communityServiceProvider.serviceProvider.name,
       description = communityServiceProvider.description,
