@@ -876,17 +876,34 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(HttpMethod.PATCH, "/referral/${UUID.randomUUID()}/service-end-date")
+      webTestClient.patch()
+        .uri("/referral/${UUID.randomUUID()}/service-end-date")
+        .bodyValue(ServiceEndDatePageDto(null, null))
+        .exchange()
+        .expectStatus()
+        .isUnauthorized
     }
 
     @Test
     fun `should return forbidden if no role`() {
-      assertForbiddenNoRole(HttpMethod.PATCH, "/referral/${UUID.randomUUID()}/service-end-date")
+      webTestClient.patch()
+        .uri("/referral/${UUID.randomUUID()}/service-end-date")
+        .headers(setAuthorisation("AUTH_ADM", listOf(), listOf("read")))
+        .bodyValue(ServiceEndDatePageDto(null, null))
+        .exchange()
+        .expectStatus()
+        .isForbidden
     }
 
     @Test
     fun `should return forbidden if wrong role`() {
-      assertForbiddenWrongRole(HttpMethod.PATCH, "/referral/${UUID.randomUUID()}/service-end-date")
+      webTestClient.patch()
+        .uri("/referral/${UUID.randomUUID()}/service-end-date")
+        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
+        .bodyValue(ServiceEndDatePageDto(null, null))
+        .exchange()
+        .expectStatus()
+        .isForbidden
     }
 
     @Test
@@ -930,7 +947,15 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return Not Found with invalid referral identifier`() {
-      assertNotFound(HttpMethod.PATCH, "/referral/${UUID.randomUUID()}/service-end-date")
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      webTestClient.patch()
+        .uri("/referral/${UUID.randomUUID()}/service-end-date")
+        .headers(setAuthorisation())
+        .bodyValue(ServiceEndDatePageDto(null, null))
+        .exchange()
+        .expectStatus()
+        .isNotFound
     }
   }
 
