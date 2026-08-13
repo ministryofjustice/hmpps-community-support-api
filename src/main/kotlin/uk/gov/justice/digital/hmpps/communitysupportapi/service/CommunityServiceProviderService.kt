@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportServiceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportServicesDto
@@ -12,10 +11,6 @@ class CommunityServiceProviderService(
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val pduRepository: PduRepository,
 ) {
-  companion object {
-    private val log = LoggerFactory.getLogger(this::class.java)
-  }
-
   fun communityServiceProviders(): CommunitySupportServicesDto {
     val providers = communityServiceProviderRepository.findAll()
     val services = providers.map { provider ->
