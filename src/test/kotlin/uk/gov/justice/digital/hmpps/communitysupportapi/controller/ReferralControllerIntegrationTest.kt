@@ -865,6 +865,76 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("PATCH /referral/{referralId}/service-end-date")
+  inner class ServiceEndDatePageUpdateEndPoint {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(HttpMethod.PATCH, "/referral/${UUID.randomUUID()}/service-end-date")
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(HttpMethod.PATCH, "/referral/${UUID.randomUUID()}/service-end-date")
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(HttpMethod.PATCH, "/referral/${UUID.randomUUID()}/service-end-date")
+    }
+
+    @Test
+    fun `should update the service end date details for a referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        targetServiceCompletionDate = null,
+        targetServiceCompletionDateReason = null,
+      )
+
+      val completionDate = OffsetDateTime.now().plusMonths(2).withNano(0)
+      val request = ServiceEndDatePageDto(
+        targetServiceCompletionDate = completionDate,
+        targetServiceCompletionReason = "Needs more time",
+      )
+
+      webTestClient.patch()
+        .uri("/referral/${referral.id}/service-end-date")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ServiceEndDatePageDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.targetServiceCompletionDate?.toInstant() shouldBe completionDate.toInstant()
+          body.targetServiceCompletionReason shouldBe "Needs more time"
+        }
+
+      val updatedReferral = referralRepository.findById(referral.id).get()
+      updatedReferral.targetServiceCompletionDate?.toInstant() shouldBe completionDate.toInstant()
+      updatedReferral.targetServiceCompletionDateReason shouldBe "Needs more time"
+      updatedReferral.referralEvents.any { it.eventType == ReferralEventType.UPDATED } shouldBe true
+    }
+
+    @Test
+    fun `should return Not Found with invalid referral identifier`() {
+      assertNotFound(HttpMethod.PATCH, "/referral/${UUID.randomUUID()}/service-end-date")
+    }
+  }
+
+  @Nested
   @DisplayName("GET /bff/referral-details/{caseReference}/ics")
   inner class GetICSDetailsEndPoint {
     val caseReference = "AA1234DD"

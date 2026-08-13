@@ -83,6 +83,32 @@ class ReferralService(
   fun getServiceEndDatePage(caseIdentifier: String?): ServiceEndDatePageDto = ServiceEndDatePageDto.from(referralLookupService.findByCaseIdentifier(caseIdentifier))
 
   @Transactional
+  fun updateReferralServiceEndDate(
+    referralId: UUID,
+    userId: UUID,
+    request: ServiceEndDatePageDto,
+  ): ServiceEndDatePageDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+    val now = OffsetDateTime.now()
+    referral.targetServiceCompletionDate = request.targetServiceCompletionDate
+    referral.targetServiceCompletionDateReason = request.targetServiceCompletionReason
+    referral.updatedAt = now
+    referral.addEvent(
+      ReferralEvent(
+        id = UUID.randomUUID(),
+        eventType = ReferralEventType.UPDATED,
+        createdAt = now,
+        actorType = ActorType.AUTH,
+        actorId = userId,
+        referral = referral,
+      ),
+    )
+
+    return ServiceEndDatePageDto.from(referralRepository.save(referral))
+  }
+
+  @Transactional
   fun createReferral(userId: UUID, createReferralRequest: CreateReferralRequest): ReferralCreationResult {
     val personDetails = fetchPersonDetails(createReferralRequest.personIdentifier)
     val person = upsertPerson(personDetails)

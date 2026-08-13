@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -117,6 +118,35 @@ class ReferralController(
   )
   @GetMapping("/bff/service-end-date-page/{caseIdentifier}")
   fun getServiceEndDatePage(@PathVariable caseIdentifier: String): ResponseEntity<ServiceEndDatePageDto> = ResponseEntity.ok(referralService.getServiceEndDatePage(caseIdentifier))
+
+  @Operation(summary = "Update service end date page data")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Service end date details updated",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ServiceEndDatePageDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/referral/{referralId}/service-end-date")
+  fun updateServiceEndDatePage(
+    @PathVariable referralId: UUID,
+    @RequestBody request: ServiceEndDatePageDto,
+  ): ResponseEntity<ServiceEndDatePageDto> {
+    val user = userMapper.fromToken(authenticationHolder)
+    return ResponseEntity.ok(referralService.updateReferralServiceEndDate(referralId, user.id, request))
+  }
 
   @Operation(summary = "Create a referral")
   @ApiResponses(
