@@ -3,7 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 
 data class CommunitySupportServicesDto(
-  val communitySupportServices: List<CommunitySupportServiceDto>,
+  val communitySupportServices: Map<String, List<CommunitySupportServiceDto>>,
 )
 
 data class CommunitySupportServiceDto(

@@ -1,10 +1,8 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportServiceDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportServicesDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 
@@ -13,14 +11,14 @@ class CommunityServiceProviderService(
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val pduRepository: PduRepository,
 ) {
-  fun communityServiceProviders(pageable: Pageable): PageResponse<CommunitySupportServiceDto> {
-    val providers = communityServiceProviderRepository.findAll(pageable)
+  fun communityServiceProviders(): CommunitySupportServicesDto {
+    val providers = communityServiceProviderRepository.findAll()
     val services = providers.map { provider ->
       val pdus = pduRepository.findByContractAreaId(provider.contractArea.id)
         .map { it.name }
         .sorted()
       CommunitySupportServiceDto.from(provider, pdus)
     }
-    return services.toResponse()
+    return CommunitySupportServicesDto(communitySupportServices = services.groupBy { it.region })
   }
 }
