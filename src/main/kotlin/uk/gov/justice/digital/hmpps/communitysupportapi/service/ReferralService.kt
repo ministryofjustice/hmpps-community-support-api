@@ -80,7 +80,10 @@ class ReferralService(
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
   }
 
-  fun getServiceEndDatePage(caseIdentifier: String?): ServiceEndDatePageDto = ServiceEndDatePageDto.from(referralLookupService.findByCaseIdentifier(caseIdentifier))
+  fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(
+    referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") },
+  )
 
   @Transactional
   fun updateReferralServiceEndDate(

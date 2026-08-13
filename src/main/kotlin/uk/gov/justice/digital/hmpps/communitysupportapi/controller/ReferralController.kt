@@ -116,8 +116,8 @@ class ReferralController(
       ),
     ],
   )
-  @GetMapping("/bff/service-end-date-page/{caseIdentifier}")
-  fun getServiceEndDatePage(@PathVariable caseIdentifier: String): ResponseEntity<ServiceEndDatePageDto> = ResponseEntity.ok(referralService.getServiceEndDatePage(caseIdentifier))
+  @GetMapping("/bff/service-end-date-page/{referralId}")
+  fun getServiceEndDatePage(@PathVariable referralId: UUID): ResponseEntity<ServiceEndDatePageDto> = ResponseEntity.ok(referralService.getServiceEndDatePage(referralId))
 
   @Operation(summary = "Update service end date page data")
   @ApiResponses(
