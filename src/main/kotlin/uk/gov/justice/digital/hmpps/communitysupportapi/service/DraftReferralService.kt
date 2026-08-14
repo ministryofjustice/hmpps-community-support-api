@@ -198,6 +198,8 @@ class DraftReferralService(
       employmentResponsibilitiesDetails = normalisedRequest.employmentResponsibilities,
       diversityDetails = normalisedRequest.diversity,
       anythingElseDetails = normalisedRequest.anythingElse,
+      interpreterNeeded = existingRecord.interpreterNeeded,
+      interpreterLanguage = existingRecord.interpreterLanguage,
       createdBy = existingRecord.createdBy,
       createdAt = existingRecord.createdAt,
       updatedBy = updatedBy,
