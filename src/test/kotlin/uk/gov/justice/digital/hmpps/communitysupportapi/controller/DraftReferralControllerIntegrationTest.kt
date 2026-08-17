@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffR
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.Selection
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
@@ -287,8 +288,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.refereeName.firstName shouldBe person.firstName
           body.refereeName.lastName shouldBe person.lastName
           body.needsAdditionalSupport shouldBe true
-          body.physicalHealth.selected shouldBe true
-          body.physicalHealth.value shouldBe "Wheelchair access required"
+          body.physicalHealth shouldBe Selection.Yes("Wheelchair access required")
         }
     }
   }
@@ -336,9 +336,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
           body.refereeName.firstName shouldBe person.firstName
           body.refereeName.lastName shouldBe person.lastName
-          body.language?.selected shouldBe true
-          body.language?.value shouldBe "Italian"
-          body.needsInterpreter shouldBe true
+          body.language shouldBe Selection.Yes("Italian")
         }
     }
 
@@ -385,9 +383,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
           body.refereeName.firstName shouldBe person.firstName
           body.refereeName.lastName shouldBe person.lastName
-          body.language?.selected shouldBe false
-          body.language?.value shouldBe null
-          body.needsInterpreter shouldBe false
+          body.language shouldBe Selection.No
         }
     }
   }
