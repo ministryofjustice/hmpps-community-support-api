@@ -1066,7 +1066,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("PATCH /referral/{referralId}/service-days")
+  @DisplayName("PATCH /draft-referral/{referralId}/service-days")
   inner class ServiceDaysPageUpdateEndPoint {
 
     @BeforeEach
@@ -1078,7 +1078,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return unauthorized if no token`() {
       webTestClient.patch()
-        .uri("/referral/${UUID.randomUUID()}/service-days")
+        .uri("/draft-referral/${UUID.randomUUID()}/service-days")
         .bodyValue(ServiceDaysPageDto(null))
         .exchange()
         .expectStatus()
@@ -1088,7 +1088,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return forbidden if no role`() {
       webTestClient.patch()
-        .uri("/referral/${UUID.randomUUID()}/service-days")
+        .uri("/draft-referral/${UUID.randomUUID()}/service-days")
         .headers(setAuthorisation("AUTH_ADM", listOf(), listOf("read")))
         .bodyValue(ServiceDaysPageDto(null))
         .exchange()
@@ -1099,7 +1099,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return forbidden if wrong role`() {
       webTestClient.patch()
-        .uri("/referral/${UUID.randomUUID()}/service-days")
+        .uri("/draft-referral/${UUID.randomUUID()}/service-days")
         .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
         .bodyValue(ServiceDaysPageDto(null))
         .exchange()
@@ -1119,7 +1119,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       )
 
       webTestClient.patch()
-        .uri("/referral/${referral.id}/service-days")
+        .uri("/draft-referral/${referral.id}/service-days")
         .headers(setAuthorisation())
         .bodyValue(ServiceDaysPageDto(35))
         .exchange()
@@ -1141,7 +1141,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
       webTestClient.patch()
-        .uri("/referral/${UUID.randomUUID()}/service-days")
+        .uri("/draft-referral/${UUID.randomUUID()}/service-days")
         .headers(setAuthorisation())
         .bodyValue(ServiceDaysPageDto(null))
         .exchange()

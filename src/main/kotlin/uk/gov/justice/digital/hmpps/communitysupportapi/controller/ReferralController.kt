@@ -192,7 +192,7 @@ class ReferralController(
       ),
     ],
   )
-  @PatchMapping("/referral/{referralId}/service-days")
+  @PatchMapping("/draft-referral/{referralId}/service-days")
   fun updateServiceDaysPage(
     @PathVariable referralId: UUID,
     @RequestBody request: ServiceDaysPageDto,
