@@ -1133,7 +1133,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val updatedReferral = referralRepository.findById(referral.id).get()
       updatedReferral.serviceDays shouldBe 35
-      updatedReferral.referralEvents.any { it.eventType == ReferralEventType.UPDATED } shouldBe true
+      updatedReferral.referralEvents.any { it.eventType == ReferralEventType.UPDATED } shouldBe false
     }
 
     @Test

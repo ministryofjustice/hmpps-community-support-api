@@ -110,14 +110,11 @@ class ReferralService(
   @Transactional
   fun updateReferralServiceDays(
     referralId: UUID,
-    userId: UUID,
     request: ServiceDaysPageDto,
   ): ServiceDaysPageDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
-    val now = OffsetDateTime.now()
     referral.serviceDays = request.serviceDays
-    addUpdatedEvent(referral, userId, now)
 
     return ServiceDaysPageDto.from(referralRepository.save(referral))
   }

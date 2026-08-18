@@ -196,10 +196,7 @@ class ReferralController(
   fun updateServiceDaysPage(
     @PathVariable referralId: UUID,
     @RequestBody request: ServiceDaysPageDto,
-  ): ResponseEntity<ServiceDaysPageDto> {
-    val user = userMapper.fromToken(authenticationHolder)
-    return ResponseEntity.ok(referralService.updateReferralServiceDays(referralId, user.id, request))
-  }
+  ): ResponseEntity<ServiceDaysPageDto> = ResponseEntity.ok(referralService.updateReferralServiceDays(referralId, request))
 
   @Operation(summary = "Create a referral")
   @ApiResponses(

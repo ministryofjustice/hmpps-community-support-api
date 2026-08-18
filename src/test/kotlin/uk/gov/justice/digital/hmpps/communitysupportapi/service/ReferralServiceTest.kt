@@ -143,9 +143,8 @@ class ReferralServiceTest {
   }
 
   @Test
-  fun `updateReferralServiceDays should update referral and add updated event`() {
+  fun `updateReferralServiceDays should update referral without adding an event`() {
     val referralId = UUID.randomUUID()
-    val userId = UUID.randomUUID()
     val personId = UUID.randomUUID()
     val createdAt = OffsetDateTime.parse("2026-08-13T10:09:02Z")
     val referral = Referral(
@@ -153,25 +152,14 @@ class ReferralServiceTest {
       personId = personId,
       personIdentifier = "X123456",
       createdAt = createdAt,
-      createdBy = userId,
+      createdBy = UUID.randomUUID(),
       serviceDays = null,
-    )
-
-    referral.addEvent(
-      ReferralEvent(
-        id = UUID.randomUUID(),
-        referral = referral,
-        eventType = ReferralEventType.CREATED,
-        createdAt = createdAt,
-        actorType = ActorType.AUTH,
-        actorId = userId,
-      ),
     )
 
     whenever(referralRepository.findById(referralId)).thenReturn(java.util.Optional.of(referral))
     whenever(referralRepository.save(any<Referral>())).thenAnswer { invocation -> invocation.arguments[0] as Referral }
 
-    val result = referralService.updateReferralServiceDays(referralId, userId, ServiceDaysPageDto(42))
+    val result = referralService.updateReferralServiceDays(referralId, ServiceDaysPageDto(42))
     val savedReferralCaptor = argumentCaptor<Referral>()
 
     assertThat(result.serviceDays).isEqualTo(42)
@@ -180,11 +168,7 @@ class ReferralServiceTest {
     val savedReferral = savedReferralCaptor.firstValue
 
     assertThat(savedReferral.serviceDays).isEqualTo(42)
-    val updatedEvent = savedReferral.referralEvents.first { it.eventType == ReferralEventType.UPDATED }
-    assertThat(savedReferral.updatedAt).isEqualTo(updatedEvent.createdAt)
-    assertThat(updatedEvent.actorId).isEqualTo(userId)
-    assertThat(savedReferral.referralEvents.any { it.eventType == ReferralEventType.CREATED }).isTrue()
-    assertThat(savedReferral.referralEvents.all { it.referral === savedReferral }).isTrue()
+    assertThat(savedReferral.referralEvents).isEmpty()
   }
 
   @Test
@@ -192,7 +176,7 @@ class ReferralServiceTest {
     whenever(referralRepository.findById(any())).thenReturn(java.util.Optional.empty())
 
     org.junit.jupiter.api.assertThrows<uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException> {
-      referralService.updateReferralServiceDays(UUID.randomUUID(), UUID.randomUUID(), ServiceDaysPageDto(null))
+      referralService.updateReferralServiceDays(UUID.randomUUID(), ServiceDaysPageDto(null))
     }
   }
 }
