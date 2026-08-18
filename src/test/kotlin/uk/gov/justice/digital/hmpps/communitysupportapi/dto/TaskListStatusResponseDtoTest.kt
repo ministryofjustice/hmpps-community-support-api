@@ -200,59 +200,118 @@ class TaskListStatusResponseDtoTest {
     }
 
     @Test
-    fun `returns notStarted when only target date exists`() {
-      val r = Referral(
-        id = referral.id,
-        personId = referral.personId,
-        personIdentifier = referral.personIdentifier,
-        referenceNumber = referral.referenceNumber,
-        createdAt = referral.createdAt,
-        updatedAt = referral.updatedAt,
-        urgency = referral.urgency,
-        createdBy = referral.createdBy,
-        targetServiceCompletionDate = OffsetDateTime.now(),
+    fun `returns inProgress when only target date exists`() {
+      val result = TaskListStatusResponseDto.from(
+        buildReferralWithAdditionalInformation(
+          targetServiceCompletionDate = OffsetDateTime.now(),
+        ),
+        person,
+        null,
+        null,
+        null,
+        null,
       )
 
-      val result = TaskListStatusResponseDto.from(r, person, null, null, null, null)
-
-      result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.notStarted()
+      result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.inProgress()
     }
 
     @Test
-    fun `returns notStarted when only reason exists`() {
-      val r = Referral(
-        id = referral.id,
-        personId = referral.personId,
-        personIdentifier = referral.personIdentifier,
-        referenceNumber = referral.referenceNumber,
-        createdAt = referral.createdAt,
-        updatedAt = referral.updatedAt,
-        urgency = referral.urgency,
-        createdBy = referral.createdBy,
-        targetServiceCompletionDateReason = "Some reason",
+    fun `returns inProgress when only reason exists`() {
+      val result = TaskListStatusResponseDto.from(
+        buildReferralWithAdditionalInformation(
+          targetServiceCompletionDateReason = "Some reason",
+        ),
+        person,
+        null,
+        null,
+        null,
+        null,
       )
 
-      val result = TaskListStatusResponseDto.from(r, person, null, null, null, null)
-
-      result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.notStarted()
+      result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.inProgress()
     }
 
     @Test
-    fun `returns completed when both target date and reason exist`() {
-      val r = Referral(
-        id = referral.id,
-        personId = referral.personId,
-        personIdentifier = referral.personIdentifier,
-        referenceNumber = referral.referenceNumber,
-        createdAt = referral.createdAt,
-        updatedAt = referral.updatedAt,
-        urgency = referral.urgency,
-        createdBy = referral.createdBy,
-        targetServiceCompletionDate = OffsetDateTime.now(),
-        targetServiceCompletionDateReason = "Some reason",
+    fun `returns inProgress when only service days exists`() {
+      val result = TaskListStatusResponseDto.from(
+        buildReferralWithAdditionalInformation(
+          serviceDays = 20,
+        ),
+        person,
+        null,
+        null,
+        null,
+        null,
       )
 
-      val result = TaskListStatusResponseDto.from(r, person, null, null, null, null)
+      result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.inProgress()
+    }
+
+    @Test
+    fun `returns inProgress when target date and reason exist without service days`() {
+      val result = TaskListStatusResponseDto.from(
+        buildReferralWithAdditionalInformation(
+          targetServiceCompletionDate = OffsetDateTime.now(),
+          targetServiceCompletionDateReason = "Some reason",
+        ),
+        person,
+        null,
+        null,
+        null,
+        null,
+      )
+
+      result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.inProgress()
+    }
+
+    @Test
+    fun `returns inProgress when target date and service days exist without reason`() {
+      val result = TaskListStatusResponseDto.from(
+        buildReferralWithAdditionalInformation(
+          targetServiceCompletionDate = OffsetDateTime.now(),
+          serviceDays = 20,
+        ),
+        person,
+        null,
+        null,
+        null,
+        null,
+      )
+
+      result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.inProgress()
+    }
+
+    @Test
+    fun `returns inProgress when reason and service days exist without target date`() {
+      val result = TaskListStatusResponseDto.from(
+        buildReferralWithAdditionalInformation(
+          targetServiceCompletionDateReason = "Some reason",
+          serviceDays = 20,
+        ),
+        person,
+        null,
+        null,
+        null,
+        null,
+      )
+
+      result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.inProgress()
+    }
+
+    @Test
+    fun `returns completed when target date reason and service days exist`() {
+      val result = TaskListStatusResponseDto.from(
+        buildReferralWithAdditionalInformation(
+          targetServiceCompletionDate = OffsetDateTime.now(),
+          targetServiceCompletionDateReason = "Some reason",
+          serviceDays = 20,
+        ),
+        person,
+        null,
+        null,
+        null,
+        null,
+      )
 
       result.addAdditionalInformationCompleted shouldBe TaskListStatusItem.completed()
     }
@@ -296,6 +355,24 @@ class TaskListStatusResponseDtoTest {
     additionalSupportNeeded = additionalSupportNeeded,
     interpreterNeeded = interpreterNeeded,
     createdBy = userId,
+  )
+
+  private fun buildReferralWithAdditionalInformation(
+    targetServiceCompletionDate: OffsetDateTime? = null,
+    targetServiceCompletionDateReason: String? = null,
+    serviceDays: Int? = null,
+  ) = Referral(
+    id = referral.id,
+    personId = referral.personId,
+    personIdentifier = referral.personIdentifier,
+    referenceNumber = referral.referenceNumber,
+    createdAt = referral.createdAt,
+    updatedAt = referral.updatedAt,
+    urgency = referral.urgency,
+    createdBy = referral.createdBy,
+    targetServiceCompletionDate = targetServiceCompletionDate,
+    targetServiceCompletionDateReason = targetServiceCompletionDateReason,
+    serviceDays = serviceDays,
   )
 
   private fun buildRiskInfo() = RiskInformation(
