@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResu
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
@@ -85,6 +86,11 @@ class ReferralService(
       .orElseThrow { NotFoundException("Referral not found for id $referralId") },
   )
 
+  fun getServiceDaysPage(referralId: UUID): ServiceDaysPageDto = ServiceDaysPageDto.from(
+    referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") },
+  )
+
   @Transactional
   fun updateReferralServiceEndDate(
     referralId: UUID,
@@ -96,19 +102,24 @@ class ReferralService(
     val now = OffsetDateTime.now()
     referral.targetServiceCompletionDate = request.targetServiceCompletionDate
     referral.targetServiceCompletionDateReason = request.targetServiceCompletionReason
-    referral.updatedAt = now
-    referral.addEvent(
-      ReferralEvent(
-        id = UUID.randomUUID(),
-        eventType = ReferralEventType.UPDATED,
-        createdAt = now,
-        actorType = ActorType.AUTH,
-        actorId = userId,
-        referral = referral,
-      ),
-    )
+    addUpdatedEvent(referral, userId, now)
 
     return ServiceEndDatePageDto.from(referralRepository.save(referral))
+  }
+
+  @Transactional
+  fun updateReferralServiceDays(
+    referralId: UUID,
+    userId: UUID,
+    request: ServiceDaysPageDto,
+  ): ServiceDaysPageDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+    val now = OffsetDateTime.now()
+    referral.serviceDays = request.serviceDays
+    addUpdatedEvent(referral, userId, now)
+
+    return ServiceDaysPageDto.from(referralRepository.save(referral))
   }
 
   @Transactional
@@ -329,6 +340,20 @@ class ReferralService(
 
     logger.error("Unable to generate a unique referral number for referral : {}", referralId)
     throw IllegalStateException("Unable to generate a unique referral reference for referral $referralId")
+  }
+
+  private fun addUpdatedEvent(referral: Referral, userId: UUID, createdAt: OffsetDateTime) {
+    referral.updatedAt = createdAt
+    referral.addEvent(
+      ReferralEvent(
+        id = UUID.randomUUID(),
+        eventType = ReferralEventType.UPDATED,
+        createdAt = createdAt,
+        actorType = ActorType.AUTH,
+        actorId = userId,
+        referral = referral,
+      ),
+    )
   }
 
   private fun upsertPerson(personDetails: PersonDto): Person {

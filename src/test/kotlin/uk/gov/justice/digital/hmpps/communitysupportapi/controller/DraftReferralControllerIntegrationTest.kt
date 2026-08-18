@@ -711,12 +711,36 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return completed for addAdditionalInformationCompleted when target date and reason exist`() {
+    fun `should return in progress for addAdditionalInformationCompleted when target date and reason exist without service days`() {
       val testUser = referralHelper.createTestUser()
       val person = referralHelper.createPerson(identifier = "CRN12345")
       val savedReferral = referralHelper.createReferral(
         person = person,
         submittedBy = testUser,
+      )
+      referralRepository.save(savedReferral)
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.inProgress()
+        }
+    }
+
+    @Test
+    fun `should return completed for addAdditionalInformationCompleted when target date reason and service days exist`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        serviceDays = 40,
       )
       referralRepository.save(savedReferral)
 
