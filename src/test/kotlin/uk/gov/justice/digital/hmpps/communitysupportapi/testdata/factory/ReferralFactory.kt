@@ -43,6 +43,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
   private var createdBy: UUID = UUID.randomUUID()
   private var targetServiceCompletionDate: OffsetDateTime? = OffsetDateTime.now().plusDays(30)
   private var targetServiceCompletionDateReason: String? = "A reason"
+  private var serviceDays: Int? = null
 
   fun withId(id: UUID) = apply { this.id = id }
   fun withPersonId(personId: UUID) = apply { this.personId = personId }
@@ -54,6 +55,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
   fun withCreatedBy(createdBy: UUID) = apply { this.createdBy = createdBy }
   fun withTargetServiceCompletionDate(date: OffsetDateTime?) = apply { this.targetServiceCompletionDate = date }
   fun withTargetServiceCompletionDateReason(reason: String?) = apply { this.targetServiceCompletionDateReason = reason }
+  fun withServiceDays(serviceDays: Int?) = apply { this.serviceDays = serviceDays }
 
   fun withCreatedEvent(actorId: UUID = DEFAULT_ACTOR_ID, createdAt: OffsetDateTime? = null) = apply {
     events.add { referral ->
@@ -89,6 +91,7 @@ class ReferralFactory : TestEntityFactory<Referral>() {
       createdBy = createdBy,
       targetServiceCompletionDate = targetServiceCompletionDate,
       targetServiceCompletionDateReason = targetServiceCompletionDateReason,
+      serviceDays = serviceDays,
     )
 
     // Add all configured events
