@@ -26,6 +26,8 @@ services:
       auth-user-details: "/users/{userName}"
   assess-risks-and-needs-api:
     base-url: http://localhost:9091/assess-risks-and-needs
+  nDelius:
+    base-url: http://localhost:9091/delius
 
 notify:
   api.key: "${NOTIFY_API_KEY:invalid-key}"

@@ -27,6 +27,7 @@ class WebClientConfiguration(
   @Value($$"${services.core-person-record-api.base-url}") private val corePersonRecordBaseUrl: String,
   @Value($$"${services.manage-users-api.base-url}") private val manageUsersAuthBaseUrl: String,
   @Value($$"${services.assess-risks-and-needs-api.base-url}") private val assessRisksAndNeedsBaseUrl: String,
+  @Value($$"${services.nDelius.base-url}") private val nDeliusBaseUrl: String,
   @Value($$"${webclient.read-timeout-seconds}") private val readTimeoutSeconds: Int,
   @Value($$"${webclient.connect-timeout-seconds}") private val authConnectTimeoutSeconds: Long,
   @Value($$"${webclient.write-timeout-seconds}") private val writeTimeoutSeconds: Int,
@@ -74,6 +75,12 @@ class WebClientConfiguration(
     builder: WebClient.Builder,
     authorizedClientManager: OAuth2AuthorizedClientManager,
   ): WebClient = createWebClient(builder, authorizedClientManager, assessRisksAndNeedsBaseUrl)
+
+  @Bean("nDeliusWebClient")
+  fun nDeliusWebClient(
+    builder: WebClient.Builder,
+    authorizedClientManager: OAuth2AuthorizedClientManager,
+  ): WebClient = createWebClient(builder, authorizedClientManager, nDeliusBaseUrl)
 
   private fun createWebClient(
     builder: WebClient.Builder,
