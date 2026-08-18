@@ -1048,7 +1048,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       val updatedReferral = referralRepository.findById(referral.id).get()
       updatedReferral.targetServiceCompletionDate?.toInstant() shouldBe completionDate.toInstant()
       updatedReferral.targetServiceCompletionDateReason shouldBe "Needs more time"
-      updatedReferral.referralEvents.any { it.eventType == ReferralEventType.UPDATED } shouldBe true
+      updatedReferral.referralEvents.any { it.eventType == ReferralEventType.UPDATED } shouldBe false
     }
 
     @Test

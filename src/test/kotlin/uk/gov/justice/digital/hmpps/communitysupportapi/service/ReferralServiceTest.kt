@@ -12,10 +12,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -80,9 +77,8 @@ class ReferralServiceTest {
   lateinit var referralService: ReferralService
 
   @Test
-  fun `updateReferralServiceEndDate should update referral and add updated event`() {
+  fun `updateReferralServiceEndDate should update referral without adding an event`() {
     val referralId = UUID.randomUUID()
-    val userId = UUID.randomUUID()
     val personId = UUID.randomUUID()
     val createdAt = OffsetDateTime.parse("2026-08-13T10:09:02Z")
     val completionDate = OffsetDateTime.parse("2026-11-13T10:09:02Z")
@@ -91,20 +87,9 @@ class ReferralServiceTest {
       personId = personId,
       personIdentifier = "X123456",
       createdAt = createdAt,
-      createdBy = userId,
+      createdBy = UUID.randomUUID(),
       targetServiceCompletionDate = null,
       targetServiceCompletionDateReason = null,
-    )
-
-    referral.addEvent(
-      ReferralEvent(
-        id = UUID.randomUUID(),
-        referral = referral,
-        eventType = ReferralEventType.CREATED,
-        createdAt = createdAt,
-        actorType = ActorType.AUTH,
-        actorId = userId,
-      ),
     )
 
     whenever(referralRepository.findById(referralId)).thenReturn(java.util.Optional.of(referral))
@@ -115,7 +100,7 @@ class ReferralServiceTest {
       targetServiceCompletionReason = "Extended due to complexity",
     )
 
-    val result = referralService.updateReferralServiceEndDate(referralId, userId, request)
+    val result = referralService.updateReferralServiceEndDate(referralId, request)
     val savedReferralCaptor = argumentCaptor<Referral>()
 
     assertThat(result.targetServiceCompletionDate).isEqualTo(completionDate)
@@ -126,11 +111,7 @@ class ReferralServiceTest {
 
     assertThat(savedReferral.targetServiceCompletionDate).isEqualTo(completionDate)
     assertThat(savedReferral.targetServiceCompletionDateReason).isEqualTo("Extended due to complexity")
-    val updatedEvent = savedReferral.referralEvents.first { it.eventType == ReferralEventType.UPDATED }
-    assertThat(savedReferral.updatedAt).isEqualTo(updatedEvent.createdAt)
-    assertThat(updatedEvent.actorId).isEqualTo(userId)
-    assertThat(savedReferral.referralEvents.any { it.eventType == ReferralEventType.CREATED }).isTrue()
-    assertThat(savedReferral.referralEvents.all { it.referral === savedReferral }).isTrue()
+    assertThat(savedReferral.referralEvents).isEmpty()
   }
 
   @Test
@@ -138,7 +119,7 @@ class ReferralServiceTest {
     whenever(referralRepository.findById(any())).thenReturn(java.util.Optional.empty())
 
     org.junit.jupiter.api.assertThrows<uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException> {
-      referralService.updateReferralServiceEndDate(UUID.randomUUID(), UUID.randomUUID(), ServiceEndDatePageDto(null, null))
+      referralService.updateReferralServiceEndDate(UUID.randomUUID(), ServiceEndDatePageDto(null, null))
     }
   }
 

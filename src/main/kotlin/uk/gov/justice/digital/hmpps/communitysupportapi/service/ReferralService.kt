@@ -94,15 +94,12 @@ class ReferralService(
   @Transactional
   fun updateReferralServiceEndDate(
     referralId: UUID,
-    userId: UUID,
     request: ServiceEndDatePageDto,
   ): ServiceEndDatePageDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
-    val now = OffsetDateTime.now()
     referral.targetServiceCompletionDate = request.targetServiceCompletionDate
     referral.targetServiceCompletionDateReason = request.targetServiceCompletionReason
-    addUpdatedEvent(referral, userId, now)
 
     return ServiceEndDatePageDto.from(referralRepository.save(referral))
   }
@@ -337,20 +334,6 @@ class ReferralService(
 
     logger.error("Unable to generate a unique referral number for referral : {}", referralId)
     throw IllegalStateException("Unable to generate a unique referral reference for referral $referralId")
-  }
-
-  private fun addUpdatedEvent(referral: Referral, userId: UUID, createdAt: OffsetDateTime) {
-    referral.updatedAt = createdAt
-    referral.addEvent(
-      ReferralEvent(
-        id = UUID.randomUUID(),
-        eventType = ReferralEventType.UPDATED,
-        createdAt = createdAt,
-        actorType = ActorType.AUTH,
-        actorId = userId,
-        referral = referral,
-      ),
-    )
   }
 
   private fun upsertPerson(personDetails: PersonDto): Person {

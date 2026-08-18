@@ -167,10 +167,7 @@ class ReferralController(
   fun updateServiceEndDatePage(
     @PathVariable referralId: UUID,
     @RequestBody request: ServiceEndDatePageDto,
-  ): ResponseEntity<ServiceEndDatePageDto> {
-    val user = userMapper.fromToken(authenticationHolder)
-    return ResponseEntity.ok(referralService.updateReferralServiceEndDate(referralId, user.id, request))
-  }
+  ): ResponseEntity<ServiceEndDatePageDto> = ResponseEntity.ok(referralService.updateReferralServiceEndDate(referralId, request))
 
   @Operation(summary = "Update service days page data")
   @ApiResponses(
