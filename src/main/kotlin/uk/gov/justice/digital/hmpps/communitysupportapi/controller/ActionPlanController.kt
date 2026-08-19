@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ActionPlanService
 
@@ -47,5 +48,31 @@ class ActionPlanController(
   fun getActionPlanSummary(@PathVariable referralReference: String): ResponseEntity<ActionPlanSummaryDto> {
     log.info("Fetching action plan summary for referral={}", referralReference)
     return ResponseEntity.ok(actionPlanService.getActionPlanSummaryForReferral(referralReference))
+  }
+
+  @Operation(summary = "Get the needs with questions for an action plan")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Needs with questions returned",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanNeedsResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{referralReference}/action-plan/needs")
+  fun getActionPlanNeeds(@PathVariable referralReference: String): ResponseEntity<ActionPlanNeedsResponse> {
+    log.info("Fetching action plan needs for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.getActionPlanNeedsForReferral(referralReference))
   }
 }
