@@ -110,7 +110,24 @@ class ActionPlanServiceIntegrationTest :
       // Then
       val allActionPlans = actionPlanRepository.findAllByReferralId(referral.id)
       assertEquals(result.referralId, referral.id)
+      assertEquals(globalTemplate.id, result.actionPlanTemplateId)
       assertEquals(allActionPlans.size, 1)
+    }
+
+    @Test
+    fun `should create an ActionPlan using active global template when lower non-global template exists`() {
+      // Given
+      val referral = referralHelper.createReferral(submittedBy = user)
+      actionPlanHelper.createActionPlanTemplate(
+        id = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+        activeGlobal = false,
+      )
+
+      // When
+      val result = actionPlanService.findOrCreateByReferralId(referral.id)
+
+      // Then
+      assertEquals(globalTemplate.id, result.actionPlanTemplateId)
     }
   }
 

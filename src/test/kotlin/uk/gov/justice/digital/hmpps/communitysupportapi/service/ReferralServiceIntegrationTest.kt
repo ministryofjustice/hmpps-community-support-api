@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
@@ -72,6 +73,9 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var actionPlanEventRepository: ActionPlanEventRepository
+
+  @Autowired
+  private lateinit var actionPlanTemplateRepository: ActionPlanTemplateRepository
 
   @Autowired
   private lateinit var appointmentRepository: AppointmentRepository
@@ -390,8 +394,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val actionPlan = actionPlanRepository.findByReferralId(savedReferral.id)
     assertThat(actionPlan).isNotNull()
     assertThat(actionPlan?.referralId).isEqualTo(savedReferral.id)
-    // Magic ID from the V17 Seed Migration
-    assertThat(actionPlan!!.actionPlanTemplateId).isEqualTo(UUID.fromString("c191398c-9661-4983-bafb-be649d877183"))
+    assertThat(actionPlan!!.actionPlanTemplateId).isEqualTo(globalTemplateId())
 
     val actionPlanEvents = actionPlanEventRepository.findByActionPlanId(actionPlan.id)
     assertThat(actionPlanEvents).isNotNull()
@@ -427,8 +430,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val result = referralService.createReferral(referralUser.id, createReferralRequest)
     val savedReferral = result.referral
 
-    // Magic ID from the V17 Seed Migration
-    val actionPlanTemplateId = UUID.fromString("c191398c-9661-4983-bafb-be649d877183")
+    val actionPlanTemplateId = globalTemplateId()
     actionPlanRepository.save(ActionPlan.forReferral(actionPlanTemplateId, savedReferral.id))
 
     assertThat(actionPlanRepository.findByReferralId(savedReferral.id)).isNotNull()
@@ -474,9 +476,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(person, submittedBy = referralUser)
 
-    // TODO: We should move this to a config or to some test helper, as we've used it in a few
-    // places now.
-    val actionPlan = actionPlanRepository.save(ActionPlan.forReferral(UUID.fromString("c191398c-9661-4983-bafb-be649d877183"), referral.id))
+    val actionPlan = actionPlanRepository.save(ActionPlan.forReferral(globalTemplateId(), referral.id))
     actionPlanEventRepository.save(
       ActionPlanEvent(
         id = UUID.randomUUID(),
@@ -650,6 +650,9 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     return CreateReferralRequest(personIdentifier = crn)
   }
+
+  private fun globalTemplateId(): UUID = actionPlanTemplateRepository.findFirstByActiveGlobalTrueOrderByIdAsc()?.id
+    ?: throw NotFoundException("No active global action plan template found")
 
   private fun stubCprProbationPerson(crn: String, cprPersonDto: CprPersonDto) {
     stubFor(

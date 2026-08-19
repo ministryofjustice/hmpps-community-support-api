@@ -112,8 +112,8 @@ class ActionPlanService(
       return existingActionPlan
     }
 
-    val actionPlanTemplate = actionPlanTemplateRepository.findFirstByOrderByIdAsc()
-      ?: throw NotFoundException("No action plan template found")
+    val actionPlanTemplate = actionPlanTemplateRepository.findFirstByActiveGlobalTrueOrderByIdAsc()
+      ?: throw NotFoundException("No active global action plan template found")
 
     val actionPlan = ActionPlan.forReferral(actionPlanTemplate.id, referralId)
     actionPlanRepository.save(actionPlan)
