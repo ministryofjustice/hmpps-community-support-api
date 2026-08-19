@@ -61,6 +61,7 @@ Use this skill when:
 - Keep pull requests focused and avoid unrelated edits.
 - Provide concise verification evidence (lint, tests, build outcomes).
 - Call out exceptions or risk areas explicitly in the PR description.
+- Do not commit or push changes; leave version control actions to the user unless explicitly requested.
 
 ## Procedure
 

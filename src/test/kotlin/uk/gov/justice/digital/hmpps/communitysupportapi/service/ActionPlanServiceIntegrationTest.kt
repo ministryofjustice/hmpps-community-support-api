@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,6 +26,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -64,9 +67,6 @@ class ActionPlanServiceIntegrationTest :
 
   @Autowired
   private lateinit var actionPlanStepQuestionAnswerRevisionRepository: ActionPlanStepQuestionAnswerRevisionRepository
-
-  fun afterAll() {
-  }
 
   override fun afterAll(context: ExtensionContext) {
     testDataCleaner.cleanAllTables()
@@ -316,6 +316,79 @@ class ActionPlanServiceIntegrationTest :
       return actionPlanStepQuestionRepository
         .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
         .first { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == needId }
+    }
+  }
+
+  @Nested
+  @DisplayName("getActionPlanNeedsForReferral")
+  inner class GetActionPlanNeedsForReferral {
+    val user = referralHelper.ensureReferralUser()
+
+    @Test
+    fun `should return grouped needs and questions sorted by configured need order`() {
+      val person = referralHelper.createPerson(firstName = "Nina", lastName = "Jones")
+      val referral = referralHelper.createReferral(person = person, referenceNumber = "NP1234QR", submittedBy = user)
+      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+      actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+      val orderedNeeds = needRepository.findAllByOrderByOrderNumberAsc().take(2)
+      val firstNeed = orderedNeeds[0]
+      val secondNeed = orderedNeeds[1]
+
+      val needStep = createNeedStep(actionPlanTemplate.id)
+      createNeedQuestion(needStep.id, 1, "Question for second need", secondNeed.id)
+      createNeedQuestion(needStep.id, 2, "First question for first need", firstNeed.id)
+      createNeedQuestion(needStep.id, 3, "Second question for first need", firstNeed.id)
+      createNeedQuestion(needStep.id, 4, "Question without need", null)
+
+      val result = actionPlanService.getActionPlanNeedsForReferral(referral.referenceNumber!!)
+
+      assertEquals(listOf(firstNeed.id, secondNeed.id), result.needs.map { it.id })
+      assertEquals(firstNeed.label, result.needs[0].label)
+      assertEquals(listOf("First question for first need", "Second question for first need"), result.needs[0].questions.map { it.label })
+      assertEquals(listOf("textarea", "textarea"), result.needs[0].questions.map { it.answerType })
+      assertEquals(secondNeed.label, result.needs[1].label)
+      assertEquals(listOf("Question for second need"), result.needs[1].questions.map { it.label })
+      assertEquals(listOf("textarea"), result.needs[1].questions.map { it.answerType })
+    }
+
+    @Test
+    fun `should return empty needs when referral has no action plan need step`() {
+      val referral = referralHelper.createReferral(submittedBy = user, referenceNumber = "NP5678ST")
+
+      val result = actionPlanService.getActionPlanNeedsForReferral(referral.referenceNumber!!)
+
+      assertTrue(result.needs.isEmpty())
+    }
+
+    @Test
+    fun `should throw not found when referral reference does not exist`() {
+      val exception = assertThrows<NotFoundException> {
+        actionPlanService.getActionPlanNeedsForReferral("UNKNOWN")
+      }
+
+      assertEquals("Referral not found for reference UNKNOWN", exception.message)
+    }
+
+    private fun createNeedStep(actionPlanTemplateId: UUID) = actionPlanStepRepository.save(
+      ActionPlanStepFactory()
+        .withActionPlanTemplateId(actionPlanTemplateId)
+        .withOrderNumber(1)
+        .withName("Needs")
+        .withStepType(ActionPlanStepType.NEED)
+        .create(),
+    )
+
+    private fun createNeedQuestion(actionPlanStepId: UUID, orderNumber: Int, title: String, needId: UUID?) {
+      actionPlanStepQuestionRepository.save(
+        ActionPlanStepQuestionFactory()
+          .withActionPlanStepId(actionPlanStepId)
+          .withOrderNumber(orderNumber)
+          .withTitle(title)
+          .withAnswerType("textarea")
+          .withNeedId(needId)
+          .create(),
+      )
     }
   }
 }
