@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNee
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
@@ -275,4 +276,31 @@ class DraftReferralController(
     log.info("Attempt to get criminogenic needs for referral: {}", referralId)
     return ResponseEntity.ok(criminogenicNeedsService.getCriminogenicNeeds(referralId))
   }
+
+  @Operation(summary = "Get Offence and Sentence information for a draft referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Offence and Sentence information found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = OffenceSentenceInfoBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Offence and Sentence information not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/draft-referral/offence-sentence-info/{referralId}")
+  fun getOffenceAndSentenceInfo(
+    @PathVariable referralId: UUID,
+  ): ResponseEntity<OffenceSentenceInfoBffResponseDto> = ResponseEntity.ok(
+    draftReferralService.getOffenceAndSentenceInfo(referralId),
+  )
 }

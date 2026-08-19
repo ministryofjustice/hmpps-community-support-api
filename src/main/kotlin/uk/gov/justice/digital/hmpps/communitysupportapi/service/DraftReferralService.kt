@@ -6,7 +6,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNee
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSentenceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
@@ -264,5 +266,17 @@ class DraftReferralService(
       criminogenicNeeds,
       communityServiceProvider,
     )
+  }
+
+  fun getOffenceAndSentenceInfo(referralId: UUID): OffenceSentenceInfoBffResponseDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+
+    val offenceSentenceInfo = OffenceSentenceDto()
+
+    return OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
   }
 }
