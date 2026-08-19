@@ -16,6 +16,8 @@ class OffenceSentenceInfoBffResponseDtoTest {
     val offenceSentenceInfo = OffenceSentenceDto(
       sentenceEndDate = LocalDate.of(2026, 1, 1),
       expectedReleaseDate = null,
+      hasLicenceConditionsOrZones = true,
+      licenceConditionsOrZonesDetails = "Do not enter exclusion zone",
     )
 
     val result = OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
@@ -24,6 +26,8 @@ class OffenceSentenceInfoBffResponseDtoTest {
     result.lastName shouldBe "Doe"
     result.offenceSentenceInfo.sentenceEndDate shouldBe LocalDate.of(2026, 1, 1)
     result.offenceSentenceInfo.expectedReleaseDate shouldBe null
+    result.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe true
+    result.offenceSentenceInfo.licenceConditionsOrZonesDetails shouldBe "Do not enter exclusion zone"
   }
 
   @Test
@@ -35,6 +39,8 @@ class OffenceSentenceInfoBffResponseDtoTest {
     val offenceSentenceInfo = OffenceSentenceDto(
       sentenceEndDate = null,
       expectedReleaseDate = LocalDate.of(2026, 2, 1),
+      hasLicenceConditionsOrZones = false,
+      licenceConditionsOrZonesDetails = null,
     )
 
     val result = OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
@@ -43,5 +49,7 @@ class OffenceSentenceInfoBffResponseDtoTest {
     result.lastName shouldBe "Doe"
     result.offenceSentenceInfo.sentenceEndDate shouldBe null
     result.offenceSentenceInfo.expectedReleaseDate shouldBe LocalDate.of(2026, 2, 1)
+    result.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe false
+    result.offenceSentenceInfo.licenceConditionsOrZonesDetails shouldBe null
   }
 }

@@ -31,11 +31,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportN
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralOffenceSentenceRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
@@ -76,6 +78,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralProviderAssignmentRepository: ReferralProviderAssignmentRepository
+
+  @Autowired
+  private lateinit var referralOffenceSentenceRepository: ReferralOffenceSentenceRepository
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
@@ -1039,7 +1044,213 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.offenceSentenceInfo.outcome shouldBe null
           body.offenceSentenceInfo.sentenceEndDate shouldBe null
           body.offenceSentenceInfo.expectedReleaseDate shouldBe null
+          body.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe null
+          body.offenceSentenceInfo.licenceConditionsOrZonesDetails shouldBe null
         }
+    }
+
+    @Test
+    fun `should return stored offence and sentence info when details were previously upserted`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson(identifier = CRN)
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val request = UpdateOffenceSentenceRequest(
+        offence = "Assault",
+        offenceSubCategory = "Common assault",
+        outcome = "18 month community order",
+        sentenceEndDate = java.time.LocalDate.of(2026, 3, 1),
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/offence-sentence")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/${referral.id}/offence-sentence")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<OffenceSentenceInfoBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.offenceSentenceInfo.offence shouldBe null
+          body.offenceSentenceInfo.offenceSubCategory shouldBe null
+          body.offenceSentenceInfo.outcome shouldBe null
+          body.offenceSentenceInfo.sentenceEndDate shouldBe null
+          body.offenceSentenceInfo.expectedReleaseDate shouldBe null
+          body.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe null
+          body.offenceSentenceInfo.licenceConditionsOrZonesDetails shouldBe null
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /draft-referral/{referralId}/offence-sentence")
+  inner class OffenceSentencePatchTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(PATCH, "/draft-referral/${UUID.randomUUID()}/offence-sentence")
+    }
+
+    @Test
+    fun `should return 404 when referral does not exist`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val request = UpdateOffenceSentenceRequest(offence = "Robbery")
+
+      assertNotFound(PATCH, "/draft-referral/${UUID.randomUUID()}/offence-sentence", request)
+    }
+
+    @Test
+    fun `should return 400 when licence condition details are missing while question is yes`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson(identifier = "X123456")
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val request = UpdateOffenceSentenceRequest(
+        offence = "Robbery",
+        hasLicenceConditionsOrZones = true,
+        licenceConditionsOrZonesDetails = null,
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/offence-sentence")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isBadRequest
+
+      referralOffenceSentenceRepository.findByReferralId(referral.id) shouldBe null
+    }
+
+    @Test
+    fun `should return 200 and updated offence and sentence info for a known referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson(identifier = "X123456")
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val request = UpdateOffenceSentenceRequest(
+        offence = "Robbery",
+        offenceSubCategory = "Street robbery",
+        outcome = "12 month community order",
+        sentenceEndDate = java.time.LocalDate.of(2026, 1, 1),
+        expectedReleaseDate = java.time.LocalDate.of(2026, 2, 1),
+        hasLicenceConditionsOrZones = true,
+        licenceConditionsOrZonesDetails = "Cannot enter City Centre exclusion area",
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/offence-sentence")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<OffenceSentenceInfoBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.firstName shouldBe person.firstName
+          body.lastName shouldBe person.lastName
+          body.offenceSentenceInfo.offence shouldBe "Robbery"
+          body.offenceSentenceInfo.offenceSubCategory shouldBe "Street robbery"
+          body.offenceSentenceInfo.outcome shouldBe "12 month community order"
+          body.offenceSentenceInfo.sentenceEndDate shouldBe java.time.LocalDate.of(2026, 1, 1)
+          body.offenceSentenceInfo.expectedReleaseDate shouldBe java.time.LocalDate.of(2026, 2, 1)
+          body.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe true
+          body.offenceSentenceInfo.licenceConditionsOrZonesDetails shouldBe "Cannot enter City Centre exclusion area"
+        }
+
+      val persistedRecord = referralOffenceSentenceRepository.findByReferralId(referral.id)
+      persistedRecord shouldNotBe null
+      persistedRecord!!.offence shouldBe "Robbery"
+      persistedRecord.offenceSubCategory shouldBe "Street robbery"
+      persistedRecord.outcome shouldBe "12 month community order"
+      persistedRecord.sentenceEndDate shouldBe java.time.LocalDate.of(2026, 1, 1)
+      persistedRecord.expectedReleaseDate shouldBe java.time.LocalDate.of(2026, 2, 1)
+      persistedRecord.hasLicenceConditionsOrZones shouldBe true
+      persistedRecord.licenceConditionsOrZonesDetails shouldBe "Cannot enter City Centre exclusion area"
+      persistedRecord.createdBy shouldBe testUser.id
+      persistedRecord.updatedBy shouldBe null
+    }
+
+    @Test
+    fun `should update existing offence and sentence details when record already exists`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson(identifier = CRN)
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+      referralHelper.createProviderAssignment(referral, communityServiceProvider)
+
+      val firstRequest = UpdateOffenceSentenceRequest(
+        offence = "Robbery",
+        outcome = "Community order",
+        hasLicenceConditionsOrZones = true,
+        licenceConditionsOrZonesDetails = "Initial exclusion zone",
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/offence-sentence")
+        .headers(setAuthorisation())
+        .bodyValue(firstRequest)
+        .exchange()
+        .expectStatus().isOk
+
+      val initialRecord = referralOffenceSentenceRepository.findByReferralId(referral.id)
+      initialRecord shouldNotBe null
+
+      val existingRecordId = initialRecord!!.id
+
+      val secondRequest = UpdateOffenceSentenceRequest(
+        offence = "Fraud",
+        offenceSubCategory = "Benefit fraud",
+        outcome = "Suspended sentence",
+        hasLicenceConditionsOrZones = false,
+        licenceConditionsOrZonesDetails = "Should be removed",
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/offence-sentence")
+        .headers(setAuthorisation())
+        .bodyValue(secondRequest)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<OffenceSentenceInfoBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe false
+          body.offenceSentenceInfo.licenceConditionsOrZonesDetails shouldBe null
+        }
+
+      val updatedRecord = referralOffenceSentenceRepository.findByReferralId(referral.id)
+      updatedRecord shouldNotBe null
+      updatedRecord!!.id shouldBe existingRecordId
+      updatedRecord.offence shouldBe "Fraud"
+      updatedRecord.offenceSubCategory shouldBe "Benefit fraud"
+      updatedRecord.outcome shouldBe "Suspended sentence"
+      updatedRecord.hasLicenceConditionsOrZones shouldBe false
+      updatedRecord.licenceConditionsOrZonesDetails shouldBe null
+      updatedRecord.updatedBy shouldBe testUser.id
+      updatedRecord.updatedAt shouldNotBe null
     }
   }
 }
