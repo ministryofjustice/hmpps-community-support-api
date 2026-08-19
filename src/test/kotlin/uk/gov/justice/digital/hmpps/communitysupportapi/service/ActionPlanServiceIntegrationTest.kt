@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerRevision
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
@@ -308,13 +309,13 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(listOf("Visible outcome"), needSummary.outcomes)
     }
 
-    private fun findOutcomeQuestionForNeed(templateId: UUID, needId: UUID) = actionPlanStepRepository
-      .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(templateId)
-      .first { it.needId == needId && it.stepType == ActionPlanStepType.NEED }
-      .let { step ->
-        actionPlanStepQuestionRepository
-          .findAllByActionPlanStepIdInOrderByOrderNumberAsc(listOf(step.id))
-          .first { it.questionType == ActionPlanQuestionType.OUTCOME }
-      }
+    private fun findOutcomeQuestionForNeed(templateId: UUID, needId: UUID): ActionPlanStepQuestion {
+      val needSteps = actionPlanStepRepository
+        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(templateId)
+        .filter { it.stepType == ActionPlanStepType.NEED }
+      return actionPlanStepQuestionRepository
+        .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
+        .first { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == needId }
+    }
   }
 }

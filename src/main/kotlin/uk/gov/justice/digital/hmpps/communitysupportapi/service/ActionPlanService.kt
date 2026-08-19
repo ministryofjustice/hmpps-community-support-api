@@ -84,17 +84,15 @@ class ActionPlanService(
   private fun getOutcomesByNeedIdForActionPlan(actionPlanId: UUID, actionPlanTemplateId: UUID): Map<UUID, List<String>> {
     val needSteps = actionPlanStepRepository
       .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
-      .filter { it.stepType == ActionPlanStepType.NEED && it.needId != null }
+      .filter { it.stepType == ActionPlanStepType.NEED }
     if (needSteps.isEmpty()) {
       return emptyMap()
     }
 
-    val stepById = needSteps.associateBy { it.id }
-    val questionsByStepId = actionPlanStepQuestionRepository
-      .findAllByActionPlanStepIdInOrderByOrderNumberAsc(stepById.keys)
-      .filter { it.questionType == ActionPlanQuestionType.OUTCOME }
-      .groupBy { it.actionPlanStepId }
-    val questionById = questionsByStepId.values.flatten().associateBy { it.id }
+    val questionById = actionPlanStepQuestionRepository
+      .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
+      .filter { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId != null }
+      .associateBy { it.id }
     if (questionById.isEmpty()) {
       return emptyMap()
     }
@@ -115,8 +113,7 @@ class ActionPlanService(
     return answers
       .mapNotNull { answer ->
         val question = questionById[answer.actionPlanStepQuestionId] ?: return@mapNotNull null
-        val step = stepById[question.actionPlanStepId] ?: return@mapNotNull null
-        val needId = step.needId ?: return@mapNotNull null
+        val needId = question.needId ?: return@mapNotNull null
         val latestRevision = latestRevisionByAnswerId[answer.id] ?: return@mapNotNull null
         val content = latestRevision.content?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
         needId to content
