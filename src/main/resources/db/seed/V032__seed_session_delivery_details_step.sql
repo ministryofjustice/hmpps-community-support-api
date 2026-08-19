@@ -1,5 +1,10 @@
 -- V32: Seed session delivery details step and choices
 
+-- Patch existing answer_type values to uppercase for consistency
+UPDATE action_plan_step_question
+SET answer_type = 'TEXTAREA'
+WHERE answer_type = 'textarea';
+
 INSERT INTO action_plan_step (id, action_plan_template_id, order_number, name, step_type)
 VALUES (
     'e8f3b4f9-8d84-4b3a-9f47-5f78f4cb3001',
@@ -21,7 +26,7 @@ VALUES
         'e8f3b4f9-8d84-4b3a-9f47-5f78f4cb3001',
         1,
         'How will the session be delivered?',
-        'radio',
+        'RADIO',
         'GENERAL',
         1
     ),
@@ -30,7 +35,7 @@ VALUES
         'e8f3b4f9-8d84-4b3a-9f47-5f78f4cb3001',
         2,
         'How many people will be in the group?',
-        'radio',
+        'RADIO',
         'GENERAL',
         1
     ),
@@ -39,7 +44,7 @@ VALUES
         'e8f3b4f9-8d84-4b3a-9f47-5f78f4cb3001',
         3,
         'How frequently will sessions be delivered?',
-        'radio',
+        'RADIO',
         'GENERAL',
         1
     ),
@@ -48,7 +53,7 @@ VALUES
         'e8f3b4f9-8d84-4b3a-9f47-5f78f4cb3001',
         4,
         'How many sessions are required?',
-        'textarea',
+        'TEXTAREA',
         'GENERAL',
         1
     )

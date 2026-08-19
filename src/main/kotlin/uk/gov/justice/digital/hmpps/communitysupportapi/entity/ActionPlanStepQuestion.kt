@@ -1,9 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.entity
 
-import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Column
-import jakarta.persistence.Convert
-import jakarta.persistence.Converter
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -24,13 +21,6 @@ enum class ActionPlanQuestionAnswerType {
   TEXTAREA,
   RADIO,
   CHECKBOX,
-}
-
-@Converter(autoApply = true)
-class ActionPlanQuestionAnswerTypeConverter : AttributeConverter<ActionPlanQuestionAnswerType, String> {
-  override fun convertToDatabaseColumn(attribute: ActionPlanQuestionAnswerType?) = attribute?.name
-
-  override fun convertToEntityAttribute(value: String?) = value?.uppercase()?.let(ActionPlanQuestionAnswerType::valueOf)
 }
 
 @Entity
@@ -54,7 +44,7 @@ data class ActionPlanStepQuestion(
   val title: String,
 
   @Column(name = "answer_type", nullable = false)
-  @Convert(converter = ActionPlanQuestionAnswerTypeConverter::class)
+  @Enumerated(EnumType.STRING)
   val answerType: ActionPlanQuestionAnswerType,
 
   @Column(name = "question_type", nullable = false)
