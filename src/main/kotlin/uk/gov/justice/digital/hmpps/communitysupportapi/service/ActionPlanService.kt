@@ -3,7 +3,10 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
@@ -60,6 +63,46 @@ class ActionPlanService(
       personDetails = ActionPlanSummaryDto.ActionPlanSummaryPersonDetails(fullName = "${person.firstName} ${person.lastName}"),
       needs = needs,
     )
+  }
+
+  fun getActionPlanNeedsForReferral(referralReference: String): ActionPlanNeedsResponse {
+    val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
+      ?: throw NotFoundException("Referral not found for reference $referralReference")
+
+    val needSteps = actionPlanStepRepository.findNeedStepsByReferralId(referral.id)
+    if (needSteps.isEmpty()) {
+      logger.warn("No NEED step found for referral {}", referralReference)
+      return ActionPlanNeedsResponse(needs = emptyList())
+    }
+
+    val questions = actionPlanStepQuestionRepository
+      .findAllByActionPlanStepIdOrderByOrderNumberAsc(needSteps.first().id)
+      .filter { it.needId != null }
+
+    val needsMap = needRepository.findAllByOrderByOrderNumberAsc().associateBy { it.id }
+
+    val needsList = questions
+      .groupBy { it.needId }
+      .mapNotNull { (needId, needQuestions) ->
+        needId?.let { id ->
+          needsMap[id]?.let { need ->
+            NeedDto(
+              id = need.id,
+              label = need.label,
+              questions = needQuestions.map { question ->
+                QuestionDto(
+                  id = question.id,
+                  label = question.title,
+                  answerType = question.answerType,
+                )
+              },
+            )
+          }
+        }
+      }
+      .sortedBy { needsMap[it.id]?.orderNumber ?: Int.MAX_VALUE }
+
+    return ActionPlanNeedsResponse(needs = needsList)
   }
 
   private fun createForReferral(referralId: UUID): ActionPlan {
