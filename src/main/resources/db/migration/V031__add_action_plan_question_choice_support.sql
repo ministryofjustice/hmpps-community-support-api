@@ -1,4 +1,4 @@
--- V29: Add radio answer support and question choices for action plan question data model
+-- V31: Add radio answer support and question choices for action plan question data model
 
 ALTER TABLE action_plan_step_question
     DROP CONSTRAINT IF EXISTS chk_action_plan_step_question_answer_type;

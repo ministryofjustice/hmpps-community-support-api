@@ -1,20 +1,18 @@
--- V30: Seed session delivery details step and choices
+-- V32: Seed session delivery details step and choices
 
-INSERT INTO action_plan_step (id, action_plan_template_id, order_number, name, step_type, need_id)
+INSERT INTO action_plan_step (id, action_plan_template_id, order_number, name, step_type)
 VALUES (
     'e8f3b4f9-8d84-4b3a-9f47-5f78f4cb3001',
     'c191398c-9661-4983-bafb-be649d877183',
     10,
     'Session Delivery Details',
-    'SESSION_DELIVERY',
-    NULL
+    'SESSION_DELIVERY'
 )
 ON CONFLICT (id) DO UPDATE
 SET action_plan_template_id = EXCLUDED.action_plan_template_id,
     order_number = EXCLUDED.order_number,
     name = EXCLUDED.name,
-    step_type = EXCLUDED.step_type,
-    need_id = EXCLUDED.need_id;
+    step_type = EXCLUDED.step_type;
 
 INSERT INTO action_plan_step_question (id, action_plan_step_id, order_number, title, answer_type, question_type, max_number_responses)
 VALUES
