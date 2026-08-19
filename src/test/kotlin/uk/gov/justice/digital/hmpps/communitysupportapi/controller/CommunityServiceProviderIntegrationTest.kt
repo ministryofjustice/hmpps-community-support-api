@@ -19,7 +19,7 @@ class CommunityServiceProviderIntegrationTest : IntegrationTestBase() {
   lateinit var communityServiceProviderRepository: CommunityServiceProviderRepository
 
   @Test
-  fun `should return community service providers`() {
+  fun `should return community service providers grouped by region`() {
     val response = webTestClient
       .method(GET)
       .uri("/bff/referral-select-a-service")
@@ -32,16 +32,17 @@ class CommunityServiceProviderIntegrationTest : IntegrationTestBase() {
       .returnResult().responseBody!!
 
     assertThat(response.communitySupportServices).isNotEmpty
-    assertThat(response.communitySupportServices.size).isEqualTo(27)
+    assertThat(response.communitySupportServices.values.flatten()).hasSize(27)
 
-    val locationNames = response.communitySupportServices.map { it.region }.map { it.trim() }.toSet()
+    assertThat(response.communitySupportServices.keys).contains("North East", "North West", "South Central")
+    assertThat(response.communitySupportServices.keys).allMatch { it.isNotBlank() }
 
-    assertThat(locationNames).isNotEmpty
-    assertThat(locationNames).allMatch { it.isNotBlank() }
+    assertThat(response.communitySupportServices.values.flatten()).allMatch { it.pdus.isNotEmpty() }
+    assertThat(response.communitySupportServices.values.flatten()).allMatch { it.area.isNotBlank() }
 
-    assertThat(locationNames).contains("Cleveland", "Lancashire", "Thames Valley")
-
-    assertThat(response.communitySupportServices).allMatch { it.pdus.isNotEmpty() }
+    response.communitySupportServices.forEach { (region, providers) ->
+      assertThat(providers).allMatch { it.region == region }
+    }
   }
 
   @Test

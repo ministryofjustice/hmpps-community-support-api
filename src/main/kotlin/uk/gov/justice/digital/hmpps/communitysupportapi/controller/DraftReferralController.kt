@@ -172,11 +172,12 @@ class DraftReferralController(
       ),
     ],
   )
-  @GetMapping("/bff/draft-referral/community-service-provider/{providerId}")
+  @GetMapping("/bff/draft-referral/{referralId}/community-service-provider/{providerId}")
   fun getAreaConfirmationDetails(
+    @PathVariable referralId: UUID,
     @PathVariable providerId: UUID,
   ): ResponseEntity<AreaConfirmationBffResponseDto> = ResponseEntity.ok(
-    draftReferralService.getAreaConfirmationDetails(providerId),
+    draftReferralService.getAreaConfirmationDetails(referralId, providerId),
   )
 
   @Operation(summary = "Update the Community Service Provider for a Draft Referral")

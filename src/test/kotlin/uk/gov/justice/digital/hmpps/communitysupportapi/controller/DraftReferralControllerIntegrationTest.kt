@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProv
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.Selection
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
@@ -42,6 +43,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -288,8 +290,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.refereeName.firstName shouldBe person.firstName
           body.refereeName.lastName shouldBe person.lastName
           body.needsAdditionalSupport shouldBe true
-          body.physicalHealth.selected shouldBe true
-          body.physicalHealth.value shouldBe "Wheelchair access required"
+          body.physicalHealth shouldBe Selection.Yes("Wheelchair access required")
         }
     }
   }
@@ -337,9 +338,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
           body.refereeName.firstName shouldBe person.firstName
           body.refereeName.lastName shouldBe person.lastName
-          body.language?.selected shouldBe true
-          body.language?.value shouldBe "Italian"
-          body.needsInterpreter shouldBe true
+          body.language shouldBe Selection.Yes("Italian")
         }
     }
 
@@ -386,15 +385,13 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
           body.refereeName.firstName shouldBe person.firstName
           body.refereeName.lastName shouldBe person.lastName
-          body.language?.selected shouldBe false
-          body.language?.value shouldBe null
-          body.needsInterpreter shouldBe false
+          body.language shouldBe Selection.No
         }
     }
   }
 
   @Nested
-  @DisplayName("GET /bff/draft-referral/community-service-provider/:providerId")
+  @DisplayName("GET /bff/draft-referral/:referralId/community-service-provider/:providerId")
   inner class AreaConfirmationTest {
 
     @BeforeEach
@@ -405,31 +402,50 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(GET, "/bff/draft-referral/community-service-provider/${UUID.randomUUID()}")
+      assertUnauthorized(GET, "/bff/draft-referral/${UUID.randomUUID()}/community-service-provider/${UUID.randomUUID()}")
     }
 
     @Test
-    fun `should return 404 when community service provider does not exist`() {
+    fun `should return 404 when referral does not exist`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
+      val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+
       webTestClient.get()
-        .uri("/bff/draft-referral/community-service-provider/${UUID.randomUUID()}")
+        .uri("/bff/draft-referral/${UUID.randomUUID()}/community-service-provider/${communityServiceProvider.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isNotFound
     }
 
     @Test
-    fun `should return community service provider details`() {
+    fun `should return 404 when community service provider does not exist`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/${referral.id}/community-service-provider/${UUID.randomUUID()}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `should return community service provider details with crn and dateOfBirth`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
       val communityServiceProvider = referralHelper.getCommunityServiceProvider()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
       val expectedAssociatedPdus = pduRepository.findByContractAreaId(communityServiceProvider.contractArea.id)
         .map { it.name }
         .sorted()
 
       webTestClient.get()
-        .uri("/bff/draft-referral/community-service-provider/${communityServiceProvider.id}")
+        .uri("/bff/draft-referral/${referral.id}/community-service-provider/${communityServiceProvider.id}")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
@@ -439,6 +455,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.contractArea shouldBe communityServiceProvider.contractArea.area
           body.deliveryPartner shouldBe communityServiceProvider.serviceProvider.name
           body.associatedPdus shouldBe expectedAssociatedPdus
+          body.crn shouldBe person.identifier
+          body.dateOfBirth shouldBe person.dateOfBirth.toFormattedDateOfBirthLong()
         }
     }
   }
@@ -565,7 +583,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       person.additionalDetails = additionalDetails
       personRepository.save(person)
 
-      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser, targetServiceCompletionDate = null, targetServiceCompletionDateReason = null)
       referralRepository.save(savedReferral)
 
       webTestClient.get()
@@ -584,6 +602,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.notStarted()
           body.addDetailsOfMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
           body.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.notStarted()
+          body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.notStarted()
         }
     }
 
@@ -690,6 +709,53 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
 
           body.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.completed()
+        }
+    }
+
+    @Test
+    fun `should return in progress for addAdditionalInformationCompleted when target date and reason exist without service days`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+      )
+      referralRepository.save(savedReferral)
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.inProgress()
+        }
+    }
+
+    @Test
+    fun `should return completed for addAdditionalInformationCompleted when target date reason and service days exist`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        serviceDays = 40,
+      )
+      referralRepository.save(savedReferral)
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.completed()
         }
     }
   }

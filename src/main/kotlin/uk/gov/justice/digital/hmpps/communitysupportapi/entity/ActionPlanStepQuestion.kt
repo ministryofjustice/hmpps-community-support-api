@@ -45,4 +45,11 @@ data class ActionPlanStepQuestion(
 
   @Column(name = "max_number_responses", nullable = false)
   val maxNumberResponses: Int,
+
+  @Column(name = "need_id")
+  val needId: UUID? = null,
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "need_id", insertable = false, updatable = false)
+  val need: Need? = null,
 )

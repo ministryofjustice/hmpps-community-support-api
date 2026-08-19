@@ -120,6 +120,7 @@ class ReferralTestSupport(
     createdBy: UUID = UUID.randomUUID(),
     targetServiceCompletionDate: OffsetDateTime? = OffsetDateTime.now().plusDays(30),
     targetServiceCompletionDateReason: String? = "A reason",
+    serviceDays: Int? = null,
   ): Referral = referralRepository.save(
     ReferralFactory()
       .withPersonId(person.id)
@@ -132,6 +133,7 @@ class ReferralTestSupport(
       .withSubmittedEvent(actorId = submittedBy.id, createdAt = OffsetDateTime.now())
       .withTargetServiceCompletionDate(targetServiceCompletionDate)
       .withTargetServiceCompletionDateReason(targetServiceCompletionDateReason)
+      .withServiceDays(serviceDays)
       .create(),
   )
 
@@ -142,6 +144,7 @@ class ReferralTestSupport(
     createdBy: UUID = UUID.randomUUID(),
     targetServiceCompletionDate: OffsetDateTime? = OffsetDateTime.now().plusDays(30),
     targetServiceCompletionDateReason: String? = "A reason",
+    serviceDays: Int? = null,
   ): Referral {
     val person = createPerson()
     val referralUser = submittedBy ?: ensureReferralUser()
@@ -153,6 +156,7 @@ class ReferralTestSupport(
       createdBy = createdBy,
       targetServiceCompletionDate = targetServiceCompletionDate,
       targetServiceCompletionDateReason = targetServiceCompletionDateReason,
+      serviceDays = serviceDays,
     )
   }
 

@@ -1,19 +1,27 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 
-data class Selection(
-  val selected: Boolean,
-  val value: String? = null,
-) {
+@JsonTypeInfo(
+  use = JsonTypeInfo.Id.NAME,
+  include = JsonTypeInfo.As.PROPERTY,
+  property = "selected",
+  visible = true,
+)
+@JsonSubTypes(
+  JsonSubTypes.Type(value = Selection.Yes::class, name = "Yes"),
+  JsonSubTypes.Type(value = Selection.No::class, name = "No"),
+  JsonSubTypes.Type(value = Selection.Unanswered::class, name = "Unanswered"),
+)
+sealed interface Selection {
+  data class Yes(val value: String) : Selection
+  data object No : Selection
+  data object Unanswered : Selection
   companion object {
-    fun fromString(value: String?): Selection = if (value == null) {
-      Selection(false)
-    } else {
-      Selection(true, value)
-    }
-    fun default(): Selection = Selection(false)
+    fun fromString(value: String?): Selection = if (value == null) No else Yes(value)
   }
 }
 
@@ -44,14 +52,14 @@ data class AdditionalSupportNeedsBffResponseDto(
     )
     fun fromPerson(person: Person): AdditionalSupportNeedsBffResponseDto = AdditionalSupportNeedsBffResponseDto(
       refereeName = RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
-      physicalHealth = Selection.default(),
-      mentalEmotionalHealth = Selection.default(),
-      neurodiversity = Selection.default(),
-      locationTravel = Selection.default(),
-      caringResponsibilities = Selection.default(),
-      employmentResponsibilities = Selection.default(),
-      diversity = Selection.default(),
-      anythingElse = Selection.default(),
+      physicalHealth = Selection.Unanswered,
+      mentalEmotionalHealth = Selection.Unanswered,
+      neurodiversity = Selection.Unanswered,
+      locationTravel = Selection.Unanswered,
+      caringResponsibilities = Selection.Unanswered,
+      employmentResponsibilities = Selection.Unanswered,
+      diversity = Selection.Unanswered,
+      anythingElse = Selection.Unanswered,
       needsAdditionalSupport = null,
     )
   }
@@ -59,14 +67,20 @@ data class AdditionalSupportNeedsBffResponseDto(
 
 data class NeedsInterpreterBffResponseDto(
   val refereeName: RefereeNameDto,
-  val language: Selection? = null,
-  val needsInterpreter: Boolean? = null,
+  val language: Selection,
 ) {
   companion object {
-    fun from(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): NeedsInterpreterBffResponseDto = NeedsInterpreterBffResponseDto(
-      refereeName = RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
-      language = Selection.fromString(personAdditionalSupportNeeds.interpreterLanguage),
-      needsInterpreter = personAdditionalSupportNeeds.interpreterNeeded,
-    )
+    fun from(person: Person, personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): NeedsInterpreterBffResponseDto {
+      val refereeName = RefereeNameDto(firstName = person.firstName, lastName = person.lastName)
+      return when (personAdditionalSupportNeeds.interpreterNeeded) {
+        true -> NeedsInterpreterBffResponseDto(refereeName, Selection.fromString(personAdditionalSupportNeeds.interpreterLanguage))
+        false -> if (personAdditionalSupportNeeds.interpreterLanguage != null) {
+          NeedsInterpreterBffResponseDto(refereeName, Selection.Unanswered)
+        } else {
+          NeedsInterpreterBffResponseDto(refereeName, Selection.No)
+        }
+        null -> NeedsInterpreterBffResponseDto(refereeName, Selection.Unanswered)
+      }
+    }
   }
 }

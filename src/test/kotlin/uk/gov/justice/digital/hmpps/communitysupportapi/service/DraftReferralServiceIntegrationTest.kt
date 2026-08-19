@@ -110,6 +110,56 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedInterpreterNeeds?.createdBy).isEqualTo(referralUser.id)
   }
 
+  fun `update additional information should be saved without clearing needs interpreter information`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val createReferralRequest = setUpData()
+
+    val result = referralService.createReferral(referralUser.id, createReferralRequest)
+    val savedReferral = result.referral
+
+    val interpreterNeeds = NeedsInterpreterRequest(
+      needsInterpreter = true,
+      language = "Spanish",
+    )
+
+    val updatedNeedsInterpreterResult = draftReferralService.upsertNeedsInterpreter(
+      savedReferral.id,
+      referralUser.id,
+      interpreterNeeds,
+    )
+    assertThat(updatedNeedsInterpreterResult).isNotNull()
+
+    val supportNeeds = AdditionalSupportNeedsRequest(
+      employmentResponsibilities = "Test employment responsibilities",
+      caringResponsibilities = "Test caring responsibilities",
+      needsAdditionalSupport = true,
+    )
+
+    val updatedResult = draftReferralService.upsertAdditionalSupportNeeds(
+      savedReferral.id,
+      referralUser.id,
+      supportNeeds,
+    )
+    assertThat(updatedResult).isNotNull()
+
+    val savedResult = personAdditionSupportNeedsRepository.findByReferralId(savedReferral.id)
+    assertThat(savedResult).isNotNull()
+    assertThat(savedResult?.referralId).isEqualTo(savedReferral.id)
+    assertThat(savedResult?.personId).isEqualTo(savedReferral.personId)
+    assertThat(savedResult?.caringResponsibilitiesDetails).isEqualTo("Test caring responsibilities")
+    assertThat(savedResult?.additionalSupportNeeded).isTrue()
+    assertThat(savedResult?.physicalHealthDetails).isNull()
+    assertThat(savedResult?.mentalEmotionalHealthDetails).isNull()
+    assertThat(savedResult?.diversityDetails).isNull()
+    assertThat(savedResult?.employmentResponsibilitiesDetails).isEqualTo("Test employment responsibilities")
+    assertThat(savedResult?.locationTravelDetails).isNull()
+    assertThat(savedResult?.neurodiversityDetails).isNull()
+    assertThat(savedResult?.anythingElseDetails).isNull()
+    assertThat(savedResult?.interpreterLanguage).isEqualTo("Spanish")
+    assertThat(savedResult?.interpreterNeeded).isTrue()
+    assertThat(savedResult?.createdBy).isEqualTo(referralUser.id)
+  }
+
   @Test
   fun `update community service provider should be saved`() {
     val referralUser = referralHelper.ensureReferralUser()

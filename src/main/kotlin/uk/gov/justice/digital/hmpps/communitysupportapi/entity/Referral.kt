@@ -30,7 +30,7 @@ class Referral(
   val createdAt: OffsetDateTime,
 
   @Column(name = "updated_at")
-  val updatedAt: OffsetDateTime? = null,
+  var updatedAt: OffsetDateTime? = null,
 
   @Column(name = "urgency")
   val urgency: Boolean? = null,
@@ -39,10 +39,13 @@ class Referral(
   val createdBy: UUID,
 
   @Column(name = "target_service_completion_date", nullable = true)
-  val targetServiceCompletionDate: OffsetDateTime? = null,
+  var targetServiceCompletionDate: OffsetDateTime? = null,
 
   @Column(name = "target_service_completion_date_reason", nullable = true)
-  val targetServiceCompletionDateReason: String? = null,
+  var targetServiceCompletionDateReason: String? = null,
+
+  @Column(name = "service_days", nullable = true)
+  var serviceDays: Int? = null,
 
   @OneToMany(mappedBy = "referral", cascade = [CascadeType.PERSIST, CascadeType.MERGE], orphanRemoval = true)
   val referralEvents: MutableList<ReferralEvent> = mutableListOf(),
