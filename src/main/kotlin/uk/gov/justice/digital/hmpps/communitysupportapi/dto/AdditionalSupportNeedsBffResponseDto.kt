@@ -7,26 +7,19 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalS
 
 @JsonTypeInfo(
   use = JsonTypeInfo.Id.NAME,
-  include = JsonTypeInfo.As.EXISTING_PROPERTY,
+  include = JsonTypeInfo.As.PROPERTY,
   property = "selected",
   visible = true,
 )
 @JsonSubTypes(
-  JsonSubTypes.Type(value = Selection.Yes::class, name = "true"),
-  JsonSubTypes.Type(value = Selection.No::class, name = "false"),
-  JsonSubTypes.Type(value = Selection.Unanswered::class, name = "null"),
+  JsonSubTypes.Type(value = Selection.Yes::class, name = "Yes"),
+  JsonSubTypes.Type(value = Selection.No::class, name = "No"),
+  JsonSubTypes.Type(value = Selection.Unanswered::class, name = "Unanswered"),
 )
 sealed interface Selection {
-  val selected: Boolean?
-  data class Yes(val value: String) : Selection {
-    override val selected = true
-  }
-  data object No : Selection {
-    override val selected = false
-  }
-  data object Unanswered : Selection {
-    override val selected = false
-  }
+  data class Yes(val value: String) : Selection
+  data object No : Selection
+  data object Unanswered : Selection
   companion object {
     fun fromString(value: String?): Selection = if (value == null) No else Yes(value)
   }
