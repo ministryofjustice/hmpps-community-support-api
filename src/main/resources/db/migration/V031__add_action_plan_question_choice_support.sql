@@ -1,11 +1,7 @@
--- V31: Add radio answer support and question choices for action plan question data model
+-- V31: Add radio and checkbox answer support and question choices for action plan question data model
 
 ALTER TABLE action_plan_step_question
     DROP CONSTRAINT IF EXISTS chk_action_plan_step_question_answer_type;
-
-ALTER TABLE action_plan_step_question
-    ADD CONSTRAINT chk_action_plan_step_question_answer_type
-        CHECK (answer_type IN ('textarea', 'radio', 'checkbox'));
 
 CREATE TABLE IF NOT EXISTS action_plan_step_question_choice (
     id UUID NOT NULL PRIMARY KEY,
@@ -15,6 +11,8 @@ CREATE TABLE IF NOT EXISTS action_plan_step_question_choice (
     value TEXT NOT NULL,
     has_free_text BOOLEAN NOT NULL DEFAULT false,
     free_text_label TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT NOT NULL DEFAULT 'SYSTEM',
     CONSTRAINT fk_action_plan_step_question_choice_question
         FOREIGN KEY (action_plan_step_question_id) REFERENCES action_plan_step_question(id) ON DELETE CASCADE,
     CONSTRAINT chk_action_plan_step_question_choice_order_number_min
@@ -33,3 +31,10 @@ COMMENT ON COLUMN action_plan_step_question_choice.label IS 'Display label shown
 COMMENT ON COLUMN action_plan_step_question_choice.value IS 'Stored value for the selected choice';
 COMMENT ON COLUMN action_plan_step_question_choice.has_free_text IS 'Indicates whether this choice reveals a free-text input';
 COMMENT ON COLUMN action_plan_step_question_choice.free_text_label IS 'Label shown alongside the free-text input when has_free_text is true';
+COMMENT ON COLUMN action_plan_step_question_choice.created_at IS 'Timestamp when the choice was created';
+COMMENT ON COLUMN action_plan_step_question_choice.created_by IS 'Actor identifier that created the choice (UUID or SYSTEM)';
+
+ALTER TABLE action_plan_step_question_answer_revision
+    ADD COLUMN IF NOT EXISTS free_text_value TEXT;
+
+COMMENT ON COLUMN action_plan_step_question_answer_revision.free_text_value IS 'Optional free-text value captured when the selected answer requires more detail';
