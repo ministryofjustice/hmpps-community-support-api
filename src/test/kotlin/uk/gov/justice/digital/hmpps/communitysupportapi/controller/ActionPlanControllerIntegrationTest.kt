@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
-import kotlin.random.Random
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTestUtil.randomReferralReference
 
 class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
@@ -37,14 +37,6 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var actionPlanStepQuestionRepository: ActionPlanStepQuestionRepository
-
-  private fun randomReferralReference(): String {
-    val letters = ('A'..'Z').toList()
-    val prefix = (1..2).map { letters.random(Random) }.joinToString("")
-    val numbers = (1..4).map { Random.nextInt(10) }.joinToString("")
-    val suffix = (1..2).map { letters.random(Random) }.joinToString("")
-    return "$prefix$numbers$suffix"
-  }
 
   @Nested
   @DisplayName("GET /bff/referral/{referralReference}/action-plan")

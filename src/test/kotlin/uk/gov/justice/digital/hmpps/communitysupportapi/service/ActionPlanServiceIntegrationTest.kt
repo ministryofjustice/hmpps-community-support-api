@@ -29,9 +29,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTem
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTestUtil.randomReferralReference
 import java.time.OffsetDateTime
 import java.util.UUID
-import kotlin.random.Random
 
 class ActionPlanServiceIntegrationTest :
   IntegrationTestBase(),
@@ -69,14 +69,6 @@ class ActionPlanServiceIntegrationTest :
 
   @Autowired
   private lateinit var actionPlanStepQuestionAnswerRevisionRepository: ActionPlanStepQuestionAnswerRevisionRepository
-
-  private fun randomReferralReference(): String {
-    val letters = ('A'..'Z').toList()
-    val prefix = (1..2).map { letters.random(Random) }.joinToString("")
-    val numbers = (1..4).map { Random.nextInt(10) }.joinToString("")
-    val suffix = (1..2).map { letters.random(Random) }.joinToString("")
-    return "$prefix$numbers$suffix"
-  }
 
   override fun afterAll(context: ExtensionContext) {
     testDataCleaner.cleanAllTables()
@@ -128,6 +120,7 @@ class ActionPlanServiceIntegrationTest :
     fun `should create an ActionPlan using active global template when lower non-global template exists`() {
       // Given
       val referral = referralHelper.createReferral(submittedBy = user)
+      assertTrue(actionPlanTemplateRepository.getGlobalActionPlanTemplate() != null)
       actionPlanHelper.createActionPlanTemplate(
         id = UUID.fromString("00000000-0000-0000-0000-000000000001"),
         activeGlobal = false,
