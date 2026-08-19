@@ -9,7 +9,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalS
   use = JsonTypeInfo.Id.NAME,
   include = JsonTypeInfo.As.PROPERTY,
   property = "selected",
-  visible = true
+  visible = true,
 )
 @JsonSubTypes(
   JsonSubTypes.Type(value = Selection.Yes::class, name = "Yes"),
