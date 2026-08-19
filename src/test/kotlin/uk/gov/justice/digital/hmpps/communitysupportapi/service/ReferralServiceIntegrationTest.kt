@@ -37,7 +37,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDe
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
@@ -52,9 +51,6 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 class ReferralServiceIntegrationTest : IntegrationTestBase() {
-
-  @Autowired
-  private lateinit var communityServiceProviderRepository: CommunityServiceProviderRepository
 
   @Autowired
   private lateinit var referralProviderAssignmentRepository: ReferralProviderAssignmentRepository
