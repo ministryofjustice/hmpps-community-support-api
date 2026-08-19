@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerRevision
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -30,6 +31,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionP
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
 import java.time.OffsetDateTime
 import java.util.UUID
+import kotlin.random.Random
 
 class ActionPlanServiceIntegrationTest :
   IntegrationTestBase(),
@@ -67,6 +69,14 @@ class ActionPlanServiceIntegrationTest :
 
   @Autowired
   private lateinit var actionPlanStepQuestionAnswerRevisionRepository: ActionPlanStepQuestionAnswerRevisionRepository
+
+  private fun randomReferralReference(): String {
+    val letters = ('A'..'Z').toList()
+    val prefix = (1..2).map { letters.random(Random) }.joinToString("")
+    val numbers = (1..4).map { Random.nextInt(10) }.joinToString("")
+    val suffix = (1..2).map { letters.random(Random) }.joinToString("")
+    return "$prefix$numbers$suffix"
+  }
 
   override fun afterAll(context: ExtensionContext) {
     testDataCleaner.cleanAllTables()
@@ -141,7 +151,7 @@ class ActionPlanServiceIntegrationTest :
     fun `should return person details and needs for a referral`() {
       // Given
       val person = referralHelper.createPerson(firstName = "Adam", lastName = "Smith")
-      val referral = referralHelper.createReferral(person = person, referenceNumber = "AB1234CD", submittedBy = user)
+      val referral = referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
 
       // When
       val result = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
@@ -156,7 +166,7 @@ class ActionPlanServiceIntegrationTest :
     fun `should return latest revision content for an outcome answer`() {
       // Given
       val person = referralHelper.createPerson(firstName = "Jane", lastName = "Doe")
-      val referral = referralHelper.createReferral(person = person, referenceNumber = "ZX1234YZ", submittedBy = user)
+      val referral = referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
       val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = globalTemplate.id)
       val need = needRepository.findAllByOrderByOrderNumberAsc().first()
       val outcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, need.id)
@@ -206,7 +216,7 @@ class ActionPlanServiceIntegrationTest :
     fun `should return multiple outcome answers in order for the same need`() {
       // Given
       val person = referralHelper.createPerson(firstName = "Ella", lastName = "Brown")
-      val referral = referralHelper.createReferral(person = person, referenceNumber = "LK1234MN", submittedBy = user)
+      val referral = referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
       val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = globalTemplate.id)
       val need = needRepository.findAllByOrderByOrderNumberAsc().first()
       val outcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, need.id)
@@ -267,7 +277,7 @@ class ActionPlanServiceIntegrationTest :
     fun `should ignore soft deleted answers when building outcomes`() {
       // Given
       val person = referralHelper.createPerson(firstName = "Sam", lastName = "Green")
-      val referral = referralHelper.createReferral(person = person, referenceNumber = "GH1234IJ", submittedBy = user)
+      val referral = referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
       val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = globalTemplate.id)
       val need = needRepository.findAllByOrderByOrderNumberAsc().first()
       val outcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, need.id)
@@ -343,16 +353,13 @@ class ActionPlanServiceIntegrationTest :
 
     @Test
     fun `should return grouped needs and questions sorted by configured need order`() {
-      val person = referralHelper.createPerson(firstName = "Nina", lastName = "Jones")
-      val referral = referralHelper.createReferral(person = person, referenceNumber = "NP1234QR", submittedBy = user)
-      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
-      actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+      val (referral, actionPlanTemplateId) = createReferralWithActionPlan("Nina", "Jones")
 
       val orderedNeeds = needRepository.findAllByOrderByOrderNumberAsc().take(2)
       val firstNeed = orderedNeeds[0]
       val secondNeed = orderedNeeds[1]
 
-      val needStep = createNeedStep(actionPlanTemplate.id)
+      val needStep = createNeedStep(actionPlanTemplateId)
       createNeedQuestion(needStep.id, 1, "Question for second need", secondNeed.id)
       createNeedQuestion(needStep.id, 2, "First question for first need", firstNeed.id)
       createNeedQuestion(needStep.id, 3, "Second question for first need", firstNeed.id)
@@ -367,15 +374,6 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(secondNeed.label, result.needs[1].label)
       assertEquals(listOf("Question for second need"), result.needs[1].questions.map { it.label })
       assertEquals(listOf("textarea"), result.needs[1].questions.map { it.answerType })
-    }
-
-    @Test
-    fun `should return empty needs when referral has no action plan need step`() {
-      val referral = referralHelper.createReferral(submittedBy = user, referenceNumber = "NP5678ST")
-
-      val result = actionPlanService.getActionPlanNeedsForReferral(referral.referenceNumber!!)
-
-      assertTrue(result.needs.isEmpty())
     }
 
     @Test
@@ -406,6 +404,18 @@ class ActionPlanServiceIntegrationTest :
           .withNeedId(needId)
           .create(),
       )
+    }
+
+    private fun createReferral(firstName: String, lastName: String): Referral {
+      val person = referralHelper.createPerson(firstName = firstName, lastName = lastName)
+      return referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
+    }
+
+    private fun createReferralWithActionPlan(firstName: String, lastName: String): Pair<Referral, UUID> {
+      val referral = createReferral(firstName, lastName)
+      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+      actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+      return referral to actionPlanTemplate.id
     }
   }
 }

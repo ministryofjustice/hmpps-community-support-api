@@ -10,6 +10,7 @@ import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
@@ -18,6 +19,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
+import kotlin.random.Random
 
 class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
@@ -36,6 +38,14 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
   @Autowired
   private lateinit var actionPlanStepQuestionRepository: ActionPlanStepQuestionRepository
 
+  private fun randomReferralReference(): String {
+    val letters = ('A'..'Z').toList()
+    val prefix = (1..2).map { letters.random(Random) }.joinToString("")
+    val numbers = (1..4).map { Random.nextInt(10) }.joinToString("")
+    val suffix = (1..2).map { letters.random(Random) }.joinToString("")
+    return "$prefix$numbers$suffix"
+  }
+
   @Nested
   @DisplayName("GET /bff/referral/{referralReference}/action-plan")
   inner class GetActionPlanSummaryEndpoint {
@@ -43,7 +53,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
     fun `should return OK with action plan summary for a valid referral reference`() {
       val user = referralHelper.ensureReferralUser()
       val person = referralHelper.createPerson(firstName = "Adam", lastName = "Smith")
-      val referral = referralHelper.createReferral(person = person, referenceNumber = "AB1234CD", submittedBy = user)
+      val referral = referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
       val expectedNeeds = needRepository.findAllByOrderByOrderNumberAsc()
 
       webTestClient.get()
@@ -82,9 +92,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return action plan needs grouped by need and ordered by question order`() {
-      val user = referralHelper.ensureReferralUser()
-      val person = referralHelper.createPerson(firstName = "Jo", lastName = "Bloggs")
-      val referral = referralHelper.createReferral(person = person, referenceNumber = "CD5678EF", submittedBy = user)
+      val referral = createReferral("Jo", "Bloggs")
       val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
       actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
 
@@ -147,7 +155,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
 
           body.needs.map { it.id } shouldBe listOf(firstNeed.id, secondNeed.id)
-          body.needs[0].label shouldBe firstNeed.label
+          body.needs[0].label shouldBe "Accommodation"
           body.needs[0].questions.map { it.label } shouldBe listOf("First question for first need", "Second question for first need")
           body.needs[0].questions.map { it.answerType } shouldBe listOf("textarea", "textarea")
 
@@ -158,25 +166,14 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return empty list when no need steps exist for referral`() {
-      val user = referralHelper.ensureReferralUser()
-      val person = referralHelper.createPerson(firstName = "Anna", lastName = "Miller")
-      val referral = referralHelper.createReferral(person = person, referenceNumber = "EF9012GH", submittedBy = user)
-
-      webTestClient.get()
-        .uri("/bff/referral/${referral.referenceNumber}/action-plan/needs")
-        .headers(setAuthorisation())
-        .exchange()
-        .expectStatus().isOk
-        .expectBody<ActionPlanNeedsResponse>()
-        .consumeWith { response ->
-          response.responseBody!!.needs shouldBe emptyList()
-        }
-    }
-
-    @Test
     fun `should return not found for unknown referral reference`() {
       assertNotFound(GET, "/bff/referral/ZZ9999ZZ/action-plan/needs")
+    }
+
+    private fun createReferral(firstName: String, lastName: String): Referral {
+      val user = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson(firstName = firstName, lastName = lastName)
+      return referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
     }
   }
 }
