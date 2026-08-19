@@ -298,7 +298,7 @@ class DraftReferralController(
       ),
     ],
   )
-  @GetMapping("/bff/draft-referral/offence-sentence-info/{referralId}")
+  @GetMapping("/bff/draft-referral/{referralId}/offence-sentence")
   fun getOffenceAndSentenceInfo(
     @PathVariable referralId: UUID,
   ): ResponseEntity<OffenceSentenceInfoBffResponseDto> = ResponseEntity.ok(

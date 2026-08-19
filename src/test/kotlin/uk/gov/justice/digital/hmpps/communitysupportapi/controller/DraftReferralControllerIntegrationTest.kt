@@ -1000,7 +1000,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("GET /bff/draft-referral/offence-sentence-info/{referralId}")
+  @DisplayName("GET /bff/draft-referral/{referralId}/offence-sentence")
   inner class OffenceSentenceInfoEndPoint {
 
     @BeforeEach
@@ -1011,12 +1011,12 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return unauthorized if no token`() {
-      assertUnauthorized(GET, "/bff/draft-referral/offence-sentence-info/${UUID.randomUUID()}")
+      assertUnauthorized(GET, "/bff/draft-referral/${UUID.randomUUID()}/offence-sentence")
     }
 
     @Test
     fun `should return 404 when referral does not exist`() {
-      assertNotFound(GET, "/bff/draft-referral/offence-sentence-info/${UUID.randomUUID()}")
+      assertNotFound(GET, "/bff/draft-referral/${UUID.randomUUID()}/offence-sentence")
     }
 
     @Test
@@ -1025,7 +1025,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val referral = referralHelper.createReferral(person, submittedBy = testUser)
 
       webTestClient.get()
-        .uri("/bff/draft-referral/offence-sentence-info/${referral.id}")
+        .uri("/bff/draft-referral/${referral.id}/offence-sentence")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
