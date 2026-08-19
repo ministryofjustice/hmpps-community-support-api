@@ -13,14 +13,8 @@ import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -32,42 +26,6 @@ class ReferralServiceTest {
 
   @Mock
   lateinit var personRepository: PersonRepository
-
-  @Mock
-  lateinit var appointmentRepository: AppointmentRepository
-
-  @Mock
-  lateinit var appointmentIcsRepository: AppointmentIcsRepository
-
-  @Mock
-  lateinit var appointmentStatusHistoryRepository: AppointmentStatusHistoryRepository
-
-  @Mock
-  lateinit var referralProviderAssignmentRepository: ReferralProviderAssignmentRepository
-
-  @Mock
-  lateinit var referralUserAssignmentRepository: ReferralUserAssignmentRepository
-
-  @Mock
-  lateinit var referenceGenerator: ReferralReferenceGenerator
-
-  @Mock
-  lateinit var appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository
-
-  @Mock
-  lateinit var cprProbationService: CprProbationService
-
-  @Mock
-  lateinit var referralLookupService: ReferralLookupService
-
-  @Mock
-  lateinit var identifierValidator: uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
-
-  @Mock
-  lateinit var personService: PersonService
-
-  @Mock
-  lateinit var actionPlanService: ActionPlanService
 
   @InjectMocks
   lateinit var referralService: ReferralService
