@@ -4,9 +4,13 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionChoice
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SavedResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
@@ -103,6 +107,76 @@ class ActionPlanService(
       .sortedBy { needsMap[it.id]?.orderNumber ?: Int.MAX_VALUE }
 
     return ActionPlanNeedsResponse(needs = needsList)
+  }
+
+  fun getSessionDeliveryDetailsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
+    val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
+      ?: throw NotFoundException("Referral not found for reference $referralReference")
+    val actionPlan = actionPlanRepository.findByReferralId(referral.id)
+
+    val sessionDeliverySteps = actionPlanStepRepository.findSessionDeliveryStepsByReferralId(referral.id)
+    if (sessionDeliverySteps.isEmpty()) {
+      logger.warn("No SESSION_DELIVERY step found for referral {}", referralReference)
+      return ActionPlanSessionDeliveryDetailsResponse(questions = emptyList())
+    }
+
+    // Get all questions for the first session delivery step, ordered by order number
+    val questions = actionPlanStepQuestionRepository
+      .findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliverySteps.first().id)
+    val questionIds = questions.map { it.id }.toSet()
+
+    // Get all saved responses for the questions, grouped by question ID
+    val savedResponsesByQuestionId = actionPlan?.let {
+      val answers = actionPlanStepQuestionAnswerRepository
+        .findAllByActionPlanIdAndDeletedAtIsNull(it.id)
+        .filter { answer -> questionIds.contains(answer.actionPlanStepQuestionId) }
+        .sortedBy { answer -> answer.orderNumber }
+      if (answers.isEmpty()) {
+        emptyMap()
+      } else {
+        val latestRevisionByAnswerId = actionPlanStepQuestionAnswerRevisionRepository
+          .findAllByActionPlanStepQuestionAnswerIdIn(answers.map { answer -> answer.id })
+          .groupBy { revision -> revision.actionPlanStepQuestionAnswerId }
+          .mapValues { (_, revisionItems) -> revisionItems.maxByOrNull { revision -> revision.revisionNumber } }
+
+        answers
+          .mapNotNull { answer ->
+            val latestRevision = latestRevisionByAnswerId[answer.id] ?: return@mapNotNull null
+            val value = latestRevision.content?.takeIf { content -> content.isNotBlank() } ?: return@mapNotNull null
+            answer.actionPlanStepQuestionId to SavedResponse(
+              value = value,
+              additionalDetails = latestRevision.freeTextValue,
+            )
+          }
+          .groupBy(keySelector = { it.first }, valueTransform = { it.second })
+      }
+    }.orEmpty()
+
+    // Map the questions to the response DTO, including saved responses and choices
+    val questionDetails = questions.map { question ->
+      SessionDeliveryQuestion(
+        displayOrder = question.orderNumber,
+        id = question.id,
+        label = question.title,
+        answerType = question.answerType,
+        maximumNumberOfResponses = question.maxNumberResponses,
+        savedResponses = savedResponsesByQuestionId[question.id].orEmpty(),
+        choices = question.choices
+          .sortedBy { it.orderNumber }
+          .map { choice ->
+            QuestionChoice(
+              value = choice.value,
+              label = choice.label,
+              displayAdditionalDetailsOnSelect = choice.hasFreeText,
+              additionalDetailsLabel = if (choice.hasFreeText) choice.freeTextLabel else null,
+              displayOrder = choice.orderNumber,
+            )
+          }
+          .takeIf { it.isNotEmpty() },
+      )
+    }
+
+    return ActionPlanSessionDeliveryDetailsResponse(questions = questionDetails)
   }
 
   private fun createForReferral(referralId: UUID): ActionPlan {

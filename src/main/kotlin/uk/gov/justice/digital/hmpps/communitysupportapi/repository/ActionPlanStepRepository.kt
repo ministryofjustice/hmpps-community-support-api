@@ -26,4 +26,18 @@ interface ActionPlanStepRepository : JpaRepository<ActionPlanStep, UUID> {
     @Param("referralId") referralId: UUID,
     @Param("stepType") stepType: ActionPlanStepType = ActionPlanStepType.NEED,
   ): List<ActionPlanStep>
+
+  @Query(
+    """
+    SELECT s FROM ActionPlanStep s
+    WHERE s.stepType = ActionPlanStepType.SESSION_DELIVERY
+    AND s.actionPlanTemplateId = (
+      SELECT ap.actionPlanTemplateId FROM ActionPlan ap WHERE ap.referralId = :referralId
+    )
+    ORDER BY s.orderNumber ASC
+    """,
+  )
+  fun findSessionDeliveryStepsByReferralId(
+    @Param("referralId") referralId: UUID,
+  ): List<ActionPlanStep>
 }
