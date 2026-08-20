@@ -13,6 +13,7 @@ import java.util.UUID
 
 enum class ActionPlanStepType {
   NEED,
+  SESSION_DELIVERY,
   CATCH_ALL,
 }
 
