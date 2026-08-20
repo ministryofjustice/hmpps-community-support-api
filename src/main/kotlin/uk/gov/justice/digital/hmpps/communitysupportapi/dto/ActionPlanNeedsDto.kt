@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import java.util.UUID
 
 data class ActionPlanNeedsResponse(
@@ -15,5 +16,5 @@ data class NeedDto(
 data class QuestionDto(
   val id: UUID,
   val label: String,
-  val answerType: String,
+  val answerType: ActionPlanQuestionAnswerType,
 )

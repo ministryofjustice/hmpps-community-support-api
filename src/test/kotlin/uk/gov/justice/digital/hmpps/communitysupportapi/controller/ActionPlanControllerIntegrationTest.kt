@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod.GET
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
@@ -106,7 +107,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .withActionPlanStepId(needStep.id)
           .withOrderNumber(1)
           .withTitle("Question for second need")
-          .withAnswerType("textarea")
+          .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
           .withNeedId(secondNeed.id)
           .create(),
       )
@@ -115,7 +116,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .withActionPlanStepId(needStep.id)
           .withOrderNumber(2)
           .withTitle("First question for first need")
-          .withAnswerType("textarea")
+          .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
           .withNeedId(firstNeed.id)
           .create(),
       )
@@ -124,7 +125,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .withActionPlanStepId(needStep.id)
           .withOrderNumber(3)
           .withTitle("Second question for first need")
-          .withAnswerType("textarea")
+          .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
           .withNeedId(firstNeed.id)
           .create(),
       )
@@ -149,11 +150,14 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           body.needs.map { it.id } shouldBe listOf(firstNeed.id, secondNeed.id)
           body.needs[0].label shouldBe "Accommodation"
           body.needs[0].questions.map { it.label } shouldBe listOf("First question for first need", "Second question for first need")
-          body.needs[0].questions.map { it.answerType } shouldBe listOf("textarea", "textarea")
+          body.needs[0].questions.map { it.answerType } shouldBe listOf(
+            ActionPlanQuestionAnswerType.TEXTAREA,
+            ActionPlanQuestionAnswerType.TEXTAREA,
+          )
 
           body.needs[1].label shouldBe secondNeed.label
           body.needs[1].questions.map { it.label } shouldBe listOf("Question for second need")
-          body.needs[1].questions.map { it.answerType } shouldBe listOf("textarea")
+          body.needs[1].questions.map { it.answerType } shouldBe listOf(ActionPlanQuestionAnswerType.TEXTAREA)
         }
     }
 
