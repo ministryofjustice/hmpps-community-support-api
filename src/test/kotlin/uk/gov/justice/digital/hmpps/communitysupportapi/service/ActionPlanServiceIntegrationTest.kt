@@ -9,6 +9,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswer
@@ -363,10 +364,13 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(listOf(firstNeed.id, secondNeed.id), result.needs.map { it.id })
       assertEquals(firstNeed.label, result.needs[0].label)
       assertEquals(listOf("First question for first need", "Second question for first need"), result.needs[0].questions.map { it.label })
-      assertEquals(listOf("textarea", "textarea"), result.needs[0].questions.map { it.answerType })
+      assertEquals(
+        listOf(ActionPlanQuestionAnswerType.TEXTAREA, ActionPlanQuestionAnswerType.TEXTAREA),
+        result.needs[0].questions.map { it.answerType },
+      )
       assertEquals(secondNeed.label, result.needs[1].label)
       assertEquals(listOf("Question for second need"), result.needs[1].questions.map { it.label })
-      assertEquals(listOf("textarea"), result.needs[1].questions.map { it.answerType })
+      assertEquals(listOf(ActionPlanQuestionAnswerType.TEXTAREA), result.needs[1].questions.map { it.answerType })
     }
 
     @Test
@@ -393,7 +397,7 @@ class ActionPlanServiceIntegrationTest :
           .withActionPlanStepId(actionPlanStepId)
           .withOrderNumber(orderNumber)
           .withTitle(title)
-          .withAnswerType("textarea")
+          .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
           .withNeedId(needId)
           .create(),
       )
