@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import jakarta.validation.ValidationException
 import org.assertj.core.api.Assertions.assertThat
@@ -45,6 +46,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonalDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import java.time.LocalDate
@@ -183,6 +186,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
         ethnicity = CprCodeDescriptionDto(code = "NE", description = "NewEthnicity"),
       ),
     )
+    setupNDeliusStubs(crn)
 
     val request = CreateReferralRequest(personIdentifier = crn)
 
@@ -214,6 +218,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
         ),
       ),
     )
+    setupNDeliusStubs(prisonNumber)
 
     val request = CreateReferralRequest(personIdentifier = prisonNumber)
 
@@ -249,6 +254,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
         ),
       ),
     )
+    setupNDeliusStubs(prisonNumber)
 
     val request = CreateReferralRequest(personIdentifier = prisonNumber)
 
@@ -675,6 +681,27 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(cprPersonDto.toJson()),
+        ),
+    )
+  }
+
+  private fun setupNDeliusStubs(identifier: String) {
+    stubFor(
+      get(urlEqualTo("/case/$identifier"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(createPersonalDetailsAndCircumstances()),
+        ),
+    )
+    stubFor(
+      get(urlEqualTo(("/case/$identifier/home-office-interest")))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(createHomeOfficeInterest()),
         ),
     )
   }

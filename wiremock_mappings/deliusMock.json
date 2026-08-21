@@ -99,6 +99,75 @@
           }
         ]
       }
+    },
+    {
+      "name": "Person details and circumstances by CRN",
+      "request": {
+        "method": "POST",
+        "urlPath": "/case/.*"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "preferredLanguage": {
+            "code": "EN",
+            "description": "English"
+          },
+          "personalCircumstances": [
+            {
+              "type": {
+                "code": "REL",
+                "description": "Relationships"
+              },
+              "subType": {
+                "code": "REL_SUB",
+                "description": "Relationships sub type"
+              },
+              "updatedAt": "2026-03-12T14:25:00"
+            },
+            {
+              "type": {
+                "code": "EMP",
+                "description": "Employment"
+              },
+              "subType": {
+                "code": "EMP_SUB",
+                "description": "Employment sub type"
+              },
+              "updatedAt": "2026-02-12T14:25:00"
+            },
+            {
+              "type": {
+                "code": "DEP",
+                "description": "Dependants"
+              },
+              "subType": {
+                "code": "DEP_SUB",
+                "description": "Dependants sub type"
+              },
+              "updatedAt": "2026-01-12T14:25:00"
+            }
+          ],
+          "disabilities": [
+            {
+              "type": {
+                "code": "BLN",
+                "description": "Blind"
+              },
+              "updatedAt": "2026-01-12T14:25:00"
+            }
+          ],
+          "offenderPersonalityDisorder": {
+            "status": {
+              "code": "OPD",
+              "description": "Offender Personality Disorder"
+            }
+          }
+        }
+      }
     }
   ]
 }

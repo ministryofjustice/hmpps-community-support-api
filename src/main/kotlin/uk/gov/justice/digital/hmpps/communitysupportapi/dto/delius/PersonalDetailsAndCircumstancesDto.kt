@@ -1,7 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CodeDescriptionDto
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class PersonalDetailsAndCircumstancesDto(
   val preferredLanguage: CodeDescriptionDto? = null,
@@ -13,12 +13,12 @@ data class PersonalDetailsAndCircumstancesDto(
 data class PersonalCircumstanceDto(
   val type: CodeDescriptionDto? = null,
   val subtype: CodeDescriptionDto? = null,
-  val updatedAt: LocalDate? = null,
+  val updatedAt: LocalDateTime? = null,
 )
 
 data class DisabilitiesDto(
   val type: CodeDescriptionDto? = null,
-  val updatedAt: LocalDate? = null,
+  val updatedAt: LocalDateTime? = null,
 )
 
 data class OffenderPersonalityDisorderDto(

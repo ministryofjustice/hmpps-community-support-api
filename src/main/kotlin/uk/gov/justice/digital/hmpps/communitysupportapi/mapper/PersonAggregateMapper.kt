@@ -3,7 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.mapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonCircumstances
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import java.time.OffsetDateTime
@@ -43,7 +43,7 @@ fun PersonAdditionalDetails.toEntity(person: PersonEntity): PersonAdditionalDeta
   emailAddress = emailAddress,
 )
 
-fun PersonAggregate.toPersonDto(circumstances: PersonCircumstances?): PersonDto = PersonDto(
+fun PersonAggregate.toPersonDto(personDetailsAndCircumstances: PersonDetailsAndCircumstances? = null): PersonDto = PersonDto(
   id = UUID.randomUUID(),
   personIdentifier = when (person.identifier) {
     is PersonIdentifier.Crn -> person.identifier.value
@@ -57,5 +57,5 @@ fun PersonAggregate.toPersonDto(circumstances: PersonCircumstances?): PersonDto 
   sex = person.sex,
   prisonNumbers = person.prisonNumbers,
   additionalDetails = additionalDetails,
-  personCircumstances = circumstances,
+  personDetailsAndCircumstances = personDetailsAndCircumstances,
 )

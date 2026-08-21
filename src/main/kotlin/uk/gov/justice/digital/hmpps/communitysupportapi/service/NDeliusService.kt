@@ -3,7 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.NDeliusClient
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonCircumstances
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 
 @Service
 class NDeliusService(
@@ -13,12 +13,12 @@ class NDeliusService(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun getPersonCircumstancesByCrn(crn: String): PersonCircumstances {
+  fun getPersonCircumstancesByCrn(crn: String): PersonDetailsAndCircumstances {
     log.debug("Fetching Circumstances for crn {}", crn)
     val personCircumstances = nDeliusClient.getPersonDetailsAndCircumstancesByCrn(crn)
     log.debug("Fetching HomeOffice Interest for crn {}", crn)
     val homeOfficeInterest = nDeliusClient.getHomeOfficeInterestByCrn(crn)
 
-    return PersonCircumstances.from(personCircumstances, homeOfficeInterest)
+    return PersonDetailsAndCircumstances.from(personCircumstances, homeOfficeInterest)
   }
 }

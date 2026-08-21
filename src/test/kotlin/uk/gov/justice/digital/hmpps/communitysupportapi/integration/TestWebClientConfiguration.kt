@@ -40,4 +40,10 @@ class TestWebClientConfiguration {
   fun assessRisksAndNeedsWebClient(
     @Value("\${services.assess-risks-and-needs-api.base-url}") assessRisksAndNeedsBaseUrl: String,
   ): WebClient = WebClient.builder().baseUrl(assessRisksAndNeedsBaseUrl).build()
+
+  @Bean
+  @Qualifier("nDeliusWebClient")
+  fun nDeliusWebClient(
+    @Value("\${services.nDelius-api.base-url}") nDeliusBaseUrl: String,
+  ): WebClient = WebClient.builder().baseUrl(nDeliusBaseUrl).build()
 }

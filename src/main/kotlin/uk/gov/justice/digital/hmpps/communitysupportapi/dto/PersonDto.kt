@@ -1,7 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonCircumstances
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import java.util.UUID
 
 data class PersonDto(
@@ -15,5 +15,5 @@ data class PersonDto(
   val sex: String?,
   val prisonNumbers: List<String> = emptyList(),
   val additionalDetails: PersonAdditionalDetails?,
-  val personCircumstances: PersonCircumstances?,
+  val personDetailsAndCircumstances: PersonDetailsAndCircumstances?,
 )

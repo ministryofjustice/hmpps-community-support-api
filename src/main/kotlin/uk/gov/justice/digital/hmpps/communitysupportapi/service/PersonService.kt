@@ -27,7 +27,7 @@ class PersonService(
         is PersonIdentifier.PrisonerNumber -> cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
       },
     )
-    val circumstances = deliusService.getPersonCircumstancesByCrn(personIdentifier)
-    return personAggregate.toPersonDto(circumstances)
+    val personDetailsAndCircumstances = deliusService.getPersonCircumstancesByCrn(personIdentifier)
+    return personAggregate.toPersonDto(personDetailsAndCircumstances)
   }
 }
