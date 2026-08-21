@@ -10,12 +10,12 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CodeDescriptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DisabilitiesDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonalCircumstanceDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonCircumstanceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonalDetailsAndCircumstances
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.personDetailsAndCircumstancesNotFoundJson
 import java.time.LocalDateTime
 
@@ -32,7 +32,7 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(createPersonalDetailsAndCircumstances()),
+            .withBody(createPersonDetailsAndCircumstances()),
         ),
     )
 
@@ -42,21 +42,21 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
     assertThat(result.preferredLanguage?.code).isEqualTo("EN")
     assertThat(result.preferredLanguage?.description).isEqualTo("English")
 
-    assertThat(result.personalCircumstances.size).isEqualTo(3)
-    checkPersonalCircumstanceDto(
-      result.personalCircumstances[0],
+    assertThat(result.personCircumstances.size).isEqualTo(3)
+    checkPersonCircumstanceDto(
+      result.personCircumstances[0],
       CodeDescriptionDto("REL", "Relationships"),
       CodeDescriptionDto("REL_SUB", "Relationships sub type"),
       LocalDateTime.of(2026, 3, 12, 14, 25, 0),
     )
-    checkPersonalCircumstanceDto(
-      result.personalCircumstances[1],
+    checkPersonCircumstanceDto(
+      result.personCircumstances[1],
       CodeDescriptionDto("EMP", "Employment"),
       CodeDescriptionDto("EMP_SUB", "Employment sub type"),
       LocalDateTime.of(2026, 2, 12, 14, 25, 0),
     )
-    checkPersonalCircumstanceDto(
-      result.personalCircumstances[2],
+    checkPersonCircumstanceDto(
+      result.personCircumstances[2],
       CodeDescriptionDto("DEP", "Dependants"),
       CodeDescriptionDto("DEP_SUB", "Dependants sub type"),
       LocalDateTime.of(2026, 1, 12, 14, 25, 0),
@@ -72,7 +72,7 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
   @Test
   fun `person details should throw NotFoundException when nDelius API returns 404`() {
     stubFor(
-      get(urlEqualTo("/case/UKNOWN"))
+      get(urlEqualTo("/case/UNKNOWN"))
         .willReturn(
           aResponse()
             .withStatus(404)
@@ -108,7 +108,7 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
   @Test
   fun `home office interest should throw NotFoundException when nDelius API returns 404`() {
     stubFor(
-      get(urlEqualTo("/case/UKNOWN/home-office-interest"))
+      get(urlEqualTo("/case/UNKOWN/home-office-interest"))
         .willReturn(
           aResponse()
             .withStatus(404)
@@ -122,7 +122,7 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
     }
   }
 
-  fun checkPersonalCircumstanceDto(circumstance: PersonalCircumstanceDto, expectedType: CodeDescriptionDto, expectedSubType: CodeDescriptionDto, expectedUpdatedAt: LocalDateTime) {
+  fun checkPersonCircumstanceDto(circumstance: PersonCircumstanceDto, expectedType: CodeDescriptionDto, expectedSubType: CodeDescriptionDto, expectedUpdatedAt: LocalDateTime) {
     assertThat(circumstance.type?.code).isEqualTo(expectedType.code)
     assertThat(circumstance.type?.description).isEqualTo(expectedType.description)
     assertThat(circumstance.subtype?.code).isEqualTo(expectedSubType.code)

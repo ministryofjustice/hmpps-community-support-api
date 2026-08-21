@@ -15,7 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterestDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonalDetailsAndCircumstancesDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstancesDto
 
 @ExtendWith(MockitoExtension::class)
 class NDeliusServiceTest {
@@ -32,14 +32,14 @@ class NDeliusServiceTest {
 
   @Test
   fun `should return person circumstances from nDelius`() {
-    val personalDetailsAndCircumstancesDto = createPersonalDetailsAndCircumstancesDto()
+    val personDetailsAndCircumstancesDto = createPersonDetailsAndCircumstancesDto()
     val homeOfficeInterest = createHomeOfficeInterestDto()
-    val expectedPersonCircumstances = PersonDetailsAndCircumstances.from(personalDetailsAndCircumstancesDto, homeOfficeInterest)
+    val expectedPersonCircumstances = PersonDetailsAndCircumstances.from(personDetailsAndCircumstancesDto, homeOfficeInterest)
 
-    whenever(nDeliusClient.getPersonDetailsAndCircumstancesByCrn(CRN)).thenReturn(personalDetailsAndCircumstancesDto)
+    whenever(nDeliusClient.getPersonDetailsAndCircumstancesByCrn(CRN)).thenReturn(personDetailsAndCircumstancesDto)
     whenever(nDeliusClient.getHomeOfficeInterestByCrn(CRN)).thenReturn(homeOfficeInterest)
 
-    val result = nDeliusService.getPersonCircumstancesByCrn(CRN)
+    val result = nDeliusService.getPersonDetailsAndCircumstancesByIdentifier(CRN)
 
     assertEquals(expectedPersonCircumstances, result)
 
@@ -55,7 +55,7 @@ class NDeliusServiceTest {
     whenever(nDeliusClient.getPersonDetailsAndCircumstancesByCrn(crn)).thenThrow(NotFoundException("Person not found in nDelius with CRN: $crn"))
 
     assertThrows(NotFoundException::class.java) {
-      nDeliusService.getPersonCircumstancesByCrn(crn)
+      nDeliusService.getPersonDetailsAndCircumstancesByIdentifier(crn)
     }
 
     verify(nDeliusClient).getPersonDetailsAndCircumstancesByCrn(crn)

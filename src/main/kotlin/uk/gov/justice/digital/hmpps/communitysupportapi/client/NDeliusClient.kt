@@ -9,7 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.HomeOfficeInterestDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonalDetailsAndCircumstancesDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonDetailsAndCircumstancesDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 
 @Component
@@ -20,7 +20,7 @@ class NDeliusClient(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun getPersonDetailsAndCircumstancesByCrn(crn: String): PersonalDetailsAndCircumstancesDto {
+  fun getPersonDetailsAndCircumstancesByCrn(crn: String): PersonDetailsAndCircumstancesDto {
     log.debug("Retrieving Circumstances for crn {}", crn)
 
     return webClient.get()
@@ -37,7 +37,7 @@ class NDeliusClient(
           response.statusCode().is5xxServerError ->
             Mono.error(RuntimeException("Server error from nDelius: ${response.statusCode()}"))
 
-          else -> response.bodyToMono<PersonalDetailsAndCircumstancesDto>()
+          else -> response.bodyToMono<PersonDetailsAndCircumstancesDto>()
         }
       }
       .doOnError { e -> log.error("Error calling nDelius for CRN: $crn", e) }

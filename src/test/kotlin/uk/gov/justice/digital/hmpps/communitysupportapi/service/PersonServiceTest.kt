@@ -23,7 +23,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterestDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonalDetailsAndCircumstancesDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstancesDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
 
 @ExtendWith(MockitoExtension::class)
@@ -56,9 +56,9 @@ class PersonServiceTest {
 
     whenever(cprProbationService.getPersonDetailsByCrn(CRN)).thenReturn(expectedPersonAggregate)
 
-    val expectedPersonDetailsAndCircumstances = PersonDetailsAndCircumstances.from(createPersonalDetailsAndCircumstancesDto(), createHomeOfficeInterestDto())
+    val expectedPersonDetailsAndCircumstances = PersonDetailsAndCircumstances.from(createPersonDetailsAndCircumstancesDto(), createHomeOfficeInterestDto())
 
-    whenever(nDeliusService.getPersonCircumstancesByCrn(CRN)).thenReturn(expectedPersonDetailsAndCircumstances)
+    whenever(nDeliusService.getPersonDetailsAndCircumstancesByIdentifier(CRN)).thenReturn(expectedPersonDetailsAndCircumstances)
 
     val result = personService.getPerson(CRN)
 
@@ -83,9 +83,9 @@ class PersonServiceTest {
     whenever(cprProbationService.getPersonDetailsByPrisonNumber(PRISONER_NUMBER))
       .thenReturn(personAggregate)
 
-    val expectedPersonDetailsAndCircumstances = PersonDetailsAndCircumstances.from(createPersonalDetailsAndCircumstancesDto(), createHomeOfficeInterestDto())
+    val expectedPersonDetailsAndCircumstances = PersonDetailsAndCircumstances.from(createPersonDetailsAndCircumstancesDto(), createHomeOfficeInterestDto())
 
-    whenever(nDeliusService.getPersonCircumstancesByCrn(PRISONER_NUMBER)).thenReturn(expectedPersonDetailsAndCircumstances)
+    whenever(nDeliusService.getPersonDetailsAndCircumstancesByIdentifier(PRISONER_NUMBER)).thenReturn(expectedPersonDetailsAndCircumstances)
 
     val result = personService.getPerson(PRISONER_NUMBER)
 
@@ -138,7 +138,7 @@ class PersonServiceTest {
 
     whenever(personIdentifierValidator.validate(crn)).thenReturn(identifier)
     whenever(cprProbationService.getPersonDetailsByCrn(crn)).thenReturn(personAggregate)
-    whenever(nDeliusService.getPersonCircumstancesByCrn(crn)).thenThrow(NotFoundException("Person not found in nDelius with CRN: $crn"))
+    whenever(nDeliusService.getPersonDetailsAndCircumstancesByIdentifier(crn)).thenThrow(NotFoundException("Person not found in nDelius with CRN: $crn"))
 
     assertThrows<NotFoundException> {
       personService.getPerson(identifier.value)

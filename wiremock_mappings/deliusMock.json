@@ -116,7 +116,7 @@
             "code": "EN",
             "description": "English"
           },
-          "personalCircumstances": [
+          "personCircumstances": [
             {
               "type": {
                 "code": "REL",
