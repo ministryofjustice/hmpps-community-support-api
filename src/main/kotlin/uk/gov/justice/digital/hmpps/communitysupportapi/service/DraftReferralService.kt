@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffR
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.Selection
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSentenceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
@@ -306,4 +307,6 @@ class DraftReferralService(
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
     return AdditionalInformationForTheDeliveryPartnerBffDto.from(person)
   }
+
+  fun updateAdditionalInformationForTheDeliveryPartner(referralId: UUID, selection: Selection){}
 }

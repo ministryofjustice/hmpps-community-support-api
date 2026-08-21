@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProv
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.Selection
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
@@ -305,10 +306,19 @@ class DraftReferralController(
   ): ResponseEntity<OffenceSentenceInfoBffResponseDto> = ResponseEntity.ok(
     draftReferralService.getOffenceAndSentenceInfo(referralId),
   )
+
   @GetMapping("/bff/draft-referral/additional-information-for-the-delivery-partner/{referralId}")
   fun getAdditionalInformationForTheDeliveryPartner(
     @PathVariable referralId: UUID,
   ): ResponseEntity<AdditionalInformationForTheDeliveryPartnerBffDto> = ResponseEntity.ok(
     draftReferralService.getAdditionalInformationForTheDeliveryPartner(referralId),
+  )
+
+  @PatchMapping("/draft-referral/additional-information-for-the-delivery-partner/{referralId}")
+  fun updateAdditionalInformationForTheDeliveryPartner(
+    @PathVariable referralId: UUID,
+    @RequestBody request: Selection,
+  ): ResponseEntity<Unit> = ResponseEntity.ok(
+    draftReferralService.updateAdditionalInformationForTheDeliveryPartner(referralId,request),
   )
 }
