@@ -46,7 +46,7 @@ services:
       auth-user-details: "/users/{userName}"
   assess-risks-and-needs-api:
     base-url: "http://localhost:${wiremock.server.port}"
-  nDelius:
+  nDelius-api:
     base-url: "http://localhost:${wiremock.server.port}"
 webclient:
   connect-timeout-seconds: 20

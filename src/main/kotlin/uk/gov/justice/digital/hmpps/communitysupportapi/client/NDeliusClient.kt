@@ -64,7 +64,7 @@ class NDeliusClient(
           else -> response.bodyToMono<HomeOfficeInterestDto>()
         }
       }
-      .doOnError { e -> log.error("Error calling delius for CRN: $crn", e) }
+      .doOnError { e -> log.error("Error calling nDelius for CRN: $crn", e) }
       .block()!!
   }
 }
