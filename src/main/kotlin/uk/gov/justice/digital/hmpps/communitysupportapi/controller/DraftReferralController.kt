@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportN
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CriminogenicNeedsService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.DraftReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -299,9 +300,39 @@ class DraftReferralController(
     ],
   )
   @GetMapping("/bff/draft-referral/{referralId}/offence-sentence")
-  fun getOffenceAndSentenceInfo(
+  fun getOffenceSentenceDetails(
     @PathVariable referralId: UUID,
   ): ResponseEntity<OffenceSentenceInfoBffResponseDto> = ResponseEntity.ok(
-    draftReferralService.getOffenceAndSentenceInfo(referralId),
+    draftReferralService.getOffenceSentenceDetails(referralId),
   )
+
+  @Operation(summary = "Update the Offence and Sentence information for a Draft Referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Offence and Sentence information updated",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = OffenceSentenceInfoBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/draft-referral/{referralId}/offence-sentence")
+  fun updateOffenceSentenceDetails(
+    @PathVariable referralId: UUID,
+    @RequestBody request: UpdateOffenceSentenceRequest,
+  ): ResponseEntity<OffenceSentenceInfoBffResponseDto> {
+    val user = userMapper.fromToken(authenticationHolder)
+
+    return ResponseEntity.ok(draftReferralService.upsertOffenceSentenceDetails(referralId, user.id, request))
+  }
 }

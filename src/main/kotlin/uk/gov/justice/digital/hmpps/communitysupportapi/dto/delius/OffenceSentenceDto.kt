@@ -8,4 +8,6 @@ data class OffenceSentenceDto(
   val outcome: String? = null,
   val sentenceEndDate: LocalDate? = null,
   val expectedReleaseDate: LocalDate? = null,
+  val hasLicenceConditionsOrZones: Boolean? = null,
+  val licenceConditionsOrZonesDetails: String? = null,
 )

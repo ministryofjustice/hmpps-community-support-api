@@ -12,17 +12,20 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSenten
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralOffenceSentence
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralOffenceSentenceRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
@@ -42,6 +45,7 @@ class DraftReferralService(
   private val pduRepository: PduRepository,
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
+  private val referralOffenceSentenceRepository: ReferralOffenceSentenceRepository,
   private val identifierValidator: PersonIdentifierValidator,
 ) {
   private data class ReferralSupportNeedsContext(
@@ -285,14 +289,70 @@ class DraftReferralService(
     )
   }
 
-  fun getOffenceAndSentenceInfo(referralId: UUID): OffenceSentenceInfoBffResponseDto {
+  fun getOffenceSentenceDetails(referralId: UUID): OffenceSentenceInfoBffResponseDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
+    // TODO: Replace with downstream service call to retrieve offence and sentence information when client details are confirmed
     val offenceSentenceInfo = OffenceSentenceDto()
+
+    return OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
+  }
+
+  @Transactional
+  fun upsertOffenceSentenceDetails(referralId: UUID, userId: UUID, request: UpdateOffenceSentenceRequest): OffenceSentenceInfoBffResponseDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+
+    val validatedRequest = request.validateAndNormalise()
+
+    val offenceSentenceInfo = OffenceSentenceDto(
+      offence = validatedRequest.offence,
+      offenceSubCategory = validatedRequest.offenceSubCategory,
+      outcome = validatedRequest.outcome,
+      sentenceEndDate = validatedRequest.sentenceEndDate,
+      expectedReleaseDate = validatedRequest.expectedReleaseDate,
+      hasLicenceConditionsOrZones = validatedRequest.hasLicenceConditionsOrZones,
+      licenceConditionsOrZonesDetails = validatedRequest.licenceConditionsOrZonesDetails,
+    )
+
+    val existingRecord = referralOffenceSentenceRepository.findByReferralId(referralId)
+
+    if (existingRecord == null) {
+      referralOffenceSentenceRepository.save(
+        ReferralOffenceSentence(
+          id = UUID.randomUUID(),
+          referralId = referralId,
+          personId = person.id,
+          offence = offenceSentenceInfo.offence,
+          offenceSubCategory = offenceSentenceInfo.offenceSubCategory,
+          outcome = offenceSentenceInfo.outcome,
+          sentenceEndDate = offenceSentenceInfo.sentenceEndDate,
+          expectedReleaseDate = offenceSentenceInfo.expectedReleaseDate,
+          hasLicenceConditionsOrZones = offenceSentenceInfo.hasLicenceConditionsOrZones,
+          licenceConditionsOrZonesDetails = offenceSentenceInfo.licenceConditionsOrZonesDetails,
+          createdAt = OffsetDateTime.now(),
+          createdBy = userId,
+        ),
+      )
+    } else {
+      existingRecord.offence = offenceSentenceInfo.offence
+      existingRecord.offenceSubCategory = offenceSentenceInfo.offenceSubCategory
+      existingRecord.outcome = offenceSentenceInfo.outcome
+      existingRecord.sentenceEndDate = offenceSentenceInfo.sentenceEndDate
+      existingRecord.expectedReleaseDate = offenceSentenceInfo.expectedReleaseDate
+      existingRecord.hasLicenceConditionsOrZones = offenceSentenceInfo.hasLicenceConditionsOrZones
+      existingRecord.licenceConditionsOrZonesDetails = offenceSentenceInfo.licenceConditionsOrZonesDetails
+      existingRecord.updatedAt = OffsetDateTime.now()
+      existingRecord.updatedBy = userId
+      referralOffenceSentenceRepository.save(existingRecord)
+    }
 
     return OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
   }
