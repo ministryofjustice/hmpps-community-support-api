@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalInformationForTheDeliveryPartnerBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
@@ -303,5 +304,11 @@ class DraftReferralController(
     @PathVariable referralId: UUID,
   ): ResponseEntity<OffenceSentenceInfoBffResponseDto> = ResponseEntity.ok(
     draftReferralService.getOffenceAndSentenceInfo(referralId),
+  )
+  @GetMapping("/bff/draft-referral/additional-information-for-the-delivery-partner/{referralId}")
+  fun getAdditionalInformationForTheDeliveryPartner(
+    @PathVariable referralId: UUID,
+  ): ResponseEntity<AdditionalInformationForTheDeliveryPartnerBffDto> = ResponseEntity.ok(
+    draftReferralService.getAdditionalInformationForTheDeliveryPartner(referralId),
   )
 }

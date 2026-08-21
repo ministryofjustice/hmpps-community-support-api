@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalInformationForTheDeliveryPartnerBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
@@ -295,5 +296,14 @@ class DraftReferralService(
     val offenceSentenceInfo = OffenceSentenceDto()
 
     return OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
+  }
+
+  fun getAdditionalInformationForTheDeliveryPartner(referralId: UUID): AdditionalInformationForTheDeliveryPartnerBffDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+    return AdditionalInformationForTheDeliveryPartnerBffDto.from(person)
   }
 }
