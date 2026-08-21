@@ -30,6 +30,9 @@ data class ActionPlanStepQuestionAnswerRevision(
   @Column(name = "content")
   val content: String? = null,
 
+  @Column(name = "free_text_value")
+  val freeTextValue: String? = null,
+
   @Column(name = "created_at", nullable = false)
   val createdAt: OffsetDateTime? = null,
 

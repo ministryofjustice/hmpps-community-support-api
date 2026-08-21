@@ -61,6 +61,8 @@ Use this skill when:
 - Keep pull requests focused and avoid unrelated edits.
 - Provide concise verification evidence (lint, tests, build outcomes).
 - Call out exceptions or risk areas explicitly in the PR description.
+- Do not commit or push changes; leave version control actions to the user unless explicitly requested.
+- Confirm any new files appear in git status and are tracked or staged as expected before handoff.
 
 ## Procedure
 
@@ -94,6 +96,7 @@ Use this skill when:
 - Migration/seed scripts are named correctly and include clear safety rationale.
 - Change includes tests for each user-visible behavior change.
 - PR evidence includes command outcomes and any exceptions.
+- New files are visible in git status and have been added to git as expected.
 
 ## Decision Points
 

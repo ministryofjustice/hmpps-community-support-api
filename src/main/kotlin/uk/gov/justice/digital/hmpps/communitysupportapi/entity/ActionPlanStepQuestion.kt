@@ -8,12 +8,19 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.util.UUID
 
 enum class ActionPlanQuestionType {
   OUTCOME,
   GENERAL,
+}
+
+enum class ActionPlanQuestionAnswerType {
+  TEXTAREA,
+  RADIO,
+  CHECKBOX,
 }
 
 @Entity
@@ -37,7 +44,8 @@ data class ActionPlanStepQuestion(
   val title: String,
 
   @Column(name = "answer_type", nullable = false)
-  val answerType: String,
+  @Enumerated(EnumType.STRING)
+  val answerType: ActionPlanQuestionAnswerType,
 
   @Column(name = "question_type", nullable = false)
   @Enumerated(EnumType.STRING)
@@ -45,4 +53,15 @@ data class ActionPlanStepQuestion(
 
   @Column(name = "max_number_responses", nullable = false)
   val maxNumberResponses: Int,
+
+  @Column(name = "need_id")
+  val needId: UUID? = null,
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "need_id", insertable = false, updatable = false)
+  val need: Need? = null,
+
+  @OneToMany(fetch = FetchType.LAZY)
+  @JoinColumn(name = "action_plan_step_question_id", insertable = false, updatable = false)
+  val choices: MutableList<ActionPlanStepQuestionChoice> = mutableListOf(),
 )

@@ -6,4 +6,6 @@ import java.util.UUID
 
 interface ActionPlanStepQuestionRepository : JpaRepository<ActionPlanStepQuestion, UUID> {
   fun findAllByActionPlanStepIdInOrderByOrderNumberAsc(actionPlanStepIds: Collection<UUID>): List<ActionPlanStepQuestion>
+
+  fun findAllByActionPlanStepIdOrderByOrderNumberAsc(actionPlanStepId: UUID): List<ActionPlanStepQuestion>
 }

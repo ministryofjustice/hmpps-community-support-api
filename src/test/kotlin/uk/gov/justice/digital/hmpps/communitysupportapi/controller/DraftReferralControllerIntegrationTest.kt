@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNee
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.Selection
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
@@ -38,6 +39,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCrimi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
@@ -711,12 +713,36 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return completed for addAdditionalInformationCompleted when target date and reason exist`() {
+    fun `should return in progress for addAdditionalInformationCompleted when target date and reason exist without service days`() {
       val testUser = referralHelper.createTestUser()
       val person = referralHelper.createPerson(identifier = "CRN12345")
       val savedReferral = referralHelper.createReferral(
         person = person,
         submittedBy = testUser,
+      )
+      referralRepository.save(savedReferral)
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.inProgress()
+        }
+    }
+
+    @Test
+    fun `should return completed for addAdditionalInformationCompleted when target date reason and service days exist`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        serviceDays = 40,
       )
       referralRepository.save(savedReferral)
 
@@ -969,6 +995,50 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.hasFinancialNeeds shouldBe true
           body.financialDetails shouldBe "Needs debt management support"
           body.updatedBy shouldBe testUser.id
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/draft-referral/{referralId}/offence-sentence")
+  inner class OffenceSentenceInfoEndPoint {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/draft-referral/${UUID.randomUUID()}/offence-sentence")
+    }
+
+    @Test
+    fun `should return 404 when referral does not exist`() {
+      assertNotFound(GET, "/bff/draft-referral/${UUID.randomUUID()}/offence-sentence")
+    }
+
+    @Test
+    fun `should return 200 with offence and sentence info for a known referral`() {
+      val person = referralHelper.createPerson(identifier = CRN)
+      val referral = referralHelper.createReferral(person, submittedBy = testUser)
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/${referral.id}/offence-sentence")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<OffenceSentenceInfoBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.firstName shouldBe person.firstName
+          body.lastName shouldBe person.lastName
+          body.offenceSentenceInfo.offence shouldBe null
+          body.offenceSentenceInfo.offenceSubCategory shouldBe null
+          body.offenceSentenceInfo.outcome shouldBe null
+          body.offenceSentenceInfo.sentenceEndDate shouldBe null
+          body.offenceSentenceInfo.expectedReleaseDate shouldBe null
         }
     }
   }

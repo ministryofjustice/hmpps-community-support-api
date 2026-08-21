@@ -9,5 +9,5 @@ interface ActionPlanTemplateRepository : JpaRepository<ActionPlanTemplate, UUID>
   @Query("SELECT DISTINCT a FROM ActionPlanTemplate a WHERE a.activeGlobal = true")
   fun getGlobalActionPlanTemplate(): ActionPlanTemplate?
 
-  fun findFirstByOrderByIdAsc(): ActionPlanTemplate?
+  fun findFirstByActiveGlobalTrueOrderByIdAsc(): ActionPlanTemplate?
 }

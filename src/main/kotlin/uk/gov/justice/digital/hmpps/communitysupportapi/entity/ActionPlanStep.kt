@@ -13,6 +13,7 @@ import java.util.UUID
 
 enum class ActionPlanStepType {
   NEED,
+  SESSION_DELIVERY,
   CATCH_ALL,
 }
 
@@ -39,11 +40,4 @@ data class ActionPlanStep(
   @Column(name = "step_type", nullable = false)
   @Enumerated(EnumType.STRING)
   val stepType: ActionPlanStepType,
-
-  @Column(name = "need_id")
-  val needId: UUID? = null,
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "need_id", insertable = false, updatable = false)
-  val need: Need? = null,
 )

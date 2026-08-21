@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
@@ -143,6 +144,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         crn = savedReferral.personIdentifier,
         referenceNumber = savedReferral.referenceNumber,
         createdDate = savedReferral.createdAt,
+        serviceDays = savedReferral.serviceDays,
       )
 
       webTestClient.get()
@@ -158,6 +160,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.id shouldBe referralDto.id
           body.crn shouldBe referralDto.crn
           body.referenceNumber shouldBe referralDto.referenceNumber
+          body.serviceDays shouldBe referralDto.serviceDays
 
           val nanosDiff =
             Duration.between(referralDto.createdDate, body.createdDate).abs().toNanos()
@@ -428,6 +431,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         id = savedReferral.id,
         referenceNumber = savedReferral.referenceNumber,
         createdDate = savedReferral.createdAt,
+        serviceDays = savedReferral.serviceDays,
         targetServiceCompletionDate = savedReferral.targetServiceCompletionDate,
         targetServiceCompletionDateReason = savedReferral.targetServiceCompletionDateReason,
         personDetailsTableData = personDetailsTable,
@@ -715,6 +719,108 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("GET /bff/service-days-page/{referralId}")
+  inner class ServiceDaysPageEndPoint {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/service-days-page/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(GET, "/bff/service-days-page/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(GET, "/bff/service-days-page/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return OK with service days when set on referral`() {
+      val cprPersonDTO = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDTO.toJson()),
+          ),
+      )
+
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
+      personRepository.save(person)
+
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        serviceDays = 60,
+      )
+
+      webTestClient.get()
+        .uri("/bff/service-days-page/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ServiceDaysPageDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.serviceDays shouldBe 60
+        }
+    }
+
+    @Test
+    fun `should return OK with null service days when unset on referral`() {
+      val cprPersonDTO = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDTO.toJson()),
+          ),
+      )
+
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
+      personRepository.save(person)
+
+      val savedReferral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        serviceDays = null,
+      )
+
+      webTestClient.get()
+        .uri("/bff/service-days-page/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ServiceDaysPageDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.serviceDays shouldBe null
+        }
+    }
+
+    @Test
+    fun `should return Not Found with invalid referral identifier`() {
+      assertNotFound(GET, "/bff/service-days-page/${UUID.randomUUID()}")
+    }
+  }
+
+  @Nested
   @DisplayName("GET /bff/referral-details/{referralId}/progress")
   inner class ReferralProgressPageEndPoint {
     val referralId = UUID.randomUUID().toString()
@@ -942,7 +1048,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       val updatedReferral = referralRepository.findById(referral.id).get()
       updatedReferral.targetServiceCompletionDate?.toInstant() shouldBe completionDate.toInstant()
       updatedReferral.targetServiceCompletionDateReason shouldBe "Needs more time"
-      updatedReferral.referralEvents.any { it.eventType == ReferralEventType.UPDATED } shouldBe true
+      updatedReferral.referralEvents.any { it.eventType == ReferralEventType.UPDATED } shouldBe false
     }
 
     @Test
@@ -953,6 +1059,91 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .uri("/referral/${UUID.randomUUID()}/service-end-date")
         .headers(setAuthorisation())
         .bodyValue(ServiceEndDatePageDto(null, null))
+        .exchange()
+        .expectStatus()
+        .isNotFound
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /draft-referral/{referralId}/service-days")
+  inner class ServiceDaysPageUpdateEndPoint {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      webTestClient.patch()
+        .uri("/draft-referral/${UUID.randomUUID()}/service-days")
+        .bodyValue(ServiceDaysPageDto(null))
+        .exchange()
+        .expectStatus()
+        .isUnauthorized
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      webTestClient.patch()
+        .uri("/draft-referral/${UUID.randomUUID()}/service-days")
+        .headers(setAuthorisation("AUTH_ADM", listOf(), listOf("read")))
+        .bodyValue(ServiceDaysPageDto(null))
+        .exchange()
+        .expectStatus()
+        .isForbidden
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      webTestClient.patch()
+        .uri("/draft-referral/${UUID.randomUUID()}/service-days")
+        .headers(setAuthorisation(roles = listOf("ROLE_WRONG")))
+        .bodyValue(ServiceDaysPageDto(null))
+        .exchange()
+        .expectStatus()
+        .isForbidden
+    }
+
+    @Test
+    fun `should update service days for a referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createReferral(
+        person = person,
+        submittedBy = testUser,
+        serviceDays = null,
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/service-days")
+        .headers(setAuthorisation())
+        .bodyValue(ServiceDaysPageDto(35))
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ServiceDaysPageDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.serviceDays shouldBe 35
+        }
+
+      val updatedReferral = referralRepository.findById(referral.id).get()
+      updatedReferral.serviceDays shouldBe 35
+      updatedReferral.referralEvents.any { it.eventType == ReferralEventType.UPDATED } shouldBe false
+    }
+
+    @Test
+    fun `should return Not Found with invalid referral identifier`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      webTestClient.patch()
+        .uri("/draft-referral/${UUID.randomUUID()}/service-days")
+        .headers(setAuthorisation())
+        .bodyValue(ServiceDaysPageDto(null))
         .exchange()
         .expectStatus()
         .isNotFound

@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResu
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
@@ -22,7 +23,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalD
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
@@ -33,7 +33,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIc
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
@@ -59,14 +58,10 @@ class ReferralService(
   private val identifierValidator: PersonIdentifierValidator,
   private val personService: PersonService,
   private val actionPlanService: ActionPlanService,
-  private val communityServiceProviderRepository: CommunityServiceProviderRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
     private const val MAX_REFERENCE_NUMBER_TRIES = 10
-
-    // Temporary default provider until provider selection is fully implemented (IPB-2532)
-    private val DEFAULT_COMMUNITY_SERVICE_PROVIDER_ID = UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
   }
 
   fun getReferral(referralId: UUID) = referralRepository.findById(referralId)
@@ -85,30 +80,34 @@ class ReferralService(
       .orElseThrow { NotFoundException("Referral not found for id $referralId") },
   )
 
+  fun getServiceDaysPage(referralId: UUID): ServiceDaysPageDto = ServiceDaysPageDto.from(
+    referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") },
+  )
+
   @Transactional
   fun updateReferralServiceEndDate(
     referralId: UUID,
-    userId: UUID,
     request: ServiceEndDatePageDto,
   ): ServiceEndDatePageDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
-    val now = OffsetDateTime.now()
     referral.targetServiceCompletionDate = request.targetServiceCompletionDate
     referral.targetServiceCompletionDateReason = request.targetServiceCompletionReason
-    referral.updatedAt = now
-    referral.addEvent(
-      ReferralEvent(
-        id = UUID.randomUUID(),
-        eventType = ReferralEventType.UPDATED,
-        createdAt = now,
-        actorType = ActorType.AUTH,
-        actorId = userId,
-        referral = referral,
-      ),
-    )
 
     return ServiceEndDatePageDto.from(referralRepository.save(referral))
+  }
+
+  @Transactional
+  fun updateReferralServiceDays(
+    referralId: UUID,
+    request: ServiceDaysPageDto,
+  ): ServiceDaysPageDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+    referral.serviceDays = request.serviceDays
+
+    return ServiceDaysPageDto.from(referralRepository.save(referral))
   }
 
   @Transactional
@@ -140,16 +139,6 @@ class ReferralService(
 
     referral.addEvent(referralEvent)
     val savedReferral = referralRepository.save(referral)
-
-    // Temporary: assign the default community service provider until provider selection is implemented
-    val defaultProvider = communityServiceProviderRepository.findById(DEFAULT_COMMUNITY_SERVICE_PROVIDER_ID)
-      .orElseThrow { NotFoundException("Default community service provider not found: $DEFAULT_COMMUNITY_SERVICE_PROVIDER_ID") }
-    referralProviderAssignmentRepository.save(
-      ReferralProviderAssignment(
-        referral = savedReferral,
-        communityServiceProvider = defaultProvider,
-      ),
-    )
 
     return ReferralCreationResult(
       referral = savedReferral,

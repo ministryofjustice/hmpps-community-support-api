@@ -10,6 +10,7 @@ data class ReferralDto(
   val crn: String?,
   val referenceNumber: String?,
   val createdDate: java.time.OffsetDateTime,
+  val serviceDays: Int? = null,
 ) {
   companion object {
     fun from(referral: Referral): ReferralDto = ReferralDto(
@@ -17,6 +18,7 @@ data class ReferralDto(
       crn = referral.personIdentifier,
       referenceNumber = referral.referenceNumber,
       createdDate = referral.createdAt,
+      serviceDays = referral.serviceDays,
     )
   }
 }

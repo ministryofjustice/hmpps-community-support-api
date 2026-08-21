@@ -51,9 +51,22 @@ data class TaskListStatusResponseDto(
 
     private fun getRiskInfoStatus(riskInfo: RiskInformation?): TaskListStatusItem = riskInfo?.let { return TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
-    private fun getAdditionalInformationStatus(referral: Referral): TaskListStatusItem = when {
-      referral.targetServiceCompletionDate != null && !referral.targetServiceCompletionDateReason.isNullOrBlank() -> TaskListStatusItem.completed()
-      else -> TaskListStatusItem.notStarted()
+    private fun getAdditionalInformationStatus(referral: Referral): TaskListStatusItem {
+      val hasTargetServiceCompletionDate = referral.targetServiceCompletionDate != null
+      val hasTargetServiceCompletionDateReason = !referral.targetServiceCompletionDateReason.isNullOrBlank()
+      val hasServiceDays = referral.serviceDays != null
+
+      val populatedFieldCount = listOf(
+        hasTargetServiceCompletionDate,
+        hasTargetServiceCompletionDateReason,
+        hasServiceDays,
+      ).count { it }
+
+      return when (populatedFieldCount) {
+        3 -> TaskListStatusItem.completed()
+        0 -> TaskListStatusItem.notStarted()
+        else -> TaskListStatusItem.inProgress()
+      }
     }
   }
 }
