@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentif
 class PersonService(
   private val cprProbationService: CprProbationService,
   private val identifierValidator: PersonIdentifierValidator,
+  private val deliusService: NDeliusService,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -26,6 +27,7 @@ class PersonService(
         is PersonIdentifier.PrisonerNumber -> cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
       },
     )
-    return personAggregate.toPersonDto()
+    val personDetailsAndCircumstances = deliusService.getPersonDetailsAndCircumstancesByIdentifier(personIdentifier)
+    return personAggregate.toPersonDto(personDetailsAndCircumstances)
   }
 }

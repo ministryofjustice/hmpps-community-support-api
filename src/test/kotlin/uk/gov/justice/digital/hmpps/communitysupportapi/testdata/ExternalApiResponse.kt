@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CodeDescriptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsOtherRoshRisksDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskConcernsToSelfDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskDto
@@ -11,6 +12,11 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprCodeDescripti
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprContactDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprIdentifiersDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DisabilitiesDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.HomeOfficeInterestDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderPersonalityDisorderDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonCircumstanceDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonDetailsAndCircumstancesDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.service.notify.SendEmailResponse
@@ -332,4 +338,53 @@ object ExternalApiResponse {
     """.trimIndent()
     return SendEmailResponse(jsonBody)
   }
+
+  fun createPersonCircumstances(): List<PersonCircumstanceDto> = listOf(
+    PersonCircumstanceDto(
+      CodeDescriptionDto("REL", "Relationships"),
+      CodeDescriptionDto("REL_SUB", "Relationships sub type"),
+      LocalDateTime.of(2026, 3, 12, 14, 25, 0),
+    ),
+    PersonCircumstanceDto(
+      CodeDescriptionDto("EMP", "Employment"),
+      CodeDescriptionDto("EMP_SUB", "Employment sub type"),
+      LocalDateTime.of(2026, 2, 12, 14, 25, 0),
+    ),
+    PersonCircumstanceDto(
+      CodeDescriptionDto("DEP", "Dependants"),
+      CodeDescriptionDto("DEP_SUB", "Dependants sub type"),
+      LocalDateTime.of(2026, 1, 12, 14, 25, 0),
+    ),
+  )
+
+  fun createDisabilities(): List<DisabilitiesDto> = listOf(
+    DisabilitiesDto(
+      CodeDescriptionDto("BLN", "Blind"),
+      updatedAt = LocalDateTime.of(2026, 3, 12, 14, 25, 0),
+    ),
+  )
+
+  fun createPersonDetailsAndCircumstancesDto(
+    preferredLanguage: CodeDescriptionDto = CodeDescriptionDto("EN", "English"),
+    personCircumstances: List<PersonCircumstanceDto> = createPersonCircumstances(),
+    disabilities: List<DisabilitiesDto> = createDisabilities(),
+    offenderPersonalityDisorderDto: OffenderPersonalityDisorderDto = OffenderPersonalityDisorderDto(status = CodeDescriptionDto("NO", "N/A")),
+  ): PersonDetailsAndCircumstancesDto = PersonDetailsAndCircumstancesDto(
+    preferredLanguage,
+    personCircumstances,
+    disabilities,
+    offenderPersonalityDisorderDto,
+  )
+
+  fun createHomeOfficeInterestDto(): HomeOfficeInterestDto = HomeOfficeInterestDto(true, "Is of interest")
+
+  fun createPersonDetailsAndCircumstances() = createPersonDetailsAndCircumstancesDto().toJson()
+  fun createHomeOfficeInterest() = createHomeOfficeInterestDto().toJson()
+  fun personDetailsAndCircumstancesNotFoundJson() = """
+        {
+          "error": "Not Found",
+          "status": 404,
+          "message": "Person not found"
+        }
+  """.trimIndent()
 }

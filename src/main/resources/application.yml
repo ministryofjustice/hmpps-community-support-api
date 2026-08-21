@@ -89,6 +89,8 @@ services:
       auth-user-details: "/users/{userName}"
   assess-risks-and-needs-api:
     base-url: ${ASSESS_RISKS_AND_NEEDS_API_BASE_URL}
+  nDelius-api:
+    base-url: ${NDELIUS_API_BASE_URL}
 
 reference-data:
   probation-offices:

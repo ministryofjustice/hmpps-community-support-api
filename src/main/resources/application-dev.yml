@@ -8,3 +8,5 @@ services:
     locations:
       auth-user-groups: "/externalusers/{userId}/groups"
       auth-user-details: "/users/{userName}"
+  nDelius-api:
+    base-url: ${NDELIUS_API_BASE_URL}
