@@ -22,6 +22,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.service.notify.SendEmailResponse
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.String
 
@@ -343,24 +345,24 @@ object ExternalApiResponse {
     PersonCircumstanceDto(
       CodeDescriptionDto("REL", "Relationships"),
       CodeDescriptionDto("REL_SUB", "Relationships sub type"),
-      LocalDateTime.of(2026, 3, 12, 14, 25, 0),
+      OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     ),
     PersonCircumstanceDto(
       CodeDescriptionDto("EMP", "Employment"),
       CodeDescriptionDto("EMP_SUB", "Employment sub type"),
-      LocalDateTime.of(2026, 2, 12, 14, 25, 0),
+      OffsetDateTime.of(2026, 2, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     ),
     PersonCircumstanceDto(
       CodeDescriptionDto("DEP", "Dependants"),
       CodeDescriptionDto("DEP_SUB", "Dependants sub type"),
-      LocalDateTime.of(2026, 1, 12, 14, 25, 0),
+      OffsetDateTime.of(2026, 1, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     ),
   )
 
   fun createDisabilities(): List<DisabilitiesDto> = listOf(
     DisabilitiesDto(
       CodeDescriptionDto("BLN", "Blind"),
-      updatedAt = LocalDateTime.of(2026, 3, 12, 14, 25, 0),
+      updatedAt = OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     ),
   )
 

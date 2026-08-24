@@ -4,14 +4,14 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DisabilitiesD
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.HomeOfficeInterestDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonCircumstanceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonDetailsAndCircumstancesDto
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 
 data class PersonCircumstance(
   val type: String? = null,
   val description: String? = null,
   val subType: String? = null,
   val subDescription: String? = null,
-  val updatedAt: LocalDateTime? = null,
+  val updatedAt: OffsetDateTime? = null,
 ) {
   companion object {
     fun from(circumstance: PersonCircumstanceDto): PersonCircumstance = PersonCircumstance(
@@ -27,7 +27,7 @@ data class PersonCircumstance(
 data class Disability(
   val type: String? = null,
   val description: String? = null,
-  val updatedAt: LocalDateTime? = null,
+  val updatedAt: OffsetDateTime? = null,
 ) {
   companion object {
     fun from(disability: DisabilitiesDto): Disability = Disability(

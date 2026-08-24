@@ -17,7 +17,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.personDetailsAndCircumstancesNotFoundJson
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 class NDeliusClientIntegrationTest : IntegrationTestBase() {
 
@@ -47,23 +48,23 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
       result.personCircumstances[0],
       CodeDescriptionDto("REL", "Relationships"),
       CodeDescriptionDto("REL_SUB", "Relationships sub type"),
-      LocalDateTime.of(2026, 3, 12, 14, 25, 0),
+      OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     )
     checkPersonCircumstanceDto(
       result.personCircumstances[1],
       CodeDescriptionDto("EMP", "Employment"),
       CodeDescriptionDto("EMP_SUB", "Employment sub type"),
-      LocalDateTime.of(2026, 2, 12, 14, 25, 0),
+      OffsetDateTime.of(2026, 2, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     )
     checkPersonCircumstanceDto(
       result.personCircumstances[2],
       CodeDescriptionDto("DEP", "Dependants"),
       CodeDescriptionDto("DEP_SUB", "Dependants sub type"),
-      LocalDateTime.of(2026, 1, 12, 14, 25, 0),
+      OffsetDateTime.of(2026, 1, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     )
 
     assertThat(result.disabilities.size).isEqualTo(1)
-    checkDisabilitiesDto(result.disabilities[0], CodeDescriptionDto("BLN", "Blind"), LocalDateTime.of(2026, 3, 12, 14, 25, 0))
+    checkDisabilitiesDto(result.disabilities[0], CodeDescriptionDto("BLN", "Blind"), OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)))
 
     assertThat(result.offenderPersonalityDisorder?.status?.code).isEqualTo("NO")
     assertThat(result.offenderPersonalityDisorder?.status?.description).isEqualTo("N/A")
@@ -122,7 +123,7 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
     }
   }
 
-  fun checkPersonCircumstanceDto(circumstance: PersonCircumstanceDto, expectedType: CodeDescriptionDto, expectedSubType: CodeDescriptionDto, expectedUpdatedAt: LocalDateTime) {
+  fun checkPersonCircumstanceDto(circumstance: PersonCircumstanceDto, expectedType: CodeDescriptionDto, expectedSubType: CodeDescriptionDto, expectedUpdatedAt: OffsetDateTime) {
     assertThat(circumstance.type?.code).isEqualTo(expectedType.code)
     assertThat(circumstance.type?.description).isEqualTo(expectedType.description)
     assertThat(circumstance.subtype?.code).isEqualTo(expectedSubType.code)
@@ -130,7 +131,7 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
     assertThat(circumstance.updatedAt).isEqualTo(expectedUpdatedAt)
   }
 
-  fun checkDisabilitiesDto(disabilities: DisabilitiesDto, expectedType: CodeDescriptionDto, expectedUpdatedAt: LocalDateTime) {
+  fun checkDisabilitiesDto(disabilities: DisabilitiesDto, expectedType: CodeDescriptionDto, expectedUpdatedAt: OffsetDateTime) {
     assertThat(disabilities.type?.code).isEqualTo(expectedType.code)
     assertThat(disabilities.type?.description).isEqualTo(expectedType.description)
     assertThat(disabilities.updatedAt).isEqualTo(expectedUpdatedAt)
