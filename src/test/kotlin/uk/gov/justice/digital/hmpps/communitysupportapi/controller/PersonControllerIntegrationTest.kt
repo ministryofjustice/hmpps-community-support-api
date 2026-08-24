@@ -23,7 +23,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirth
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import java.time.LocalDate
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 class PersonControllerIntegrationTest : IntegrationTestBase() {
 
@@ -186,19 +187,19 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
       body.personDetailsAndCircumstances.personCircumstances[0].description shouldBe "Relationships"
       body.personDetailsAndCircumstances.personCircumstances[0].subType shouldBe "REL_SUB"
       body.personDetailsAndCircumstances.personCircumstances[0].subDescription shouldBe "Relationships sub type"
-      body.personDetailsAndCircumstances.personCircumstances[0].updatedAt shouldBe LocalDateTime.of(2026, 3, 12, 14, 25, 0)
+      body.personDetailsAndCircumstances.personCircumstances[0].updatedAt?.toInstant() shouldBe OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)).toInstant()
 
       body.personDetailsAndCircumstances.personCircumstances[1].type shouldBe "EMP"
       body.personDetailsAndCircumstances.personCircumstances[1].description shouldBe "Employment"
       body.personDetailsAndCircumstances.personCircumstances[1].subType shouldBe "EMP_SUB"
       body.personDetailsAndCircumstances.personCircumstances[1].subDescription shouldBe "Employment sub type"
-      body.personDetailsAndCircumstances.personCircumstances[1].updatedAt shouldBe LocalDateTime.of(2026, 2, 12, 14, 25, 0)
+      body.personDetailsAndCircumstances.personCircumstances[1].updatedAt?.toInstant() shouldBe OffsetDateTime.of(2026, 2, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)).toInstant()
 
       body.personDetailsAndCircumstances.personCircumstances[2].type shouldBe "DEP"
       body.personDetailsAndCircumstances.personCircumstances[2].description shouldBe "Dependants"
       body.personDetailsAndCircumstances.personCircumstances[2].subType shouldBe "DEP_SUB"
       body.personDetailsAndCircumstances.personCircumstances[2].subDescription shouldBe "Dependants sub type"
-      body.personDetailsAndCircumstances.personCircumstances[2].updatedAt shouldBe LocalDateTime.of(2026, 1, 12, 14, 25, 0)
+      body.personDetailsAndCircumstances.personCircumstances[2].updatedAt?.toInstant() shouldBe OffsetDateTime.of(2026, 1, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)).toInstant()
 
       body.personDetailsAndCircumstances.disabilities shouldNotBe null
       body.personDetailsAndCircumstances.disabilities shouldHaveSize 1
