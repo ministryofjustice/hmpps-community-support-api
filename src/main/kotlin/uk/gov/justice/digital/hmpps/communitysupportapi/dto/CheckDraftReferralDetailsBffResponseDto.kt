@@ -2,17 +2,11 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUserAssignment
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ContractArea
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralOffenceSentence
-import java.time.OffsetDateTime
 import java.time.LocalDate
+import java.time.OffsetDateTime
 import java.util.UUID
 
-data class SubmitDetailsBffResponseDto(
+data class CheckDraftReferralDetailsBffResponseDto(
   val id: UUID,
   val referenceNumber: String?,
   val createdDate: OffsetDateTime,
@@ -27,11 +21,11 @@ data class SubmitDetailsBffResponseDto(
   val mainPocDetailsTableData: MainPOCDetailsTableDataDto,
 ) {
   companion object {
-    fun from(referral: Referral, person: Person,): SubmitDetailsBffResponseDto = SubmitDetailsBffResponseDto(
+    fun from(referral: Referral, person: Person): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
       createdDate = referral.createdAt,
-      personDetailsTableData = PersonDetailsTableDataDto.from(person, referral),
+      personDetailsTableData = PersonDetailsTableDataDto.from(person),
       equalityDetailsTableData = EqualityDetailsTableDataDto.from(person),
       contactDetailsTableData = ContactDetailsTableDataDto.from(person),
       additionalInformationDetailsTableData = AdditionalInformationDetailsTableDataDto.from(),
@@ -44,7 +38,7 @@ data class SubmitDetailsBffResponseDto(
   }
 
   data class PersonDetailsTableDataDto(
-    val name: String,
+    val name: RefereeNameDto,
     val crn: String,
     val dateOfBirth: String,
     val preferredLanguage: String,
@@ -53,8 +47,8 @@ data class SubmitDetailsBffResponseDto(
     val currentCircumstances: String,
   ) {
     companion object {
-      fun from(person: Person, referral: Referral): PersonDetailsTableDataDto = PersonDetailsTableDataDto(
-        name = "${person.firstName} ${person.lastName}",
+      fun from(person: Person): PersonDetailsTableDataDto = PersonDetailsTableDataDto(
+        name = RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
         crn = person.identifier,
         dateOfBirth = person.dateOfBirth.toString(),
         preferredLanguage = person.additionalDetails?.preferredLanguage ?: "",
@@ -74,7 +68,7 @@ data class SubmitDetailsBffResponseDto(
       fun from(person: Person): EqualityDetailsTableDataDto = EqualityDetailsTableDataDto(
         ethnicity = person.additionalDetails?.ethnicity ?: "",
         religionOrBelief = person.additionalDetails?.religionOrBelief ?: "",
-        sex = person.gender, // Double check
+        sex = person.gender,
       )
     }
   }
@@ -115,16 +109,7 @@ data class SubmitDetailsBffResponseDto(
     val additionalInformation: String? = null,
   ) {
     companion object {
-      fun from(riskInformation: RiskInformation): RiskInformationDetailsTableDataDto = RiskInformationDetailsTableDataDto(
-        whoIsAtRisk = riskInformation.riskSummaryWhoIsAtRisk,
-        natureOfRisk = riskInformation.riskSummaryNatureOfRisk,
-        riskImminence = riskInformation.riskSummaryRiskImminence,
-        riskOfSelfHarm = riskInformation.riskToSelfHarm,
-        riskOfSuicide = riskInformation.riskToSelfSuicide,
-        riskToSelfHostelSetting = riskInformation.riskToSelfHostelSetting,
-        riskToSelfVulnerability = riskInformation.riskToSelfVulnerability,
-        additionalInformation = riskInformation.additionalInformation,
-      )
+      fun from(): RiskInformationDetailsTableDataDto = RiskInformationDetailsTableDataDto()
     }
   }
 
@@ -141,18 +126,7 @@ data class SubmitDetailsBffResponseDto(
     val interpreterLanguage: String? = null,
   ) {
     companion object {
-      fun from(additionalSupportNeed: PersonAdditionalSupportNeeds): AdditionalSupportNeedsDetailsTableDataDto = AdditionalSupportNeedsDetailsTableDataDto(
-        physicalHealth = additionalSupportNeed.physicalHealthDetails,
-        mentalOrEmotionalHealth = additionalSupportNeed.mentalEmotionalHealthDetails,
-        neurodiversity = additionalSupportNeed.neurodiversityDetails,
-        locationAndTravel = additionalSupportNeed.locationTravelDetails,
-        caringResponsibilities = additionalSupportNeed.caringResponsibilitiesDetails,
-        employmentResponsibilities = additionalSupportNeed.employmentResponsibilitiesDetails,
-        diversity = additionalSupportNeed.diversityDetails,
-        anyOtherNeeds = additionalSupportNeed.anythingElseDetails,
-        needsInterpreter = additionalSupportNeed.interpreterNeeded,
-        interpreterLanguage = additionalSupportNeed.interpreterLanguage,
-      )
+      fun from(): AdditionalSupportNeedsDetailsTableDataDto = AdditionalSupportNeedsDetailsTableDataDto()
     }
   }
 
@@ -165,20 +139,10 @@ data class SubmitDetailsBffResponseDto(
     val drugUseDetails: String? = null,
     val alcoholUseDetails: String? = null,
     val healthWellbeingDetails: String? = null,
-    val thinkingBehaviourAndAttitudes: String? = null,
+    val thinkingBehavioursAttitudeDetails: String? = null,
   ) {
     companion object {
-      fun from(crimogenicNeeds: ReferralCriminogenicNeeds): PersonNeedsDetailsTableDataDto = PersonNeedsDetailsTableDataDto(
-        hasAccommodationNeeds = crimogenicNeeds.hasAccommodationNeeds,
-        accommodationDetails = crimogenicNeeds.accommodationDetails,
-        employmentAndEducation = crimogenicNeeds.employmentEducationDetails,
-        financialDetails = crimogenicNeeds.financialDetails,
-        personalRelationshipsCommunityDetails = crimogenicNeeds.personalRelationshipsCommunityDetails,
-        drugUseDetails = crimogenicNeeds.drugUseDetails,
-        alcoholUseDetails = crimogenicNeeds.alcoholUseDetails,
-        healthWellbeingDetails = crimogenicNeeds.healthWellbeingDetails,
-        // thinkingBehaviourAndAttitudes Not present in ReferralCriminogenicNeeds look up
-      )
+      fun from(): PersonNeedsDetailsTableDataDto = PersonNeedsDetailsTableDataDto()
     }
   }
 
@@ -186,9 +150,7 @@ data class SubmitDetailsBffResponseDto(
     val area: String? = null,
   ) {
     companion object {
-      fun from(contractArea: ContractArea): ReferralAreaTableDataDto = ReferralAreaTableDataDto(
-        area = contractArea.area,
-      )
+      fun from(): ReferralAreaTableDataDto = ReferralAreaTableDataDto()
     }
   }
 
@@ -202,23 +164,30 @@ data class SubmitDetailsBffResponseDto(
     val sentenceEndDate: LocalDate? = null,
   ) {
     companion object {
-      fun from(referral: Referral, offenceSentence: ReferralOffenceSentence): AdditionalReferralInformationTableDataDto = AdditionalReferralInformationTableDataDto(
+      fun from(referral: Referral): AdditionalReferralInformationTableDataDto = AdditionalReferralInformationTableDataDto(
         serviceCompletionDate = referral.targetServiceCompletionDate,
         serviceCompletionDateReason = referral.targetServiceCompletionDateReason,
         serviceDays = referral.serviceDays,
-        offence = offenceSentence.offence,
-        offenceSubCategory = offenceSentence.offenceSubCategory,
-        outcome = offenceSentence.outcome,
-        sentenceEndDate = offenceSentence.sentenceEndDate,
+        offence = null,
+        offenceSubCategory = null,
+        outcome = null,
+        sentenceEndDate = null,
       )
     }
   }
 
-  data class MainPOCDetailsTableDataDto(val detailsFromNDelius: String? = null) {
+  data class MainPOCDetailsTableDataDto(
+    val areTheseDetailsCorrect: Boolean? = null,
+    val name: String? = null,
+    val jobRole: String? = null,
+    val email: String? = null,
+    val phoneNumber: String? = null,
+    val pdu: String? = null,
+    val isProbationOfficer: Boolean? = null,
+    val teamPhoneNumber: String? = null,
+  ) {
     companion object {
       fun from(): MainPOCDetailsTableDataDto = MainPOCDetailsTableDataDto()
     }
   }
-
-  
 }

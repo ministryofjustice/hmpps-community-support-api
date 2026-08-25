@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckDraftReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
@@ -25,7 +26,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationD
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
@@ -256,7 +256,7 @@ class ReferralController(
         content = [
           Content(
             mediaType = "application/json",
-            schema = Schema(implementation = SubmitDetailsBffResponseDto::class),
+            schema = Schema(implementation = CheckDraftReferralDetailsBffResponseDto::class),
           ),
         ],
       ),
@@ -268,8 +268,7 @@ class ReferralController(
     ],
   )
   @GetMapping("/bff/referral-confirmation/{referralId}")
-  fun getReferralConfirmation(@PathVariable referralId: UUID): ResponseEntity<SubmitDetailsBffResponseDto> =
-    ResponseEntity.ok(referralService.getReferralConfirmationPage(referralId))
+  fun getReferralConfirmation(@PathVariable referralId: UUID): ResponseEntity<CheckDraftReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getReferralConfirmationPage(referralId))
 
   @Operation(summary = "Get referral progress page data")
   @ApiResponses(

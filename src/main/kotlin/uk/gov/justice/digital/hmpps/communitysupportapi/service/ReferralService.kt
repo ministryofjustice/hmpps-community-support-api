@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStatusDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckDraftReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
@@ -14,7 +15,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationD
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
@@ -76,13 +76,12 @@ class ReferralService(
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
   }
 
-  fun getReferralConfirmationPage(referralId: UUID): SubmitDetailsBffResponseDto {
+  fun getReferralConfirmationPage(referralId: UUID): CheckDraftReferralDetailsBffResponseDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
     val person = upsertPerson(personService.getPerson(referral.personIdentifier))
-    val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(referral.id)
 
-    return SubmitDetailsBffResponseDto.from(referral, person, referralAssignments)
+    return CheckDraftReferralDetailsBffResponseDto.from(referral, person)
   }
 
   fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(
