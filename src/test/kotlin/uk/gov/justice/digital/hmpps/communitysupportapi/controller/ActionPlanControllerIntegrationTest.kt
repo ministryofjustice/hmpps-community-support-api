@@ -6,10 +6,14 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpMethod.GET
+import org.springframework.http.HttpMethod.PATCH
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SavedResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerRevision
@@ -536,6 +540,187 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
       @Test
       fun `should return not found for unknown referral reference`() {
         assertNotFound(GET, "/bff/referral/ZZ9999ZZ/action-plan/session-delivery-details")
+      }
+    }
+
+    @Nested
+    @DisplayName("PATCH /referral/{referralReference}/action-plan/session-delivery-details")
+    inner class PatchSessionDeliveryDetailsEndpoint {
+      @Test
+      fun `should return unauthorized if no token`() {
+        assertUnauthorized(PATCH, "/referral/AB1234CD/action-plan/session-delivery-details")
+      }
+
+      @Test
+      fun `should return forbidden if no role`() {
+        assertForbiddenNoRole(
+          PATCH,
+          "/referral/AB1234CD/action-plan/session-delivery-details",
+          ActionPlanSessionDeliveryDetailsRequest(questions = emptyList()),
+        )
+      }
+
+      @Test
+      fun `should return forbidden if wrong role`() {
+        assertForbiddenWrongRole(
+          PATCH,
+          "/referral/AB1234CD/action-plan/session-delivery-details",
+          ActionPlanSessionDeliveryDetailsRequest(questions = emptyList()),
+        )
+      }
+
+      @Test
+      fun `should save and then update session delivery answers`() {
+        val referral = createReferral("Lucy", "Miles")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+        val sessionDeliveryStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(2)
+            .withName("Service Delivery Details")
+            .withStepType(ActionPlanStepType.SESSION_DELIVERY)
+            .create(),
+        )
+
+        val radioQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(sessionDeliveryStep.id)
+            .withOrderNumber(1)
+            .withTitle("How will the session be delivered?")
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(radioQuestion.id)
+            .withOrderNumber(1)
+            .withLabel("Face-to-face")
+            .withValue("FACE_TO_FACE")
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(radioQuestion.id)
+            .withOrderNumber(2)
+            .withLabel("Other")
+            .withValue("OTHER")
+            .withHasFreeText(true)
+            .withFreeTextLabel("Reason")
+            .create(),
+        )
+
+        val checkboxQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(sessionDeliveryStep.id)
+            .withOrderNumber(2)
+            .withTitle("Which communication channels will be used?")
+            .withAnswerType(ActionPlanQuestionAnswerType.CHECKBOX)
+            .withMaxNumberResponses(3)
+            .create(),
+        )
+
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(checkboxQuestion.id)
+            .withOrderNumber(1)
+            .withLabel("Phone")
+            .withValue("PHONE")
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(checkboxQuestion.id)
+            .withOrderNumber(2)
+            .withLabel("Text")
+            .withValue("TEXT")
+            .create(),
+        )
+
+        val saveRequest = ActionPlanSessionDeliveryDetailsRequest(
+          questions = listOf(
+            SessionDeliveryQuestionRequest(
+              id = radioQuestion.id,
+              savedResponses = listOf(SavedResponse(value = "OTHER", additionalDetails = "Poor weather")),
+            ),
+            SessionDeliveryQuestionRequest(
+              id = checkboxQuestion.id,
+              savedResponses = listOf(
+                SavedResponse(value = "PHONE"),
+                SavedResponse(value = "TEXT"),
+              ),
+            ),
+          ),
+        )
+
+        webTestClient.patch()
+          .uri("/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
+          .headers(setAuthorisation())
+          .bodyValue(saveRequest)
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value } shouldBe listOf("OTHER")
+            body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails } shouldBe listOf("Poor weather")
+            body.questions.first { it.id == checkboxQuestion.id }.savedResponses.map { it.value } shouldBe listOf("PHONE", "TEXT")
+          }
+
+        val updateRequest = ActionPlanSessionDeliveryDetailsRequest(
+          questions = listOf(
+            SessionDeliveryQuestionRequest(
+              id = radioQuestion.id,
+              savedResponses = listOf(SavedResponse(value = "FACE_TO_FACE")),
+            ),
+            SessionDeliveryQuestionRequest(
+              id = checkboxQuestion.id,
+              savedResponses = listOf(SavedResponse(value = "TEXT")),
+            ),
+          ),
+        )
+
+        webTestClient.patch()
+          .uri("/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
+          .headers(setAuthorisation())
+          .bodyValue(updateRequest)
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value } shouldBe listOf("FACE_TO_FACE")
+            body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails } shouldBe listOf(null)
+            body.questions.first { it.id == checkboxQuestion.id }.savedResponses.map { it.value } shouldBe listOf("TEXT")
+          }
+
+        val activeAnswers = actionPlanStepQuestionAnswerRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+        activeAnswers.filter { it.actionPlanStepQuestionId == radioQuestion.id }.size shouldBe 1
+        activeAnswers.filter { it.actionPlanStepQuestionId == checkboxQuestion.id }.size shouldBe 1
+
+        val allAnswers = actionPlanStepQuestionAnswerRepository.findAll()
+        allAnswers
+          .filter { it.actionPlanId == actionPlan.id && it.actionPlanStepQuestionId == checkboxQuestion.id }
+          .count { it.deletedAt != null } shouldBe 1
+
+        val updatedRadioAnswer = activeAnswers.first { it.actionPlanStepQuestionId == radioQuestion.id }
+        val radioRevisions = actionPlanStepQuestionAnswerRevisionRepository
+          .findAllByActionPlanStepQuestionAnswerIdIn(listOf(updatedRadioAnswer.id))
+          .sortedBy { it.revisionNumber }
+        radioRevisions.map { it.content } shouldBe listOf("OTHER", "FACE_TO_FACE")
+        radioRevisions.map { it.freeTextValue } shouldBe listOf("Poor weather", null)
+      }
+
+      @Test
+      fun `should return not found for unknown referral reference`() {
+        assertNotFound(
+          PATCH,
+          "/referral/ZZ9999ZZ/action-plan/session-delivery-details",
+          ActionPlanSessionDeliveryDetailsRequest(questions = emptyList()),
+        )
       }
     }
 

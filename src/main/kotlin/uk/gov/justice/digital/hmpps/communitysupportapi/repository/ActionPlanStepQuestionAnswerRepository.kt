@@ -6,4 +6,9 @@ import java.util.UUID
 
 interface ActionPlanStepQuestionAnswerRepository : JpaRepository<ActionPlanStepQuestionAnswer, UUID> {
   fun findAllByActionPlanIdAndDeletedAtIsNull(actionPlanId: UUID): List<ActionPlanStepQuestionAnswer>
+
+  fun findAllByActionPlanIdAndActionPlanStepQuestionIdInAndDeletedAtIsNull(
+    actionPlanId: UUID,
+    actionPlanStepQuestionIds: Collection<UUID>,
+  ): List<ActionPlanStepQuestionAnswer>
 }
