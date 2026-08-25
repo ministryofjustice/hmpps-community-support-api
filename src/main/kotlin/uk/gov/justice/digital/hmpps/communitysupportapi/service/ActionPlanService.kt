@@ -18,8 +18,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepTyp
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerRevisionRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
@@ -35,8 +35,8 @@ class ActionPlanService(
   private val actionPlanTemplateRepository: ActionPlanTemplateRepository,
   private val actionPlanStepRepository: ActionPlanStepRepository,
   private val actionPlanStepQuestionRepository: ActionPlanStepQuestionRepository,
-  private val actionPlanStepQuestionAnswerRepository: ActionPlanStepQuestionAnswerRepository,
-  private val actionPlanStepQuestionAnswerRevisionRepository: ActionPlanStepQuestionAnswerRevisionRepository,
+  private val actionPlanStepQuestionAnswerHeaderRepository: ActionPlanStepQuestionAnswerHeaderRepository,
+  private val actionPlanStepQuestionAnswerDetailsRepository: ActionPlanStepQuestionAnswerDetailsRepository,
   private val referralRepository: ReferralRepository,
   private val personRepository: PersonRepository,
   private val needRepository: NeedRepository,
@@ -127,25 +127,25 @@ class ActionPlanService(
 
     // Get all saved responses for the questions, grouped by question ID
     val savedResponsesByQuestionId = actionPlan?.let {
-      val answers = actionPlanStepQuestionAnswerRepository
+      val answers = actionPlanStepQuestionAnswerHeaderRepository
         .findAllByActionPlanIdAndDeletedAtIsNull(it.id)
         .filter { answer -> questionIds.contains(answer.actionPlanStepQuestionId) }
         .sortedBy { answer -> answer.orderNumber }
       if (answers.isEmpty()) {
         emptyMap()
       } else {
-        val latestRevisionByAnswerId = actionPlanStepQuestionAnswerRevisionRepository
-          .findAllByActionPlanStepQuestionAnswerIdIn(answers.map { answer -> answer.id })
-          .groupBy { revision -> revision.actionPlanStepQuestionAnswerId }
-          .mapValues { (_, revisionItems) -> revisionItems.maxByOrNull { revision -> revision.revisionNumber } }
+        val latestDetailsByHeaderId = actionPlanStepQuestionAnswerDetailsRepository
+          .findAllByActionPlanStepQuestionAnswerHeaderIdIn(answers.map { answer -> answer.id })
+          .groupBy { details -> details.actionPlanStepQuestionAnswerHeaderId }
+          .mapValues { (_, detailItems) -> detailItems.maxByOrNull { details -> details.revisionNumber } }
 
         answers
           .mapNotNull { answer ->
-            val latestRevision = latestRevisionByAnswerId[answer.id] ?: return@mapNotNull null
-            val value = latestRevision.content?.takeIf { content -> content.isNotBlank() } ?: return@mapNotNull null
+            val latestDetails = latestDetailsByHeaderId[answer.id] ?: return@mapNotNull null
+            val value = latestDetails.content?.takeIf { content -> content.isNotBlank() } ?: return@mapNotNull null
             answer.actionPlanStepQuestionId to SavedResponse(
               value = value,
-              additionalDetails = latestRevision.freeTextValue,
+              additionalDetails = latestDetails.freeTextValue,
             )
           }
           .groupBy(keySelector = { it.first }, valueTransform = { it.second })
@@ -214,7 +214,7 @@ class ActionPlanService(
       return emptyMap()
     }
 
-    val answers = actionPlanStepQuestionAnswerRepository
+    val answers = actionPlanStepQuestionAnswerHeaderRepository
       .findAllByActionPlanIdAndDeletedAtIsNull(actionPlanId)
       .filter { questionById.containsKey(it.actionPlanStepQuestionId) }
       .sortedBy { it.orderNumber }
@@ -222,17 +222,17 @@ class ActionPlanService(
       return emptyMap()
     }
 
-    val revisions = actionPlanStepQuestionAnswerRevisionRepository.findAllByActionPlanStepQuestionAnswerIdIn(answers.map { it.id })
-    val latestRevisionByAnswerId = revisions
-      .groupBy { it.actionPlanStepQuestionAnswerId }
-      .mapValues { (_, revisionItems) -> revisionItems.maxByOrNull { it.revisionNumber } }
+    val details = actionPlanStepQuestionAnswerDetailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(answers.map { it.id })
+    val latestDetailsByHeaderId = details
+      .groupBy { it.actionPlanStepQuestionAnswerHeaderId }
+      .mapValues { (_, detailItems) -> detailItems.maxByOrNull { it.revisionNumber } }
 
     return answers
       .mapNotNull { answer ->
         val question = questionById[answer.actionPlanStepQuestionId] ?: return@mapNotNull null
         val needId = question.needId ?: return@mapNotNull null
-        val latestRevision = latestRevisionByAnswerId[answer.id] ?: return@mapNotNull null
-        val content = latestRevision.content?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        val latestDetails = latestDetailsByHeaderId[answer.id] ?: return@mapNotNull null
+        val content = latestDetails.content?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
         needId to content
       }
       .groupBy(keySelector = { it.first }, valueTransform = { it.second })

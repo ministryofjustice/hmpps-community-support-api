@@ -11,9 +11,15 @@ import jakarta.persistence.Table
 import java.time.OffsetDateTime
 import java.util.UUID
 
+/**
+ * The stable record for one answer to a question in an action plan.
+ *
+ * Other records can refer to this header without being tied to a particular
+ * version of the answer. The answer's changing content is stored in its details.
+ */
 @Entity
-@Table(name = "action_plan_step_question_answer")
-data class ActionPlanStepQuestionAnswer(
+@Table(name = "action_plan_step_question_answer_header")
+data class ActionPlanStepQuestionAnswerHeader(
   @Id
   @Column(name = "id")
   val id: UUID,
@@ -36,8 +42,8 @@ data class ActionPlanStepQuestionAnswer(
   val orderNumber: Int,
 
   @OneToMany(fetch = FetchType.LAZY)
-  @JoinColumn(name = "action_plan_step_question_answer_id", insertable = false, updatable = false)
-  val revisions: MutableList<ActionPlanStepQuestionAnswerRevision> = mutableListOf(),
+  @JoinColumn(name = "action_plan_step_question_answer_header_id", insertable = false, updatable = false)
+  val details: MutableList<ActionPlanStepQuestionAnswerDetails> = mutableListOf(),
 
   @Column(name = "created_at", nullable = false)
   val createdAt: OffsetDateTime? = null,

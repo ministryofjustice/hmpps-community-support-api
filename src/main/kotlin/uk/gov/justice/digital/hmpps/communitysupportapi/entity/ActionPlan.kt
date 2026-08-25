@@ -13,6 +13,12 @@ import jakarta.persistence.Table
 import java.time.OffsetDateTime
 import java.util.UUID
 
+/**
+ * An Action Plan represents a collection of information about how a
+ * Referral will be delivered for a Person on Probation.
+ * Each Referral will have one Action Plan and it will be created after the Referral is
+ * submitted.
+ */
 @Entity
 @Table(name = "action_plan")
 class ActionPlan(

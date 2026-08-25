@@ -10,19 +10,25 @@ import jakarta.persistence.Table
 import java.time.OffsetDateTime
 import java.util.UUID
 
+/**
+ * One recorded version of the content for an answer header.
+ *
+ * A new details record is added whenever an answer changes, preserving the
+ * earlier responses while the header continues to identify the answer itself.
+ */
 @Entity
-@Table(name = "action_plan_step_question_answer_revision")
-data class ActionPlanStepQuestionAnswerRevision(
+@Table(name = "action_plan_step_question_answer_details")
+data class ActionPlanStepQuestionAnswerDetails(
   @Id
   @Column(name = "id")
   val id: UUID,
 
-  @Column(name = "action_plan_step_question_answer_id", nullable = false)
-  val actionPlanStepQuestionAnswerId: UUID,
+  @Column(name = "action_plan_step_question_answer_header_id", nullable = false)
+  val actionPlanStepQuestionAnswerHeaderId: UUID,
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "action_plan_step_question_answer_id", insertable = false, updatable = false)
-  val actionPlanStepQuestionAnswer: ActionPlanStepQuestionAnswer? = null,
+  @JoinColumn(name = "action_plan_step_question_answer_header_id", insertable = false, updatable = false)
+  val actionPlanStepQuestionAnswerHeader: ActionPlanStepQuestionAnswerHeader? = null,
 
   @Column(name = "revision_number", nullable = false)
   val revisionNumber: Int,
