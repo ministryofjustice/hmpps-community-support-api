@@ -53,4 +53,44 @@ class ReferenceDataControllerIntegrationTest : IntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  @DisplayName("GET /bff/reference-data/pdus")
+  inner class PdusEndpoint {
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(HttpMethod.GET, "/bff/reference-data/pdus")
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/reference-data/pdus")
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/reference-data/pdus")
+    }
+
+    @Test
+    fun `should return list of PDU names`() {
+      val response = webTestClient.get()
+        .uri { uriBuilder ->
+          uriBuilder
+            .path("/bff/reference-data/pdus")
+            .build()
+        }
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody(object : ParameterizedTypeReference<List<String>>() {})
+        .returnResult().responseBody!!
+
+      assertThat(response).hasSize(99)
+      assertThat(response).isEqualTo(response.sorted())
+      response.forEach { pduName -> assertThat(pduName).isNotBlank() }
+      assertThat(response).contains("County Durham and Darlington", "Gateshead and South Tyneside")
+    }
+  }
 }

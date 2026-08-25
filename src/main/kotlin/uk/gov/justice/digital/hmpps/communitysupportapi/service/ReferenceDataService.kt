@@ -5,10 +5,13 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOffice
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.CsvFileHelper
 
 @Service
-class ReferenceDataService {
+class ReferenceDataService(
+  private val pduRepository: PduRepository,
+) {
   @Volatile
   private var cachedProbationOffices: List<ProbationOffice>? = null
 
@@ -44,4 +47,6 @@ class ReferenceDataService {
     }
     return cachedProbationOffices!!
   }
+
+  fun getPduNames(): List<String> = pduRepository.findAll().map { it.name }.sorted()
 }
