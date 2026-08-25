@@ -20,6 +20,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckDraftReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
@@ -172,6 +173,87 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return Not Found with invalid referral identifier`() {
       assertNotFound(GET, "/bff/referrals/${referralHelper.communityServiceProviderId}")
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/check-draft-referral-details/{referralId}")
+  inner class CheckDraftReferralDetailsEndpoint {
+
+    private lateinit var testUser: ReferralUser
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/check-draft-referral-details/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(GET, "/bff/check-draft-referral-details/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(GET, "/bff/check-draft-referral-details/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return OK with draft referral and person details`() {
+      val cprPersonDto = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDto.toJson()),
+          ),
+      )
+
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDto)
+      val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+
+      webTestClient.get()
+        .uri("/bff/check-draft-referral-details/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<CheckDraftReferralDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.id shouldBe referral.id
+          body.referenceNumber shouldBe referral.referenceNumber
+          body.personDetailsTableData.name.firstName shouldBe cprPersonDto.firstName
+          body.personDetailsTableData.name.lastName shouldBe cprPersonDto.lastName
+          body.personDetailsTableData.crn shouldBe CRN
+          body.personDetailsTableData.dateOfBirth shouldBe cprPersonDto.dateOfBirth
+          body.personDetailsTableData.prisonNumbers shouldBe person.prisonNumbers
+          body.personDetailsTableData.preferredLanguage shouldBe ""
+          body.equalityDetailsTableData.ethnicity shouldBe cprPersonDto.ethnicity?.description
+          body.equalityDetailsTableData.religionOrBelief shouldBe cprPersonDto.religion?.description
+          body.equalityDetailsTableData.sex shouldBe cprPersonDto.sex?.description
+          body.contactDetailsTableData.phoneNumber shouldBe person.additionalDetails?.phoneNumber
+          body.contactDetailsTableData.email shouldBe person.additionalDetails?.emailAddress
+          body.contactDetailsTableData.address shouldBe person.additionalDetails?.address
+          body.riskInformationDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.RiskInformationDetailsTableDataDto()
+          body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.AdditionalSupportNeedsDetailsTableDataDto()
+          body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.PersonNeedsDetailsTableDataDto()
+          body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.ReferralAreaTableDataDto()
+          body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.MainPOCDetailsTableDataDto()
+        }
+    }
+
+    @Test
+    fun `should return Not Found with invalid referral identifier`() {
+      assertNotFound(GET, "/bff/check-draft-referral-details/${UUID.randomUUID()}")
     }
   }
 
