@@ -45,4 +45,13 @@ class ReferenceDataServiceTest : IntegrationTestBase() {
     assertEquals(mockProbationOffices[1], probationOffices[4])
     assertEquals(mockProbationOffices[2], probationOffices[127])
   }
+
+  @Test
+  fun `should return PDU names sorted alphabetically`() {
+    val pduNames = referenceDataService.getPduNames()
+
+    assertThat(pduNames).isNotEmpty
+    assertThat(pduNames).isEqualTo(pduNames.sorted())
+    assertThat(pduNames).contains("County Durham and Darlington", "Gateshead and South Tyneside")
+  }
 }
