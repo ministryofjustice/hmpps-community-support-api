@@ -51,4 +51,30 @@ class ReferenceDataController(
       throw NotFoundException("Probation offices information not found")
     }
   }
+
+  @Operation(summary = "Get all Probation Delivery Unit (PDU) names")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Returns the list of Probation Delivery Unit names.",
+        content = [Content(mediaType = "application/json", array = ArraySchema(schema = Schema(implementation = String::class)))],
+      ),
+      ApiResponse(
+        responseCode = "500",
+        description = "Failed to retrieve Probation Delivery Unit names",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/pdus")
+  fun getPdus(): ResponseEntity<List<String>> {
+    try {
+      val pdus = referenceDataService.getPduNames()
+      return ResponseEntity.ok(pdus)
+    } catch (e: Exception) {
+      log.error("Error getting PDUs", e)
+      throw NotFoundException("PDU information not found")
+    }
+  }
 }
