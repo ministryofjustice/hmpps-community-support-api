@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -13,9 +14,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SavedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerRepository
@@ -35,6 +39,7 @@ class ActionPlanService(
   private val actionPlanTemplateRepository: ActionPlanTemplateRepository,
   private val actionPlanStepRepository: ActionPlanStepRepository,
   private val actionPlanStepQuestionRepository: ActionPlanStepQuestionRepository,
+  private val actionPlanActivityRepository: ActionPlanActivityRepository,
   private val actionPlanStepQuestionAnswerRepository: ActionPlanStepQuestionAnswerRepository,
   private val actionPlanStepQuestionAnswerRevisionRepository: ActionPlanStepQuestionAnswerRevisionRepository,
   private val referralRepository: ReferralRepository,
@@ -177,6 +182,54 @@ class ActionPlanService(
     }
 
     return ActionPlanSessionDeliveryDetailsResponse(questions = questionDetails)
+  }
+
+  @Transactional
+  fun submitActionPlan(referralReference: String) {
+    val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
+      ?: throw NotFoundException("Referral not found for reference $referralReference")
+
+    val actionPlan = findOrCreateByReferralId(referral.id)
+
+    if (actionPlan.isSubmitted()) {
+      throw ConflictException("Action plan for referral $referralReference has already been submitted")
+    }
+
+    validateCanSubmitActionPlan(actionPlan)
+
+    actionPlanEventRepository.save(
+      ActionPlanEvent(
+        id = UUID.randomUUID(),
+        actionPlanId = actionPlan.id,
+        eventType = ActionPlanEventType.SUBMITTED,
+      ),
+    )
+  }
+
+  private fun validateCanSubmitActionPlan(actionPlan: ActionPlan) {
+    val outcomeQuestionsWithChoices = actionPlanStepRepository
+      .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
+      .flatMap { step ->
+        actionPlanStepQuestionRepository.findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
+      }
+      .filter { it.questionType == ActionPlanQuestionType.OUTCOME && it.choices.isNotEmpty() }
+
+    if (outcomeQuestionsWithChoices.isEmpty()) {
+      return
+    }
+
+    val activitiesByQuestionId = actionPlanActivityRepository
+      .findAllByActionPlanStepQuestionIdIn(outcomeQuestionsWithChoices.map { it.id })
+      .groupBy { it.actionPlanStepQuestionId }
+
+    val missingQuestions = outcomeQuestionsWithChoices.filter { question -> activitiesByQuestionId[question.id].isNullOrEmpty() }
+    if (missingQuestions.isNotEmpty()) {
+      throw ValidationException(
+        "Action plan cannot be submitted because the following OUTCOME questions do not have answers: ${
+          missingQuestions.joinToString(", ") { it.title }
+        }",
+      )
+    }
   }
 
   private fun createForReferral(referralId: UUID): ActionPlan {

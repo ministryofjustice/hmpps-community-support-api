@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
@@ -101,5 +102,36 @@ class ActionPlanController(
   fun getSessionDeliveryDetails(@PathVariable referralReference: String): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
     log.info("Fetching session delivery details for referral={}", referralReference)
     return ResponseEntity.ok(actionPlanService.getSessionDeliveryDetailsForReferral(referralReference))
+  }
+
+  @Operation(summary = "Submit the action plan for a referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Action plan submitted successfully",
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Action plan cannot be submitted",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "409",
+        description = "Action plan has already been submitted",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PostMapping("/bff/referral/{referralReference}/action-plan/submit")
+  fun submitActionPlan(@PathVariable referralReference: String): ResponseEntity<Unit> {
+    log.info("Submitting action plan for referral={}", referralReference)
+    actionPlanService.submitActionPlan(referralReference)
+    return ResponseEntity.ok().build()
   }
 }
