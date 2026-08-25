@@ -44,4 +44,19 @@ interface ActionPlanStepQuestionAnswerDetailsRepository : JpaRepository<ActionPl
     @Param("questionIds") questionIds: List<UUID>,
     @Param("actionPlanId") actionPlanId: UUID,
   ): List<ActionPlanStepQuestionAnswerDetails>
+
+  @Query(
+    """
+    SELECT r FROM ActionPlanStepQuestionAnswerRevision r
+    WHERE r.actionPlanStepQuestionAnswerId IN :answerIds
+    AND r.revisionNumber = (
+      SELECT MAX(r2.revisionNumber)
+      FROM ActionPlanStepQuestionAnswerRevision r2
+      WHERE r2.actionPlanStepQuestionAnswerId = r.actionPlanStepQuestionAnswerId
+    )
+    """,
+  )
+  fun findLatestRevisionsByAnswerIdIn(
+    @Param("answerIds") answerIds: Collection<UUID>,
+  ): List<ActionPlanStepQuestionAnswerDetails>
 }
