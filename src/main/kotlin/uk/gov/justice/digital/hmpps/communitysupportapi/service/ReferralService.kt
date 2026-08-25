@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationD
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
@@ -73,6 +74,15 @@ class ReferralService(
     val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(foundReferral.id)
 
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
+  }
+
+  fun getReferralConfirmationPage(referralId: UUID): SubmitDetailsBffResponseDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+    val person = upsertPerson(personService.getPerson(referral.personIdentifier))
+    val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(referral.id)
+
+    return SubmitDetailsBffResponseDto.from(referral, person, referralAssignments)
   }
 
   fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(

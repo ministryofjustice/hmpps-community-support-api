@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationD
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
@@ -245,6 +246,30 @@ class ReferralController(
 
     return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
   }
+
+  @Operation(summary = "Get referral confirmation page data")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral confirmation details found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = SubmitDetailsBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral-confirmation/{referralId}")
+  fun getReferralConfirmation(@PathVariable referralId: UUID): ResponseEntity<SubmitDetailsBffResponseDto> =
+    ResponseEntity.ok(referralService.getReferralConfirmationPage(referralId))
 
   @Operation(summary = "Get referral progress page data")
   @ApiResponses(
