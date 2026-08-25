@@ -11,9 +11,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsRespo
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerRevision
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanTemplate
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -24,6 +27,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanActivityFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
@@ -56,6 +60,112 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var actionPlanStepQuestionAnswerRevisionRepository: ActionPlanStepQuestionAnswerRevisionRepository
+
+  @Autowired
+  private lateinit var actionPlanActivityRepository: uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
+
+  @Autowired
+  private lateinit var actionPlanTemplateRepository: uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
+
+  private fun saveStepQuestionAnswer(
+    actionPlanId: UUID,
+    actionPlanStepQuestionId: UUID,
+    orderNumber: Int,
+    createdBy: String,
+  ): ActionPlanStepQuestionAnswer = actionPlanStepQuestionAnswerRepository.save(
+    ActionPlanStepQuestionAnswer(
+      id = UUID.randomUUID(),
+      actionPlanId = actionPlanId,
+      actionPlanStepQuestionId = actionPlanStepQuestionId,
+      orderNumber = orderNumber,
+      createdAt = OffsetDateTime.now(),
+      createdBy = createdBy,
+    ),
+  )
+
+  private fun saveStepQuestionAnswerRevision(
+    actionPlanStepQuestionAnswerId: UUID,
+    revisionNumber: Int,
+    content: String,
+    freeTextValue: String? = null,
+    createdBy: String,
+  ) = actionPlanStepQuestionAnswerRevisionRepository.save(
+    ActionPlanStepQuestionAnswerRevision(
+      id = UUID.randomUUID(),
+      actionPlanStepQuestionAnswerId = actionPlanStepQuestionAnswerId,
+      revisionNumber = revisionNumber,
+      content = content,
+      freeTextValue = freeTextValue,
+      createdAt = OffsetDateTime.now(),
+      createdBy = createdBy,
+    ),
+  )
+
+  private fun saveActivity(
+    actionPlanStepQuestionId: UUID,
+    who: String = "SYSTEM",
+    activityDetails: String,
+    status: String = "OPEN",
+  ) = actionPlanActivityRepository.save(
+    ActionPlanActivityFactory()
+      .withActionPlanStepQuestionId(actionPlanStepQuestionId)
+      .withWho(who)
+      .withActivityDetails(activityDetails)
+      .withStatus(status)
+      .create(),
+  )
+
+  private fun saveStep(
+    actionPlanTemplateId: UUID,
+    orderNumber: Int,
+    name: String,
+    stepType: ActionPlanStepType,
+  ) = actionPlanStepRepository.save(
+    ActionPlanStepFactory()
+      .withActionPlanTemplateId(actionPlanTemplateId)
+      .withOrderNumber(orderNumber)
+      .withName(name)
+      .withStepType(stepType)
+      .create(),
+  )
+
+  private fun saveStepQuestion(
+    actionPlanStepId: UUID,
+    orderNumber: Int,
+    title: String,
+    answerType: ActionPlanQuestionAnswerType = ActionPlanQuestionAnswerType.TEXTAREA,
+    questionType: ActionPlanQuestionType = ActionPlanQuestionType.GENERAL,
+    maxNumberResponses: Int = 10,
+    needId: UUID? = null,
+  ): ActionPlanStepQuestion = actionPlanStepQuestionRepository.save(
+    ActionPlanStepQuestionFactory()
+      .withActionPlanStepId(actionPlanStepId)
+      .withOrderNumber(orderNumber)
+      .withTitle(title)
+      .withAnswerType(answerType)
+      .withQuestionType(questionType)
+      .withMaxNumberResponses(maxNumberResponses)
+      .withNeedId(needId)
+      .create(),
+  )
+
+  private fun saveStepQuestionChoice(
+    actionPlanStepQuestionId: UUID,
+    orderNumber: Int,
+    label: String,
+    value: String,
+    hasFreeText: Boolean = false,
+    freeTextLabel: String? = null,
+  ) = actionPlanStepQuestionChoiceRepository.save(
+    ActionPlanStepQuestionChoiceFactory()
+      .withActionPlanStepQuestionId(actionPlanStepQuestionId)
+      .withOrderNumber(orderNumber)
+      .withLabel(label)
+      .withValue(value)
+      .withHasFreeText(hasFreeText)
+      .withFreeTextLabel(freeTextLabel)
+      .create(),
+  )
 
   @Nested
   @DisplayName("GET /bff/referral/{referralReference}/action-plan")
@@ -111,49 +221,35 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         val firstNeed = orderedNeeds[0]
         val secondNeed = orderedNeeds[1]
 
-        val needStep = actionPlanStepRepository.save(
-          ActionPlanStepFactory()
-            .withActionPlanTemplateId(actionPlanTemplate.id)
-            .withOrderNumber(1)
-            .withName("Needs")
-            .withStepType(ActionPlanStepType.NEED)
-            .create(),
+        val needStep = saveStep(
+          actionPlanTemplateId = actionPlanTemplate.id,
+          orderNumber = 1,
+          name = "Needs",
+          stepType = ActionPlanStepType.NEED,
         )
 
-        actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(needStep.id)
-            .withOrderNumber(1)
-            .withTitle("Question for second need")
-            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
-            .withNeedId(secondNeed.id)
-            .create(),
+        saveStepQuestion(
+          actionPlanStepId = needStep.id,
+          orderNumber = 1,
+          title = "Question for second need",
+          needId = secondNeed.id,
         )
-        actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(needStep.id)
-            .withOrderNumber(2)
-            .withTitle("First question for first need")
-            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
-            .withNeedId(firstNeed.id)
-            .create(),
+        saveStepQuestion(
+          actionPlanStepId = needStep.id,
+          orderNumber = 2,
+          title = "First question for first need",
+          needId = firstNeed.id,
         )
-        actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(needStep.id)
-            .withOrderNumber(3)
-            .withTitle("Second question for first need")
-            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
-            .withNeedId(firstNeed.id)
-            .create(),
+        saveStepQuestion(
+          actionPlanStepId = needStep.id,
+          orderNumber = 3,
+          title = "Second question for first need",
+          needId = firstNeed.id,
         )
-        actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(needStep.id)
-            .withOrderNumber(4)
-            .withTitle("Question without need")
-            .withNeedId(null)
-            .create(),
+        saveStepQuestion(
+          actionPlanStepId = needStep.id,
+          orderNumber = 4,
+          title = "Question without need",
         )
 
         webTestClient.get()
@@ -222,52 +318,41 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
         actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
 
-        val sessionDeliveryStep = actionPlanStepRepository.save(
-          ActionPlanStepFactory()
-            .withActionPlanTemplateId(actionPlanTemplate.id)
-            .withOrderNumber(2)
-            .withName("Service Delivery Details")
-            .withStepType(ActionPlanStepType.SESSION_DELIVERY)
-            .create(),
+        val sessionDeliveryStep = saveStep(
+          actionPlanTemplateId = actionPlanTemplate.id,
+          orderNumber = 2,
+          name = "Service Delivery Details",
+          stepType = ActionPlanStepType.SESSION_DELIVERY,
         )
 
-        val question1 = actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(sessionDeliveryStep.id)
-            .withOrderNumber(1)
-            .withTitle("How will the session be delivered?")
-            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
-            .withMaxNumberResponses(1)
-            .create(),
+        val question1 = saveStepQuestion(
+          actionPlanStepId = sessionDeliveryStep.id,
+          orderNumber = 1,
+          title = "How will the session be delivered?",
+          answerType = ActionPlanQuestionAnswerType.RADIO,
+          maxNumberResponses = 1,
         )
 
-        actionPlanStepQuestionChoiceRepository.save(
-          ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(question1.id)
-            .withOrderNumber(1)
-            .withLabel("Face-to-face")
-            .withValue("FACE_TO_FACE")
-            .create(),
+        saveStepQuestionChoice(
+          actionPlanStepQuestionId = question1.id,
+          orderNumber = 1,
+          label = "Face-to-face",
+          value = "FACE_TO_FACE",
         )
-        actionPlanStepQuestionChoiceRepository.save(
-          ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(question1.id)
-            .withOrderNumber(2)
-            .withLabel("Other")
-            .withValue("OTHER")
-            .withHasFreeText(true)
-            .withFreeTextLabel("Reason for not meeting face-to-face")
-            .create(),
+        saveStepQuestionChoice(
+          actionPlanStepQuestionId = question1.id,
+          orderNumber = 2,
+          label = "Other",
+          value = "OTHER",
+          hasFreeText = true,
+          freeTextLabel = "Reason for not meeting face-to-face",
         )
 
-        val question2 = actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(sessionDeliveryStep.id)
-            .withOrderNumber(2)
-            .withTitle("How many sessions are required?")
-            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
-            .withMaxNumberResponses(1)
-            .create(),
+        val question2 = saveStepQuestion(
+          actionPlanStepId = sessionDeliveryStep.id,
+          orderNumber = 2,
+          title = "How many sessions are required?",
+          maxNumberResponses = 1,
         )
 
         webTestClient.get()
@@ -324,66 +409,49 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
         val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
 
-        val sessionDeliveryStep = actionPlanStepRepository.save(
-          ActionPlanStepFactory()
-            .withActionPlanTemplateId(actionPlanTemplate.id)
-            .withOrderNumber(2)
-            .withName("Service Delivery Details")
-            .withStepType(ActionPlanStepType.SESSION_DELIVERY)
-            .create(),
+        val sessionDeliveryStep = saveStep(
+          actionPlanTemplateId = actionPlanTemplate.id,
+          orderNumber = 2,
+          name = "Service Delivery Details",
+          stepType = ActionPlanStepType.SESSION_DELIVERY,
         )
 
-        val question = actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(sessionDeliveryStep.id)
-            .withOrderNumber(1)
-            .withTitle("How many people will be in the session?")
-            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
-            .withMaxNumberResponses(1)
-            .create(),
+        val question = saveStepQuestion(
+          actionPlanStepId = sessionDeliveryStep.id,
+          orderNumber = 1,
+          title = "How many people will be in the session?",
+          answerType = ActionPlanQuestionAnswerType.RADIO,
+          maxNumberResponses = 1,
         )
 
-        actionPlanStepQuestionChoiceRepository.save(
-          ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(question.id)
-            .withValue("ONE_TO_ONE")
-            .withLabel("One-to-one")
-            .withOrderNumber(1)
-            .create(),
+        saveStepQuestionChoice(
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 1,
+          label = "One-to-one",
+          value = "ONE_TO_ONE",
         )
-        actionPlanStepQuestionChoiceRepository.save(
-          ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(question.id)
-            .withValue("IN_A_GROUP")
-            .withLabel("In a group")
-            .withHasFreeText(true)
-            .withFreeTextLabel("How many people will be in the group?")
-            .withOrderNumber(2)
-            .create(),
+        saveStepQuestionChoice(
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 2,
+          label = "In a group",
+          value = "IN_A_GROUP",
+          hasFreeText = true,
+          freeTextLabel = "How many people will be in the group?",
         )
 
-        val answerId = UUID.randomUUID()
-        actionPlanStepQuestionAnswerRepository.save(
-          ActionPlanStepQuestionAnswer(
-            id = answerId,
-            actionPlanId = actionPlan.id,
-            actionPlanStepQuestionId = question.id,
-            orderNumber = 1,
-            createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
-          ),
-        )
+        val answerId = saveStepQuestionAnswer(
+          actionPlanId = actionPlan.id,
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 1,
+          createdBy = user.id.toString(),
+        ).id
 
-        actionPlanStepQuestionAnswerRevisionRepository.save(
-          ActionPlanStepQuestionAnswerRevision(
-            id = UUID.randomUUID(),
-            actionPlanStepQuestionAnswerId = answerId,
-            revisionNumber = 1,
-            content = "IN_A_GROUP",
-            freeTextValue = "3 people",
-            createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
-          ),
+        saveStepQuestionAnswerRevision(
+          actionPlanStepQuestionAnswerId = answerId,
+          revisionNumber = 1,
+          content = "IN_A_GROUP",
+          freeTextValue = "3 people",
+          createdBy = user.id.toString(),
         )
 
         webTestClient.get()
@@ -409,113 +477,76 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
         val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
 
-        val sessionDeliveryStep = actionPlanStepRepository.save(
-          ActionPlanStepFactory()
-            .withActionPlanTemplateId(actionPlanTemplate.id)
-            .withOrderNumber(2)
-            .withName("Service Delivery Details")
-            .withStepType(ActionPlanStepType.SESSION_DELIVERY)
-            .create(),
+        val sessionDeliveryStep = saveStep(
+          actionPlanTemplateId = actionPlanTemplate.id,
+          orderNumber = 2,
+          name = "Service Delivery Details",
+          stepType = ActionPlanStepType.SESSION_DELIVERY,
         )
 
-        val question = actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(sessionDeliveryStep.id)
-            .withOrderNumber(1)
-            .withTitle("What communication methods will be used?")
-            .withAnswerType(ActionPlanQuestionAnswerType.CHECKBOX)
-            .withMaxNumberResponses(3)
-            .create(),
+        val question = saveStepQuestion(
+          actionPlanStepId = sessionDeliveryStep.id,
+          orderNumber = 1,
+          title = "What communication methods will be used?",
+          answerType = ActionPlanQuestionAnswerType.CHECKBOX,
+          maxNumberResponses = 3,
         )
 
-        actionPlanStepQuestionChoiceRepository.save(
-          ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(question.id)
-            .withValue("BY_PHONE")
-            .withLabel("By phone")
-            .withOrderNumber(1)
-            .create(),
+        saveStepQuestionChoice(
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 1,
+          label = "By phone",
+          value = "BY_PHONE",
         )
-        actionPlanStepQuestionChoiceRepository.save(
-          ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(question.id)
-            .withValue("BY_MESSAGE")
-            .withLabel("By message")
-            .withOrderNumber(2)
-            .create(),
+        saveStepQuestionChoice(
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 2,
+          label = "By message",
+          value = "BY_MESSAGE",
         )
-        actionPlanStepQuestionChoiceRepository.save(
-          ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(question.id)
-            .withValue("BY_EMAIL")
-            .withLabel("By email")
-            .withOrderNumber(3)
-            .create(),
+        saveStepQuestionChoice(
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 3,
+          label = "By email",
+          value = "BY_EMAIL",
         )
 
-        val firstAnswerId = UUID.randomUUID()
-        val secondAnswerId = UUID.randomUUID()
-        val thirdAnswerId = UUID.randomUUID()
-        actionPlanStepQuestionAnswerRepository.save(
-          ActionPlanStepQuestionAnswer(
-            id = firstAnswerId,
-            actionPlanId = actionPlan.id,
-            actionPlanStepQuestionId = question.id,
-            orderNumber = 1,
-            createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
-          ),
-        )
-        actionPlanStepQuestionAnswerRepository.save(
-          ActionPlanStepQuestionAnswer(
-            id = secondAnswerId,
-            actionPlanId = actionPlan.id,
-            actionPlanStepQuestionId = question.id,
-            orderNumber = 2,
-            createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
-          ),
-        )
-        actionPlanStepQuestionAnswerRepository.save(
-          ActionPlanStepQuestionAnswer(
-            id = thirdAnswerId,
-            actionPlanId = actionPlan.id,
-            actionPlanStepQuestionId = question.id,
-            orderNumber = 3,
-            createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
-          ),
-        )
+        val firstAnswerId = saveStepQuestionAnswer(
+          actionPlanId = actionPlan.id,
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 1,
+          createdBy = user.id.toString(),
+        ).id
+        val secondAnswerId = saveStepQuestionAnswer(
+          actionPlanId = actionPlan.id,
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 2,
+          createdBy = user.id.toString(),
+        ).id
+        val thirdAnswerId = saveStepQuestionAnswer(
+          actionPlanId = actionPlan.id,
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 3,
+          createdBy = user.id.toString(),
+        ).id
 
-        actionPlanStepQuestionAnswerRevisionRepository.save(
-          ActionPlanStepQuestionAnswerRevision(
-            id = UUID.randomUUID(),
-            actionPlanStepQuestionAnswerId = firstAnswerId,
-            revisionNumber = 1,
-            content = "BY_PHONE",
-            createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
-          ),
+        saveStepQuestionAnswerRevision(
+          actionPlanStepQuestionAnswerId = firstAnswerId,
+          revisionNumber = 1,
+          content = "BY_PHONE",
+          createdBy = user.id.toString(),
         )
-        actionPlanStepQuestionAnswerRevisionRepository.save(
-          ActionPlanStepQuestionAnswerRevision(
-            id = UUID.randomUUID(),
-            actionPlanStepQuestionAnswerId = secondAnswerId,
-            revisionNumber = 1,
-            content = "BY_MESSAGE",
-            createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
-          ),
+        saveStepQuestionAnswerRevision(
+          actionPlanStepQuestionAnswerId = secondAnswerId,
+          revisionNumber = 1,
+          content = "BY_MESSAGE",
+          createdBy = user.id.toString(),
         )
-        actionPlanStepQuestionAnswerRevisionRepository.save(
-          ActionPlanStepQuestionAnswerRevision(
-            id = UUID.randomUUID(),
-            actionPlanStepQuestionAnswerId = thirdAnswerId,
-            revisionNumber = 1,
-            content = "BY_EMAIL",
-            createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
-          ),
+        saveStepQuestionAnswerRevision(
+          actionPlanStepQuestionAnswerId = thirdAnswerId,
+          revisionNumber = 1,
+          content = "BY_EMAIL",
+          createdBy = user.id.toString(),
         )
 
         webTestClient.get()
@@ -543,6 +574,130 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
       val user = referralHelper.ensureReferralUser()
       val person = referralHelper.createPerson(firstName = firstName, lastName = lastName)
       return referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /bff/referral/{referralReference}/action-plan/submit")
+  inner class SubmitActionPlanEndpoint {
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(org.springframework.http.HttpMethod.POST, "/bff/referral/AB1234CD/action-plan/submit")
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(org.springframework.http.HttpMethod.POST, "/bff/referral/AB1234CD/action-plan/submit")
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(org.springframework.http.HttpMethod.POST, "/bff/referral/AB1234CD/action-plan/submit")
+    }
+
+    @Test
+    fun `should return OK when all outcome questions with choices have at least one activity`() {
+      val user = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createReferral(
+        person = person,
+        referenceNumber = randomReferralReference(),
+        submittedBy = user,
+      )
+      val (template, outcomeQuestion) = createTemplateWithOutcomeQuestionAndChoice()
+      actionPlanHelper.createActionPlan(referralId = referral.id, templateId = template.id)
+      saveActivity(
+        actionPlanStepQuestionId = outcomeQuestion.id,
+        activityDetails = "Activity 1",
+      )
+
+      webTestClient.post()
+        .uri("/bff/referral/${referral.referenceNumber}/action-plan/submit")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+    }
+
+    @Test
+    fun `should return bad request when an outcome question with choices has no activity`() {
+      val user = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createReferral(
+        person = person,
+        referenceNumber = randomReferralReference(),
+        submittedBy = user,
+      )
+      val (template) = createTemplateWithOutcomeQuestionAndChoice()
+      actionPlanHelper.createActionPlan(referralId = referral.id, templateId = template.id)
+
+      webTestClient.post()
+        .uri("/bff/referral/${referral.referenceNumber}/action-plan/submit")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isBadRequest
+    }
+
+    @Test
+    fun `should return OK when outcome questions exist but have no choices`() {
+      val user = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createReferral(
+        person = person,
+        referenceNumber = randomReferralReference(),
+        submittedBy = user,
+      )
+      val globalTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()!!
+      actionPlanHelper.createActionPlan(referralId = referral.id, templateId = globalTemplate.id)
+
+      webTestClient.post()
+        .uri("/bff/referral/${referral.referenceNumber}/action-plan/submit")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+    }
+
+    @Test
+    fun `should return 409 conflict when action plan has already been submitted`() {
+      val user = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createReferral(
+        person = person,
+        referenceNumber = randomReferralReference(),
+        submittedBy = user,
+      )
+      val globalTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()!!
+      actionPlanHelper.createSubmittedActionPlan(referralId = referral.id, templateId = globalTemplate.id)
+
+      webTestClient.post()
+        .uri("/bff/referral/${referral.referenceNumber}/action-plan/submit")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isEqualTo(409)
+    }
+
+    private fun createTemplateWithOutcomeQuestionAndChoice(): Pair<ActionPlanTemplate, ActionPlanStepQuestion> {
+      val template = actionPlanHelper.createActionPlanTemplate()
+      val step = saveStep(
+        actionPlanTemplateId = template.id,
+        orderNumber = 1,
+        name = "Outcomes Step",
+        stepType = ActionPlanStepType.NEED,
+      )
+      val question = saveStepQuestion(
+        actionPlanStepId = step.id,
+        orderNumber = 1,
+        title = "What is the desired outcome?",
+        answerType = ActionPlanQuestionAnswerType.RADIO,
+        questionType = ActionPlanQuestionType.OUTCOME,
+      )
+      saveStepQuestionChoice(
+        actionPlanStepQuestionId = question.id,
+        orderNumber = 1,
+        label = "Option A",
+        value = "OPTION_A",
+      )
+      return Pair(template, question)
     }
   }
 }
