@@ -186,54 +186,6 @@ class ActionPlanService(
     return ActionPlanSessionDeliveryDetailsResponse(questions = questionDetails)
   }
 
-  //  @Transactional
-  //  fun patchSessionDeliveryDetailsForReferral(
-  //    referralReference: String,
-  //    request: ActionPlanSessionDeliveryDetailsRequest,
-  //    changedBy: String,
-  //  ): ActionPlanSessionDeliveryDetailsResponse {
-  //    val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
-  //      ?: throw NotFoundException("Referral not found for reference $referralReference")
-  //    val actionPlan = findOrCreateByReferralId(referral.id)
-  //
-  //    val sessionDeliveryStep = actionPlanStepRepository.findSessionDeliveryStepsByReferralId(referral.id).firstOrNull()
-  //      ?: throw NotFoundException("No SESSION_DELIVERY step found for referral $referralReference")
-  //
-  //    val questions = actionPlanStepQuestionRepository.findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliveryStep.id)
-  //    val questionsById = questions.associateBy { it.id }
-  //
-  //    validateSavedResponseRequest(request, questionsById)
-  //
-  //    val requestedQuestionIds = request.questions.map { it.id }.toSet()
-  //    val existingAnswersByQuestionId = if (requestedQuestionIds.isEmpty()) {
-  //      emptyMap()
-  //    } else {
-  //      actionPlanStepQuestionAnswerRepository
-  //        .findAllByActionPlanIdAndActionPlanStepQuestionIdInAndDeletedAtIsNull(actionPlan.id, requestedQuestionIds)
-  //        .groupBy { it.actionPlanStepQuestionId }
-  //        .mapValues { (_, answers) -> answers.sortedBy { answer -> answer.orderNumber } }
-  //    }
-  //
-  //    val latestRevisionByAnswerId = getLatestRevisionByAnswerId(existingAnswersByQuestionId.values.flatten())
-  //    val now = OffsetDateTime.now()
-  //
-  //    request.questions.forEach { questionRequest ->
-  //      val normalisedResponses = questionRequest.savedResponses.map { normaliseSavedResponse(it) }
-  //      val existingAnswersForQuestion = existingAnswersByQuestionId[questionRequest.id].orEmpty()
-  //      upsertQuestionAnswers(
-  //        actionPlanId = actionPlan.id,
-  //        questionId = questionRequest.id,
-  //        normalisedResponses = normalisedResponses,
-  //        existingAnswers = existingAnswersForQuestion,
-  //        latestRevisionByAnswerId = latestRevisionByAnswerId,
-  //        changedBy = changedBy,
-  //        now = now,
-  //      )
-  //    }
-  //
-  //    return getSessionDeliveryDetailsForReferral(referralReference)
-  //  }
-
   @Transactional
   fun patchSessionDeliveryDetailsForReferral(
     referralReference: String,
