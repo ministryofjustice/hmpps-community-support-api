@@ -247,12 +247,12 @@ class ReferralController(
     return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
   }
 
-  @Operation(summary = "Get referral confirmation page data")
+  @Operation(summary = "Get check draft referral details page data")
   @ApiResponses(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "Referral confirmation details found",
+        description = "Check draft referral details found",
         content = [
           Content(
             mediaType = "application/json",
@@ -267,8 +267,8 @@ class ReferralController(
       ),
     ],
   )
-  @GetMapping("/bff/referral-confirmation/{referralId}")
-  fun getReferralConfirmation(@PathVariable referralId: UUID): ResponseEntity<CheckDraftReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getReferralConfirmationPage(referralId))
+  @GetMapping("/bff/check-draft-referral-details/{referralId}")
+  fun getCheckDraftReferralDetails(@PathVariable referralId: UUID): ResponseEntity<CheckDraftReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getCheckDraftReferralDetailsPage(referralId))
 
   @Operation(summary = "Get referral progress page data")
   @ApiResponses(
