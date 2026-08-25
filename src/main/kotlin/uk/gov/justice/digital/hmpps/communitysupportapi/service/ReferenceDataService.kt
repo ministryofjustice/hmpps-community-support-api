@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.annotation.PostConstruct
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOffice
@@ -17,10 +16,6 @@ class ReferenceDataService(
 
   @Value("\${reference-data.probation-offices.path}")
   private lateinit var probationOfficesPath: String
-
-  companion object {
-    private val log = LoggerFactory.getLogger(this::class.java)
-  }
 
   @PostConstruct
   fun init() {
