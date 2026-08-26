@@ -12,8 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswer
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerRevision
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
@@ -22,8 +22,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationT
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerRevisionRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
@@ -66,10 +66,10 @@ class ActionPlanServiceIntegrationTest :
   private lateinit var actionPlanStepQuestionRepository: ActionPlanStepQuestionRepository
 
   @Autowired
-  private lateinit var actionPlanStepQuestionAnswerRepository: ActionPlanStepQuestionAnswerRepository
+  private lateinit var actionPlanStepQuestionAnswerHeaderRepository: ActionPlanStepQuestionAnswerHeaderRepository
 
   @Autowired
-  private lateinit var actionPlanStepQuestionAnswerRevisionRepository: ActionPlanStepQuestionAnswerRevisionRepository
+  private lateinit var actionPlanStepQuestionAnswerDetailsRepository: ActionPlanStepQuestionAnswerDetailsRepository
 
   override fun afterAll(context: ExtensionContext) {
     testDataCleaner.cleanAllTables()
@@ -166,8 +166,8 @@ class ActionPlanServiceIntegrationTest :
       val outcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, need.id)
       val answerId = UUID.randomUUID()
 
-      actionPlanStepQuestionAnswerRepository.save(
-        ActionPlanStepQuestionAnswer(
+      actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeader(
           id = answerId,
           actionPlanId = actionPlan.id,
           actionPlanStepQuestionId = outcomeQuestion.id,
@@ -177,20 +177,20 @@ class ActionPlanServiceIntegrationTest :
         ),
       )
 
-      actionPlanStepQuestionAnswerRevisionRepository.save(
-        ActionPlanStepQuestionAnswerRevision(
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails(
           id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerId = answerId,
+          actionPlanStepQuestionAnswerHeaderId = answerId,
           revisionNumber = 1,
           content = "Initial wording",
           createdAt = OffsetDateTime.now(),
           createdBy = user.id.toString(),
         ),
       )
-      actionPlanStepQuestionAnswerRevisionRepository.save(
-        ActionPlanStepQuestionAnswerRevision(
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails(
           id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerId = answerId,
+          actionPlanStepQuestionAnswerHeaderId = answerId,
           revisionNumber = 2,
           content = "Final wording",
           createdAt = OffsetDateTime.now(),
@@ -217,8 +217,8 @@ class ActionPlanServiceIntegrationTest :
 
       val firstAnswerId = UUID.randomUUID()
       val secondAnswerId = UUID.randomUUID()
-      actionPlanStepQuestionAnswerRepository.save(
-        ActionPlanStepQuestionAnswer(
+      actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeader(
           id = firstAnswerId,
           actionPlanId = actionPlan.id,
           actionPlanStepQuestionId = outcomeQuestion.id,
@@ -227,8 +227,8 @@ class ActionPlanServiceIntegrationTest :
           createdBy = user.id.toString(),
         ),
       )
-      actionPlanStepQuestionAnswerRepository.save(
-        ActionPlanStepQuestionAnswer(
+      actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeader(
           id = secondAnswerId,
           actionPlanId = actionPlan.id,
           actionPlanStepQuestionId = outcomeQuestion.id,
@@ -238,20 +238,20 @@ class ActionPlanServiceIntegrationTest :
         ),
       )
 
-      actionPlanStepQuestionAnswerRevisionRepository.save(
-        ActionPlanStepQuestionAnswerRevision(
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails(
           id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerId = firstAnswerId,
+          actionPlanStepQuestionAnswerHeaderId = firstAnswerId,
           revisionNumber = 1,
           content = "First outcome",
           createdAt = OffsetDateTime.now(),
           createdBy = user.id.toString(),
         ),
       )
-      actionPlanStepQuestionAnswerRevisionRepository.save(
-        ActionPlanStepQuestionAnswerRevision(
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails(
           id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerId = secondAnswerId,
+          actionPlanStepQuestionAnswerHeaderId = secondAnswerId,
           revisionNumber = 1,
           content = "Second outcome",
           createdAt = OffsetDateTime.now(),
@@ -278,8 +278,8 @@ class ActionPlanServiceIntegrationTest :
 
       val activeAnswerId = UUID.randomUUID()
       val deletedAnswerId = UUID.randomUUID()
-      actionPlanStepQuestionAnswerRepository.save(
-        ActionPlanStepQuestionAnswer(
+      actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeader(
           id = activeAnswerId,
           actionPlanId = actionPlan.id,
           actionPlanStepQuestionId = outcomeQuestion.id,
@@ -288,8 +288,8 @@ class ActionPlanServiceIntegrationTest :
           createdBy = user.id.toString(),
         ),
       )
-      actionPlanStepQuestionAnswerRepository.save(
-        ActionPlanStepQuestionAnswer(
+      actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeader(
           id = deletedAnswerId,
           actionPlanId = actionPlan.id,
           actionPlanStepQuestionId = outcomeQuestion.id,
@@ -301,20 +301,20 @@ class ActionPlanServiceIntegrationTest :
         ),
       )
 
-      actionPlanStepQuestionAnswerRevisionRepository.save(
-        ActionPlanStepQuestionAnswerRevision(
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails(
           id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerId = activeAnswerId,
+          actionPlanStepQuestionAnswerHeaderId = activeAnswerId,
           revisionNumber = 1,
           content = "Visible outcome",
           createdAt = OffsetDateTime.now(),
           createdBy = user.id.toString(),
         ),
       )
-      actionPlanStepQuestionAnswerRevisionRepository.save(
-        ActionPlanStepQuestionAnswerRevision(
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails(
           id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerId = deletedAnswerId,
+          actionPlanStepQuestionAnswerHeaderId = deletedAnswerId,
           revisionNumber = 1,
           content = "Hidden outcome",
           createdAt = OffsetDateTime.now(),
@@ -337,6 +337,91 @@ class ActionPlanServiceIntegrationTest :
       return actionPlanStepQuestionRepository
         .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
         .first { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == needId }
+    }
+  }
+
+  @Nested
+  @DisplayName("getMostRecentResponseToQuestionForActionPlan")
+  inner class GetMostRecentResponseToQuestionForActionPlan {
+    val user = referralHelper.ensureReferralUser()
+    val globalTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate() ?: throw NotFoundException("Cannot find Global ActionPlan")
+
+    @Test
+    fun `should return the latest details for an active answer to the question`() {
+      val person = referralHelper.createPerson(firstName = "Chris", lastName = "Taylor")
+      val referral = referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
+      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = globalTemplate.id)
+      val question = actionPlanStepQuestionRepository.findAll().first()
+      val now = OffsetDateTime.now()
+
+      val olderHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeader(
+          id = UUID.randomUUID(),
+          actionPlanId = actionPlan.id,
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 1,
+          createdAt = now.minusMinutes(3),
+          createdBy = user.id.toString(),
+        ),
+      )
+      val latestHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeader(
+          id = UUID.randomUUID(),
+          actionPlanId = actionPlan.id,
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 2,
+          createdAt = now.minusMinutes(2),
+          createdBy = user.id.toString(),
+        ),
+      )
+      val deletedHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeader(
+          id = UUID.randomUUID(),
+          actionPlanId = actionPlan.id,
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 3,
+          createdAt = now.minusMinutes(1),
+          createdBy = user.id.toString(),
+          deletedAt = now,
+          deletedBy = user.id.toString(),
+        ),
+      )
+
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails(
+          id = UUID.randomUUID(),
+          actionPlanStepQuestionAnswerHeaderId = olderHeader.id,
+          revisionNumber = 1,
+          content = "Older response",
+          createdAt = now.minusMinutes(2),
+          createdBy = user.id.toString(),
+        ),
+      )
+      val expectedDetails = actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails(
+          id = UUID.randomUUID(),
+          actionPlanStepQuestionAnswerHeaderId = latestHeader.id,
+          revisionNumber = 1,
+          content = "Latest response",
+          createdAt = now.minusMinutes(1),
+          createdBy = user.id.toString(),
+        ),
+      )
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails(
+          id = UUID.randomUUID(),
+          actionPlanStepQuestionAnswerHeaderId = deletedHeader.id,
+          revisionNumber = 1,
+          content = "Deleted response",
+          createdAt = now,
+          createdBy = user.id.toString(),
+        ),
+      )
+
+      val answers = actionPlanStepQuestionAnswerDetailsRepository
+        .getMostRecentAnswersForActionPlanQuestion(question.id, actionPlan.id)
+
+      assertEquals(listOf(expectedDetails.id), answers.map { it.id })
     }
   }
 

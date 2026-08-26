@@ -11,15 +11,15 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsRespo
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswer
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerRevision
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerRevisionRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionChoiceRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
@@ -52,10 +52,10 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
   private lateinit var actionPlanStepQuestionChoiceRepository: ActionPlanStepQuestionChoiceRepository
 
   @Autowired
-  private lateinit var actionPlanStepQuestionAnswerRepository: ActionPlanStepQuestionAnswerRepository
+  private lateinit var actionPlanStepQuestionAnswerHeaderRepository: ActionPlanStepQuestionAnswerHeaderRepository
 
   @Autowired
-  private lateinit var actionPlanStepQuestionAnswerRevisionRepository: ActionPlanStepQuestionAnswerRevisionRepository
+  private lateinit var actionPlanStepQuestionAnswerDetailsRepository: ActionPlanStepQuestionAnswerDetailsRepository
 
   @Nested
   @DisplayName("GET /bff/referral/{referralReference}/action-plan")
@@ -300,7 +300,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
       }
 
       @Test
-      fun `should return empty questions when no session delivery step exists`() {
+      fun `should return 404 when no session delivery step exists`() {
         val referral = createReferral("John", "Smith")
         val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
         actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
@@ -309,12 +309,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
           .headers(setAuthorisation())
           .exchange()
-          .expectStatus().isOk
-          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
-          .consumeWith { response ->
-            val body = response.responseBody!!
-            body.questions shouldBe emptyList()
-          }
+          .expectStatus().isNotFound
       }
 
       @Test
@@ -363,8 +358,8 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         )
 
         val answerId = UUID.randomUUID()
-        actionPlanStepQuestionAnswerRepository.save(
-          ActionPlanStepQuestionAnswer(
+        actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
             id = answerId,
             actionPlanId = actionPlan.id,
             actionPlanStepQuestionId = question.id,
@@ -374,10 +369,10 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           ),
         )
 
-        actionPlanStepQuestionAnswerRevisionRepository.save(
-          ActionPlanStepQuestionAnswerRevision(
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
             id = UUID.randomUUID(),
-            actionPlanStepQuestionAnswerId = answerId,
+            actionPlanStepQuestionAnswerHeaderId = answerId,
             revisionNumber = 1,
             content = "IN_A_GROUP",
             freeTextValue = "3 people",
@@ -456,8 +451,8 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         val firstAnswerId = UUID.randomUUID()
         val secondAnswerId = UUID.randomUUID()
         val thirdAnswerId = UUID.randomUUID()
-        actionPlanStepQuestionAnswerRepository.save(
-          ActionPlanStepQuestionAnswer(
+        actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
             id = firstAnswerId,
             actionPlanId = actionPlan.id,
             actionPlanStepQuestionId = question.id,
@@ -466,8 +461,8 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             createdBy = user.id.toString(),
           ),
         )
-        actionPlanStepQuestionAnswerRepository.save(
-          ActionPlanStepQuestionAnswer(
+        actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
             id = secondAnswerId,
             actionPlanId = actionPlan.id,
             actionPlanStepQuestionId = question.id,
@@ -476,8 +471,8 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             createdBy = user.id.toString(),
           ),
         )
-        actionPlanStepQuestionAnswerRepository.save(
-          ActionPlanStepQuestionAnswer(
+        actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
             id = thirdAnswerId,
             actionPlanId = actionPlan.id,
             actionPlanStepQuestionId = question.id,
@@ -487,30 +482,30 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           ),
         )
 
-        actionPlanStepQuestionAnswerRevisionRepository.save(
-          ActionPlanStepQuestionAnswerRevision(
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
             id = UUID.randomUUID(),
-            actionPlanStepQuestionAnswerId = firstAnswerId,
+            actionPlanStepQuestionAnswerHeaderId = firstAnswerId,
             revisionNumber = 1,
             content = "BY_PHONE",
             createdAt = OffsetDateTime.now(),
             createdBy = user.id.toString(),
           ),
         )
-        actionPlanStepQuestionAnswerRevisionRepository.save(
-          ActionPlanStepQuestionAnswerRevision(
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
             id = UUID.randomUUID(),
-            actionPlanStepQuestionAnswerId = secondAnswerId,
+            actionPlanStepQuestionAnswerHeaderId = secondAnswerId,
             revisionNumber = 1,
             content = "BY_MESSAGE",
             createdAt = OffsetDateTime.now(),
             createdBy = user.id.toString(),
           ),
         )
-        actionPlanStepQuestionAnswerRevisionRepository.save(
-          ActionPlanStepQuestionAnswerRevision(
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
             id = UUID.randomUUID(),
-            actionPlanStepQuestionAnswerId = thirdAnswerId,
+            actionPlanStepQuestionAnswerHeaderId = thirdAnswerId,
             revisionNumber = 1,
             content = "BY_EMAIL",
             createdAt = OffsetDateTime.now(),

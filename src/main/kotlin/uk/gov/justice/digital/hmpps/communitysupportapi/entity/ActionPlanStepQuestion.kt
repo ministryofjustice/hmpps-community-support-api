@@ -23,6 +23,22 @@ enum class ActionPlanQuestionAnswerType {
   CHECKBOX,
 }
 
+/**
+ * An ActionPlanStepQuestion represents a specific question posed to a user
+ * when creating an ActionPlan.  We use the `question_type` field to note
+ * if this question is about a specific kind of knowledge, e.g. an "outcome"
+ * (against a Need) is a specific idea.
+ *
+ * This entity allows us to model the questions that will be presented to a user
+ * when completing an ActionPlan (their wording, the `input` type presenting, the
+ * ordering) at the API level, rather than more ad-hoc at the UI level.  This
+ * allows us to create a less opinionated UI, pushing decisions into the API
+ * layer.
+ *
+ * @see ActionPlan
+ * @see ActionPlanQuestionType
+ * @see ActionPlanStepQuestionAnswerHeader
+ */
 @Entity
 @Table(name = "action_plan_step_question")
 data class ActionPlanStepQuestion(
