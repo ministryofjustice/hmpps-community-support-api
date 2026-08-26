@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.NDeliusClient
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 
 @Service
@@ -20,5 +21,10 @@ class NDeliusService(
     val homeOfficeInterest = nDeliusClient.getHomeOfficeInterestByCrn(identifier)
 
     return PersonDetailsAndCircumstances.from(personCircumstances, homeOfficeInterest)
+  }
+
+  fun getCommunityManagerByIdentifier(identifier: String): CommunityManagerDto {
+    log.debug("Fetching Community Manager for crn {}", identifier)
+    return nDeliusClient.getCommunityManagerByCrn(identifier)
   }
 }
