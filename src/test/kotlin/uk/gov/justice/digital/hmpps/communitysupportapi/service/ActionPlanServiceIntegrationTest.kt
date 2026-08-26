@@ -418,10 +418,10 @@ class ActionPlanServiceIntegrationTest :
         ),
       )
 
-      val result = actionPlanStepQuestionAnswerDetailsRepository
-        .getMostRecentResponseToQuestionForActionPlan(question.id, actionPlan.id)
+      val answers = actionPlanStepQuestionAnswerDetailsRepository
+        .getMostRecentAnswersForActionPlanQuestion(question.id, actionPlan.id)
 
-      assertEquals(expectedDetails.id, result?.id)
+      assertEquals(listOf(expectedDetails.id), answers.map { it.id })
     }
   }
 

@@ -32,7 +32,8 @@ enum class ActionPlanQuestionAnswerType {
  * This entity allows us to model the questions that will be presented to a user
  * when completing an ActionPlan (their wording, the `input` type presenting, the
  * ordering) at the API level, rather than more ad-hoc at the UI level.  This
- * allows us to create a less opinionated UI, which simply
+ * allows us to create a less opinionated UI, pushing decisions into the API
+ * layer.
  *
  * @see ActionPlan
  * @see ActionPlanQuestionType

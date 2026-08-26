@@ -80,7 +80,7 @@ class ActionPlanStepQuestionAnswerDetailsRepositoryTest :
       )
 
       // When
-      val results = actionPlanStepQuestionAnswerDetailsRepository.getMostRecentResponsesToQuestionsForActionPlan(
+      val results = actionPlanStepQuestionAnswerDetailsRepository.getMostRecentAnswersForActionPlanQuestions(
         questionIds = listOf(question.id),
         actionPlanId = actionPlan.id,
       )
@@ -136,7 +136,7 @@ class ActionPlanStepQuestionAnswerDetailsRepositoryTest :
       )
 
       // When
-      val results = actionPlanStepQuestionAnswerDetailsRepository.getMostRecentResponsesToQuestionsForActionPlan(
+      val results = actionPlanStepQuestionAnswerDetailsRepository.getMostRecentAnswersForActionPlanQuestions(
         questionIds = listOf(question.id),
         actionPlanId = actionPlan.id,
       )
@@ -222,7 +222,7 @@ class ActionPlanStepQuestionAnswerDetailsRepositoryTest :
       )
 
       // When
-      val results = actionPlanStepQuestionAnswerDetailsRepository.getMostRecentResponsesToQuestionsForActionPlan(
+      val results = actionPlanStepQuestionAnswerDetailsRepository.getMostRecentAnswersForActionPlanQuestions(
         questionIds = listOf(question.id),
         actionPlanId = actionPlan.id,
       )

@@ -132,12 +132,12 @@ class ActionPlanService(
     if (answersToQuestions.isEmpty()) {
       logger.info("No answers found for session delivery questions for referral {}", referralReference)
       return ActionPlanSessionDeliveryDetailsResponse(
-        questions.map { SessionDeliveryQuestion.fromQuestionAndResponses(it, emptyList(), emptyList()) },
+        questions.map { SessionDeliveryQuestion.fromQuestionAndResponses(it, emptyList(), it.choices.sortedBy { choice -> choice.orderNumber }) },
       )
     }
 
     val answerDetails = actionPlanStepQuestionAnswerDetailsRepository
-      .getMostRecentResponsesToQuestionsForActionPlan(
+      .getMostRecentAnswersForActionPlanQuestions(
         questions.map { it.id },
         actionPlan.id,
       )
@@ -145,8 +145,8 @@ class ActionPlanService(
 
     return ActionPlanSessionDeliveryDetailsResponse(
       questions = questions.map { question ->
-        val responses = answerDetails[question.id]
-        val choices = question.choices.sortedBy { it.orderNumber }
+        val responses = answerDetails[question.id]?.sortedBy { it.actionPlanStepQuestionAnswerHeader?.orderNumber }
+        val choices = question.choices.sortedBy { choice -> choice.orderNumber }
         SessionDeliveryQuestion.fromQuestionAndResponses(question, responses ?: emptyList(), choices)
       },
     )

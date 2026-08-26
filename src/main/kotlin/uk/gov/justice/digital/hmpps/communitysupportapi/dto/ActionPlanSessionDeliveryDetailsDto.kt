@@ -5,7 +5,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionChoice
 import java.util.UUID
-import kotlin.collections.map
 
 data class ActionPlanSessionDeliveryDetailsResponse(
   val questions: List<SessionDeliveryQuestion>,
