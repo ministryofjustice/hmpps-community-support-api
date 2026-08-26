@@ -140,9 +140,9 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
 
     assertThat(result).isNotNull
     assertThat(result.crn).isEqualTo(CRN)
-    assertThat(result.communityManager?.name?.forename).isEqualTo("Natalie")
-    assertThat(result.communityManager?.name?.surname).isEqualTo("Wood")
-    assertThat(result.communityManager?.emailAddress).isEqualTo("natalie.wood@digital.justice.gov.uk")
+    assertThat(result.communityManager?.name?.forename).isEqualTo("TestForename")
+    assertThat(result.communityManager?.name?.surname).isEqualTo("TestSurname")
+    assertThat(result.communityManager?.emailAddress).isEqualTo("testForename.testSurname@digital.justice.gov.uk")
     assertThat(result.communityManager?.pdu).isEqualTo("Northumberland")
   }
 

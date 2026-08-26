@@ -388,12 +388,12 @@ object ExternalApiResponse {
 
   fun createCommunityManagerDto(
     crn: String = CRN,
-    forename: String = "Natalie",
+    forename: String = "TestForename",
     middleName: String? = null,
-    surname: String = "Wood",
+    surname: String = "TestSurname",
     jobRole: String? = "Probation practitioner",
-    emailAddress: String? = "natalie.wood@digital.justice.gov.uk",
-    pdu: String? = "Northumberland",
+    emailAddress: String? = "testForename.testSurname@digital.justice.gov.uk",
+    pdu: String = "Northumberland",
     officeName: String? = null,
     teamPhoneNumber: String? = null,
   ): CommunityManagerDto = CommunityManagerDto(

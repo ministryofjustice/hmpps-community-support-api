@@ -523,9 +523,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<ProbationPractitionerDetailsBffResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-          body.name shouldBe "Natalie Wood"
+          body.name shouldBe "TestForename TestSurname"
           body.jobRole shouldBe "Probation practitioner"
-          body.emailAddress shouldBe "natalie.wood@digital.justice.gov.uk"
+          body.emailAddress shouldBe "testForename.testSurname@digital.justice.gov.uk"
           body.pdu shouldBe "Northumberland"
         }
     }
