@@ -7,9 +7,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsRespo
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionChoice
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SavedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
@@ -109,74 +107,48 @@ class ActionPlanService(
     return ActionPlanNeedsResponse(needs = needsList)
   }
 
+  @Transactional
   fun getSessionDeliveryDetailsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
     val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
       ?: throw NotFoundException("Referral not found for reference $referralReference")
-    val actionPlan = actionPlanRepository.findByReferralId(referral.id)
 
-    val sessionDeliverySteps = actionPlanStepRepository.findSessionDeliveryStepsByReferralId(referral.id)
-    if (sessionDeliverySteps.isEmpty()) {
+    val actionPlan = findOrCreateByReferralId(referral.id)
+
+    val sessionDeliveryStep = actionPlanStepRepository.findSessionDeliveryStepsByReferralId(referral.id)
+
+    if (sessionDeliveryStep == null) {
       logger.warn("No SESSION_DELIVERY step found for referral {}", referralReference)
-      return ActionPlanSessionDeliveryDetailsResponse(questions = emptyList())
+      throw NotFoundException("No SESSION_DELIVERY step found for referral $referralReference")
     }
 
-    // Get all questions for the first session delivery step, ordered by order number
+    // Get all questions for the session delivery step, ordered by order number
     val questions = actionPlanStepQuestionRepository
-      .findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliverySteps.first().id)
-    val questionIds = questions.map { it.id }.toSet()
+      .findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliveryStep.id)
 
-    // Get all saved responses for the questions, grouped by question ID
-    val savedResponsesByQuestionId = actionPlan?.let {
-      val answers = actionPlanStepQuestionAnswerHeaderRepository
-        .findAllByActionPlanIdAndDeletedAtIsNull(it.id)
-        .filter { answer -> questionIds.contains(answer.actionPlanStepQuestionId) }
-        .sortedBy { answer -> answer.orderNumber }
-      if (answers.isEmpty()) {
-        emptyMap()
-      } else {
-        val latestDetailsByHeaderId = actionPlanStepQuestionAnswerDetailsRepository
-          .findAllByActionPlanStepQuestionAnswerHeaderIdIn(answers.map { answer -> answer.id })
-          .groupBy { details -> details.actionPlanStepQuestionAnswerHeaderId }
-          .mapValues { (_, detailItems) -> detailItems.maxByOrNull { details -> details.revisionNumber } }
+    val answersToQuestions = actionPlanStepQuestionAnswerHeaderRepository
+      .findAllByActionPlanStepQuestionIdIn(questions.map { it.id })
+      .sortedBy { answer -> answer.orderNumber }
 
-        answers
-          .mapNotNull { answer ->
-            val latestDetails = latestDetailsByHeaderId[answer.id] ?: return@mapNotNull null
-            val value = latestDetails.content?.takeIf { content -> content.isNotBlank() } ?: return@mapNotNull null
-            answer.actionPlanStepQuestionId to SavedResponse(
-              value = value,
-              additionalDetails = latestDetails.freeTextValue,
-            )
-          }
-          .groupBy(keySelector = { it.first }, valueTransform = { it.second })
-      }
-    }.orEmpty()
-
-    // Map the questions to the response DTO, including saved responses and choices
-    val questionDetails = questions.map { question ->
-      SessionDeliveryQuestion(
-        displayOrder = question.orderNumber,
-        id = question.id,
-        label = question.title,
-        answerType = question.answerType,
-        maximumNumberOfResponses = question.maxNumberResponses,
-        savedResponses = savedResponsesByQuestionId[question.id].orEmpty(),
-        choices = question.choices
-          .sortedBy { it.orderNumber }
-          .map { choice ->
-            QuestionChoice(
-              value = choice.value,
-              label = choice.label,
-              displayAdditionalDetailsOnSelect = choice.hasFreeText,
-              additionalDetailsLabel = if (choice.hasFreeText) choice.freeTextLabel else null,
-              displayOrder = choice.orderNumber,
-            )
-          }
-          .takeIf { it.isNotEmpty() },
+    if (answersToQuestions.isEmpty()) {
+      logger.info("No answers found for session delivery questions for referral {}", referralReference)
+      return ActionPlanSessionDeliveryDetailsResponse(
+        questions.map { SessionDeliveryQuestion.fromQuestionAndResponses(it, emptyList()) },
       )
     }
 
-    return ActionPlanSessionDeliveryDetailsResponse(questions = questionDetails)
+    val answerDetails = actionPlanStepQuestionAnswerDetailsRepository
+      .getMostRecentResponsesToQuestionsForActionPlan(
+        questions.map { it.id },
+        actionPlan.id,
+      )
+      .groupBy { it.actionPlanStepQuestionAnswerHeader?.actionPlanStepQuestionId }
+
+    return ActionPlanSessionDeliveryDetailsResponse(
+      questions = questions.map { question ->
+        val responses = answerDetails[question.id]
+        SessionDeliveryQuestion.fromQuestionAndResponses(question, responses ?: emptyList())
+      },
+    )
   }
 
   private fun createForReferral(referralId: UUID): ActionPlan {

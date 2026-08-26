@@ -35,9 +35,10 @@ interface ActionPlanStepRepository : JpaRepository<ActionPlanStep, UUID> {
       SELECT ap.actionPlanTemplateId FROM ActionPlan ap WHERE ap.referralId = :referralId
     )
     ORDER BY s.orderNumber ASC
+    LIMIT 1
     """,
   )
   fun findSessionDeliveryStepsByReferralId(
     @Param("referralId") referralId: UUID,
-  ): List<ActionPlanStep>
+  ): ActionPlanStep?
 }

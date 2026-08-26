@@ -11,10 +11,19 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
- * One recorded version of the content for an answer header.
+ * This entity captures a version of a response to an ActionPlanStepQuestion.
+ *
+ * It works alongside the "Header" record, which keeps a consistent record
+ * of the Question and ActionPlan it is in relation to.
  *
  * A new details record is added whenever an answer changes, preserving the
  * earlier responses while the header continues to identify the answer itself.
+ *
+ * This entity therefore allows us to keep a complete history of all answers to
+ * specific questions in an ActionPlan.
+ *
+ * @see ActionPlanStepQuestionAnswerHeader
+ * @see ActionPlanStepQuestion
  */
 @Entity
 @Table(name = "action_plan_step_question_answer_details")

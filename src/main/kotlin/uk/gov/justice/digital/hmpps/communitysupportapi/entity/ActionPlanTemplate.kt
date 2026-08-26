@@ -8,7 +8,8 @@ import java.util.UUID
 
 /**
  * The ActionPlanTemplate is a holding / container entity for information about
- * the required information for any given ActionPlan.
+ * the structure of a given ActionPlan, e.g. what questions are posed to the user.
+ *
  * At the time of writing, all ActionPlans will follow the same template, and therefore
  * the `active_global` template should be the only ActionPlanTemplate instance
  *

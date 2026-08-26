@@ -12,10 +12,20 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
- * The stable record for one answer to a question in an action plan.
+ * The stable record for one ActionPlan's answer to a Question, i.e. this is
+ * similar to a join table between an ActionPlan and a StepQuestion.
  *
- * Other records can refer to this header without being tied to a particular
- * version of the answer. The answer's changing content is stored in its details.
+ * The actual "real" answer is given in the ActionPlanStepQuestionAnswerDetails
+ *
+ * This pattern allows us to keep a full history of answers to a question, while
+ * also allowing other entities to reference the answer to a specific question without
+ * referencing a *specific* version of that answer.
+ *
+ * We expect changes to questions to be frequent enough, and other structured data
+ * around QuestionAnswers to be important enough to necessitate both stable references
+ * but also a full history.
+ *
+ * @see ActionPlanStepQuestionAnswerDetails
  */
 @Entity
 @Table(name = "action_plan_step_question_answer_header")

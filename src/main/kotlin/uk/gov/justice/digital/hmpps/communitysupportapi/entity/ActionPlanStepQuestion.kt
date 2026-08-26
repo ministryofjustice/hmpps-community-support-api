@@ -25,7 +25,9 @@ enum class ActionPlanQuestionAnswerType {
 
 /**
  * An ActionPlanStepQuestion represents a specific question posed to a user
- * when creating an ActionPlan.  They will provide
+ * when creating an ActionPlan.  We use the `question_type` field to note
+ * if this question is about a specific kind of knowledge, e.g. an "outcome"
+ * (against a Need) is a specific idea.
  *
  * This entity allows us to model the questions that will be presented to a user
  * when completing an ActionPlan (their wording, the `input` type presenting, the
@@ -33,6 +35,7 @@ enum class ActionPlanQuestionAnswerType {
  * allows us to create a less opinionated UI, which simply
  *
  * @see ActionPlan
+ * @see ActionPlanQuestionType
  * @see ActionPlanStepQuestionAnswerHeader
  */
 @Entity
