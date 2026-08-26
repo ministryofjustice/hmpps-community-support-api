@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffR
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ProbationPractitionerDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
@@ -335,4 +336,31 @@ class DraftReferralController(
 
     return ResponseEntity.ok(draftReferralService.upsertOffenceSentenceDetails(referralId, user.id, request))
   }
+
+  @Operation(summary = "Get Probation Practitioner details for a draft referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Probation Practitioner details found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ProbationPractitionerDetailsBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral, or the Referral's Person, not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/draft-referral/{referralId}/probation-practitioner-details")
+  fun getProbationPractitionerDetails(
+    @PathVariable referralId: UUID,
+  ): ResponseEntity<ProbationPractitionerDetailsBffResponseDto> = ResponseEntity.ok(
+    draftReferralService.getProbationPractitionerDetails(referralId),
+  )
 }

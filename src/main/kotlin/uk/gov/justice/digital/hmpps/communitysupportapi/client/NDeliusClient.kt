@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.HomeOfficeInterestDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonDetailsAndCircumstancesDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
@@ -62,6 +63,30 @@ class NDeliusClient(
             Mono.error(RuntimeException("Server error from nDelius: ${response.statusCode()}"))
 
           else -> response.bodyToMono<HomeOfficeInterestDto>()
+        }
+      }
+      .doOnError { e -> log.error("Error calling nDelius for CRN: $crn", e) }
+      .block()!!
+  }
+
+  fun getCommunityManagerByCrn(crn: String): CommunityManagerDto {
+    log.debug("Retrieving Community Manager for crn {}", crn)
+
+    return webClient.get()
+      .uri("/case/$crn/community-manager")
+      .accept(MediaType.APPLICATION_JSON)
+      .exchangeToMono { response ->
+        when {
+          response.statusCode() == HttpStatus.NOT_FOUND ->
+            Mono.error(NotFoundException("Person not found in nDelius with CRN: $crn"))
+
+          response.statusCode().is4xxClientError ->
+            Mono.error(RuntimeException("Client error from nDelius: ${response.statusCode()}"))
+
+          response.statusCode().is5xxServerError ->
+            Mono.error(RuntimeException("Server error from nDelius: ${response.statusCode()}"))
+
+          else -> response.bodyToMono<CommunityManagerDto>()
         }
       }
       .doOnError { e -> log.error("Error calling nDelius for CRN: $crn", e) }
