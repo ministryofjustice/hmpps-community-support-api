@@ -1,9 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.stubFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.BeforeEach
@@ -47,12 +43,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
-import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -121,18 +115,18 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return OK with draft referral and person details`() {
-      val cprPersonDto = createCprProbationPersonDto(CRN)
-      stubFor(
-        get(urlEqualTo("/person/probation/$CRN"))
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withHeader("Content-Type", "application/json")
-              .withBody(cprPersonDto.toJson()),
-          ),
-      )
-
-      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDto)
+      val person = referralHelper.createPerson(identifier = CRN)
+      person.additionalDetails = PersonAdditionalDetailsFactory()
+        .withPerson(person)
+        .withEthnicity("White")
+        .withPreferredLanguage("")
+        .withNeurodiverseConditions("None")
+        .withReligionOrBelief("Christianity")
+        .withAddress("1 Test Street, Test Town, TEST 1AB")
+        .withPhoneNumber("01234567890")
+        .withEmailAddress("test@example.com")
+        .create()
+      personRepository.save(person)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
 
       webTestClient.get()
@@ -147,15 +141,15 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
           body.id shouldBe referral.id
           body.referenceNumber shouldBe referral.referenceNumber
-          body.personDetailsTableData.name.firstName shouldBe cprPersonDto.firstName
-          body.personDetailsTableData.name.lastName shouldBe cprPersonDto.lastName
+          body.personDetailsTableData.name.firstName shouldBe person.firstName
+          body.personDetailsTableData.name.lastName shouldBe person.lastName
           body.personDetailsTableData.crn shouldBe CRN
-          body.personDetailsTableData.dateOfBirth shouldBe cprPersonDto.dateOfBirth
+          body.personDetailsTableData.dateOfBirth shouldBe person.dateOfBirth.toString()
           body.personDetailsTableData.prisonNumbers shouldBe person.prisonNumbers
           body.personDetailsTableData.preferredLanguage shouldBe ""
-          body.equalityDetailsTableData.ethnicity shouldBe cprPersonDto.ethnicity?.description
-          body.equalityDetailsTableData.religionOrBelief shouldBe cprPersonDto.religion?.description
-          body.equalityDetailsTableData.sex shouldBe cprPersonDto.sex?.description
+          body.equalityDetailsTableData.ethnicity shouldBe person.additionalDetails?.ethnicity
+          body.equalityDetailsTableData.religionOrBelief shouldBe person.additionalDetails?.religionOrBelief
+          body.equalityDetailsTableData.sex shouldBe person.gender
           body.contactDetailsTableData.phoneNumber shouldBe person.additionalDetails?.phoneNumber
           body.contactDetailsTableData.email shouldBe person.additionalDetails?.emailAddress
           body.contactDetailsTableData.address shouldBe person.additionalDetails?.address
