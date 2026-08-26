@@ -11,14 +11,14 @@ interface ActionPlanStepQuestionAnswerDetailsRepository : JpaRepository<ActionPl
 
   @Query(
     value = """
-      SELECT details.*
+      SELECT DISTINCT ON (header.action_plan_step_question_id) details.*
       FROM action_plan_step_question_answer_details details
       JOIN action_plan_step_question_answer_header header
         ON header.id = details.action_plan_step_question_answer_header_id
       WHERE header.action_plan_step_question_id = :questionId
         AND header.action_plan_id = :actionPlanId
         AND header.deleted_at IS NULL
-      ORDER BY details.created_at DESC, details.id DESC
+      ORDER BY header.action_plan_step_question_id, header.order_number DESC, details.revision_number DESC
       """,
     nativeQuery = true,
   )
