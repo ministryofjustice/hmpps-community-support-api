@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonCircums
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManager
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.personDetailsAndCircumstancesNotFoundJson
@@ -120,6 +121,45 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
 
     assertThrows(NotFoundException::class.java) {
       nDeliusClient.getHomeOfficeInterestByCrn("UNKNOWN")
+    }
+  }
+
+  @Test
+  fun `should return community manager when nDelius API returns 200`() {
+    stubFor(
+      get(urlEqualTo("/case/$CRN/community-manager"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(createCommunityManager()),
+        ),
+    )
+
+    val result = nDeliusClient.getCommunityManagerByCrn(CRN)
+
+    assertThat(result).isNotNull
+    assertThat(result.crn).isEqualTo(CRN)
+    assertThat(result.communityManager?.name?.forename).isEqualTo("TestForename")
+    assertThat(result.communityManager?.name?.surname).isEqualTo("TestSurname")
+    assertThat(result.communityManager?.emailAddress).isEqualTo("testForename.testSurname@digital.justice.gov.uk")
+    assertThat(result.communityManager?.pdu).isEqualTo("Northumberland")
+  }
+
+  @Test
+  fun `community manager should throw NotFoundException when nDelius API returns 404`() {
+    stubFor(
+      get(urlEqualTo("/case/UNKNOWN/community-manager"))
+        .willReturn(
+          aResponse()
+            .withStatus(404)
+            .withHeader("Content-Type", "application/json")
+            .withBody(personDetailsAndCircumstancesNotFoundJson()),
+        ),
+    )
+
+    assertThrows(NotFoundException::class.java) {
+      nDeliusClient.getCommunityManagerByCrn("UNKNOWN")
     }
   }
 

@@ -11,12 +11,31 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.util.UUID
 
+/**
+ * The possible types of Step in an ActionPlan, each corresponding, roughly to a screen
+ * in the UI.
+ */
 enum class ActionPlanStepType {
   NEED,
   SESSION_DELIVERY,
   CATCH_ALL,
 }
 
+/**
+ * A holding / container entity for related information, in the form of a Question
+ * (ActionPlanStepQuestion), defined in a template (ActionPlanTemplate), and applied
+ * to a specific ActionPlan
+ *
+ * At time of authorship, each "Step" refers to a screen (or multi-screen step) in the
+ * UI.
+ *
+ * Modelling this allows the API to collate relevant questions and information for an ActionPlan
+ * in the same way that a user would, and therefore to feed data for specific screens in a structured
+ * way.
+ *
+ * @see ActionPlanStepQuestion
+ * @see ActionPlan
+ */
 @Entity
 @Table(name = "action_plan_step")
 data class ActionPlanStep(

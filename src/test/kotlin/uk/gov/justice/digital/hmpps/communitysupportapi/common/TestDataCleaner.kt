@@ -18,8 +18,8 @@ class TestDataCleaner(
       createNativeQuery("TRUNCATE TABLE person CASCADE").executeUpdate()
       createNativeQuery("TRUNCATE TABLE action_plan CASCADE").executeUpdate()
       createNativeQuery("TRUNCATE TABLE action_plan_event CASCADE").executeUpdate()
-      createNativeQuery("TRUNCATE TABLE action_plan_step_question_answer_revision CASCADE").executeUpdate()
-      createNativeQuery("TRUNCATE TABLE action_plan_step_question_answer CASCADE").executeUpdate()
+      createNativeQuery("TRUNCATE TABLE action_plan_step_question_answer_details CASCADE").executeUpdate()
+      createNativeQuery("TRUNCATE TABLE action_plan_step_question_answer_header CASCADE").executeUpdate()
       createNativeQuery("TRUNCATE TABLE action_plan_need CASCADE").executeUpdate()
     }
   }

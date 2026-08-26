@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import jakarta.validation.ValidationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
@@ -7,6 +8,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffR
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ProbationPractitionerDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSentenceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
@@ -47,6 +49,7 @@ class DraftReferralService(
   private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
   private val referralOffenceSentenceRepository: ReferralOffenceSentenceRepository,
   private val identifierValidator: PersonIdentifierValidator,
+  private val nDeliusService: NDeliusService,
 ) {
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
@@ -355,5 +358,23 @@ class DraftReferralService(
     }
 
     return OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
+  }
+
+  fun getProbationPractitionerDetails(referralId: UUID): ProbationPractitionerDetailsBffResponseDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+
+    // TODO: temporary restriction until it's determined how to look up a Probation Practitioner for a person identified by prison number.
+    val crn = when (val identifier = identifierValidator.validate(person.identifier)) {
+      is PersonIdentifier.Crn -> identifier.value
+      is PersonIdentifier.PrisonerNumber -> throw ValidationException("Cannot retrieve Probation Practitioner details for a person identified by prison number")
+    }
+
+    val communityManager = nDeliusService.getCommunityManagerByIdentifier(crn)
+
+    return ProbationPractitionerDetailsBffResponseDto.from(communityManager)
   }
 }
