@@ -7,6 +7,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -39,6 +40,7 @@ data class ActionPlanStepQuestionAnswerDetails(
   @JoinColumn(name = "action_plan_step_question_answer_header_id", insertable = false, updatable = false)
   val actionPlanStepQuestionAnswerHeader: ActionPlanStepQuestionAnswerHeader? = null,
 
+  // TODO: Delete this until we need it
   @Column(name = "revision_number", nullable = false)
   val revisionNumber: Int,
 
@@ -53,4 +55,23 @@ data class ActionPlanStepQuestionAnswerDetails(
 
   @Column(name = "created_by", nullable = false)
   val createdBy: String = "SYSTEM",
-)
+) {
+  companion object {
+    fun from(
+      headerId: UUID,
+      content: String,
+      createdBy: String,
+      freeTextValue: String?,
+      now: OffsetDateTime = OffsetDateTime.now(),
+    ): ActionPlanStepQuestionAnswerDetails = ActionPlanStepQuestionAnswerDetails(
+      id = UUID.randomUUID(),
+      actionPlanStepQuestionAnswerHeaderId = headerId,
+      content = content,
+      freeTextValue = freeTextValue,
+      createdAt = now,
+      createdBy = createdBy,
+      // TODO: We need to delete `revisionNumber` because we don't need it at the moment
+      revisionNumber = 0,
+    )
+  }
+}

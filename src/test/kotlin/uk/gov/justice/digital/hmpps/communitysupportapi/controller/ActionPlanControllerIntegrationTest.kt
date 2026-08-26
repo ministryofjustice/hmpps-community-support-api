@@ -551,7 +551,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         assertForbiddenNoRole(
           PATCH,
           "/referral/AB1234CD/action-plan/session-delivery-details",
-          ActionPlanSessionDeliveryDetailsRequest(questions = emptyList()),
+          ActionPlanSessionDeliveryDetailsRequest(answers = emptyList()),
         )
       }
 
@@ -560,7 +560,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         assertForbiddenWrongRole(
           PATCH,
           "/referral/AB1234CD/action-plan/session-delivery-details",
-          ActionPlanSessionDeliveryDetailsRequest(questions = emptyList()),
+          ActionPlanSessionDeliveryDetailsRequest(answers = emptyList()),
         )
       }
 
@@ -636,7 +636,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         )
 
         val saveRequest = ActionPlanSessionDeliveryDetailsRequest(
-          questions = listOf(
+          answers = listOf(
             SessionDeliveryQuestionRequest(
               id = radioQuestion.id,
               savedResponses = listOf(SavedResponse(value = "OTHER", additionalDetails = "Poor weather")),
@@ -666,7 +666,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           }
 
         val updateRequest = ActionPlanSessionDeliveryDetailsRequest(
-          questions = listOf(
+          answers = listOf(
             SessionDeliveryQuestionRequest(
               id = radioQuestion.id,
               savedResponses = listOf(SavedResponse(value = "FACE_TO_FACE")),
@@ -714,7 +714,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         assertNotFound(
           PATCH,
           "/referral/ZZ9999ZZ/action-plan/session-delivery-details",
-          ActionPlanSessionDeliveryDetailsRequest(questions = emptyList()),
+          ActionPlanSessionDeliveryDetailsRequest(answers = emptyList()),
         )
       }
     }

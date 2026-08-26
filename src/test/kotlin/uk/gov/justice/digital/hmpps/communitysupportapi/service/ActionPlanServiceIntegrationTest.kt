@@ -25,9 +25,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationT
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionChoiceRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionChoiceRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
@@ -575,7 +575,7 @@ class ActionPlanServiceIntegrationTest :
       createChoice(checkboxQuestion.id, 2, "Text", "TEXT")
 
       val saveRequest = ActionPlanSessionDeliveryDetailsRequest(
-        questions = listOf(
+        answers = listOf(
           SessionDeliveryQuestionRequest(
             id = radioQuestion.id,
             savedResponses = listOf(SavedResponse(value = "OTHER", additionalDetails = "Poor weather")),
@@ -590,13 +590,13 @@ class ActionPlanServiceIntegrationTest :
         ),
       )
 
-      val saveResult = actionPlanService.patchSessionDeliveryDetailsForReferral(referral.referenceNumber!!, saveRequest, user.id.toString())
+      val saveResult = actionPlanService.updateSessionDeliveryDetailsForActionPlan(referral.referenceNumber!!, saveRequest, user.id.toString())
       assertEquals(listOf("OTHER"), saveResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value })
       assertEquals(listOf("Poor weather"), saveResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails })
       assertEquals(listOf("PHONE", "TEXT"), saveResult.questions.first { it.id == checkboxQuestion.id }.savedResponses.map { it.value })
 
       val updateRequest = ActionPlanSessionDeliveryDetailsRequest(
-        questions = listOf(
+        answers = listOf(
           SessionDeliveryQuestionRequest(
             id = radioQuestion.id,
             savedResponses = listOf(SavedResponse(value = "FACE_TO_FACE")),
@@ -608,7 +608,7 @@ class ActionPlanServiceIntegrationTest :
         ),
       )
 
-      val updateResult = actionPlanService.patchSessionDeliveryDetailsForReferral(referral.referenceNumber!!, updateRequest, user.id.toString())
+      val updateResult = actionPlanService.updateSessionDeliveryDetailsForActionPlan(referral.referenceNumber!!, updateRequest, user.id.toString())
       assertEquals(listOf("FACE_TO_FACE"), updateResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value })
       assertEquals(listOf(null), updateResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails })
       assertEquals(listOf("TEXT"), updateResult.questions.first { it.id == checkboxQuestion.id }.savedResponses.map { it.value })

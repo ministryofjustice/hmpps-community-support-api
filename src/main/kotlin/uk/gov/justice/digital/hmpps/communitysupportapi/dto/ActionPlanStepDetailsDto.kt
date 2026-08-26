@@ -3,17 +3,15 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import java.util.UUID
 
-data class ActionPlanStepDetailsResponse(
-  val questions: List<ActionPlanStepQuestion>,
+data class SessionDeliveryDetailsQuestionAnswer(
+  val questionAnswerHeaderId: UUID? = null,
+  val value: String,
+  val additionalDetails: String? = null,
 )
 
-data class ActionPlanStepDetailsRequest(
-  val questions: List<ActionPlanStepQuestionRequest>,
-)
-
-data class ActionPlanStepQuestionRequest(
-  val id: UUID,
-  val savedResponses: List<SavedResponse> = emptyList(),
+data class SessionDeliveryDetailsQuestionAnswers(
+  val questionId: UUID,
+  val incomingAnswerDetails: List<SessionDeliveryDetailsQuestionAnswer> = emptyList(),
 )
 
 data class ActionPlanStepQuestion(

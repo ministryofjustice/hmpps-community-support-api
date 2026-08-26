@@ -140,6 +140,6 @@ class ActionPlanController(
   ): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
     val changedBy = authenticationHolder.authentication.userName ?: "SYSTEM"
     log.info("Saving session delivery details for referral={}", referralReference)
-    return ResponseEntity.ok(actionPlanService.patchSessionDeliveryDetailsForReferral(referralReference, request, changedBy))
+    return ResponseEntity.ok(actionPlanService.updateSessionDeliveryDetailsForActionPlan(referralReference, request, changedBy))
   }
 }

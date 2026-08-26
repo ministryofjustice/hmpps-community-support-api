@@ -66,4 +66,21 @@ data class ActionPlanStepQuestionAnswerHeader(
 
   @Column(name = "deleted_by")
   val deletedBy: String? = null,
-)
+) {
+  companion object {
+    fun from(
+      actionPlanId: UUID,
+      questionId: UUID,
+      createdBy: String,
+      createdAt: OffsetDateTime = OffsetDateTime.now(),
+    ): ActionPlanStepQuestionAnswerHeader = ActionPlanStepQuestionAnswerHeader(
+      id = UUID.randomUUID(),
+      actionPlanId = actionPlanId,
+      actionPlanStepQuestionId = questionId,
+      createdAt = createdAt,
+      createdBy = createdBy,
+      // Come back and delete
+      orderNumber = 0,
+    )
+  }
+}

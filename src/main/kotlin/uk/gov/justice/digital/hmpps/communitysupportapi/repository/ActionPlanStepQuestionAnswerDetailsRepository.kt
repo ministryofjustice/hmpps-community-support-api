@@ -59,4 +59,9 @@ interface ActionPlanStepQuestionAnswerDetailsRepository : JpaRepository<ActionPl
   fun findLatestRevisionsByAnswerIdIn(
     @Param("answerIds") answerIds: Collection<UUID>,
   ): List<ActionPlanStepQuestionAnswerDetails>
+
+  fun findAllByActionPlanIdAndActionPlanStepQuestionIdInAndDeletedAtIsNull(
+    @Param("actionPlanId") actionPlanId: UUID,
+    @Param("questionIds") questionIds: List<UUID>,
+  ): List<ActionPlanStepQuestionAnswerDetails>
 }
