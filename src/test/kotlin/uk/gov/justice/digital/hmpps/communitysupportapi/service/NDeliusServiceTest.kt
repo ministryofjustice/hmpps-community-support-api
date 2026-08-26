@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.client.NDeliusClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterestDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstancesDto
 
@@ -59,6 +60,34 @@ class NDeliusServiceTest {
     }
 
     verify(nDeliusClient).getPersonDetailsAndCircumstancesByCrn(crn)
+    verifyNoMoreInteractions(nDeliusClient)
+  }
+
+  @Test
+  fun `should return community manager from nDelius`() {
+    val communityManagerDto = createCommunityManagerDto()
+
+    whenever(nDeliusClient.getCommunityManagerByCrn(CRN)).thenReturn(communityManagerDto)
+
+    val result = nDeliusService.getCommunityManagerByIdentifier(CRN)
+
+    assertEquals(communityManagerDto, result)
+
+    verify(nDeliusClient).getCommunityManagerByCrn(CRN)
+    verifyNoMoreInteractions(nDeliusClient)
+  }
+
+  @Test
+  fun `should throw NotFoundException when nDelius fails to find community manager by CRN`() {
+    val crn = "X123456"
+
+    whenever(nDeliusClient.getCommunityManagerByCrn(crn)).thenThrow(NotFoundException("Person not found in nDelius with CRN: $crn"))
+
+    assertThrows(NotFoundException::class.java) {
+      nDeliusService.getCommunityManagerByIdentifier(crn)
+    }
+
+    verify(nDeliusClient).getCommunityManagerByCrn(crn)
     verifyNoMoreInteractions(nDeliusClient)
   }
 }

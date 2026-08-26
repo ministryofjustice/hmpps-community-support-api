@@ -1,5 +1,9 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.BeforeEach
@@ -19,6 +23,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffR
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ProbationPractitionerDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.Selection
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
@@ -42,6 +47,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManager
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
@@ -463,6 +469,79 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.crn shouldBe person.identifier
           body.dateOfBirth shouldBe person.dateOfBirth.toFormattedDateOfBirthLong()
         }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/draft-referral/:referralId/probation-practitioner-details")
+  inner class ProbationPractitionerDetailsTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/draft-referral/${UUID.randomUUID()}/probation-practitioner-details")
+    }
+
+    @Test
+    fun `should return 404 when referral does not exist`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/${UUID.randomUUID()}/probation-practitioner-details")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `should return probation practitioner details for a draft referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      stubFor(
+        get(urlEqualTo("/case/${person.identifier}/community-manager"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createCommunityManager()),
+          ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/${referral.id}/probation-practitioner-details")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ProbationPractitionerDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.name shouldBe "Natalie Wood"
+          body.jobRole shouldBe "Probation practitioner"
+          body.emailAddress shouldBe "natalie.wood@digital.justice.gov.uk"
+          body.pdu shouldBe "Northumberland"
+        }
+    }
+
+    @Test
+    fun `should return 400 when person is identified by prison number`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson(identifier = "A1234BC")
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/${referral.id}/probation-practitioner-details")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isBadRequest
     }
   }
 

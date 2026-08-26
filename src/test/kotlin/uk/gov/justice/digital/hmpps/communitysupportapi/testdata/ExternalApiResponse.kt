@@ -12,6 +12,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprCodeDescripti
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprContactDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprIdentifiersDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDetailsDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DisabilitiesDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.HomeOfficeInterestDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderPersonalityDisorderDto
@@ -382,6 +385,31 @@ object ExternalApiResponse {
 
   fun createPersonDetailsAndCircumstances() = createPersonDetailsAndCircumstancesDto().toJson()
   fun createHomeOfficeInterest() = createHomeOfficeInterestDto().toJson()
+
+  fun createCommunityManagerDto(
+    crn: String = CRN,
+    forename: String = "Natalie",
+    middleName: String? = null,
+    surname: String = "Wood",
+    jobRole: String? = "Probation practitioner",
+    emailAddress: String? = "natalie.wood@digital.justice.gov.uk",
+    pdu: String? = "Northumberland",
+    officeName: String? = null,
+    teamPhoneNumber: String? = null,
+  ): CommunityManagerDto = CommunityManagerDto(
+    crn = crn,
+    communityManager = CommunityManagerDetailsDto(
+      jobRole = jobRole,
+      emailAddress = emailAddress,
+      pdu = pdu,
+      officeName = officeName,
+      name = CommunityManagerNameDto(forename = forename, middleName = middleName, surname = surname),
+      teamPhoneNumber = teamPhoneNumber,
+    ),
+  )
+
+  fun createCommunityManager() = createCommunityManagerDto().toJson()
+
   fun personDetailsAndCircumstancesNotFoundJson() = """
         {
           "error": "Not Found",
