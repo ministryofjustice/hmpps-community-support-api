@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckDraftReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
@@ -246,29 +245,6 @@ class ReferralController(
 
     return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
   }
-
-  @Operation(summary = "Get check draft referral details page data")
-  @ApiResponses(
-    value = [
-      ApiResponse(
-        responseCode = "200",
-        description = "Check draft referral details found",
-        content = [
-          Content(
-            mediaType = "application/json",
-            schema = Schema(implementation = CheckDraftReferralDetailsBffResponseDto::class),
-          ),
-        ],
-      ),
-      ApiResponse(
-        responseCode = "404",
-        description = "Referral not found",
-        content = [Content(mediaType = "application/json")],
-      ),
-    ],
-  )
-  @GetMapping("/bff/check-draft-referral-details/{referralId}")
-  fun getCheckDraftReferralDetails(@PathVariable referralId: UUID): ResponseEntity<CheckDraftReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getCheckDraftReferralDetailsPage(referralId))
 
   @Operation(summary = "Get referral progress page data")
   @ApiResponses(

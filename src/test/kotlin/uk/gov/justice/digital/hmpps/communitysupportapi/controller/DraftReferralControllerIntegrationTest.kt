@@ -1,5 +1,9 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.BeforeEach
@@ -16,6 +20,7 @@ import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckDraftReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
@@ -42,10 +47,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -86,6 +93,85 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
   private lateinit var userMapper: UserMapper
 
   private lateinit var testUser: ReferralUser
+
+  @Nested
+  @DisplayName("GET /bff/draft-referral/check-draft-referral-details/{referralId}")
+  inner class CheckDraftReferralDetailsEndpoint {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, "/bff/draft-referral/check-draft-referral-details/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(GET, "/bff/draft-referral/check-draft-referral-details/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(GET, "/bff/draft-referral/check-draft-referral-details/${UUID.randomUUID()}")
+    }
+
+    @Test
+    fun `should return OK with draft referral and person details`() {
+      val cprPersonDto = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDto.toJson()),
+          ),
+      )
+
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDto)
+      val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<CheckDraftReferralDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.id shouldBe referral.id
+          body.referenceNumber shouldBe referral.referenceNumber
+          body.personDetailsTableData.name.firstName shouldBe cprPersonDto.firstName
+          body.personDetailsTableData.name.lastName shouldBe cprPersonDto.lastName
+          body.personDetailsTableData.crn shouldBe CRN
+          body.personDetailsTableData.dateOfBirth shouldBe cprPersonDto.dateOfBirth
+          body.personDetailsTableData.prisonNumbers shouldBe person.prisonNumbers
+          body.personDetailsTableData.preferredLanguage shouldBe ""
+          body.equalityDetailsTableData.ethnicity shouldBe cprPersonDto.ethnicity?.description
+          body.equalityDetailsTableData.religionOrBelief shouldBe cprPersonDto.religion?.description
+          body.equalityDetailsTableData.sex shouldBe cprPersonDto.sex?.description
+          body.contactDetailsTableData.phoneNumber shouldBe person.additionalDetails?.phoneNumber
+          body.contactDetailsTableData.email shouldBe person.additionalDetails?.emailAddress
+          body.contactDetailsTableData.address shouldBe person.additionalDetails?.address
+          body.riskInformationDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.RiskInformationDetailsTableDataDto()
+          body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.AdditionalSupportNeedsDetailsTableDataDto()
+          body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.PersonNeedsDetailsTableDataDto()
+          body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.ReferralAreaTableDataDto()
+          body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.MainPOCDetailsTableDataDto()
+        }
+    }
+
+    @Test
+    fun `should return Not Found with invalid referral identifier`() {
+      assertNotFound(GET, "/bff/draft-referral/check-draft-referral-details/${UUID.randomUUID()}")
+    }
+  }
 
   @Nested
   @DisplayName("PATCH /draft-referral/addition-support-needs/:referralId")

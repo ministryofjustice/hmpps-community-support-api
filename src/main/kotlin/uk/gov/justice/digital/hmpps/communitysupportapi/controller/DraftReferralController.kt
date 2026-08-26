@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckDraftReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
@@ -28,6 +29,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CriminogenicNeedsService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.DraftReferralService
+import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
 
@@ -35,6 +37,7 @@ import java.util.UUID
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class DraftReferralController(
   private val draftReferralService: DraftReferralService,
+  private val referralService: ReferralService,
   private val criminogenicNeedsService: CriminogenicNeedsService,
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
@@ -42,6 +45,29 @@ class DraftReferralController(
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
   }
+
+  @Operation(summary = "Get check draft referral details page data")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Check draft referral details found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = CheckDraftReferralDetailsBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/draft-referral/check-draft-referral-details/{referralId}")
+  fun getCheckDraftReferralDetails(@PathVariable referralId: UUID): ResponseEntity<CheckDraftReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getCheckDraftReferralDetailsPage(referralId))
 
   @Operation(summary = "Get additional support needs page data")
   @ApiResponses(

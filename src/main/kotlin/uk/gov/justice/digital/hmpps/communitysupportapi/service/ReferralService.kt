@@ -79,7 +79,8 @@ class ReferralService(
   fun getCheckDraftReferralDetailsPage(referralId: UUID): CheckDraftReferralDetailsBffResponseDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
-    val person = upsertPerson(personService.getPerson(referral.personIdentifier))
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
     return CheckDraftReferralDetailsBffResponseDto.from(referral, person)
   }
