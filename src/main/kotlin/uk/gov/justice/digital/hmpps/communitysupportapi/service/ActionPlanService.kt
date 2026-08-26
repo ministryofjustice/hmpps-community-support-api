@@ -132,7 +132,7 @@ class ActionPlanService(
     if (answersToQuestions.isEmpty()) {
       logger.info("No answers found for session delivery questions for referral {}", referralReference)
       return ActionPlanSessionDeliveryDetailsResponse(
-        questions.map { SessionDeliveryQuestion.fromQuestionAndResponses(it, emptyList()) },
+        questions.map { SessionDeliveryQuestion.fromQuestionAndResponses(it, emptyList(), emptyList()) },
       )
     }
 
@@ -146,7 +146,8 @@ class ActionPlanService(
     return ActionPlanSessionDeliveryDetailsResponse(
       questions = questions.map { question ->
         val responses = answerDetails[question.id]
-        SessionDeliveryQuestion.fromQuestionAndResponses(question, responses ?: emptyList())
+        val choices = question.choices.sortedBy { it.orderNumber }
+        SessionDeliveryQuestion.fromQuestionAndResponses(question, responses ?: emptyList(), choices)
       },
     )
   }

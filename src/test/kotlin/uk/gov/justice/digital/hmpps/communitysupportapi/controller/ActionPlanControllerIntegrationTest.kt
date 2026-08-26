@@ -300,7 +300,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
       }
 
       @Test
-      fun `should return empty questions when no session delivery step exists`() {
+      fun `should return 404 when no session delivery step exists`() {
         val referral = createReferral("John", "Smith")
         val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
         actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
@@ -309,12 +309,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
           .headers(setAuthorisation())
           .exchange()
-          .expectStatus().isOk
-          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
-          .consumeWith { response ->
-            val body = response.responseBody!!
-            body.questions shouldBe emptyList()
-          }
+          .expectStatus().isNotFound
       }
 
       @Test

@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionChoice
 import java.util.UUID
 import kotlin.collections.map
 
@@ -23,6 +24,7 @@ class SessionDeliveryQuestion(
     fun fromQuestionAndResponses(
       question: ActionPlanStepQuestion,
       responses: List<ActionPlanStepQuestionAnswerDetails>,
+      choices: List<ActionPlanStepQuestionChoice>,
     ): SessionDeliveryQuestion = SessionDeliveryQuestion(
       displayOrder = question.orderNumber,
       id = question.id,
@@ -32,17 +34,15 @@ class SessionDeliveryQuestion(
       savedResponses = responses.map { response ->
         SavedResponse(response.content ?: "", response.freeTextValue)
       },
-      choices = question.choices
-        .sortedBy { it.orderNumber }
-        .map { choice ->
-          QuestionChoice(
-            value = choice.value,
-            label = choice.label,
-            displayAdditionalDetailsOnSelect = choice.hasFreeText,
-            additionalDetailsLabel = if (choice.hasFreeText) choice.freeTextLabel else null,
-            displayOrder = choice.orderNumber,
-          )
-        }
+      choices = choices.map { choice ->
+        QuestionChoice(
+          value = choice.value,
+          label = choice.label,
+          displayAdditionalDetailsOnSelect = choice.hasFreeText,
+          additionalDetailsLabel = if (choice.hasFreeText) choice.freeTextLabel else null,
+          displayOrder = choice.orderNumber,
+        )
+      }
         .takeIf { it.isNotEmpty() },
     )
   }
