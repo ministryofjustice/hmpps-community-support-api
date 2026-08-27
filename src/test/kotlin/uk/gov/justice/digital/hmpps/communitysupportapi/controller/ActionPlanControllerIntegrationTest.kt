@@ -12,8 +12,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsRespo
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SavedResponse
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestionRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
@@ -608,44 +608,37 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             .create(),
         )
 
-        val checkboxQuestion = actionPlanStepQuestionRepository.save(
+        val secondQuestion = actionPlanStepQuestionRepository.save(
           ActionPlanStepQuestionFactory()
             .withActionPlanStepId(sessionDeliveryStep.id)
             .withOrderNumber(2)
-            .withTitle("Which communication channels will be used?")
-            .withAnswerType(ActionPlanQuestionAnswerType.CHECKBOX)
-            .withMaxNumberResponses(3)
+            .withTitle("What is the session length?")
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withMaxNumberResponses(1)
             .create(),
         )
 
         actionPlanStepQuestionChoiceRepository.save(
           ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(checkboxQuestion.id)
+            .withActionPlanStepQuestionId(secondQuestion.id)
             .withOrderNumber(1)
-            .withLabel("Phone")
-            .withValue("PHONE")
-            .create(),
-        )
-        actionPlanStepQuestionChoiceRepository.save(
-          ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(checkboxQuestion.id)
-            .withOrderNumber(2)
-            .withLabel("Text")
-            .withValue("TEXT")
+            .withLabel("Short session")
+            .withValue("SHORT_SESSION")
             .create(),
         )
 
         val saveRequest = ActionPlanSessionDeliveryDetailsRequest(
           answers = listOf(
-            SessionDeliveryQuestionRequest(
-              id = radioQuestion.id,
-              savedResponses = listOf(SavedResponse(value = "OTHER", additionalDetails = "Poor weather")),
+            SessionDeliveryDetailsQuestionAnswers(
+              questionId = radioQuestion.id,
+              incomingAnswerDetails = listOf(
+                SessionDeliveryDetailsQuestionAnswer(value = "OTHER", additionalDetails = "Poor weather"),
+              ),
             ),
-            SessionDeliveryQuestionRequest(
-              id = checkboxQuestion.id,
-              savedResponses = listOf(
-                SavedResponse(value = "PHONE"),
-                SavedResponse(value = "TEXT"),
+            SessionDeliveryDetailsQuestionAnswers(
+              questionId = secondQuestion.id,
+              incomingAnswerDetails = listOf(
+                SessionDeliveryDetailsQuestionAnswer(value = "SHORT_SESSION"),
               ),
             ),
           ),
@@ -662,18 +655,20 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             val body = response.responseBody!!
             body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value } shouldBe listOf("OTHER")
             body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails } shouldBe listOf("Poor weather")
-            body.questions.first { it.id == checkboxQuestion.id }.savedResponses.map { it.value } shouldBe listOf("PHONE", "TEXT")
+            body.questions.first { it.id == secondQuestion.id }.savedResponses.map { it.value } shouldBe listOf("SHORT_SESSION")
           }
 
         val updateRequest = ActionPlanSessionDeliveryDetailsRequest(
           answers = listOf(
-            SessionDeliveryQuestionRequest(
-              id = radioQuestion.id,
-              savedResponses = listOf(SavedResponse(value = "FACE_TO_FACE")),
+            SessionDeliveryDetailsQuestionAnswers(
+              questionId = radioQuestion.id,
+              incomingAnswerDetails = listOf(
+                SessionDeliveryDetailsQuestionAnswer(value = "FACE_TO_FACE"),
+              ),
             ),
-            SessionDeliveryQuestionRequest(
-              id = checkboxQuestion.id,
-              savedResponses = listOf(SavedResponse(value = "TEXT")),
+            SessionDeliveryDetailsQuestionAnswers(
+              questionId = secondQuestion.id,
+              incomingAnswerDetails = emptyList(),
             ),
           ),
         )
@@ -689,21 +684,21 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             val body = response.responseBody!!
             body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value } shouldBe listOf("FACE_TO_FACE")
             body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails } shouldBe listOf(null)
-            body.questions.first { it.id == checkboxQuestion.id }.savedResponses.map { it.value } shouldBe listOf("TEXT")
+            body.questions.first { it.id == secondQuestion.id }.savedResponses shouldBe emptyList()
           }
 
-        val activeAnswers = actionPlanStepQuestionAnswerRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+        val activeAnswers = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
         activeAnswers.filter { it.actionPlanStepQuestionId == radioQuestion.id }.size shouldBe 1
-        activeAnswers.filter { it.actionPlanStepQuestionId == checkboxQuestion.id }.size shouldBe 1
+        activeAnswers.filter { it.actionPlanStepQuestionId == secondQuestion.id }.size shouldBe 0
 
-        val allAnswers = actionPlanStepQuestionAnswerRepository.findAll()
+        val allAnswers = actionPlanStepQuestionAnswerHeaderRepository.findAll()
         allAnswers
-          .filter { it.actionPlanId == actionPlan.id && it.actionPlanStepQuestionId == checkboxQuestion.id }
+          .filter { it.actionPlanId == actionPlan.id && it.actionPlanStepQuestionId == secondQuestion.id }
           .count { it.deletedAt != null } shouldBe 1
 
         val updatedRadioAnswer = activeAnswers.first { it.actionPlanStepQuestionId == radioQuestion.id }
-        val radioRevisions = actionPlanStepQuestionAnswerRevisionRepository
-          .findAllByActionPlanStepQuestionAnswerIdIn(listOf(updatedRadioAnswer.id))
+        val radioRevisions = actionPlanStepQuestionAnswerDetailsRepository
+          .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(updatedRadioAnswer.id))
           .sortedBy { it.revisionNumber }
         radioRevisions.map { it.content } shouldBe listOf("OTHER", "FACE_TO_FACE")
         radioRevisions.map { it.freeTextValue } shouldBe listOf("Poor weather", null)

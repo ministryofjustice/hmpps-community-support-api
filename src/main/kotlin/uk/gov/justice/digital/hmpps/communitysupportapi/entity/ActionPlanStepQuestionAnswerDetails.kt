@@ -7,7 +7,6 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -59,6 +58,7 @@ data class ActionPlanStepQuestionAnswerDetails(
   companion object {
     fun from(
       headerId: UUID,
+      revisionNumber: Int,
       content: String,
       createdBy: String,
       freeTextValue: String?,
@@ -66,12 +66,11 @@ data class ActionPlanStepQuestionAnswerDetails(
     ): ActionPlanStepQuestionAnswerDetails = ActionPlanStepQuestionAnswerDetails(
       id = UUID.randomUUID(),
       actionPlanStepQuestionAnswerHeaderId = headerId,
+      revisionNumber = revisionNumber,
       content = content,
       freeTextValue = freeTextValue,
       createdAt = now,
       createdBy = createdBy,
-      // TODO: We need to delete `revisionNumber` because we don't need it at the moment
-      revisionNumber = 0,
     )
   }
 }

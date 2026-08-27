@@ -71,16 +71,16 @@ data class ActionPlanStepQuestionAnswerHeader(
     fun from(
       actionPlanId: UUID,
       questionId: UUID,
+      orderNumber: Int,
       createdBy: String,
       createdAt: OffsetDateTime = OffsetDateTime.now(),
     ): ActionPlanStepQuestionAnswerHeader = ActionPlanStepQuestionAnswerHeader(
       id = UUID.randomUUID(),
       actionPlanId = actionPlanId,
       actionPlanStepQuestionId = questionId,
+      orderNumber = orderNumber,
       createdAt = createdAt,
       createdBy = createdBy,
-      // Come back and delete
-      orderNumber = 0,
     )
   }
 }

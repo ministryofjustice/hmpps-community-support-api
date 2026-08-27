@@ -46,16 +46,3 @@ class SessionDeliveryQuestion(
     )
   }
 }
-
-data class QuestionChoice(
-  val value: String,
-  val label: String,
-  val displayOrder: Int,
-  val displayAdditionalDetailsOnSelect: Boolean = false,
-  val additionalDetailsLabel: String?,
-)
-
-data class SavedResponse(
-  val value: String,
-  val additionalDetails: String? = null,
-)

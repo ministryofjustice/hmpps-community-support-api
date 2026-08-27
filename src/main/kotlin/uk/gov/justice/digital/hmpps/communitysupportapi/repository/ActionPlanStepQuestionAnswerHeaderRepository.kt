@@ -7,15 +7,25 @@ import java.util.UUID
 
 interface ActionPlanStepQuestionAnswerHeaderRepository : JpaRepository<ActionPlanStepQuestionAnswerHeader, UUID> {
   fun findAllByActionPlanIdAndDeletedAtIsNull(actionPlanId: UUID): List<ActionPlanStepQuestionAnswerHeader>
-  fun findAllByActionPlanStepQuestionIdIn(actionPlanStepQuestionIds: List<UUID>): List<ActionPlanStepQuestionAnswerHeader>
-  // Find the (possibly null) ActionPlanStepQuestionAnswerHeader for a questionId and actionPlanId
+
+  fun findByIdAndActionPlanIdAndActionPlanStepQuestionIdAndDeletedAtIsNull(
+    id: UUID,
+    actionPlanId: UUID,
+    actionPlanStepQuestionId: UUID,
+  ): ActionPlanStepQuestionAnswerHeader?
 
   @Query(
     """
-    SELECT h FROM ActionPlanStepQuestionAnswerHeader h
-    WHERE h.actionPlanId = :actionPlanId AND h.actionPlanStepQuestionId = :questionId
-    LIMIT 1
+  select h
+  from ActionPlanStepQuestionAnswerHeader h
+  where h.actionPlan.id = :actionPlanId
+    and h.actionPlanStepQuestion.id in :questionIds
+    and h.deletedAt is null
+  order by h.actionPlanStepQuestion.id asc, h.orderNumber asc
   """,
   )
-  fun findByActionPlanIdAndQuestionId(actionPlanId: UUID, questionId: UUID): ActionPlanStepQuestionAnswerHeader?
+  fun findActiveByPlanAndQuestionIds(
+    actionPlanId: UUID,
+    questionIds: Collection<UUID>,
+  ): List<ActionPlanStepQuestionAnswerHeader>
 }
