@@ -159,11 +159,11 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.contactDetailsTableData.phoneNumber shouldBe person.additionalDetails?.phoneNumber
           body.contactDetailsTableData.email shouldBe person.additionalDetails?.emailAddress
           body.contactDetailsTableData.address shouldBe person.additionalDetails?.address
-          body.riskInformationDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.RiskInformationDetailsTableDataDto()
-          body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.AdditionalSupportNeedsDetailsTableDataDto()
-          body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.PersonNeedsDetailsTableDataDto()
-          body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.ReferralAreaTableDataDto()
-          body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.MainPOCDetailsTableDataDto()
+          body.riskInformationDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftRiskInformationDetailsTableDataDto()
+          body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftAdditionalSupportNeedsDetailsTableDataDto()
+          body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
+          body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
+          body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
         }
     }
 
