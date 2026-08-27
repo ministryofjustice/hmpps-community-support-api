@@ -1,5 +1,8 @@
 # Design Document: Action Plans
 
+> [!NOTE]
+> This document was written in collaboration between human authorship and generative AI.  Last edited (and read in full) by Wilson 2026-08-27.
+
 ## Scope
 
 This document explains the technical design and implementation of the Action Plan within this project. It exists because the team building it is small, three people, and the cost of a shared misunderstanding is high: parts of this system have already been built, found wanting, and rebuilt. The document is written for both engineers and for the language models that will assist them, so it favours precision over brevity and states explicitly what the code alone cannot.
