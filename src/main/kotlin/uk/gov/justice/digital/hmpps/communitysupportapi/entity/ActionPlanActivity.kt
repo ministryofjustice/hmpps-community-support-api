@@ -11,17 +11,17 @@ import java.util.UUID
 
 @Entity
 @Table(name = "action_plan_activity")
-data class ActionPlanActivity(
+class ActionPlanActivity(
   @Id
   @Column(name = "id")
   val id: UUID,
 
-  @Column(name = "action_plan_step_question_id", nullable = false)
-  val actionPlanStepQuestionId: UUID,
+  @Column(name = "action_plan_step_question_answer_header_id", nullable = false)
+  val actionPlanStepQuestionAnswerHeaderId: UUID,
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "action_plan_step_question_id", insertable = false, updatable = false)
-  val actionPlanStepQuestion: ActionPlanStepQuestion? = null,
+  @JoinColumn(name = "action_plan_step_question_answer_header_id", insertable = false, updatable = false)
+  val actionPlanStepQuestionAnswerHeader: ActionPlanStepQuestionAnswerHeader? = null,
 
   @Column(name = "who", nullable = false)
   val who: String,
