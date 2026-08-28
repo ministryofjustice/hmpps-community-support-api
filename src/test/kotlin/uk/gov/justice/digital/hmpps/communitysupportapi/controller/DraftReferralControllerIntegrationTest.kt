@@ -38,10 +38,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServicePr
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ProbationPractitionerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralOffenceSentenceRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
@@ -88,6 +90,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralOffenceSentenceRepository: ReferralOffenceSentenceRepository
+
+  @Autowired
+  private lateinit var probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
@@ -622,6 +627,130 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isBadRequest
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /draft-referral/{referralId}/probation-practitioner-details")
+  inner class ProbationPractitionerDetailsPatchTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(PATCH, "/draft-referral/${UUID.randomUUID()}/probation-practitioner-details")
+    }
+
+    @Test
+    fun `should return 404 when referral does not exist`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val request = UpdateProbationPractitionerDetailsRequest(name = "Jane Doe")
+
+      assertNotFound(PATCH, "/draft-referral/${UUID.randomUUID()}/probation-practitioner-details", request)
+    }
+
+    @Test
+    fun `should return 200 and save probation practitioner details for a known referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      val request = UpdateProbationPractitionerDetailsRequest(
+        name = "Jane Doe",
+        jobRole = "Probation practitioner",
+        emailAddress = "jane.doe@example.com",
+        pdu = "Northumberland",
+        probationOffice = "Newcastle Office",
+        teamPhoneNumber = "0123456789",
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/probation-practitioner-details")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ProbationPractitionerDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.name shouldBe "Jane Doe"
+          body.jobRole shouldBe "Probation practitioner"
+          body.emailAddress shouldBe "jane.doe@example.com"
+          body.pdu shouldBe "Northumberland"
+          body.probationOffice shouldBe "Newcastle Office"
+          body.teamPhoneNumber shouldBe "0123456789"
+        }
+
+      val persistedRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
+      persistedRecord shouldNotBe null
+      persistedRecord!!.name shouldBe "Jane Doe"
+      persistedRecord.jobRole shouldBe "Probation practitioner"
+      persistedRecord.emailAddress shouldBe "jane.doe@example.com"
+      persistedRecord.pdu shouldBe "Northumberland"
+      persistedRecord.probationOffice shouldBe "Newcastle Office"
+      persistedRecord.teamPhoneNumber shouldBe "0123456789"
+      persistedRecord.updatedBy shouldBe testUser.id
+    }
+
+    @Test
+    fun `should update existing probation practitioner details when record already exists`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      val firstRequest = UpdateProbationPractitionerDetailsRequest(
+        name = "Jane Doe",
+        pdu = "Northumberland",
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/probation-practitioner-details")
+        .headers(setAuthorisation())
+        .bodyValue(firstRequest)
+        .exchange()
+        .expectStatus().isOk
+
+      val initialRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
+      initialRecord shouldNotBe null
+      initialRecord!!.name shouldBe "Jane Doe"
+      initialRecord.pdu shouldBe "Northumberland"
+      val existingRecordId = initialRecord.id
+
+      val secondRequest = UpdateProbationPractitionerDetailsRequest(
+        name = "John Smith",
+        jobRole = "Senior Probation practitioner",
+        pdu = "Yorkshire",
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/probation-practitioner-details")
+        .headers(setAuthorisation())
+        .bodyValue(secondRequest)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ProbationPractitionerDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.name shouldBe "John Smith"
+          body.jobRole shouldBe "Senior Probation practitioner"
+          body.pdu shouldBe "Yorkshire"
+        }
+
+      val updatedRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
+      updatedRecord shouldNotBe null
+      updatedRecord!!.id shouldBe existingRecordId
+      updatedRecord.name shouldBe "John Smith"
+      updatedRecord.jobRole shouldBe "Senior Probation practitioner"
+      updatedRecord.pdu shouldBe "Yorkshire"
+      updatedRecord.updatedBy shouldBe testUser.id
+      updatedRecord.updatedAt shouldNotBe null
     }
   }
 
