@@ -166,8 +166,8 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
   fun checkPersonalCircumstanceDto(circumstance: PersonalCircumstanceDto, expectedType: CodeDescriptionDto, expectedSubType: CodeDescriptionDto, expectedUpdatedAt: OffsetDateTime) {
     assertThat(circumstance.type?.code).isEqualTo(expectedType.code)
     assertThat(circumstance.type?.description).isEqualTo(expectedType.description)
-    assertThat(circumstance.subtype?.code).isEqualTo(expectedSubType.code)
-    assertThat(circumstance.subtype?.description).isEqualTo(expectedSubType.description)
+    assertThat(circumstance.subType?.code).isEqualTo(expectedSubType.code)
+    assertThat(circumstance.subType?.description).isEqualTo(expectedSubType.description)
     assertThat(circumstance.updatedAt).isEqualTo(expectedUpdatedAt)
   }
 
