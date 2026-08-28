@@ -12,7 +12,7 @@ data class PersonalDetailsAndCircumstancesDto(
 
 data class PersonalCircumstanceDto(
   val type: CodeDescriptionDto? = null,
-  val subtype: CodeDescriptionDto? = null,
+  val subType: CodeDescriptionDto? = null,
   val updatedAt: OffsetDateTime? = null,
 )
 
