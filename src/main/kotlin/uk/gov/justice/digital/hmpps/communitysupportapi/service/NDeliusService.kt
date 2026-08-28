@@ -14,13 +14,13 @@ class NDeliusService(
     private val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun getPersonDetailsAndCircumstancesByIdentifier(identifier: String): PersonDetailsAndCircumstances {
+  fun getPersonalDetailsAndCircumstancesByIdentifier(identifier: String): PersonDetailsAndCircumstances {
     log.debug("Fetching Circumstances for crn {}", identifier)
-    val personCircumstances = nDeliusClient.getPersonDetailsAndCircumstancesByCrn(identifier)
+    val personalCircumstances = nDeliusClient.getPersonalDetailsAndCircumstancesByCrn(identifier)
     log.debug("Fetching HomeOffice Interest for crn {}", identifier)
     val homeOfficeInterest = nDeliusClient.getHomeOfficeInterestByCrn(identifier)
 
-    return PersonDetailsAndCircumstances.from(personCircumstances, homeOfficeInterest)
+    return PersonDetailsAndCircumstances.from(personalCircumstances, homeOfficeInterest)
   }
 
   fun getCommunityManagerByIdentifier(identifier: String): CommunityManagerDto {

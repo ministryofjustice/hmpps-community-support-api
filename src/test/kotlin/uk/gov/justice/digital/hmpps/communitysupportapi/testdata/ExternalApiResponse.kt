@@ -18,8 +18,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityMana
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DisabilitiesDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.HomeOfficeInterestDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderPersonalityDisorderDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonCircumstanceDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonDetailsAndCircumstancesDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonalCircumstanceDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonalDetailsAndCircumstancesDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAdditionalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.service.notify.SendEmailResponse
@@ -344,18 +344,18 @@ object ExternalApiResponse {
     return SendEmailResponse(jsonBody)
   }
 
-  fun createPersonCircumstances(): List<PersonCircumstanceDto> = listOf(
-    PersonCircumstanceDto(
+  fun createPersonalCircumstances(): List<PersonalCircumstanceDto> = listOf(
+    PersonalCircumstanceDto(
       CodeDescriptionDto("REL", "Relationships"),
       CodeDescriptionDto("REL_SUB", "Relationships sub type"),
       OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     ),
-    PersonCircumstanceDto(
+    PersonalCircumstanceDto(
       CodeDescriptionDto("EMP", "Employment"),
       CodeDescriptionDto("EMP_SUB", "Employment sub type"),
       OffsetDateTime.of(2026, 2, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     ),
-    PersonCircumstanceDto(
+    PersonalCircumstanceDto(
       CodeDescriptionDto("DEP", "Dependants"),
       CodeDescriptionDto("DEP_SUB", "Dependants sub type"),
       OffsetDateTime.of(2026, 1, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
@@ -371,12 +371,12 @@ object ExternalApiResponse {
 
   fun createPersonDetailsAndCircumstancesDto(
     preferredLanguage: CodeDescriptionDto = CodeDescriptionDto("EN", "English"),
-    personCircumstances: List<PersonCircumstanceDto> = createPersonCircumstances(),
+    personalCircumstances: List<PersonalCircumstanceDto> = createPersonalCircumstances(),
     disabilities: List<DisabilitiesDto> = createDisabilities(),
     offenderPersonalityDisorderDto: OffenderPersonalityDisorderDto = OffenderPersonalityDisorderDto(status = CodeDescriptionDto("NO", "N/A")),
-  ): PersonDetailsAndCircumstancesDto = PersonDetailsAndCircumstancesDto(
+  ): PersonalDetailsAndCircumstancesDto = PersonalDetailsAndCircumstancesDto(
     preferredLanguage,
-    personCircumstances,
+    personalCircumstances,
     disabilities,
     offenderPersonalityDisorderDto,
   )

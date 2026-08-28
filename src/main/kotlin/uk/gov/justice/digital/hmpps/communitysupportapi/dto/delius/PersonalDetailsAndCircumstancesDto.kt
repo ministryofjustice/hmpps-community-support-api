@@ -3,14 +3,14 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CodeDescriptionDto
 import java.time.OffsetDateTime
 
-data class PersonDetailsAndCircumstancesDto(
+data class PersonalDetailsAndCircumstancesDto(
   val preferredLanguage: CodeDescriptionDto? = null,
-  val personCircumstances: List<PersonCircumstanceDto> = emptyList(),
+  val personalCircumstances: List<PersonalCircumstanceDto> = emptyList(),
   val disabilities: List<DisabilitiesDto> = emptyList(),
   val offenderPersonalityDisorder: OffenderPersonalityDisorderDto? = null,
 )
 
-data class PersonCircumstanceDto(
+data class PersonalCircumstanceDto(
   val type: CodeDescriptionDto? = null,
   val subtype: CodeDescriptionDto? = null,
   val updatedAt: OffsetDateTime? = null,
