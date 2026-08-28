@@ -2,11 +2,11 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.model
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DisabilitiesDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.HomeOfficeInterestDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonCircumstanceDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonDetailsAndCircumstancesDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonalCircumstanceDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonalDetailsAndCircumstancesDto
 import java.time.OffsetDateTime
 
-data class PersonCircumstance(
+data class PersonalCircumstance(
   val type: String? = null,
   val description: String? = null,
   val subType: String? = null,
@@ -14,7 +14,7 @@ data class PersonCircumstance(
   val updatedAt: OffsetDateTime? = null,
 ) {
   companion object {
-    fun from(circumstance: PersonCircumstanceDto): PersonCircumstance = PersonCircumstance(
+    fun from(circumstance: PersonalCircumstanceDto): PersonalCircumstance = PersonalCircumstance(
       type = circumstance.type?.code,
       description = circumstance.type?.description,
       subType = circumstance.subtype?.code,
@@ -40,16 +40,16 @@ data class Disability(
 
 data class PersonDetailsAndCircumstances(
   val preferredLanguage: String? = null,
-  val personCircumstances: List<PersonCircumstance> = emptyList(),
+  val personalCircumstances: List<PersonalCircumstance> = emptyList(),
   val disabilities: List<Disability> = emptyList(),
   val offenderPersonalityDisorder: String? = null,
   val ofHomeOfficeInterest: Boolean? = null,
   val homeOfficeInterestNotes: String? = null,
 ) {
   companion object {
-    fun from(personDetailsAndCircumstances: PersonDetailsAndCircumstancesDto, homeOfficeInterest: HomeOfficeInterestDto) = PersonDetailsAndCircumstances(
+    fun from(personDetailsAndCircumstances: PersonalDetailsAndCircumstancesDto, homeOfficeInterest: HomeOfficeInterestDto) = PersonDetailsAndCircumstances(
       preferredLanguage = personDetailsAndCircumstances.preferredLanguage?.description,
-      personCircumstances = personDetailsAndCircumstances.personCircumstances.map { circumstance -> PersonCircumstance.from(circumstance) },
+      personalCircumstances = personDetailsAndCircumstances.personalCircumstances.map { circumstance -> PersonalCircumstance.from(circumstance) },
       disabilities = personDetailsAndCircumstances.disabilities.map { disability -> Disability.from(disability) },
       offenderPersonalityDisorder = personDetailsAndCircumstances.offenderPersonalityDisorder?.status?.description,
       ofHomeOfficeInterest = homeOfficeInterest.exists,

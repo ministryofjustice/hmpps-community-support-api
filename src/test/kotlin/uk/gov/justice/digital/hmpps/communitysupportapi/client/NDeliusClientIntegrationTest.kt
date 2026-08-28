@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CodeDescriptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.DisabilitiesDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonCircumstanceDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.PersonalCircumstanceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
@@ -38,27 +38,27 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
         ),
     )
 
-    val result = nDeliusClient.getPersonDetailsAndCircumstancesByCrn(CRN)
+    val result = nDeliusClient.getPersonalDetailsAndCircumstancesByCrn(CRN)
 
     assertThat(result).isNotNull
     assertThat(result.preferredLanguage?.code).isEqualTo("EN")
     assertThat(result.preferredLanguage?.description).isEqualTo("English")
 
-    assertThat(result.personCircumstances.size).isEqualTo(3)
-    checkPersonCircumstanceDto(
-      result.personCircumstances[0],
+    assertThat(result.personalCircumstances.size).isEqualTo(3)
+    checkPersonalCircumstanceDto(
+      result.personalCircumstances[0],
       CodeDescriptionDto("REL", "Relationships"),
       CodeDescriptionDto("REL_SUB", "Relationships sub type"),
       OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     )
-    checkPersonCircumstanceDto(
-      result.personCircumstances[1],
+    checkPersonalCircumstanceDto(
+      result.personalCircumstances[1],
       CodeDescriptionDto("EMP", "Employment"),
       CodeDescriptionDto("EMP_SUB", "Employment sub type"),
       OffsetDateTime.of(2026, 2, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
     )
-    checkPersonCircumstanceDto(
-      result.personCircumstances[2],
+    checkPersonalCircumstanceDto(
+      result.personalCircumstances[2],
       CodeDescriptionDto("DEP", "Dependants"),
       CodeDescriptionDto("DEP_SUB", "Dependants sub type"),
       OffsetDateTime.of(2026, 1, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
@@ -84,7 +84,7 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
     )
 
     assertThrows(NotFoundException::class.java) {
-      nDeliusClient.getPersonDetailsAndCircumstancesByCrn("UNKNOWN")
+      nDeliusClient.getPersonalDetailsAndCircumstancesByCrn("UNKNOWN")
     }
   }
 
@@ -163,7 +163,7 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
     }
   }
 
-  fun checkPersonCircumstanceDto(circumstance: PersonCircumstanceDto, expectedType: CodeDescriptionDto, expectedSubType: CodeDescriptionDto, expectedUpdatedAt: OffsetDateTime) {
+  fun checkPersonalCircumstanceDto(circumstance: PersonalCircumstanceDto, expectedType: CodeDescriptionDto, expectedSubType: CodeDescriptionDto, expectedUpdatedAt: OffsetDateTime) {
     assertThat(circumstance.type?.code).isEqualTo(expectedType.code)
     assertThat(circumstance.type?.description).isEqualTo(expectedType.description)
     assertThat(circumstance.subtype?.code).isEqualTo(expectedSubType.code)
