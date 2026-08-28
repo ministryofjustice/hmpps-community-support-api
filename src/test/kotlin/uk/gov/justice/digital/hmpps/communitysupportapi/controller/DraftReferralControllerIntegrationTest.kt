@@ -719,7 +719,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val initialRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
       initialRecord shouldNotBe null
-      val existingRecordId = initialRecord!!.id
+      initialRecord!!.name shouldBe "Jane Doe"
+      initialRecord.pdu shouldBe "Northumberland"
+      val existingRecordId = initialRecord.id
 
       val secondRequest = UpdateProbationPractitionerDetailsRequest(
         name = "John Smith",
