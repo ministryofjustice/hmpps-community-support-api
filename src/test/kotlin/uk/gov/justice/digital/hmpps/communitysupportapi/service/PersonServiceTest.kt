@@ -58,7 +58,7 @@ class PersonServiceTest {
 
     val expectedPersonDetailsAndCircumstances = PersonDetailsAndCircumstances.from(createPersonDetailsAndCircumstancesDto(), createHomeOfficeInterestDto())
 
-    whenever(nDeliusService.getPersonDetailsAndCircumstancesByIdentifier(CRN)).thenReturn(expectedPersonDetailsAndCircumstances)
+    whenever(nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(CRN)).thenReturn(expectedPersonDetailsAndCircumstances)
 
     val result = personService.getPerson(CRN)
 
@@ -85,7 +85,7 @@ class PersonServiceTest {
 
     val expectedPersonDetailsAndCircumstances = PersonDetailsAndCircumstances.from(createPersonDetailsAndCircumstancesDto(), createHomeOfficeInterestDto())
 
-    whenever(nDeliusService.getPersonDetailsAndCircumstancesByIdentifier(PRISONER_NUMBER)).thenReturn(expectedPersonDetailsAndCircumstances)
+    whenever(nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(PRISONER_NUMBER)).thenReturn(expectedPersonDetailsAndCircumstances)
 
     val result = personService.getPerson(PRISONER_NUMBER)
 
@@ -138,7 +138,7 @@ class PersonServiceTest {
 
     whenever(personIdentifierValidator.validate(crn)).thenReturn(identifier)
     whenever(cprProbationService.getPersonDetailsByCrn(crn)).thenReturn(personAggregate)
-    whenever(nDeliusService.getPersonDetailsAndCircumstancesByIdentifier(crn)).thenThrow(NotFoundException("Person not found in nDelius with CRN: $crn"))
+    whenever(nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)).thenThrow(NotFoundException("Person not found in nDelius with CRN: $crn"))
 
     assertThrows<NotFoundException> {
       personService.getPerson(identifier.value)

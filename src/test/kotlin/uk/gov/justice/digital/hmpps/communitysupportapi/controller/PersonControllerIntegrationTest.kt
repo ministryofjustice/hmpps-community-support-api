@@ -180,26 +180,26 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     private fun checkDefaultPersonDetailsAndCircumstances(body: PersonDto) {
       body.personDetailsAndCircumstances shouldNotBe null
       body.personDetailsAndCircumstances?.preferredLanguage shouldBe "English"
-      body.personDetailsAndCircumstances?.personCircumstances shouldNotBe null
-      body.personDetailsAndCircumstances!!.personCircumstances shouldHaveSize 3
+      body.personDetailsAndCircumstances?.personalCircumstances shouldNotBe null
+      body.personDetailsAndCircumstances!!.personalCircumstances shouldHaveSize 3
 
-      body.personDetailsAndCircumstances.personCircumstances[0].type shouldBe "REL"
-      body.personDetailsAndCircumstances.personCircumstances[0].description shouldBe "Relationships"
-      body.personDetailsAndCircumstances.personCircumstances[0].subType shouldBe "REL_SUB"
-      body.personDetailsAndCircumstances.personCircumstances[0].subDescription shouldBe "Relationships sub type"
-      body.personDetailsAndCircumstances.personCircumstances[0].updatedAt?.toInstant() shouldBe OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)).toInstant()
+      body.personDetailsAndCircumstances.personalCircumstances[0].type shouldBe "REL"
+      body.personDetailsAndCircumstances.personalCircumstances[0].description shouldBe "Relationships"
+      body.personDetailsAndCircumstances.personalCircumstances[0].subType shouldBe "REL_SUB"
+      body.personDetailsAndCircumstances.personalCircumstances[0].subDescription shouldBe "Relationships sub type"
+      body.personDetailsAndCircumstances.personalCircumstances[0].updatedAt?.toInstant() shouldBe OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)).toInstant()
 
-      body.personDetailsAndCircumstances.personCircumstances[1].type shouldBe "EMP"
-      body.personDetailsAndCircumstances.personCircumstances[1].description shouldBe "Employment"
-      body.personDetailsAndCircumstances.personCircumstances[1].subType shouldBe "EMP_SUB"
-      body.personDetailsAndCircumstances.personCircumstances[1].subDescription shouldBe "Employment sub type"
-      body.personDetailsAndCircumstances.personCircumstances[1].updatedAt?.toInstant() shouldBe OffsetDateTime.of(2026, 2, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)).toInstant()
+      body.personDetailsAndCircumstances.personalCircumstances[1].type shouldBe "EMP"
+      body.personDetailsAndCircumstances.personalCircumstances[1].description shouldBe "Employment"
+      body.personDetailsAndCircumstances.personalCircumstances[1].subType shouldBe "EMP_SUB"
+      body.personDetailsAndCircumstances.personalCircumstances[1].subDescription shouldBe "Employment sub type"
+      body.personDetailsAndCircumstances.personalCircumstances[1].updatedAt?.toInstant() shouldBe OffsetDateTime.of(2026, 2, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)).toInstant()
 
-      body.personDetailsAndCircumstances.personCircumstances[2].type shouldBe "DEP"
-      body.personDetailsAndCircumstances.personCircumstances[2].description shouldBe "Dependants"
-      body.personDetailsAndCircumstances.personCircumstances[2].subType shouldBe "DEP_SUB"
-      body.personDetailsAndCircumstances.personCircumstances[2].subDescription shouldBe "Dependants sub type"
-      body.personDetailsAndCircumstances.personCircumstances[2].updatedAt?.toInstant() shouldBe OffsetDateTime.of(2026, 1, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)).toInstant()
+      body.personDetailsAndCircumstances.personalCircumstances[2].type shouldBe "DEP"
+      body.personDetailsAndCircumstances.personalCircumstances[2].description shouldBe "Dependants"
+      body.personDetailsAndCircumstances.personalCircumstances[2].subType shouldBe "DEP_SUB"
+      body.personDetailsAndCircumstances.personalCircumstances[2].subDescription shouldBe "Dependants sub type"
+      body.personDetailsAndCircumstances.personalCircumstances[2].updatedAt?.toInstant() shouldBe OffsetDateTime.of(2026, 1, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)).toInstant()
 
       body.personDetailsAndCircumstances.disabilities shouldNotBe null
       body.personDetailsAndCircumstances.disabilities shouldHaveSize 1

@@ -10,34 +10,34 @@ data class CheckDraftReferralDetailsBffResponseDto(
   val id: UUID,
   val referenceNumber: String?,
   val createdDate: OffsetDateTime,
-  val personDetailsTableData: PersonDetailsTableDataDto,
-  val equalityDetailsTableData: EqualityDetailsTableDataDto,
-  val additionalInformationDetailsTableData: AdditionalInformationDetailsTableDataDto,
-  val contactDetailsTableData: ContactDetailsTableDataDto,
-  val riskInformationDetailsTableData: RiskInformationDetailsTableDataDto,
-  val additionalSupportNeedsDetailsTableData: AdditionalSupportNeedsDetailsTableDataDto,
-  val personNeedsDetailsTableData: PersonNeedsDetailsTableDataDto,
-  val referralAreaTableData: ReferralAreaTableDataDto,
-  val mainPocDetailsTableData: MainPOCDetailsTableDataDto,
+  val personDetailsTableData: DraftPersonDetailsTableDataDto,
+  val equalityDetailsTableData: DraftEqualityDetailsTableDataDto,
+  val additionalInformationDetailsTableData: DraftAdditionalInformationDetailsTableDataDto,
+  val contactDetailsTableData: DraftContactDetailsTableDataDto,
+  val riskInformationDetailsTableData: DraftRiskInformationDetailsTableDataDto,
+  val additionalSupportNeedsDetailsTableData: DraftAdditionalSupportNeedsDetailsTableDataDto,
+  val personNeedsDetailsTableData: DraftPersonNeedsDetailsTableDataDto,
+  val referralAreaTableData: DraftReferralAreaTableDataDto,
+  val mainPocDetailsTableData: DraftMainPOCDetailsTableDataDto,
 ) {
   companion object {
     fun from(referral: Referral, person: Person): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
       createdDate = referral.createdAt,
-      personDetailsTableData = PersonDetailsTableDataDto.from(person),
-      equalityDetailsTableData = EqualityDetailsTableDataDto.from(person),
-      contactDetailsTableData = ContactDetailsTableDataDto.from(person),
-      additionalInformationDetailsTableData = AdditionalInformationDetailsTableDataDto.from(),
-      riskInformationDetailsTableData = RiskInformationDetailsTableDataDto.from(),
-      additionalSupportNeedsDetailsTableData = AdditionalSupportNeedsDetailsTableDataDto.from(),
-      personNeedsDetailsTableData = PersonNeedsDetailsTableDataDto.from(),
-      referralAreaTableData = ReferralAreaTableDataDto.from(),
-      mainPocDetailsTableData = MainPOCDetailsTableDataDto.from(),
+      personDetailsTableData = DraftPersonDetailsTableDataDto.from(person),
+      equalityDetailsTableData = DraftEqualityDetailsTableDataDto.from(person),
+      contactDetailsTableData = DraftContactDetailsTableDataDto.from(person),
+      additionalInformationDetailsTableData = DraftAdditionalInformationDetailsTableDataDto.from(),
+      riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(),
+      additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(),
+      personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(),
+      referralAreaTableData = DraftReferralAreaTableDataDto.from(),
+      mainPocDetailsTableData = DraftMainPOCDetailsTableDataDto.from(),
     )
   }
 
-  data class PersonDetailsTableDataDto(
+  data class DraftPersonDetailsTableDataDto(
     val name: RefereeNameDto,
     val crn: String,
     val dateOfBirth: String,
@@ -47,7 +47,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val currentCircumstances: String,
   ) {
     companion object {
-      fun from(person: Person): PersonDetailsTableDataDto = PersonDetailsTableDataDto(
+      fun from(person: Person): DraftPersonDetailsTableDataDto = DraftPersonDetailsTableDataDto(
         name = RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
         crn = person.identifier,
         dateOfBirth = person.dateOfBirth.toString(),
@@ -59,13 +59,13 @@ data class CheckDraftReferralDetailsBffResponseDto(
     }
   }
 
-  data class EqualityDetailsTableDataDto(
+  data class DraftEqualityDetailsTableDataDto(
     val ethnicity: String?,
     val religionOrBelief: String?,
     val sex: String,
   ) {
     companion object {
-      fun from(person: Person): EqualityDetailsTableDataDto = EqualityDetailsTableDataDto(
+      fun from(person: Person): DraftEqualityDetailsTableDataDto = DraftEqualityDetailsTableDataDto(
         ethnicity = person.additionalDetails?.ethnicity ?: "",
         religionOrBelief = person.additionalDetails?.religionOrBelief ?: "",
         sex = person.gender,
@@ -73,23 +73,23 @@ data class CheckDraftReferralDetailsBffResponseDto(
     }
   }
 
-  data class AdditionalInformationDetailsTableDataDto(
+  data class DraftAdditionalInformationDetailsTableDataDto(
     val homeOfficeInterest: String? = null,
     val offenderPersonalityDisorderPathway: String? = null,
   ) {
     companion object {
-      fun from(): AdditionalInformationDetailsTableDataDto = AdditionalInformationDetailsTableDataDto()
+      fun from(): DraftAdditionalInformationDetailsTableDataDto = DraftAdditionalInformationDetailsTableDataDto()
     }
   }
 
-  data class ContactDetailsTableDataDto(
+  data class DraftContactDetailsTableDataDto(
     val phoneNumber: String?,
     val mobileNumber: String?,
     val email: String?,
     val address: String?,
   ) {
     companion object {
-      fun from(person: Person): ContactDetailsTableDataDto = ContactDetailsTableDataDto(
+      fun from(person: Person): DraftContactDetailsTableDataDto = DraftContactDetailsTableDataDto(
         phoneNumber = person.additionalDetails?.phoneNumber,
         mobileNumber = null,
         email = person.additionalDetails?.emailAddress,
@@ -98,7 +98,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     }
   }
 
-  data class RiskInformationDetailsTableDataDto(
+  data class DraftRiskInformationDetailsTableDataDto(
     val whoIsAtRisk: String? = null,
     val natureOfRisk: String? = null,
     val riskImminence: String? = null,
@@ -109,11 +109,11 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val additionalInformation: String? = null,
   ) {
     companion object {
-      fun from(): RiskInformationDetailsTableDataDto = RiskInformationDetailsTableDataDto()
+      fun from(): DraftRiskInformationDetailsTableDataDto = DraftRiskInformationDetailsTableDataDto()
     }
   }
 
-  data class AdditionalSupportNeedsDetailsTableDataDto(
+  data class DraftAdditionalSupportNeedsDetailsTableDataDto(
     val physicalHealth: String? = null,
     val mentalOrEmotionalHealth: String? = null,
     val neurodiversity: String? = null,
@@ -126,11 +126,11 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val interpreterLanguage: String? = null,
   ) {
     companion object {
-      fun from(): AdditionalSupportNeedsDetailsTableDataDto = AdditionalSupportNeedsDetailsTableDataDto()
+      fun from(): DraftAdditionalSupportNeedsDetailsTableDataDto = DraftAdditionalSupportNeedsDetailsTableDataDto()
     }
   }
 
-  data class PersonNeedsDetailsTableDataDto(
+  data class DraftPersonNeedsDetailsTableDataDto(
     val hasAccommodationNeeds: Boolean? = null,
     val accommodationDetails: String? = null,
     val employmentAndEducation: String? = null,
@@ -142,19 +142,19 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val thinkingBehavioursAttitudeDetails: String? = null,
   ) {
     companion object {
-      fun from(): PersonNeedsDetailsTableDataDto = PersonNeedsDetailsTableDataDto()
+      fun from(): DraftPersonNeedsDetailsTableDataDto = DraftPersonNeedsDetailsTableDataDto()
     }
   }
 
-  data class ReferralAreaTableDataDto(
+  data class DraftReferralAreaTableDataDto(
     val area: String? = null,
   ) {
     companion object {
-      fun from(): ReferralAreaTableDataDto = ReferralAreaTableDataDto()
+      fun from(): DraftReferralAreaTableDataDto = DraftReferralAreaTableDataDto()
     }
   }
 
-  data class AdditionalReferralInformationTableDataDto(
+  data class DraftAdditionalReferralInformationTableDataDto(
     val serviceCompletionDate: OffsetDateTime? = null,
     val serviceCompletionDateReason: String? = null,
     val serviceDays: Int? = null,
@@ -164,7 +164,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val sentenceEndDate: LocalDate? = null,
   ) {
     companion object {
-      fun from(referral: Referral): AdditionalReferralInformationTableDataDto = AdditionalReferralInformationTableDataDto(
+      fun from(referral: Referral): DraftAdditionalReferralInformationTableDataDto = DraftAdditionalReferralInformationTableDataDto(
         serviceCompletionDate = referral.targetServiceCompletionDate,
         serviceCompletionDateReason = referral.targetServiceCompletionDateReason,
         serviceDays = referral.serviceDays,
@@ -176,7 +176,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     }
   }
 
-  data class MainPOCDetailsTableDataDto(
+  data class DraftMainPOCDetailsTableDataDto(
     val areTheseDetailsCorrect: Boolean? = null,
     val name: String? = null,
     val jobRole: String? = null,
@@ -187,7 +187,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val teamPhoneNumber: String? = null,
   ) {
     companion object {
-      fun from(): MainPOCDetailsTableDataDto = MainPOCDetailsTableDataDto()
+      fun from(): DraftMainPOCDetailsTableDataDto = DraftMainPOCDetailsTableDataDto()
     }
   }
 }

@@ -35,16 +35,16 @@ class NDeliusServiceTest {
   fun `should return person circumstances from nDelius`() {
     val personDetailsAndCircumstancesDto = createPersonDetailsAndCircumstancesDto()
     val homeOfficeInterest = createHomeOfficeInterestDto()
-    val expectedPersonCircumstances = PersonDetailsAndCircumstances.from(personDetailsAndCircumstancesDto, homeOfficeInterest)
+    val expectedPersonalCircumstances = PersonDetailsAndCircumstances.from(personDetailsAndCircumstancesDto, homeOfficeInterest)
 
-    whenever(nDeliusClient.getPersonDetailsAndCircumstancesByCrn(CRN)).thenReturn(personDetailsAndCircumstancesDto)
+    whenever(nDeliusClient.getPersonalDetailsAndCircumstancesByCrn(CRN)).thenReturn(personDetailsAndCircumstancesDto)
     whenever(nDeliusClient.getHomeOfficeInterestByCrn(CRN)).thenReturn(homeOfficeInterest)
 
-    val result = nDeliusService.getPersonDetailsAndCircumstancesByIdentifier(CRN)
+    val result = nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(CRN)
 
-    assertEquals(expectedPersonCircumstances, result)
+    assertEquals(expectedPersonalCircumstances, result)
 
-    verify(nDeliusClient).getPersonDetailsAndCircumstancesByCrn(CRN)
+    verify(nDeliusClient).getPersonalDetailsAndCircumstancesByCrn(CRN)
     verify(nDeliusClient).getHomeOfficeInterestByCrn(CRN)
     verifyNoMoreInteractions(nDeliusClient)
   }
@@ -53,13 +53,13 @@ class NDeliusServiceTest {
   fun `should throw NotFoundException when nDelius fails to find person by CRN`() {
     val crn = "X123456"
 
-    whenever(nDeliusClient.getPersonDetailsAndCircumstancesByCrn(crn)).thenThrow(NotFoundException("Person not found in nDelius with CRN: $crn"))
+    whenever(nDeliusClient.getPersonalDetailsAndCircumstancesByCrn(crn)).thenThrow(NotFoundException("Person not found in nDelius with CRN: $crn"))
 
     assertThrows(NotFoundException::class.java) {
-      nDeliusService.getPersonDetailsAndCircumstancesByIdentifier(crn)
+      nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
     }
 
-    verify(nDeliusClient).getPersonDetailsAndCircumstancesByCrn(crn)
+    verify(nDeliusClient).getPersonalDetailsAndCircumstancesByCrn(crn)
     verifyNoMoreInteractions(nDeliusClient)
   }
 
