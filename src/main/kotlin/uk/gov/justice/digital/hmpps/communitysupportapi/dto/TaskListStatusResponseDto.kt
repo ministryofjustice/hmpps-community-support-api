@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
@@ -16,6 +17,8 @@ data class TaskListStatusResponseDto(
   val addAdditionalInformationCompleted: TaskListStatusItem,
   val addDetailsOfMainPointOfContactCompleted: TaskListStatusItem,
   val selectAnAreaForReferralCompleted: TaskListStatusItem,
+  val checkProbationPractitionerDetailsCompleted: TaskListStatusItem?,
+  val addMainPointOfContactCompleted: TaskListStatusItem?,
 ) {
   companion object {
     fun from(
@@ -25,6 +28,8 @@ data class TaskListStatusResponseDto(
       riskInfo: RiskInformation?,
       criminogenicNeeds: ReferralCriminogenicNeeds?,
       communityServiceProvider: CommunityServiceProvider?,
+      probationPractitionerDetails: ProbationPractitionerDetailsBffResponseDto? = null,
+      savedProbationPractitionerDetails: ProbationPractitionerDetails? = null,
     ) = TaskListStatusResponseDto(
       fullName = person.firstName + " " + person.lastName,
       TaskListStatusItem.notStarted(),
@@ -34,6 +39,8 @@ data class TaskListStatusResponseDto(
       getAdditionalInformationStatus(referral),
       TaskListStatusItem.notStarted(),
       getCommunityServiceProviderStatus(communityServiceProvider),
+      getCheckProbationPractitionerDetailsStatus(probationPractitionerDetails, savedProbationPractitionerDetails),
+      getAddMainPointOfContactStatus(probationPractitionerDetails, savedProbationPractitionerDetails),
     )
 
     private fun getCommunityServiceProviderStatus(communityServiceProvider: CommunityServiceProvider?): TaskListStatusItem = communityServiceProvider?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
@@ -67,6 +74,28 @@ data class TaskListStatusResponseDto(
         0 -> TaskListStatusItem.notStarted()
         else -> TaskListStatusItem.inProgress()
       }
+    }
+
+    private fun getCheckProbationPractitionerDetailsStatus(
+      probationPractitionerDetails: ProbationPractitionerDetailsBffResponseDto?,
+      savedProbationPractitionerDetails: ProbationPractitionerDetails?,
+    ): TaskListStatusItem? {
+      if (probationPractitionerDetails == null) return null
+
+      if (savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect == false) return null
+
+      return savedProbationPractitionerDetails?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
+    }
+
+    private fun getAddMainPointOfContactStatus(
+      probationPractitionerDetails: ProbationPractitionerDetailsBffResponseDto?,
+      savedProbationPractitionerDetails: ProbationPractitionerDetails?,
+    ): TaskListStatusItem? {
+      if (probationPractitionerDetails == null) return TaskListStatusItem.notStarted()
+
+      if (savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect == false) return TaskListStatusItem.completed()
+
+      return null
     }
   }
 }

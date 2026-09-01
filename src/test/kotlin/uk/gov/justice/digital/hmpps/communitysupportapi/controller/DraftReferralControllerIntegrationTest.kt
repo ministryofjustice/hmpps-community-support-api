@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenic
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.Selection
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -668,6 +669,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         pdu = "Northumberland",
         probationOffice = "Newcastle Office",
         teamPhoneNumber = "0123456789",
+        ppDetailsFoundAndCorrect = false,
       )
 
       webTestClient.patch()
@@ -685,6 +687,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.pdu shouldBe "Northumberland"
           body.probationOffice shouldBe "Newcastle Office"
           body.teamPhoneNumber shouldBe "0123456789"
+          body.ppDetailsFoundAndCorrect shouldBe false
         }
 
       val persistedRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
@@ -695,6 +698,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       persistedRecord.pdu shouldBe "Northumberland"
       persistedRecord.probationOffice shouldBe "Newcastle Office"
       persistedRecord.teamPhoneNumber shouldBe "0123456789"
+      persistedRecord.ppDetailsFoundAndCorrect shouldBe false
       persistedRecord.updatedBy shouldBe testUser.id
     }
 
@@ -896,6 +900,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.addDetailsOfMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
           body.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.notStarted()
           body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.notStarted()
+          body.checkProbationPractitionerDetailsCompleted shouldBe null
+          body.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
         }
     }
 
@@ -1049,6 +1055,146 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
 
           body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.completed()
+        }
+    }
+
+    @Test
+    fun `should default to main point of contact when no probation practitioner found in nDelius`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "X123456")
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      referralRepository.save(savedReferral)
+
+      stubFor(
+        get(urlEqualTo("/case/${person.identifier}/community-manager"))
+          .willReturn(aResponse().withStatus(404)),
+      )
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.checkProbationPractitionerDetailsCompleted shouldBe null
+          body.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
+        }
+    }
+
+    @Test
+    fun `should return notStarted for probation practitioner check when found in nDelius but not saved`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "X123456")
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      referralRepository.save(savedReferral)
+
+      stubFor(
+        get(urlEqualTo("/case/${person.identifier}/community-manager"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createCommunityManager()),
+          ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.notStarted()
+          body.addMainPointOfContactCompleted shouldBe null
+        }
+    }
+
+    @Test
+    fun `should return completed for probation practitioner check when found in nDelius and saved`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "X123456")
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      referralRepository.save(savedReferral)
+
+      stubFor(
+        get(urlEqualTo("/case/${person.identifier}/community-manager"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createCommunityManager()),
+          ),
+      )
+
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          id = UUID.randomUUID(),
+          referralId = savedReferral.id,
+          name = "Jane Doe",
+          updatedAt = OffsetDateTime.now(),
+          updatedBy = testUser.id,
+        ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
+          body.addMainPointOfContactCompleted shouldBe null
+        }
+    }
+
+    @Test
+    fun `should return null for checkProbationPractitionerDetails and completed for addMainPointOfContact when saved probation practitioner details are not correct`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "X123456")
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      referralRepository.save(savedReferral)
+
+      stubFor(
+        get(urlEqualTo("/case/${person.identifier}/community-manager"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createCommunityManager()),
+          ),
+      )
+
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          id = UUID.randomUUID(),
+          referralId = savedReferral.id,
+          name = "Jane Doe",
+          ppDetailsFoundAndCorrect = false,
+          updatedAt = OffsetDateTime.now(),
+          updatedBy = testUser.id,
+        ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.checkProbationPractitionerDetailsCompleted shouldBe null
+          body.addMainPointOfContactCompleted shouldBe TaskListStatusItem.completed()
         }
     }
   }
