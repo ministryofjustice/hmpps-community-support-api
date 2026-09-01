@@ -286,6 +286,16 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
+    val probationPractitionerDetails = try {
+      getProbationPractitionerDetails(referralId)
+    } catch (_: NotFoundException) {
+      null
+    } catch (_: ValidationException) {
+      null
+    }
+
+    val savedProbationPractitionerDetails = probationPractitionerDetailsRepository.findByReferralId(referralId)
+
     return TaskListStatusResponseDto.from(
       referral,
       person,
@@ -293,6 +303,8 @@ class DraftReferralService(
       riskInfo,
       criminogenicNeeds,
       communityServiceProvider,
+      probationPractitionerDetails,
+      savedProbationPractitionerDetails,
     )
   }
 
@@ -404,6 +416,7 @@ class DraftReferralService(
           pdu = request.pdu,
           probationOffice = request.probationOffice,
           teamPhoneNumber = request.teamPhoneNumber,
+          ppDetailsFoundAndCorrect = request.ppDetailsFoundAndCorrect,
           updatedAt = OffsetDateTime.now(),
           updatedBy = userId,
         ),
@@ -415,6 +428,7 @@ class DraftReferralService(
       existingRecord.pdu = request.pdu
       existingRecord.probationOffice = request.probationOffice
       existingRecord.teamPhoneNumber = request.teamPhoneNumber
+      existingRecord.ppDetailsFoundAndCorrect = request.ppDetailsFoundAndCorrect
       existingRecord.updatedAt = OffsetDateTime.now()
       existingRecord.updatedBy = userId
       probationPractitionerDetailsRepository.save(existingRecord)

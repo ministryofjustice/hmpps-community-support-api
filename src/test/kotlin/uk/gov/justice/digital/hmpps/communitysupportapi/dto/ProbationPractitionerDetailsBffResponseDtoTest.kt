@@ -60,6 +60,7 @@ class ProbationPractitionerDetailsBffResponseDtoTest {
       pdu = "Northumberland",
       probationOffice = "Newcastle Office",
       teamPhoneNumber = "0123456789",
+      ppDetailsFoundAndCorrect = false,
       updatedAt = OffsetDateTime.now(),
       updatedBy = UUID.randomUUID(),
     )
@@ -72,5 +73,6 @@ class ProbationPractitionerDetailsBffResponseDtoTest {
     result.pdu shouldBe "Northumberland"
     result.probationOffice shouldBe "Newcastle Office"
     result.teamPhoneNumber shouldBe "0123456789"
+    result.ppDetailsFoundAndCorrect shouldBe false
   }
 }
