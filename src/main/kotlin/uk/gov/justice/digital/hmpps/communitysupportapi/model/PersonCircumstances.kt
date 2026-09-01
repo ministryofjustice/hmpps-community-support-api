@@ -17,8 +17,8 @@ data class PersonalCircumstance(
     fun from(circumstance: PersonalCircumstanceDto): PersonalCircumstance = PersonalCircumstance(
       type = circumstance.type?.code,
       description = circumstance.type?.description,
-      subType = circumstance.subtype?.code,
-      subDescription = circumstance.subtype?.description,
+      subType = circumstance.subType?.code,
+      subDescription = circumstance.subType?.description,
       updatedAt = circumstance.updatedAt,
     )
   }
