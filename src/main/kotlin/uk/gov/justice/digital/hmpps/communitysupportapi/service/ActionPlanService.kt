@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStepQuestionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionDto
@@ -33,7 +34,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepositor
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import java.time.OffsetDateTime
-import java.util.*
+import java.util.UUID
 
 @Service
 class ActionPlanService(
@@ -121,6 +122,7 @@ class ActionPlanService(
     return ActionPlanNeedsResponse(needs = needsList)
   }
 
+  @Transactional(readOnly = true)
   fun getSessionDeliveryDetailsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
     val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
       ?: throw NotFoundException("Referral not found for reference $referralReference")
@@ -136,11 +138,12 @@ class ActionPlanService(
     val actionPlan = actionPlanRepository.findByReferralId(referral.id)
     if (actionPlan == null || questions.isEmpty()) {
       return ActionPlanSessionDeliveryDetailsResponse(
-        questions = questions.map {
+        questions = questions.map { question ->
+          val questionDto = ActionPlanStepQuestionDto.fromEntity(question)
           SessionDeliveryQuestion.fromQuestionAndResponses(
-            it,
+            questionDto,
             emptyList(),
-            it.choices.sortedBy { choice -> choice.orderNumber },
+            question.choices.sortedBy { choice -> choice.orderNumber },
           )
         },
       )
@@ -156,10 +159,11 @@ class ActionPlanService(
 
     return ActionPlanSessionDeliveryDetailsResponse(
       questions = questions.map { question ->
+        val questionDto = ActionPlanStepQuestionDto.fromEntity(question)
         val responses = activeHeadersByQuestionId[question.id].orEmpty()
           .mapNotNull { latestDetailsByHeaderId[it.id] }
         val choices = question.choices.sortedBy { choice -> choice.orderNumber }
-        SessionDeliveryQuestion.fromQuestionAndResponses(question, responses, choices)
+        SessionDeliveryQuestion.fromQuestionAndResponses(questionDto, responses, choices)
       },
     )
   }
@@ -331,9 +335,7 @@ class ActionPlanService(
       return
     }
 
-    val header = existingHeader?.let { existingHeader ->
-      actionPlanStepQuestionAnswerHeaderRepository.save(existingHeader)
-    } ?: actionPlanStepQuestionAnswerHeaderRepository.save(
+    val header = existingHeader ?: actionPlanStepQuestionAnswerHeaderRepository.save(
       ActionPlanStepQuestionAnswerHeader.from(
         actionPlanId = actionPlanId,
         questionId = questionId,
@@ -383,13 +385,11 @@ class ActionPlanService(
   }
 
   private fun normaliseSavedResponse(response: SessionDeliveryDetailsQuestionAnswer): NormalisedSavedResponse = NormalisedSavedResponse(
-    questionAnswerHeaderId = response.questionAnswerHeaderId,
     value = response.value.trim(),
     additionalDetails = response.additionalDetails?.trim()?.takeIf { it.isNotBlank() },
   )
 
   private data class NormalisedSavedResponse(
-    val questionAnswerHeaderId: UUID?,
     val value: String,
     val additionalDetails: String?,
   )

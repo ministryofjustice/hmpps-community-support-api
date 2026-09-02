@@ -18,10 +18,10 @@ interface ActionPlanStepQuestionAnswerHeaderRepository : JpaRepository<ActionPla
     """
   select h
   from ActionPlanStepQuestionAnswerHeader h
-  where h.actionPlan.id = :actionPlanId
-    and h.actionPlanStepQuestion.id in :questionIds
+  where h.actionPlanId = :actionPlanId
+    and h.actionPlanStepQuestionId in (:questionIds)
     and h.deletedAt is null
-  order by h.actionPlanStepQuestion.id asc, h.orderNumber asc
+  order by h.actionPlanStepQuestionId asc, h.orderNumber asc
   """,
   )
   fun findActiveByPlanAndQuestionIds(

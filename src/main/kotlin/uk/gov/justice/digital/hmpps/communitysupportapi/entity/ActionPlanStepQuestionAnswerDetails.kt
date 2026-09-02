@@ -39,7 +39,7 @@ data class ActionPlanStepQuestionAnswerDetails(
   @JoinColumn(name = "action_plan_step_question_answer_header_id", insertable = false, updatable = false)
   val actionPlanStepQuestionAnswerHeader: ActionPlanStepQuestionAnswerHeader? = null,
 
-  // TODO: Delete this until we need it
+  // TODO: To review the use of revision number, as concurrent updating is rare.
   @Column(name = "revision_number", nullable = false)
   val revisionNumber: Int,
 

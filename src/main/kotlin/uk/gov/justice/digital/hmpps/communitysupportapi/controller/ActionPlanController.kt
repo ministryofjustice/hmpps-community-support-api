@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
@@ -24,6 +25,7 @@ import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class ActionPlanController(
   private val actionPlanService: ActionPlanService,
+  private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
 ) {
   companion object {
@@ -138,7 +140,8 @@ class ActionPlanController(
     @PathVariable referralReference: String,
     @RequestBody request: ActionPlanSessionDeliveryDetailsRequest,
   ): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
-    val changedBy = authenticationHolder.authentication.userName ?: "SYSTEM"
+    val user = userMapper.fromToken(authenticationHolder)
+    val changedBy = user.hmppsAuthUsername
     log.info("Saving session delivery details for referral={}", referralReference)
     return ResponseEntity.ok(actionPlanService.updateSessionDeliveryDetailsForActionPlan(referralReference, request, changedBy))
   }

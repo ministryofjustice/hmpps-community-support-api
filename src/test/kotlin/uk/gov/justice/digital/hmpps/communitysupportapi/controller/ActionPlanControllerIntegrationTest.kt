@@ -1,13 +1,18 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpMethod.GET
 import org.springframework.http.HttpMethod.PATCH
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
+import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
@@ -19,6 +24,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
@@ -32,6 +38,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionP
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTestUtil.randomReferralReference
+import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -61,9 +68,19 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
   @Autowired
   private lateinit var actionPlanStepQuestionAnswerDetailsRepository: ActionPlanStepQuestionAnswerDetailsRepository
 
+  @MockitoBean
+  private lateinit var userMapper: UserMapper
+
+  private lateinit var testUser: ReferralUser
+
   @Nested
   @DisplayName("GET /bff/referral/{referralReference}/action-plan")
   inner class GetActionPlanSummaryEndpoint {
+    @BeforeEach
+    fun setup() {
+      testUser = referralHelper.ensureReferralUser()
+    }
+
     @Test
     fun `should return OK with action plan summary for a valid referral reference`() {
       val user = referralHelper.ensureReferralUser()
@@ -566,6 +583,8 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
       @Test
       fun `should save and then update session delivery answers`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
         val referral = createReferral("Lucy", "Miles")
         val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
         val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
@@ -706,6 +725,8 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
       @Test
       fun `should return not found for unknown referral reference`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
         assertNotFound(
           PATCH,
           "/referral/ZZ9999ZZ/action-plan/session-delivery-details",
