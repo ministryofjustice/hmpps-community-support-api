@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusRespon
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSentenceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralOffenceSentence
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
@@ -22,10 +23,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServicePr
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ProbationPractitionerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralOffenceSentenceRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
@@ -48,6 +51,7 @@ class DraftReferralService(
   private val communityServiceProviderRepository: CommunityServiceProviderRepository,
   private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
   private val referralOffenceSentenceRepository: ReferralOffenceSentenceRepository,
+  private val probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository,
   private val identifierValidator: PersonIdentifierValidator,
   private val nDeliusService: NDeliusService,
 ) {
@@ -282,6 +286,16 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
+    val probationPractitionerDetails = try {
+      getProbationPractitionerDetails(referralId)
+    } catch (_: NotFoundException) {
+      null
+    } catch (_: ValidationException) {
+      null
+    }
+
+    val savedProbationPractitionerDetails = probationPractitionerDetailsRepository.findByReferralId(referralId)
+
     return TaskListStatusResponseDto.from(
       referral,
       person,
@@ -289,6 +303,8 @@ class DraftReferralService(
       riskInfo,
       criminogenicNeeds,
       communityServiceProvider,
+      probationPractitionerDetails,
+      savedProbationPractitionerDetails,
     )
   }
 
@@ -376,5 +392,48 @@ class DraftReferralService(
     val communityManager = nDeliusService.getCommunityManagerByIdentifier(crn)
 
     return ProbationPractitionerDetailsBffResponseDto.from(communityManager)
+  }
+
+  @Transactional
+  fun upsertProbationPractitionerDetails(
+    referralId: UUID,
+    userId: UUID,
+    request: UpdateProbationPractitionerDetailsRequest,
+  ): ProbationPractitionerDetailsBffResponseDto {
+    referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+    val existingRecord = probationPractitionerDetailsRepository.findByReferralId(referralId)
+
+    val savedRecord = if (existingRecord == null) {
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          id = UUID.randomUUID(),
+          referralId = referralId,
+          name = request.name,
+          jobRole = request.jobRole,
+          emailAddress = request.emailAddress,
+          pdu = request.pdu,
+          probationOffice = request.probationOffice,
+          teamPhoneNumber = request.teamPhoneNumber,
+          ppDetailsFoundAndCorrect = request.ppDetailsFoundAndCorrect,
+          updatedAt = OffsetDateTime.now(),
+          updatedBy = userId,
+        ),
+      )
+    } else {
+      existingRecord.name = request.name
+      existingRecord.jobRole = request.jobRole
+      existingRecord.emailAddress = request.emailAddress
+      existingRecord.pdu = request.pdu
+      existingRecord.probationOffice = request.probationOffice
+      existingRecord.teamPhoneNumber = request.teamPhoneNumber
+      existingRecord.ppDetailsFoundAndCorrect = request.ppDetailsFoundAndCorrect
+      existingRecord.updatedAt = OffsetDateTime.now()
+      existingRecord.updatedBy = userId
+      probationPractitionerDetailsRepository.save(existingRecord)
+    }
+
+    return ProbationPractitionerDetailsBffResponseDto.from(savedRecord)
   }
 }

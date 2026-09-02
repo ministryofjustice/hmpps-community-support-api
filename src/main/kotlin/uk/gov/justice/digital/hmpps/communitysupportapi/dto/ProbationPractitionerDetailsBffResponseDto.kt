@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 
 data class ProbationPractitionerDetailsBffResponseDto(
   val name: String,
@@ -9,6 +10,7 @@ data class ProbationPractitionerDetailsBffResponseDto(
   val pdu: String?,
   val probationOffice: String?,
   val teamPhoneNumber: String?,
+  val ppDetailsFoundAndCorrect: Boolean? = null,
 ) {
   companion object {
     fun from(response: CommunityManagerDto): ProbationPractitionerDetailsBffResponseDto {
@@ -24,5 +26,15 @@ data class ProbationPractitionerDetailsBffResponseDto(
         teamPhoneNumber = communityManager?.teamPhoneNumber,
       )
     }
+
+    fun from(entity: ProbationPractitionerDetails): ProbationPractitionerDetailsBffResponseDto = ProbationPractitionerDetailsBffResponseDto(
+      name = entity.name,
+      jobRole = entity.jobRole,
+      emailAddress = entity.emailAddress,
+      pdu = entity.pdu,
+      probationOffice = entity.probationOffice,
+      teamPhoneNumber = entity.teamPhoneNumber,
+      ppDetailsFoundAndCorrect = entity.ppDetailsFoundAndCorrect,
+    )
   }
 }

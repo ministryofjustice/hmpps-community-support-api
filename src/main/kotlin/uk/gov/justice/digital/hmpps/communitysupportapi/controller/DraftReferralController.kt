@@ -28,6 +28,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServicePr
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CriminogenicNeedsService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.DraftReferralService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
@@ -389,4 +390,34 @@ class DraftReferralController(
   ): ResponseEntity<ProbationPractitionerDetailsBffResponseDto> = ResponseEntity.ok(
     draftReferralService.getProbationPractitionerDetails(referralId),
   )
+
+  @Operation(summary = "Save the Probation Practitioner details for a Draft Referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Probation Practitioner details saved",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ProbationPractitionerDetailsBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/draft-referral/{referralId}/probation-practitioner-details")
+  fun updateProbationPractitionerDetails(
+    @PathVariable referralId: UUID,
+    @RequestBody request: UpdateProbationPractitionerDetailsRequest,
+  ): ResponseEntity<ProbationPractitionerDetailsBffResponseDto> {
+    val user = userMapper.fromToken(authenticationHolder)
+
+    return ResponseEntity.ok(draftReferralService.upsertProbationPractitionerDetails(referralId, user.id, request))
+  }
 }

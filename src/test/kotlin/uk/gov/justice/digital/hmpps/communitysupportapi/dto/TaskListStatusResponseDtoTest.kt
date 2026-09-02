@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceP
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ContractArea
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Region
@@ -318,6 +319,103 @@ class TaskListStatusResponseDtoTest {
   }
 
   @Nested
+  inner class ProbationPractitionerDetailsStatus {
+
+    @Test
+    fun `returns addMainPointOfContactCompleted as notStarted and checkProbationPractitionerDetailsCompleted as null when no probation practitioner details found`() {
+      val result = TaskListStatusResponseDto.from(referral, person, null, null, null, null, probationPractitionerDetails = null)
+
+      result.checkProbationPractitionerDetailsCompleted shouldBe null
+      result.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
+    }
+
+    @Test
+    fun `returns checkProbationPractitionerDetailsCompleted as notStarted and addMainPointOfContactCompleted as null when probation practitioner details found but not saved`() {
+      val result = TaskListStatusResponseDto.from(
+        referral,
+        person,
+        null,
+        null,
+        null,
+        null,
+        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
+        savedProbationPractitionerDetails = null,
+      )
+
+      result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.notStarted()
+      result.addMainPointOfContactCompleted shouldBe null
+    }
+
+    @Test
+    fun `returns checkProbationPractitionerDetailsCompleted as completed and addMainPointOfContactCompleted as null when probation practitioner details found and saved`() {
+      val result = TaskListStatusResponseDto.from(
+        referral,
+        person,
+        null,
+        null,
+        null,
+        null,
+        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
+        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(),
+      )
+
+      result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
+      result.addMainPointOfContactCompleted shouldBe null
+    }
+
+    @Test
+    fun `returns checkProbationPractitionerDetailsCompleted as null and addMainPointOfContactCompleted as completed when saved details found but not correct`() {
+      val result = TaskListStatusResponseDto.from(
+        referral,
+        person,
+        null,
+        null,
+        null,
+        null,
+        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
+        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = false),
+      )
+
+      result.checkProbationPractitionerDetailsCompleted shouldBe null
+      result.addMainPointOfContactCompleted shouldBe TaskListStatusItem.completed()
+    }
+
+    @Test
+    fun `returns checkProbationPractitionerDetailsCompleted as completed and addMainPointOfContactCompleted as null when saved details found and correct`() {
+      val result = TaskListStatusResponseDto.from(
+        referral,
+        person,
+        null,
+        null,
+        null,
+        null,
+        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
+        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = true),
+      )
+
+      result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
+      result.addMainPointOfContactCompleted shouldBe null
+    }
+
+    @Test
+    fun `returns checkProbationPractitionerDetailsCompleted as completed when saved details found and ppDetailsFoundAndCorrect is null`() {
+      val result = TaskListStatusResponseDto.from(
+        referral,
+        person,
+        null,
+        null,
+        null,
+        null,
+        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
+        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = null),
+      )
+
+      result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
+      result.addMainPointOfContactCompleted shouldBe null
+    }
+  }
+
+  @Nested
   inner class TaskListStatusItemFactories {
 
     @Test
@@ -419,6 +517,24 @@ class TaskListStatusResponseDtoTest {
     healthWellbeingDetails = healthWellbeingDetails,
     hasThinkingBehavioursAttitudeNeeds = hasThinkingBehavioursAttitudeNeeds,
     thinkingBehavioursAttitudeDetails = thinkingBehavioursAttitudeDetails,
+    updatedAt = OffsetDateTime.now(),
+    updatedBy = userId,
+  )
+
+  private fun buildProbationPractitionerDetailsBffResponseDto() = ProbationPractitionerDetailsBffResponseDto(
+    name = "Jane Doe",
+    jobRole = "Probation practitioner",
+    emailAddress = "jane.doe@example.com",
+    pdu = "Northumberland",
+    probationOffice = "Newcastle Office",
+    teamPhoneNumber = "0123456789",
+  )
+
+  private fun buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect: Boolean? = null) = ProbationPractitionerDetails(
+    id = UUID.randomUUID(),
+    referralId = referralId,
+    name = "Jane Doe",
+    ppDetailsFoundAndCorrect = ppDetailsFoundAndCorrect,
     updatedAt = OffsetDateTime.now(),
     updatedBy = userId,
   )
