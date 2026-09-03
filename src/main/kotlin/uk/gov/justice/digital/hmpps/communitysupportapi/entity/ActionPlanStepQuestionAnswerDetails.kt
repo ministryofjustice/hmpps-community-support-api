@@ -39,6 +39,7 @@ data class ActionPlanStepQuestionAnswerDetails(
   @JoinColumn(name = "action_plan_step_question_answer_header_id", insertable = false, updatable = false)
   val actionPlanStepQuestionAnswerHeader: ActionPlanStepQuestionAnswerHeader? = null,
 
+  // TODO: To review the use of revision number, as concurrent updating is rare.
   @Column(name = "revision_number", nullable = false)
   val revisionNumber: Int,
 
@@ -53,4 +54,23 @@ data class ActionPlanStepQuestionAnswerDetails(
 
   @Column(name = "created_by", nullable = false)
   val createdBy: String = "SYSTEM",
-)
+) {
+  companion object {
+    fun from(
+      headerId: UUID,
+      revisionNumber: Int,
+      content: String,
+      createdBy: String,
+      freeTextValue: String?,
+      now: OffsetDateTime = OffsetDateTime.now(),
+    ): ActionPlanStepQuestionAnswerDetails = ActionPlanStepQuestionAnswerDetails(
+      id = UUID.randomUUID(),
+      actionPlanStepQuestionAnswerHeaderId = headerId,
+      revisionNumber = revisionNumber,
+      content = content,
+      freeTextValue = freeTextValue,
+      createdAt = now,
+      createdBy = createdBy,
+    )
+  }
+}

@@ -1,20 +1,30 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpMethod.GET
+import org.springframework.http.HttpMethod.PATCH
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
+import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
@@ -28,6 +38,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionP
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTestUtil.randomReferralReference
+import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -57,9 +68,19 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
   @Autowired
   private lateinit var actionPlanStepQuestionAnswerDetailsRepository: ActionPlanStepQuestionAnswerDetailsRepository
 
+  @MockitoBean
+  private lateinit var userMapper: UserMapper
+
+  private lateinit var testUser: ReferralUser
+
   @Nested
   @DisplayName("GET /bff/referral/{referralReference}/action-plan")
   inner class GetActionPlanSummaryEndpoint {
+    @BeforeEach
+    fun setup() {
+      testUser = referralHelper.ensureReferralUser()
+    }
+
     @Test
     fun `should return OK with action plan summary for a valid referral reference`() {
       val user = referralHelper.ensureReferralUser()
@@ -531,6 +552,186 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
       @Test
       fun `should return not found for unknown referral reference`() {
         assertNotFound(GET, "/bff/referral/ZZ9999ZZ/action-plan/session-delivery-details")
+      }
+    }
+
+    @Nested
+    @DisplayName("PATCH /referral/{referralReference}/action-plan/session-delivery-details")
+    inner class PatchSessionDeliveryDetailsEndpoint {
+      @Test
+      fun `should return unauthorized if no token`() {
+        assertUnauthorized(PATCH, "/referral/AB1234CD/action-plan/session-delivery-details")
+      }
+
+      @Test
+      fun `should return forbidden if no role`() {
+        assertForbiddenNoRole(
+          PATCH,
+          "/referral/AB1234CD/action-plan/session-delivery-details",
+          ActionPlanSessionDeliveryDetailsRequest(answers = emptyList()),
+        )
+      }
+
+      @Test
+      fun `should return forbidden if wrong role`() {
+        assertForbiddenWrongRole(
+          PATCH,
+          "/referral/AB1234CD/action-plan/session-delivery-details",
+          ActionPlanSessionDeliveryDetailsRequest(answers = emptyList()),
+        )
+      }
+
+      @Test
+      fun `should save and then update session delivery answers`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+        val referral = createReferral("Lucy", "Miles")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+        val sessionDeliveryStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(2)
+            .withName("Service Delivery Details")
+            .withStepType(ActionPlanStepType.SESSION_DELIVERY)
+            .create(),
+        )
+
+        val radioQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(sessionDeliveryStep.id)
+            .withOrderNumber(1)
+            .withTitle("How will the session be delivered?")
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(radioQuestion.id)
+            .withOrderNumber(1)
+            .withLabel("Face-to-face")
+            .withValue("FACE_TO_FACE")
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(radioQuestion.id)
+            .withOrderNumber(2)
+            .withLabel("Other")
+            .withValue("OTHER")
+            .withHasFreeText(true)
+            .withFreeTextLabel("Reason")
+            .create(),
+        )
+
+        val secondQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(sessionDeliveryStep.id)
+            .withOrderNumber(2)
+            .withTitle("What is the session length?")
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(secondQuestion.id)
+            .withOrderNumber(1)
+            .withLabel("Short session")
+            .withValue("SHORT_SESSION")
+            .create(),
+        )
+
+        val saveRequest = ActionPlanSessionDeliveryDetailsRequest(
+          answers = listOf(
+            SessionDeliveryDetailsQuestionAnswers(
+              questionId = radioQuestion.id,
+              incomingAnswerDetails = listOf(
+                SessionDeliveryDetailsQuestionAnswer(value = "OTHER", additionalDetails = "Poor weather"),
+              ),
+            ),
+            SessionDeliveryDetailsQuestionAnswers(
+              questionId = secondQuestion.id,
+              incomingAnswerDetails = listOf(
+                SessionDeliveryDetailsQuestionAnswer(value = "SHORT_SESSION"),
+              ),
+            ),
+          ),
+        )
+
+        webTestClient.patch()
+          .uri("/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
+          .headers(setAuthorisation())
+          .bodyValue(saveRequest)
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value } shouldBe listOf("OTHER")
+            body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails } shouldBe listOf("Poor weather")
+            body.questions.first { it.id == secondQuestion.id }.savedResponses.map { it.value } shouldBe listOf("SHORT_SESSION")
+          }
+
+        val updateRequest = ActionPlanSessionDeliveryDetailsRequest(
+          answers = listOf(
+            SessionDeliveryDetailsQuestionAnswers(
+              questionId = radioQuestion.id,
+              incomingAnswerDetails = listOf(
+                SessionDeliveryDetailsQuestionAnswer(value = "FACE_TO_FACE"),
+              ),
+            ),
+            SessionDeliveryDetailsQuestionAnswers(
+              questionId = secondQuestion.id,
+              incomingAnswerDetails = emptyList(),
+            ),
+          ),
+        )
+
+        webTestClient.patch()
+          .uri("/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
+          .headers(setAuthorisation())
+          .bodyValue(updateRequest)
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value } shouldBe listOf("FACE_TO_FACE")
+            body.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails } shouldBe listOf(null)
+            body.questions.first { it.id == secondQuestion.id }.savedResponses shouldBe emptyList()
+          }
+
+        val activeAnswers = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+        activeAnswers.filter { it.actionPlanStepQuestionId == radioQuestion.id }.size shouldBe 1
+        activeAnswers.filter { it.actionPlanStepQuestionId == secondQuestion.id }.size shouldBe 0
+
+        val allAnswers = actionPlanStepQuestionAnswerHeaderRepository.findAll()
+        allAnswers
+          .filter { it.actionPlanId == actionPlan.id && it.actionPlanStepQuestionId == secondQuestion.id }
+          .count { it.deletedAt != null } shouldBe 1
+
+        val updatedRadioAnswer = activeAnswers.first { it.actionPlanStepQuestionId == radioQuestion.id }
+        val radioRevisions = actionPlanStepQuestionAnswerDetailsRepository
+          .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(updatedRadioAnswer.id))
+          .sortedBy { it.revisionNumber }
+        radioRevisions.map { it.content } shouldBe listOf("OTHER", "FACE_TO_FACE")
+        radioRevisions.map { it.freeTextValue } shouldBe listOf("Poor weather", null)
+      }
+
+      @Test
+      fun `should return not found for unknown referral reference`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+        assertNotFound(
+          PATCH,
+          "/referral/ZZ9999ZZ/action-plan/session-delivery-details",
+          ActionPlanSessionDeliveryDetailsRequest(answers = emptyList()),
+        )
       }
     }
 

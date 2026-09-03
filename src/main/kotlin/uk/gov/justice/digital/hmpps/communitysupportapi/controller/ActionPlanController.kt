@@ -9,17 +9,24 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ActionPlanService
+import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 
 @RestController
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class ActionPlanController(
   private val actionPlanService: ActionPlanService,
+  private val userMapper: UserMapper,
+  private val authenticationHolder: HmppsAuthenticationHolder,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -101,5 +108,41 @@ class ActionPlanController(
   fun getSessionDeliveryDetails(@PathVariable referralReference: String): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
     log.info("Fetching session delivery details for referral={}", referralReference)
     return ResponseEntity.ok(actionPlanService.getSessionDeliveryDetailsForReferral(referralReference))
+  }
+
+  @Operation(summary = "Save and update answers for session delivery details")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Session delivery details answers saved",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanSessionDeliveryDetailsResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Validation failure",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/referral/{referralReference}/action-plan/session-delivery-details")
+  fun patchSessionDeliveryDetails(
+    @PathVariable referralReference: String,
+    @RequestBody request: ActionPlanSessionDeliveryDetailsRequest,
+  ): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
+    val user = userMapper.fromToken(authenticationHolder)
+    val changedBy = user.hmppsAuthUsername
+    log.info("Saving session delivery details for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.updateSessionDeliveryDetailsForActionPlan(referralReference, request, changedBy))
   }
 }
