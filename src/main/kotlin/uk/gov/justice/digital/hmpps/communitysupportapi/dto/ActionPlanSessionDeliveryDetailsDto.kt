@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionChoice
 import java.util.UUID
@@ -21,15 +20,15 @@ class SessionDeliveryQuestion(
 ) {
   companion object {
     fun fromQuestionAndResponses(
-      question: ActionPlanStepQuestion,
+      question: ActionPlanStepQuestionDto,
       responses: List<ActionPlanStepQuestionAnswerDetails>,
       choices: List<ActionPlanStepQuestionChoice>,
     ): SessionDeliveryQuestion = SessionDeliveryQuestion(
-      displayOrder = question.orderNumber,
       id = question.id,
-      label = question.title,
+      displayOrder = question.displayOrder,
+      label = question.label,
       answerType = question.answerType,
-      maximumNumberOfResponses = question.maxNumberResponses,
+      maximumNumberOfResponses = question.maximumNumberOfResponses,
       savedResponses = responses.map { response ->
         SavedResponse(response.content ?: "", response.freeTextValue)
       },
@@ -46,16 +45,3 @@ class SessionDeliveryQuestion(
     )
   }
 }
-
-data class QuestionChoice(
-  val value: String,
-  val label: String,
-  val displayOrder: Int,
-  val displayAdditionalDetailsOnSelect: Boolean = false,
-  val additionalDetailsLabel: String?,
-)
-
-data class SavedResponse(
-  val value: String,
-  val additionalDetails: String? = null,
-)

@@ -9,6 +9,9 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
@@ -24,11 +27,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEve
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionChoiceRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTestUtil.randomReferralReference
 import java.time.OffsetDateTime
@@ -64,6 +69,9 @@ class ActionPlanServiceIntegrationTest :
 
   @Autowired
   private lateinit var actionPlanStepQuestionRepository: ActionPlanStepQuestionRepository
+
+  @Autowired
+  private lateinit var actionPlanStepQuestionChoiceRepository: ActionPlanStepQuestionChoiceRepository
 
   @Autowired
   private lateinit var actionPlanStepQuestionAnswerHeaderRepository: ActionPlanStepQuestionAnswerHeaderRepository
@@ -432,7 +440,7 @@ class ActionPlanServiceIntegrationTest :
 
     @Test
     fun `should return grouped needs and questions sorted by configured need order`() {
-      val (referral, actionPlanTemplateId) = createReferralWithActionPlan("Nina", "Jones")
+      val (referral, actionPlanTemplateId) = createReferralWithActionPlan()
 
       val orderedNeeds = needRepository.findAllByOrderByOrderNumberAsc().take(2)
       val firstNeed = orderedNeeds[0]
@@ -488,16 +496,192 @@ class ActionPlanServiceIntegrationTest :
       )
     }
 
-    private fun createReferral(firstName: String, lastName: String): Referral {
-      val person = referralHelper.createPerson(firstName = firstName, lastName = lastName)
+    private fun createReferral(): Referral {
+      val person = referralHelper.createPerson(firstName = "Nina", lastName = "Jones")
       return referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
     }
 
-    private fun createReferralWithActionPlan(firstName: String, lastName: String): Pair<Referral, UUID> {
-      val referral = createReferral(firstName, lastName)
+    private fun createReferralWithActionPlan(): Pair<Referral, UUID> {
+      val referral = createReferral()
       val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
       actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
       return referral to actionPlanTemplate.id
+    }
+  }
+
+  @Nested
+  @DisplayName("session delivery details")
+  inner class SessionDeliveryDetails {
+    val user = referralHelper.ensureReferralUser()
+
+    @Test
+    fun `should return saved responses and choices ordered by display order`() {
+      val referral = createReferral()
+      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+      val sessionDeliveryStep = createSessionDeliveryStep(actionPlanTemplate.id)
+      val question = createSessionDeliveryQuestion(sessionDeliveryStep.id, 1, "How will the session be delivered?", ActionPlanQuestionAnswerType.RADIO, 1)
+
+      createChoice(question.id, 1, "Face-to-face", "FACE_TO_FACE")
+      createChoice(question.id, 2, "Other", "OTHER", hasFreeText = true, freeTextLabel = "Reason for not meeting face-to-face")
+
+      val answerId = UUID.randomUUID()
+      actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeader(
+          id = answerId,
+          actionPlanId = actionPlan.id,
+          actionPlanStepQuestionId = question.id,
+          orderNumber = 1,
+          createdAt = OffsetDateTime.now(),
+          createdBy = user.id.toString(),
+        ),
+      )
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails(
+          id = UUID.randomUUID(),
+          actionPlanStepQuestionAnswerHeaderId = answerId,
+          revisionNumber = 1,
+          content = "OTHER",
+          freeTextValue = "Poor weather",
+          createdAt = OffsetDateTime.now(),
+          createdBy = user.id.toString(),
+        ),
+      )
+
+      val result = actionPlanService.getSessionDeliveryDetailsForReferral(referral.referenceNumber!!)
+      val returnedQuestion = result.questions.single()
+
+      assertEquals(question.id, returnedQuestion.id)
+      val choices = returnedQuestion.choices ?: error("Expected choices for session delivery question")
+      assertEquals(listOf("FACE_TO_FACE", "OTHER"), choices.map { it.value })
+      assertEquals(listOf("Face-to-face", "Other"), choices.map { it.label })
+      assertEquals(listOf("OTHER"), returnedQuestion.savedResponses.map { it.value })
+      assertEquals(listOf("Poor weather"), returnedQuestion.savedResponses.map { it.additionalDetails })
+    }
+
+    @Test
+    fun `should save, update, and soft delete session delivery answers`() {
+      val referral = createReferral()
+      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+      val sessionDeliveryStep = createSessionDeliveryStep(actionPlanTemplate.id)
+
+      val radioQuestion = createSessionDeliveryQuestion(sessionDeliveryStep.id, 1, "How will the session be delivered?", ActionPlanQuestionAnswerType.RADIO, 1)
+      createChoice(radioQuestion.id, 1, "Face-to-face", "FACE_TO_FACE")
+      createChoice(radioQuestion.id, 2, "Other", "OTHER", hasFreeText = true, freeTextLabel = "Reason")
+
+      val secondQuestion = createSessionDeliveryQuestion(sessionDeliveryStep.id, 2, "Which support is needed?", ActionPlanQuestionAnswerType.RADIO, 1)
+      createChoice(secondQuestion.id, 1, "Short session", "SHORT_SESSION")
+      createChoice(secondQuestion.id, 2, "Long session", "LONG_SESSION")
+
+      val saveRequest = ActionPlanSessionDeliveryDetailsRequest(
+        answers = listOf(
+          SessionDeliveryDetailsQuestionAnswers(
+            questionId = radioQuestion.id,
+            incomingAnswerDetails = listOf(
+              SessionDeliveryDetailsQuestionAnswer(value = "OTHER", additionalDetails = "Poor weather"),
+            ),
+          ),
+          SessionDeliveryDetailsQuestionAnswers(
+            questionId = secondQuestion.id,
+            incomingAnswerDetails = listOf(
+              SessionDeliveryDetailsQuestionAnswer(value = "SHORT_SESSION"),
+            ),
+          ),
+        ),
+      )
+
+      val saveResult = actionPlanService.updateSessionDeliveryDetailsForActionPlan(referral.referenceNumber!!, saveRequest, user.id.toString())
+      assertEquals(listOf("OTHER"), saveResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value })
+      assertEquals(listOf("Poor weather"), saveResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails })
+      assertEquals(listOf("SHORT_SESSION"), saveResult.questions.first { it.id == secondQuestion.id }.savedResponses.map { it.value })
+
+      val updateRequest = ActionPlanSessionDeliveryDetailsRequest(
+        answers = listOf(
+          SessionDeliveryDetailsQuestionAnswers(
+            questionId = radioQuestion.id,
+            incomingAnswerDetails = listOf(
+              SessionDeliveryDetailsQuestionAnswer(value = "FACE_TO_FACE"),
+            ),
+          ),
+          SessionDeliveryDetailsQuestionAnswers(
+            questionId = secondQuestion.id,
+            incomingAnswerDetails = emptyList(),
+          ),
+        ),
+      )
+
+      val updateResult = actionPlanService.updateSessionDeliveryDetailsForActionPlan(referral.referenceNumber!!, updateRequest, user.id.toString())
+      assertEquals(listOf("FACE_TO_FACE"), updateResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value })
+      assertEquals(listOf(null), updateResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails })
+      assertTrue(updateResult.questions.first { it.id == secondQuestion.id }.savedResponses.isEmpty())
+
+      val activeAnswers = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+      assertEquals(1, activeAnswers.count { it.actionPlanStepQuestionId == radioQuestion.id })
+      assertEquals(0, activeAnswers.count { it.actionPlanStepQuestionId == secondQuestion.id })
+      assertEquals(
+        1,
+        actionPlanStepQuestionAnswerHeaderRepository.findAll().count {
+          it.actionPlanId == actionPlan.id &&
+            it.actionPlanStepQuestionId == secondQuestion.id &&
+            it.deletedAt != null
+        },
+      )
+
+      val radioAnswer = activeAnswers.first { it.actionPlanStepQuestionId == radioQuestion.id }
+      val radioRevisions = actionPlanStepQuestionAnswerDetailsRepository
+        .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(radioAnswer.id))
+        .sortedBy { it.revisionNumber }
+      assertEquals(listOf("OTHER", "FACE_TO_FACE"), radioRevisions.map { it.content })
+      assertEquals(listOf("Poor weather", null), radioRevisions.map { it.freeTextValue })
+    }
+
+    private fun createSessionDeliveryStep(actionPlanTemplateId: UUID) = actionPlanStepRepository.save(
+      ActionPlanStepFactory()
+        .withActionPlanTemplateId(actionPlanTemplateId)
+        .withOrderNumber(2)
+        .withName("Service Delivery Details")
+        .withStepType(ActionPlanStepType.SESSION_DELIVERY)
+        .create(),
+    )
+
+    private fun createSessionDeliveryQuestion(
+      actionPlanStepId: UUID,
+      orderNumber: Int,
+      title: String,
+      answerType: ActionPlanQuestionAnswerType,
+      maxNumberResponses: Int,
+    ) = actionPlanStepQuestionRepository.save(
+      ActionPlanStepQuestionFactory()
+        .withActionPlanStepId(actionPlanStepId)
+        .withOrderNumber(orderNumber)
+        .withTitle(title)
+        .withAnswerType(answerType)
+        .withMaxNumberResponses(maxNumberResponses)
+        .create(),
+    )
+
+    private fun createChoice(
+      actionPlanStepQuestionId: UUID,
+      orderNumber: Int,
+      label: String,
+      value: String,
+      hasFreeText: Boolean = false,
+      freeTextLabel: String? = null,
+    ) = actionPlanStepQuestionChoiceRepository.save(
+      ActionPlanStepQuestionChoiceFactory()
+        .withActionPlanStepQuestionId(actionPlanStepQuestionId)
+        .withOrderNumber(orderNumber)
+        .withLabel(label)
+        .withValue(value)
+        .withHasFreeText(hasFreeText)
+        .withFreeTextLabel(freeTextLabel)
+        .create(),
+    )
+
+    private fun createReferral(): Referral {
+      val person = referralHelper.createPerson(firstName = "Jane", lastName = "Doe")
+      return referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
     }
   }
 }
