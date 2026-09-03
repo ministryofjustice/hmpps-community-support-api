@@ -2,12 +2,15 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.client
 
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.nomis.NomisPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.prison.PrisonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 
 @Component
 class PrisonApiClient(
@@ -35,6 +38,31 @@ class PrisonApiClient(
         }
       }
       .doOnError { e -> log.error("Error calling Prison API to retrieve prisons", e) }
+      .block()!!
+  }
+
+  fun getPersonByPrisonNumber(prisonNumber: String): NomisPersonDto {
+    log.debug("Retrieving prison person details for prisonNumber {}", prisonNumber)
+
+    // TODO: Confirm final Prison API URI contract before production rollout.
+    return webClient.get()
+      .uri("/nomis/prisoner/$prisonNumber")
+      .accept(MediaType.APPLICATION_JSON)
+      .exchangeToMono { response ->
+        when {
+          response.statusCode() == HttpStatus.NOT_FOUND ->
+            Mono.error(NotFoundException("Person not found in Prison API with prison number: $prisonNumber"))
+
+          response.statusCode().is4xxClientError ->
+            Mono.error(RuntimeException("Client error from Prison API: ${response.statusCode()}"))
+
+          response.statusCode().is5xxServerError ->
+            Mono.error(RuntimeException("Server error from Prison API: ${response.statusCode()}"))
+
+          else -> response.bodyToMono<NomisPersonDto>()
+        }
+      }
+      .doOnError { e -> log.error("Error calling Prison API for prison number: $prisonNumber", e) }
       .block()!!
   }
 }

@@ -57,6 +57,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonA
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -1447,6 +1448,57 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     fun setup() {
       testDataCleaner.cleanAllTables()
       testUser = referralHelper.ensureReferralUser()
+      stubFor(
+        get(urlEqualTo("/case/$CRN/offence-sentence"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(
+                """
+                {
+                  "offence": "Assault",
+                  "offenceSubCategory": "Common assault",
+                  "outcome": "18 month community order",
+                  "sentenceEndDate": "2026-03-01"
+                }
+                """.trimIndent(),
+              ),
+          ),
+      )
+      stubFor(
+        get(urlEqualTo("/nomis/prisoner/A1234BC"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(
+                """
+                {
+                  "prisonerNumber": "A1234BC",
+                  "firstName": "Alex",
+                  "lastName": "River",
+                  "dateOfBirth": "1988-01-01",
+                  "gender": "Male",
+                  "confirmedReleaseDate": "2099-02-01",
+                  "releaseDate": "2099-01-01",
+                  "aliases": [],
+                  "alerts": [],
+                  "personalCareNeeds": [],
+                  "languages": [],
+                  "tattoos": [],
+                  "scars": [],
+                  "marks": [],
+                  "addresses": [],
+                  "emailAddresses": [],
+                  "phoneNumbers": [],
+                  "identifiers": [],
+                  "allConvictedOffences": []
+                }
+                """.trimIndent(),
+              ),
+          ),
+      )
     }
 
     @Test
@@ -1474,10 +1526,12 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
           body.firstName shouldBe person.firstName
           body.lastName shouldBe person.lastName
-          body.offenceSentenceInfo.offence shouldBe null
-          body.offenceSentenceInfo.offenceSubCategory shouldBe null
-          body.offenceSentenceInfo.outcome shouldBe null
-          body.offenceSentenceInfo.sentenceEndDate shouldBe null
+          body.crn shouldBe CRN
+          body.dateOfBirth shouldBe person.dateOfBirth.toFormattedDateOfBirthLong()
+          body.offenceSentenceInfo.offence shouldBe "Assault"
+          body.offenceSentenceInfo.offenceSubCategory shouldBe "Common assault"
+          body.offenceSentenceInfo.outcome shouldBe "18 month community order"
+          body.offenceSentenceInfo.sentenceEndDate shouldBe LocalDate.of(2026, 3, 1)
           body.offenceSentenceInfo.expectedReleaseDate shouldBe null
           body.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe null
           body.offenceSentenceInfo.licenceConditionsOrZonesDetails shouldBe null
@@ -1497,7 +1551,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         offence = "Assault",
         offenceSubCategory = "Common assault",
         outcome = "18 month community order",
-        sentenceEndDate = java.time.LocalDate.of(2026, 3, 1),
+        sentenceEndDate = LocalDate.of(2026, 3, 1),
       )
 
       webTestClient.patch()
@@ -1515,13 +1569,50 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<OffenceSentenceInfoBffResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-          body.offenceSentenceInfo.offence shouldBe null
-          body.offenceSentenceInfo.offenceSubCategory shouldBe null
-          body.offenceSentenceInfo.outcome shouldBe null
-          body.offenceSentenceInfo.sentenceEndDate shouldBe null
+          body.crn shouldBe CRN
+          body.dateOfBirth shouldBe person.dateOfBirth.toFormattedDateOfBirthLong()
+          body.offenceSentenceInfo.offence shouldBe "Assault"
+          body.offenceSentenceInfo.offenceSubCategory shouldBe "Common assault"
+          body.offenceSentenceInfo.outcome shouldBe "18 month community order"
+          body.offenceSentenceInfo.sentenceEndDate shouldBe LocalDate.of(2026, 3, 1)
           body.offenceSentenceInfo.expectedReleaseDate shouldBe null
           body.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe null
           body.offenceSentenceInfo.licenceConditionsOrZonesDetails shouldBe null
+        }
+    }
+
+    @Test
+    fun `should return confirmed release date and clear sentence end date when both prison dates are present`() {
+      val person = personRepository.save(
+        uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person(
+          id = UUID.randomUUID(),
+          identifier = CRN,
+          firstName = "John",
+          lastName = "Smith",
+          dateOfBirth = LocalDate.of(1980, 1, 1),
+          gender = "Male",
+          createdAt = OffsetDateTime.now(),
+          updatedAt = OffsetDateTime.now(),
+          prisonNumbers = "A1234BC",
+        ),
+      )
+      val referral = referralHelper.createReferral(person, submittedBy = testUser)
+
+      val futureReleaseDate = LocalDate.of(2099, 2, 1)
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/${referral.id}/offence-sentence")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<OffenceSentenceInfoBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.offenceSentenceInfo.expectedReleaseDate shouldBe futureReleaseDate
+          body.offenceSentenceInfo.sentenceEndDate shouldBe null
+          body.offenceSentenceInfo.offence shouldBe "Assault"
+          body.offenceSentenceInfo.offenceSubCategory shouldBe "Common assault"
+          body.offenceSentenceInfo.outcome shouldBe "18 month community order"
         }
     }
   }
@@ -1588,8 +1679,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         offence = "Robbery",
         offenceSubCategory = "Street robbery",
         outcome = "12 month community order",
-        sentenceEndDate = java.time.LocalDate.of(2026, 1, 1),
-        expectedReleaseDate = java.time.LocalDate.of(2026, 2, 1),
+        sentenceEndDate = LocalDate.of(2026, 1, 1),
+        expectedReleaseDate = LocalDate.of(2026, 2, 1),
         hasLicenceConditionsOrZones = true,
         licenceConditionsOrZonesDetails = "Cannot enter City Centre exclusion area",
       )
@@ -1605,11 +1696,13 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
           body.firstName shouldBe person.firstName
           body.lastName shouldBe person.lastName
+          body.crn shouldBe "X123456"
+          body.dateOfBirth shouldBe person.dateOfBirth.toFormattedDateOfBirthLong()
           body.offenceSentenceInfo.offence shouldBe "Robbery"
           body.offenceSentenceInfo.offenceSubCategory shouldBe "Street robbery"
           body.offenceSentenceInfo.outcome shouldBe "12 month community order"
-          body.offenceSentenceInfo.sentenceEndDate shouldBe java.time.LocalDate.of(2026, 1, 1)
-          body.offenceSentenceInfo.expectedReleaseDate shouldBe java.time.LocalDate.of(2026, 2, 1)
+          body.offenceSentenceInfo.sentenceEndDate shouldBe LocalDate.of(2026, 1, 1)
+          body.offenceSentenceInfo.expectedReleaseDate shouldBe LocalDate.of(2026, 2, 1)
           body.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe true
           body.offenceSentenceInfo.licenceConditionsOrZonesDetails shouldBe "Cannot enter City Centre exclusion area"
         }
@@ -1619,8 +1712,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       persistedRecord!!.offence shouldBe "Robbery"
       persistedRecord.offenceSubCategory shouldBe "Street robbery"
       persistedRecord.outcome shouldBe "12 month community order"
-      persistedRecord.sentenceEndDate shouldBe java.time.LocalDate.of(2026, 1, 1)
-      persistedRecord.expectedReleaseDate shouldBe java.time.LocalDate.of(2026, 2, 1)
+      persistedRecord.sentenceEndDate shouldBe LocalDate.of(2026, 1, 1)
+      persistedRecord.expectedReleaseDate shouldBe LocalDate.of(2026, 2, 1)
       persistedRecord.hasLicenceConditionsOrZones shouldBe true
       persistedRecord.licenceConditionsOrZonesDetails shouldBe "Cannot enter City Centre exclusion area"
       persistedRecord.createdBy shouldBe testUser.id

@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.NDeliusClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSentenceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 
 @Service
@@ -26,5 +27,10 @@ class NDeliusService(
   fun getCommunityManagerByIdentifier(identifier: String): CommunityManagerDto {
     log.debug("Fetching Community Manager for crn {}", identifier)
     return nDeliusClient.getCommunityManagerByCrn(identifier)
+  }
+
+  fun getOffenceSentenceByIdentifier(identifier: String): OffenceSentenceDto {
+    log.debug("Fetching offence sentence for crn {}", identifier)
+    return nDeliusClient.getOffenceSentenceByCrn(identifier)
   }
 }
