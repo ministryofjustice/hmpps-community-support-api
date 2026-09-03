@@ -12,14 +12,7 @@ data class OffenceSentenceInfoBffResponseDto(
   val offenceSentenceInfo: OffenceSentenceDto,
 ) {
   companion object {
-    // TODO: this currently documents intended future behavior only; pending nDelius custody integration,
-    //  this mapping remains a pass-through. Once nDelius confirms custody status is available here,
-    //  populate only the relevant date field: expectedReleaseDate for custody cases, otherwise sentenceEndDate.
-    fun from(
-      person: Person,
-      crn: String,
-      offenceSentenceInfo: OffenceSentenceDto,
-    ): OffenceSentenceInfoBffResponseDto = OffenceSentenceInfoBffResponseDto(
+    fun from(person: Person, crn: String, offenceSentenceInfo: OffenceSentenceDto): OffenceSentenceInfoBffResponseDto = OffenceSentenceInfoBffResponseDto(
       firstName = person.firstName,
       lastName = person.lastName,
       crn = crn,

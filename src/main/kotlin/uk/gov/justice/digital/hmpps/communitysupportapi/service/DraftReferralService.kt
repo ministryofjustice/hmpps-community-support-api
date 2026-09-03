@@ -331,10 +331,10 @@ class DraftReferralService(
 
     val crn = getCrn(person)
 
-    // NDelius is always required for offence/offence subcategory/outcome data.
+    // The call to NDelius API is always required for offence, offence subcategory, outcome data and sentenceEndDate.
     val nDeliusOffenceData = getOffenceSentenceDataFromNDelius(crn)
 
-    // Prison expected release date wins only when it is in the future.
+    // Calls Prison API to extract expectedReleaseDate which takes precedence only when it is in the future.
     val expectedReleaseDateToUse = getExpectedReleaseDateFromPrison(person)
       ?.takeIf { it.isAfter(LocalDate.now()) }
 
@@ -503,7 +503,7 @@ class DraftReferralService(
         person.prisonNumbers
           ?.split(",")
           ?.map { it.trim() }
-          ?.firstOrNull { it.isNotBlank() } // This may need to change if we are advised that the 'active prisonNumber' is
+          ?.firstOrNull { it.isNotBlank() } // This may need to change if we are advised that the active prison number is not the first non-blank value.
     } ?: return null
     return prisonApiService.getExpectedReleaseDateByPrisonNumber(prisonNumber)
   }
