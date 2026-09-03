@@ -221,38 +221,33 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
     val referralUser = referralHelper.ensureReferralUser()
     val createReferralRequest = setUpData()
 
-    val result = referralService.createReferral(referralUser.id, createReferralRequest)
-    val savedReferral = result.referral
+    val referralCreationResult = referralService.createReferral(referralUser.id, createReferralRequest)
+    val savedReferral = referralCreationResult.referral
     // create the selection to the database
-    run {
-      val request = SelectionDto.Yes("extra information for delivery partner")
-      val result = draftReferralService.updateAdditionalInformationForTheDeliveryPartner(
-        savedReferral.id,
-        request,
-        OffsetDateTime.now(),
-      )
-      assertThat(result.details).isEqualTo(SelectionDto.Yes("extra information for delivery partner"))
-    }
+    val yesSelectedRequest = SelectionDto.Yes("extra information for delivery partner")
+    val response1 = draftReferralService.updateAdditionalInformationForTheDeliveryPartner(
+      savedReferral.id,
+      yesSelectedRequest,
+      OffsetDateTime.now(),
+    )
+    assertThat(response1.details).isEqualTo(SelectionDto.Yes("extra information for delivery partner"))
+
     // retrieve the selection from the database
-    run {
-      val result = draftReferralService.getAdditionalInformationForTheDeliveryPartner(savedReferral.id)
-      assertThat(result.details).isEqualTo(SelectionDto.Yes("extra information for delivery partner"))
-    }
+    val response2 = draftReferralService.getAdditionalInformationForTheDeliveryPartner(savedReferral.id)
+    assertThat(response2.details).isEqualTo(SelectionDto.Yes("extra information for delivery partner"))
+
     // update the selection in the database
-    run {
-      val request = SelectionDto.No
-      val result = draftReferralService.updateAdditionalInformationForTheDeliveryPartner(
-        savedReferral.id,
-        request,
-        OffsetDateTime.now(),
-      )
-      assertThat(result.details).isEqualTo(SelectionDto.No)
-    }
+    val noSelectionRequest = SelectionDto.No
+    val response3 = draftReferralService.updateAdditionalInformationForTheDeliveryPartner(
+      savedReferral.id,
+      noSelectionRequest,
+      OffsetDateTime.now(),
+    )
+    assertThat(response3.details).isEqualTo(SelectionDto.No)
+
     // check the selection in the database
-    run {
-      val result = draftReferralService.getAdditionalInformationForTheDeliveryPartner(savedReferral.id)
-      assertThat(result.details).isEqualTo(SelectionDto.No)
-    }
+    val response4 = draftReferralService.getAdditionalInformationForTheDeliveryPartner(savedReferral.id)
+    assertThat(response4.details).isEqualTo(SelectionDto.No)
   }
 
   private fun setUpData(): CreateReferralRequest {
