@@ -56,7 +56,6 @@ class ReferenceDataService(
         description = it.description,
         longDescription = it.longDescription,
         agencyType = it.agencyType,
-        active = it.active,
       )
     }
 }

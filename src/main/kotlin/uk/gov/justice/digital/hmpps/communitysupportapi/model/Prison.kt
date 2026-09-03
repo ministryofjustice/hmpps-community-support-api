@@ -5,5 +5,4 @@ data class Prison(
   val description: String,
   val longDescription: String? = null,
   val agencyType: String,
-  val active: Boolean,
 )

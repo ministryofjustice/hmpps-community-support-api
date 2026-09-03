@@ -40,8 +40,8 @@ class ReferenceDataServiceUnitTest {
 
     assertEquals(
       listOf(
-        Prison(code = "MDI", description = "Moorland (HMP & YOI)", longDescription = "Moorland (HMP & YOI)", agencyType = "INST", active = true),
-        Prison(code = "LEI", description = "Leeds (HMP)", longDescription = "Leeds (HMP)", agencyType = "INST", active = true),
+        Prison(code = "MDI", description = "Moorland (HMP & YOI)", longDescription = "Moorland (HMP & YOI)", agencyType = "INST"),
+        Prison(code = "LEI", description = "Leeds (HMP)", longDescription = "Leeds (HMP)", agencyType = "INST"),
       ),
       result,
     )

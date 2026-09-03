@@ -144,7 +144,6 @@ class ReferenceDataControllerIntegrationTest : IntegrationTestBase() {
         .returnResult().responseBody!!
 
       assertThat(response).hasSize(2)
-      assertThat(response).allMatch { it.active }
       assertThat(response.map { it.code }).containsExactly("MDI", "LEI")
     }
   }
