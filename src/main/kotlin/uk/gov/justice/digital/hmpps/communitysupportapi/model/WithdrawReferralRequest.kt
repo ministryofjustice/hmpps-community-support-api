@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.model
 
-import jakarta.validation.ValidationException
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.NullOrNotBlank
 
 enum class ReferralWithdrawalReasonCode {
   INELIGIBLE_REFERRAL,
@@ -18,13 +18,8 @@ enum class ReferralWithdrawalReasonCode {
 
 data class WithdrawReferralRequest(
   val reasonCode: ReferralWithdrawalReasonCode,
+  @field:NullOrNotBlank
   val additionalDetails: String? = null,
 ) {
-  fun validateAndNormalise(): WithdrawReferralRequest {
-    if (additionalDetails != null && additionalDetails.isBlank()) {
-      throw ValidationException("AdditionalDetails must not be blank")
-    }
-
-    return copy(additionalDetails = additionalDetails?.trim())
-  }
+  fun normalise(): WithdrawReferralRequest = copy(additionalDetails = additionalDetails?.trim())
 }

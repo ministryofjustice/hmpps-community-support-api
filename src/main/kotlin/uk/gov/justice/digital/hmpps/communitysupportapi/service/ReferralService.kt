@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralWithdrawalDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.AlreadyReportedException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
@@ -217,22 +218,22 @@ class ReferralService(
     referralReference: String,
     userId: UUID,
     request: WithdrawReferralRequest,
+    asOfDateTime: OffsetDateTime = OffsetDateTime.now(),
   ) {
     val foundReferral = referralLookupService.findByCaseIdentifier(referralReference)
-    val validatedRequest = request.validateAndNormalise()
+    val validatedRequest = request.normalise()
 
     if (referralWithdrawalDetailsRepository.findByReferralId(foundReferral.id) != null) {
-      throw ConflictException("Referral $referralReference has already been withdrawn")
+      throw AlreadyReportedException("Referral $referralReference has already been withdrawn")
     }
 
-    val now = OffsetDateTime.now()
     referralWithdrawalDetailsRepository.save(
       ReferralWithdrawalDetails(
         id = UUID.randomUUID(),
         referralId = foundReferral.id,
         reasonCode = validatedRequest.reasonCode.name,
         reasonDetails = validatedRequest.additionalDetails,
-        createdAt = now,
+        createdAt = asOfDateTime,
         createdBy = userId,
       ),
     )
@@ -242,7 +243,7 @@ class ReferralService(
         id = UUID.randomUUID(),
         referral = foundReferral,
         eventType = ReferralEventType.WITHDRAWN,
-        createdAt = now,
+        createdAt = asOfDateTime,
         actorType = ActorType.AUTH,
         actorId = userId,
       ),

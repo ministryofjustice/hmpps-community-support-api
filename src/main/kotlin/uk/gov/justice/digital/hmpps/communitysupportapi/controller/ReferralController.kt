@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -256,6 +257,11 @@ class ReferralController(
         content = [Content(mediaType = "application/json")],
       ),
       ApiResponse(
+        responseCode = "208",
+        description = "Referral already withdrawn",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
         responseCode = "404",
         description = "Referral not found",
         content = [Content(mediaType = "application/json")],
@@ -265,7 +271,7 @@ class ReferralController(
   @PostMapping("/referral/{referralReference}/withdraw")
   fun withdrawReferral(
     @PathVariable referralReference: String,
-    @RequestBody request: WithdrawReferralRequest,
+    @Valid @RequestBody request: WithdrawReferralRequest,
   ): ResponseEntity<Void> {
     val user = userMapper.fromToken(authenticationHolder)
     referralService.withdrawReferral(referralReference, user.id, request)

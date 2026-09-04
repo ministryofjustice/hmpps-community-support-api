@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEventTy
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.AlreadyReportedException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
@@ -501,7 +502,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   }
 
   @Test
-  fun `withdrawReferral should throw ConflictException when referral already withdrawn`() {
+  fun `withdrawReferral should throw AlreadyReportedException when referral already withdrawn`() {
     val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(submittedBy = referralUser)
     val request = WithdrawReferralRequest(
@@ -512,7 +513,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     referralService.withdrawReferral(referral.referenceNumber!!, referralUser.id, request)
     assertThat(referralWithdrawalDetailsRepository.findAll()).hasSize(1)
 
-    assertThrows(ConflictException::class.java) {
+    assertThrows(AlreadyReportedException::class.java) {
       referralService.withdrawReferral(referral.referenceNumber!!, referralUser.id, request)
     }
     assertThat(referralWithdrawalDetailsRepository.findAll()).hasSize(1)

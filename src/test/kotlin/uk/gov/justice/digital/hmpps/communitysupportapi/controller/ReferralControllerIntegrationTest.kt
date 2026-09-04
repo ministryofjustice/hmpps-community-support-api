@@ -16,6 +16,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpMethod.GET
+import org.springframework.http.HttpStatus
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
@@ -459,7 +460,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       assertThat(savedWithdrawalDetails?.reasonDetails).isEqualTo("Sentence expired")
 
       val updatedReferral = referralRepository.findById(referral.id).get()
-      assertThat(updatedReferral.referralEvents.any { it.eventType == ReferralEventType.WITHDRAWN }).isTrue()
+      assertThat(updatedReferral.referralEvents.filter { it.eventType == ReferralEventType.WITHDRAWN }).hasSize(1)
     }
 
     @Test
@@ -504,7 +505,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isEqualTo(409)
+        .isEqualTo(HttpStatus.ALREADY_REPORTED)
     }
   }
 
