@@ -826,6 +826,116 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("PATCH /draft-referral/{referralId}/main-point-of-contact-details")
+  inner class MainPointOfContactDetailsPatchTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(PATCH, "/draft-referral/${UUID.randomUUID()}/main-point-of-contact-details")
+    }
+
+    @Test
+    fun `should return 404 when referral does not exist`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val request = UpdateProbationPractitionerDetailsRequest(name = "Jane Doe")
+
+      assertNotFound(PATCH, "/draft-referral/${UUID.randomUUID()}/main-point-of-contact-details", request)
+    }
+
+    @Test
+    fun `should return 200 and save main point of contact details including the phone number for a known referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      val request = UpdateProbationPractitionerDetailsRequest(
+        name = "Jane Doe",
+        jobRole = "Probation practitioner",
+        emailAddress = "jane.doe@example.com",
+        pdu = "Northumberland",
+        probationOffice = "Newcastle Office",
+        teamPhoneNumber = "0123456789",
+        phoneNumber = "0987654321",
+        ppDetailsFoundAndCorrect = false,
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/main-point-of-contact-details")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ProbationPractitionerDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.name shouldBe "Jane Doe"
+          body.jobRole shouldBe "Probation practitioner"
+          body.emailAddress shouldBe "jane.doe@example.com"
+          body.pdu shouldBe "Northumberland"
+          body.probationOffice shouldBe "Newcastle Office"
+          body.teamPhoneNumber shouldBe "0123456789"
+          body.phoneNumber shouldBe "0987654321"
+          body.ppDetailsFoundAndCorrect shouldBe false
+        }
+
+      val persistedRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
+      persistedRecord shouldNotBe null
+      persistedRecord!!.name shouldBe "Jane Doe"
+      persistedRecord.teamPhoneNumber shouldBe "0123456789"
+      persistedRecord.phoneNumber shouldBe "0987654321"
+      persistedRecord.updatedBy shouldBe testUser.id
+    }
+
+    @Test
+    fun `should update the phone number on an existing probation practitioner details record`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          id = UUID.randomUUID(),
+          referralId = referral.id,
+          name = "Jane Doe",
+          phoneNumber = "0000000000",
+          updatedAt = OffsetDateTime.now(),
+          updatedBy = testUser.id,
+        ),
+      )
+
+      val request = UpdateProbationPractitionerDetailsRequest(
+        name = "Jane Doe",
+        phoneNumber = "0987654321",
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/main-point-of-contact-details")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ProbationPractitionerDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.phoneNumber shouldBe "0987654321"
+        }
+
+      val updatedRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
+      updatedRecord shouldNotBe null
+      updatedRecord!!.phoneNumber shouldBe "0987654321"
+    }
+  }
+
+  @Nested
   @DisplayName("PATCH /draft-referral/community-service-provider/:referralId")
   inner class CommunityServiceProviderTest {
 

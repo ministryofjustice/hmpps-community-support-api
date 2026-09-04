@@ -458,6 +458,7 @@ class DraftReferralService(
           pdu = request.pdu,
           probationOffice = request.probationOffice,
           teamPhoneNumber = request.teamPhoneNumber,
+          phoneNumber = request.phoneNumber,
           ppDetailsFoundAndCorrect = request.ppDetailsFoundAndCorrect,
           updatedAt = OffsetDateTime.now(),
           updatedBy = userId,
@@ -470,6 +471,7 @@ class DraftReferralService(
       existingRecord.pdu = request.pdu
       existingRecord.probationOffice = request.probationOffice
       existingRecord.teamPhoneNumber = request.teamPhoneNumber
+      existingRecord.phoneNumber = request.phoneNumber
       existingRecord.ppDetailsFoundAndCorrect = request.ppDetailsFoundAndCorrect
       existingRecord.updatedAt = OffsetDateTime.now()
       existingRecord.updatedBy = userId
