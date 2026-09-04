@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -30,6 +31,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.WithdrawReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.PersonService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
@@ -244,6 +246,36 @@ class ReferralController(
     val user = userMapper.fromToken(authenticationHolder)
 
     return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
+  }
+
+  @Operation(summary = "Withdraw a referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral withdrawn",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "208",
+        description = "Referral already withdrawn",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PostMapping("/referral/{referralReference}/withdraw")
+  fun withdrawReferral(
+    @PathVariable referralReference: String,
+    @Valid @RequestBody request: WithdrawReferralRequest,
+  ): ResponseEntity<Void> {
+    val user = userMapper.fromToken(authenticationHolder)
+    referralService.withdrawReferral(referralReference, user.id, request)
+    return ResponseEntity.ok().build()
   }
 
   @Operation(summary = "Get referral progress page data")
