@@ -4,6 +4,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.BeforeEach
@@ -51,6 +53,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprPrisonPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManager
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
@@ -142,7 +145,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .create()
       personRepository.save(person)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
-      stubNDeliusPersonalDetails(CRN)
+      stubNDeliusPersonalDetails()
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -179,9 +182,11 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return empty nDelius details for a person identified by prison number`() {
+    fun `should retrieve nDelius details using the CRN for a person identified by prison number`() {
       val person = referralHelper.createPerson(identifier = "A1234BC")
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+      stubCprPrisonPerson(person.identifier)
+      stubNDeliusPersonalDetails()
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -195,14 +200,27 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
           body.personDetailsTableData.crn shouldBe null
           body.personDetailsTableData.prisonNumber shouldBe person.identifier
-          body.personDetailsTableData.personalCircumstances shouldBe emptyList()
-          body.personDetailsTableData.disabilities shouldBe emptyList()
+          body.personDetailsTableData.disabilities.map { it.description } shouldBe listOf("Blind")
+          body.personDetailsTableData.personalCircumstances.map { it.description } shouldBe listOf("Relationships", "Employment", "Dependants")
         }
     }
 
-    private fun stubNDeliusPersonalDetails(identifier: String) {
+    private fun stubCprPrisonPerson(prisonNumber: String) {
       stubFor(
-        get(urlEqualTo("/case/$identifier"))
+        get(urlPathEqualTo("/person/prison/$prisonNumber"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPrisonPersonJson(prisonNumber)),
+          ),
+      )
+    }
+
+    private fun stubNDeliusPersonalDetails() {
+      val identifierRegex = "[A-Z]\\d{6}"
+      stubFor(
+        get(urlPathMatching("/case/$identifierRegex"))
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -211,7 +229,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           ),
       )
       stubFor(
-        get(urlEqualTo("/case/$identifier/home-office-interest"))
+        get(urlPathMatching("/case/$identifierRegex/home-office-interest"))
           .willReturn(
             aResponse()
               .withStatus(200)
