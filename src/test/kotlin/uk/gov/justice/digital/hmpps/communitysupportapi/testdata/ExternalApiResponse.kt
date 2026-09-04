@@ -180,7 +180,7 @@ object ExternalApiResponse {
       ),
     ),
     identifiers = CprIdentifiersDto(
-      crns = emptyList(),
+      crns = listOf("A123456"),
       prisonNumbers = prisonNumbers.asList(),
       pncs = listOf("12/394773H"),
       cros = listOf("29906/12J"),
