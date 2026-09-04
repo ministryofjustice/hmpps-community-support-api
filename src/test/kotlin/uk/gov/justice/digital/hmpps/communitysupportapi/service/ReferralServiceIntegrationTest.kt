@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEventTy
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.AlreadyReportedException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
@@ -32,6 +33,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationT
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.PersonTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.ReferralWithdrawalReasonCode
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.WithdrawReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
@@ -44,6 +47,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralWithdrawalDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
@@ -70,6 +74,9 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralRepository: ReferralRepository
+
+  @Autowired
+  private lateinit var referralWithdrawalDetailsRepository: ReferralWithdrawalDetailsRepository
 
   @Autowired
   private lateinit var actionPlanRepository: ActionPlanRepository
@@ -108,6 +115,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   private lateinit var personAdditionSupportNeedsRepository: PersonAdditionalSupportNeedsRepository
 
   private companion object {
+    const val NON_EXISTENT_REFERRAL_REFERENCE = "ZZ9999YY"
     const val NON_EXISTENT_CRN = "X888888"
     const val NON_EXISTENT_PRISON = "Z1234YY"
     const val EXISTING_CRN = "X666666"
@@ -211,14 +219,14 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       prisonNumber,
       createCprPrisonPersonDto(prisonNumber).copy(
         identifiers = CprIdentifiersDto(
-          crns = emptyList(),
+          crns = listOf("A123456"),
           prisonNumbers = listOf("A1234BC", "B5678DE"),
           pncs = listOf("12/394773H"),
           cros = listOf("29906/12J"),
         ),
       ),
     )
-    setupNDeliusStubs(prisonNumber)
+    setupNDeliusStubs("A123456")
 
     val request = CreateReferralRequest(personIdentifier = prisonNumber)
 
@@ -247,14 +255,14 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
         lastName = "Smith",
         dateOfBirth = "1980-01-01",
         identifiers = CprIdentifiersDto(
-          crns = emptyList(),
+          crns = listOf("A123456"),
           prisonNumbers = listOf(prisonNumber),
           pncs = listOf("12/394773H"),
           cros = listOf("29906/12J"),
         ),
       ),
     )
-    setupNDeliusStubs(prisonNumber)
+    setupNDeliusStubs("A123456")
 
     val request = CreateReferralRequest(personIdentifier = prisonNumber)
 
@@ -451,6 +459,67 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
   }
 
   @Test
+  fun `withdrawReferral should save withdrawal details and withdrawal event`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val referral = referralHelper.createReferral(submittedBy = referralUser)
+
+    referralService.withdrawReferral(
+      referral.referenceNumber!!,
+      referralUser.id,
+      WithdrawReferralRequest(
+        reasonCode = ReferralWithdrawalReasonCode.NOT_ENGAGED,
+        additionalDetails = "User is not actively engaged.",
+      ),
+    )
+
+    val savedWithdrawalDetails = referralWithdrawalDetailsRepository.findByReferralId(referral.id)
+    assertThat(savedWithdrawalDetails).isNotNull()
+    assertThat(savedWithdrawalDetails?.reasonCode).isEqualTo("NOT_ENGAGED")
+    assertThat(savedWithdrawalDetails?.reasonDetails).isEqualTo("User is not actively engaged.")
+    assertThat(savedWithdrawalDetails?.createdBy).isEqualTo(referralUser.id)
+
+    val latestReferral = referralRepository.findById(referral.id).get()
+
+    val withdrawnEvent = latestReferral.referralEvents.last { it.eventType == ReferralEventType.WITHDRAWN }
+    assertThat(withdrawnEvent).isNotNull
+    assertThat(withdrawnEvent.actorId).isEqualTo(referralUser.id)
+  }
+
+  @Test
+  fun `withdrawReferral should throw NotFoundException when referral does not exist`() {
+    val referralUser = referralHelper.ensureReferralUser()
+
+    assertThrows(NotFoundException::class.java) {
+      referralService.withdrawReferral(
+        NON_EXISTENT_REFERRAL_REFERENCE,
+        referralUser.id,
+        WithdrawReferralRequest(
+          reasonCode = ReferralWithdrawalReasonCode.SENTENCE_EXPIRED,
+          additionalDetails = "Some details",
+        ),
+      )
+    }
+  }
+
+  @Test
+  fun `withdrawReferral should throw AlreadyReportedException when referral already withdrawn`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val referral = referralHelper.createReferral(submittedBy = referralUser)
+    val request = WithdrawReferralRequest(
+      reasonCode = ReferralWithdrawalReasonCode.SENTENCE_EXPIRED,
+      additionalDetails = "Some details",
+    )
+
+    referralService.withdrawReferral(referral.referenceNumber!!, referralUser.id, request)
+    assertThat(referralWithdrawalDetailsRepository.findAll()).hasSize(1)
+
+    assertThrows(AlreadyReportedException::class.java) {
+      referralService.withdrawReferral(referral.referenceNumber!!, referralUser.id, request)
+    }
+    assertThat(referralWithdrawalDetailsRepository.findAll()).hasSize(1)
+  }
+
+  @Test
   fun `getReferralProgress should throw NotFoundException when referral does not exist`() {
     val nonExistentReferralId = UUID.randomUUID()
 
@@ -537,6 +606,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     referralHelper.assignCaseWorkers(referral, listOf(referralUser))
     stubCprProbationPerson(person.identifier, createCprProbationPersonDto(person.identifier))
+    setupNDeliusStubs(person.identifier)
 
     val result = referralService.getReferralDetailsPage(referral.referenceNumber)
 
@@ -653,6 +723,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val crn = "X123456"
 
     stubCprProbationPerson(crn, createCprProbationPersonDto(crn))
+    setupNDeliusStubs(crn)
 
     return CreateReferralRequest(personIdentifier = crn)
   }
