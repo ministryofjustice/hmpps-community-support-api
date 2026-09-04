@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.DisplayName
@@ -87,6 +88,40 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
           body.additionalDetails?.disability shouldBe false
 
           checkDefaultPersonDetailsAndCircumstances(body)
+        }
+    }
+
+    @Test
+    fun `should return OK with valid prison number identifier and empty additional info if no CRN available`() {
+      stubFor(
+        get(urlEqualTo("/person/prison/$PRISONER_NUMBER"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createCprPrisonPersonDto(PRISONER_NUMBER, hasCrns = false).toJson()),
+          ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/person/$PRISONER_NUMBER")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<PersonDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.id shouldNotBe null
+          body.personIdentifier shouldBe PRISONER_NUMBER
+          body.title shouldBe "Mr"
+          body.firstName shouldBe "John"
+          body.middleNames shouldBe "James"
+          body.lastName shouldBe "Smith"
+          body.dateOfBirth shouldBe LocalDate.of(1985, 1, 1).toFormattedDateOfBirth()
+          body.sex shouldBe "Male"
+          body.prisonNumbers shouldBe listOf(PRISONER_NUMBER)
+          body.personDetailsAndCircumstances.shouldBeNull()
         }
     }
 
