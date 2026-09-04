@@ -29,8 +29,11 @@ class PersonService(
     )
     val personDetailsAndCircumstances = if (identifier is PersonIdentifier.Crn) {
       deliusService.getPersonalDetailsAndCircumstancesByIdentifier(personIdentifier)
-    } else {
+    } else if (personAggregate.person.knownCrns.isNotEmpty()) {
       deliusService.getPersonalDetailsAndCircumstancesByIdentifier(personAggregate.person.knownCrns.first())
+    } else {
+      log.warn("No known CRN found for person with prison identifier {}", personIdentifier)
+      null
     }
     return personAggregate.toPersonDto(personDetailsAndCircumstances)
   }
