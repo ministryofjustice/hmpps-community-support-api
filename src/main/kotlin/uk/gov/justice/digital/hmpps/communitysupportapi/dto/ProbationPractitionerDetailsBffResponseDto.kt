@@ -10,6 +10,7 @@ data class ProbationPractitionerDetailsBffResponseDto(
   val pdu: String?,
   val probationOffice: String?,
   val teamPhoneNumber: String?,
+  val phoneNumber: String? = null,
   val ppDetailsFoundAndCorrect: Boolean? = null,
 ) {
   companion object {
@@ -34,6 +35,7 @@ data class ProbationPractitionerDetailsBffResponseDto(
       pdu = entity.pdu,
       probationOffice = entity.probationOffice,
       teamPhoneNumber = entity.teamPhoneNumber,
+      phoneNumber = entity.phoneNumber,
       ppDetailsFoundAndCorrect = entity.ppDetailsFoundAndCorrect,
     )
   }

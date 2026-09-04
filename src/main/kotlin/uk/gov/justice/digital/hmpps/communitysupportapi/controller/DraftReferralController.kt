@@ -472,4 +472,34 @@ class DraftReferralController(
 
     return ResponseEntity.ok(draftReferralService.upsertProbationPractitionerDetails(referralId, user.id, request))
   }
+
+  @Operation(summary = "Save the Main Point of Contact details for a Draft Referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Main Point of Contact details saved",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ProbationPractitionerDetailsBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/draft-referral/{referralId}/main-point-of-contact-details")
+  fun updateMainPointOfContactDetails(
+    @PathVariable referralId: UUID,
+    @RequestBody request: UpdateProbationPractitionerDetailsRequest,
+  ): ResponseEntity<ProbationPractitionerDetailsBffResponseDto> {
+    val user = userMapper.fromToken(authenticationHolder)
+
+    return ResponseEntity.ok(draftReferralService.upsertProbationPractitionerDetails(referralId, user.id, request))
+  }
 }

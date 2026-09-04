@@ -34,6 +34,9 @@ class ProbationPractitionerDetails(
   @Column(name = "team_phone_number")
   var teamPhoneNumber: String? = null,
 
+  @Column(name = "phone_number")
+  var phoneNumber: String? = null,
+
   @Column(name = "pp_details_found_and_correct")
   var ppDetailsFoundAndCorrect: Boolean? = null,
 
