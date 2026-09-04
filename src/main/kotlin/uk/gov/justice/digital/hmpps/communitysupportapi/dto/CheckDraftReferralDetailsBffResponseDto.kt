@@ -2,9 +2,9 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.Disability
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonalCircumstance
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.Disability
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -57,9 +57,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       fun from(
         person: Person,
         personalDetailsAndCircumstances: PersonDetailsAndCircumstances,
-      ): DraftPersonDetailsTableDataDto {
-
-        return DraftPersonDetailsTableDataDto(
+      ): DraftPersonDetailsTableDataDto = DraftPersonDetailsTableDataDto(
         name = RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
         crn = person.identifier,
         dateOfBirth = person.dateOfBirth,
@@ -68,7 +66,6 @@ data class CheckDraftReferralDetailsBffResponseDto(
         disabilities = personalDetailsAndCircumstances.disabilities,
         prisonNumbers = person.prisonNumbers,
       )
-      }
     }
   }
 
