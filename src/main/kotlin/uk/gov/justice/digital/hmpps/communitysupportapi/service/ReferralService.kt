@@ -63,6 +63,7 @@ class ReferralService(
   private val cprProbationService: CprProbationService,
   private val identifierValidator: PersonIdentifierValidator,
   private val personService: PersonService,
+  private val nDeliusService: NDeliusService,
   private val actionPlanService: ActionPlanService,
 ) {
   companion object {
@@ -86,8 +87,16 @@ class ReferralService(
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+    val identifier = identifierValidator.validate(person.identifier)
+    val personalDetailsAndCircumstances = when (identifier) {
+      is PersonIdentifier.Crn -> nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
+      is PersonIdentifier.PrisonerNumber -> {
+        val crn = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value).person.knownCrns.first()
+        nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
+      }
+    }
 
-    return CheckDraftReferralDetailsBffResponseDto.from(referral, person)
+    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, identifier, personalDetailsAndCircumstances)
   }
 
   fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(

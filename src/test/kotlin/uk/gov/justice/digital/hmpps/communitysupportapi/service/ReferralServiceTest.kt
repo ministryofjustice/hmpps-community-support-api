@@ -71,6 +71,9 @@ class ReferralServiceTest {
   lateinit var personService: PersonService
 
   @Mock
+  lateinit var nDeliusService: NDeliusService
+
+  @Mock
   lateinit var actionPlanService: ActionPlanService
 
   @InjectMocks
