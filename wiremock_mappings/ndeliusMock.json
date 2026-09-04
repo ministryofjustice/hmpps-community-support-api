@@ -145,6 +145,43 @@
           "message": "Person not found"
         }
       }
+    },
+    {
+      "name": "nDelius get offence sentence by CRN",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/case/X[0-9]{6}/offence-sentence"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "offence": "Assault",
+          "offenceSubCategory": "Common assault",
+          "outcome": "18 month community order",
+          "sentenceEndDate": "2026-03-01"
+        }
+      }
+    },
+    {
+      "name": "nDelius offence sentence not found by CRN",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/case/Z[0-9]{6}/offence-sentence"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "status": 404,
+          "error": "Not Found",
+          "message": "Person not found"
+        }
+      }
     }
   ]
 }

@@ -70,6 +70,9 @@ class DraftReferralServiceTest {
   @Mock
   lateinit var nDeliusService: NDeliusService
 
+  @Mock
+  lateinit var prisonApiService: PrisonApiService
+
   @InjectMocks
   lateinit var draftReferralService: DraftReferralService
 

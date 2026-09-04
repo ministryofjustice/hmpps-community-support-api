@@ -1,7 +1,110 @@
 {
   "mappings": [
     {
-      "name": "Nomis prisoner details",
+      "name": "Nomis prisoner details - future release date",
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/nomis/prisoner/A1234BC"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "prisonerNumber": "A1234BC",
+          "firstName": "Alex",
+          "lastName": "River",
+          "dateOfBirth": "1988-01-01",
+          "gender": "Male",
+          "confirmedReleaseDate": "2099-02-01",
+          "releaseDate": "2099-01-01",
+          "aliases": [],
+          "alerts": [],
+          "personalCareNeeds": [],
+          "languages": [],
+          "tattoos": [],
+          "scars": [],
+          "marks": [],
+          "addresses": [],
+          "emailAddresses": [],
+          "phoneNumbers": [],
+          "identifiers": [],
+          "allConvictedOffences": []
+        }
+      }
+    },
+    {
+      "name": "Nomis prisoner details - past release date",
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/nomis/prisoner/A1234BD"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "prisonerNumber": "A1234BD",
+          "firstName": "Alex",
+          "lastName": "River",
+          "dateOfBirth": "1988-01-01",
+          "gender": "Male",
+          "releaseDate": "2020-01-01",
+          "aliases": [],
+          "alerts": [],
+          "personalCareNeeds": [],
+          "languages": [],
+          "tattoos": [],
+          "scars": [],
+          "marks": [],
+          "addresses": [],
+          "emailAddresses": [],
+          "phoneNumbers": [],
+          "identifiers": [],
+          "allConvictedOffences": []
+        }
+      }
+    },
+    {
+      "name": "Nomis prisoner details - no release date",
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/nomis/prisoner/A1234BE"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "prisonerNumber": "A1234BE",
+          "firstName": "Alex",
+          "lastName": "River",
+          "dateOfBirth": "1988-01-01",
+          "gender": "Male",
+          "aliases": [],
+          "alerts": [],
+          "personalCareNeeds": [],
+          "languages": [],
+          "tattoos": [],
+          "scars": [],
+          "marks": [],
+          "addresses": [],
+          "emailAddresses": [],
+          "phoneNumbers": [],
+          "identifiers": [],
+          "allConvictedOffences": []
+        }
+      }
+    },
+    {
+      "name": "Nomis prisoner details - default",
+      "priority": 10,
       "request": {
         "method": "GET",
         "urlPathPattern": "/nomis/prisoner/.*"

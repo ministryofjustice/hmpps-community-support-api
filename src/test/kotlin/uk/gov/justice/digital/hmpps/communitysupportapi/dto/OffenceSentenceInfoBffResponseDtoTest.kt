@@ -4,6 +4,7 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSentenceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
 import java.time.LocalDate
 
 class OffenceSentenceInfoBffResponseDtoTest {
@@ -20,10 +21,12 @@ class OffenceSentenceInfoBffResponseDtoTest {
       licenceConditionsOrZonesDetails = "Do not enter exclusion zone",
     )
 
-    val result = OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
+    val result = OffenceSentenceInfoBffResponseDto.from(person, "X123456", offenceSentenceInfo)
 
     result.firstName shouldBe "Jane"
     result.lastName shouldBe "Doe"
+    result.crn shouldBe "X123456"
+    result.dateOfBirth shouldBe person.dateOfBirth.toFormattedDateOfBirthLong()
     result.offenceSentenceInfo.sentenceEndDate shouldBe LocalDate.of(2026, 1, 1)
     result.offenceSentenceInfo.expectedReleaseDate shouldBe null
     result.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe true
@@ -43,10 +46,12 @@ class OffenceSentenceInfoBffResponseDtoTest {
       licenceConditionsOrZonesDetails = null,
     )
 
-    val result = OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
+    val result = OffenceSentenceInfoBffResponseDto.from(person, "X123456", offenceSentenceInfo)
 
     result.firstName shouldBe "Jane"
     result.lastName shouldBe "Doe"
+    result.crn shouldBe "X123456"
+    result.dateOfBirth shouldBe person.dateOfBirth.toFormattedDateOfBirthLong()
     result.offenceSentenceInfo.sentenceEndDate shouldBe null
     result.offenceSentenceInfo.expectedReleaseDate shouldBe LocalDate.of(2026, 2, 1)
     result.offenceSentenceInfo.hasLicenceConditionsOrZones shouldBe false

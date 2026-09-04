@@ -40,6 +40,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -58,6 +59,7 @@ class DraftReferralService(
   private val probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository,
   private val identifierValidator: PersonIdentifierValidator,
   private val nDeliusService: NDeliusService,
+  private val prisonApiService: PrisonApiService,
 ) {
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
@@ -100,8 +102,7 @@ class DraftReferralService(
       .map { it.name }
       .sorted()
 
-    val identifier = identifierValidator.validate(person.identifier)
-    val crn = if (identifier is PersonIdentifier.Crn) identifier.value else ""
+    val crn = getCrn(person)
     val dateOfBirth = person.dateOfBirth.toFormattedDateOfBirthLong()
 
     return AreaConfirmationBffResponseDto.from(communityServiceProvider, associatedPdus, crn, dateOfBirth)
@@ -328,10 +329,18 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    // TODO: Replace with downstream service call to retrieve offence and sentence information when client details are confirmed
-    val offenceSentenceInfo = OffenceSentenceDto()
+    val crn = getCrn(person)
 
-    return OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
+    // The call to NDelius API is always required for offence, offence subcategory, outcome data and sentenceEndDate.
+    val nDeliusOffenceData = getOffenceSentenceDataFromNDelius(crn)
+
+    // Calls Prison API to extract expectedReleaseDate which takes precedence only when it is in the future.
+    val expectedReleaseDateToUse = getExpectedReleaseDateFromPrison(person)
+      ?.takeIf { it.isAfter(LocalDate.now()) }
+
+    val offenceSentenceInfo = buildOffenceSentenceInfo(nDeliusOffenceData, expectedReleaseDateToUse)
+
+    return OffenceSentenceInfoBffResponseDto.from(person, crn, offenceSentenceInfo)
   }
 
   @Transactional
@@ -341,6 +350,8 @@ class DraftReferralService(
 
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+
+    val crn = getCrn(person)
 
     val validatedRequest = request.validateAndNormalise()
 
@@ -386,7 +397,7 @@ class DraftReferralService(
       referralOffenceSentenceRepository.save(existingRecord)
     }
 
-    return OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
+    return OffenceSentenceInfoBffResponseDto.from(person, crn, offenceSentenceInfo)
   }
 
   fun getAdditionalInformationForTheDeliveryPartner(referralId: UUID): AdditionalInformationForTheDeliveryPartnerBffResponseDto {
@@ -426,10 +437,7 @@ class DraftReferralService(
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
     // TODO: temporary restriction until it's determined how to look up a Probation Practitioner for a person identified by prison number.
-    val crn = when (val identifier = identifierValidator.validate(person.identifier)) {
-      is PersonIdentifier.Crn -> identifier.value
-      is PersonIdentifier.PrisonerNumber -> throw ValidationException("Cannot retrieve Probation Practitioner details for a person identified by prison number")
-    }
+    val crn = getCrn(person, validationMessage = "Cannot retrieve Probation Practitioner details for a person identified by prison number")
 
     val communityManager = nDeliusService.getCommunityManagerByIdentifier(crn)
 
@@ -477,5 +485,46 @@ class DraftReferralService(
     }
 
     return ProbationPractitionerDetailsBffResponseDto.from(savedRecord)
+  }
+
+  private fun getCrn(person: Person, validationMessage: String? = null): String = when (
+    val identifier = identifierValidator.validate(person.identifier)
+  ) {
+    is PersonIdentifier.Crn -> identifier.value
+    is PersonIdentifier.PrisonerNumber -> validationMessage?.let { throw ValidationException(it) } ?: ""
+  }
+
+  private fun getOffenceSentenceDataFromNDelius(crn: String): OffenceSentenceDto = nDeliusService.getOffenceSentenceByIdentifier(crn)
+
+  private fun getExpectedReleaseDateFromPrison(person: Person): LocalDate? {
+    val prisonNumber = when (val identifier = identifierValidator.validate(person.identifier)) {
+      is PersonIdentifier.PrisonerNumber -> identifier.value
+      is PersonIdentifier.Crn ->
+        person.prisonNumbers
+          ?.split(",")
+          ?.map { it.trim() }
+          ?.firstOrNull { it.isNotBlank() } // This may need to change if we are advised that the active prison number is not the first non-blank value.
+    } ?: return null
+    return prisonApiService.getExpectedReleaseDateByPrisonNumber(prisonNumber)
+  }
+
+  private fun buildOffenceSentenceInfo(
+    nDeliusOffenceData: OffenceSentenceDto,
+    expectedReleaseDate: LocalDate?,
+  ): OffenceSentenceDto = when {
+    expectedReleaseDate != null ->
+      nDeliusOffenceData.copy(
+        expectedReleaseDate = expectedReleaseDate,
+        sentenceEndDate = null,
+      )
+
+    nDeliusOffenceData.sentenceEndDate != null ->
+      nDeliusOffenceData.copy(expectedReleaseDate = null)
+
+    else ->
+      nDeliusOffenceData.copy(
+        expectedReleaseDate = null,
+        sentenceEndDate = null,
+      )
   }
 }
