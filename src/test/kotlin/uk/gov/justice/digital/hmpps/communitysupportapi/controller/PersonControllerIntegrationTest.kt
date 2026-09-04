@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -63,7 +64,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
               .withBody(createCprPrisonPersonDto(PRISONER_NUMBER).toJson()),
           ),
       )
-      setupNDeliusStubs(PRISONER_NUMBER)
+      setupNDeliusStubs()
 
       webTestClient.get()
         .uri("/bff/person/$PRISONER_NUMBER")
@@ -100,7 +101,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
               .withBody(createCprProbationPersonDto(CRN).toJson()),
           ),
       )
-      setupNDeliusStubs(CRN)
+      setupNDeliusStubs()
 
       webTestClient.get()
         .uri("/bff/person/$CRN")
@@ -156,9 +157,10 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
       assertNotFound(GET, "/bff/person/$unknownCrn")
     }
 
-    private fun setupNDeliusStubs(identifier: String) {
+    private fun setupNDeliusStubs() {
+      val identifierRegex = "[A-Z]\\d{6}"
       stubFor(
-        get(urlEqualTo("/case/$identifier"))
+        get(urlPathMatching("/case/$identifierRegex"))
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -166,8 +168,9 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
               .withBody(createPersonDetailsAndCircumstances()),
           ),
       )
+
       stubFor(
-        get(urlEqualTo(("/case/$identifier/home-office-interest")))
+        get(urlPathMatching("/case/$identifierRegex/home-office-interest"))
           .willReturn(
             aResponse()
               .withStatus(200)

@@ -211,14 +211,14 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       prisonNumber,
       createCprPrisonPersonDto(prisonNumber).copy(
         identifiers = CprIdentifiersDto(
-          crns = emptyList(),
+          crns = listOf("A123456"),
           prisonNumbers = listOf("A1234BC", "B5678DE"),
           pncs = listOf("12/394773H"),
           cros = listOf("29906/12J"),
         ),
       ),
     )
-    setupNDeliusStubs(prisonNumber)
+    setupNDeliusStubs("A123456")
 
     val request = CreateReferralRequest(personIdentifier = prisonNumber)
 
@@ -247,14 +247,14 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
         lastName = "Smith",
         dateOfBirth = "1980-01-01",
         identifiers = CprIdentifiersDto(
-          crns = emptyList(),
+          crns = listOf("A123456"),
           prisonNumbers = listOf(prisonNumber),
           pncs = listOf("12/394773H"),
           cros = listOf("29906/12J"),
         ),
       ),
     )
-    setupNDeliusStubs(prisonNumber)
+    setupNDeliusStubs("A123456")
 
     val request = CreateReferralRequest(personIdentifier = prisonNumber)
 
@@ -537,6 +537,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     referralHelper.assignCaseWorkers(referral, listOf(referralUser))
     stubCprProbationPerson(person.identifier, createCprProbationPersonDto(person.identifier))
+    setupNDeliusStubs(person.identifier)
 
     val result = referralService.getReferralDetailsPage(referral.referenceNumber)
 
@@ -653,6 +654,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val crn = "X123456"
 
     stubCprProbationPerson(crn, createCprProbationPersonDto(crn))
+    setupNDeliusStubs(crn)
 
     return CreateReferralRequest(personIdentifier = crn)
   }
