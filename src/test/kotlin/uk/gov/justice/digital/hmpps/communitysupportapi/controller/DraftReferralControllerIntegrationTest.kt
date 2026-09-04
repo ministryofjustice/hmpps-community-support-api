@@ -52,6 +52,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManager
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
@@ -140,6 +142,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .create()
       personRepository.save(person)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+      stubNDeliusPersonalDetails(CRN)
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -156,9 +159,11 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personDetailsTableData.name.firstName shouldBe person.firstName
           body.personDetailsTableData.name.lastName shouldBe person.lastName
           body.personDetailsTableData.crn shouldBe CRN
-          body.personDetailsTableData.dateOfBirth shouldBe person.dateOfBirth.toString()
+          body.personDetailsTableData.dateOfBirth shouldBe person.dateOfBirth
           body.personDetailsTableData.prisonNumbers shouldBe person.prisonNumbers
           body.personDetailsTableData.preferredLanguage shouldBe ""
+          body.personDetailsTableData.disabilities.map { it.description } shouldBe listOf("Blind")
+          body.personDetailsTableData.personalCircumstances.map { it.description } shouldBe listOf("Relationships", "Employment", "Dependants")
           body.equalityDetailsTableData.ethnicity shouldBe person.additionalDetails?.ethnicity
           body.equalityDetailsTableData.religionOrBelief shouldBe person.additionalDetails?.religionOrBelief
           body.equalityDetailsTableData.sex shouldBe person.gender
@@ -171,6 +176,27 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
           body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
         }
+    }
+
+    private fun stubNDeliusPersonalDetails(identifier: String) {
+      stubFor(
+        get(urlEqualTo("/case/$identifier"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createPersonDetailsAndCircumstances()),
+          ),
+      )
+      stubFor(
+        get(urlEqualTo("/case/$identifier/home-office-interest"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createHomeOfficeInterest()),
+          ),
+      )
     }
 
     @Test

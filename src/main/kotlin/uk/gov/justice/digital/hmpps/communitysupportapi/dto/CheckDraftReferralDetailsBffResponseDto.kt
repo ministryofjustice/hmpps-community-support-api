@@ -2,6 +2,9 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonalCircumstance
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.Disability
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -21,11 +24,15 @@ data class CheckDraftReferralDetailsBffResponseDto(
   val mainPocDetailsTableData: DraftMainPOCDetailsTableDataDto,
 ) {
   companion object {
-    fun from(referral: Referral, person: Person): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
+    fun from(
+      referral: Referral,
+      person: Person,
+      personalDetailsAndCircumstances: PersonDetailsAndCircumstances,
+    ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
       createdDate = referral.createdAt,
-      personDetailsTableData = DraftPersonDetailsTableDataDto.from(person),
+      personDetailsTableData = DraftPersonDetailsTableDataDto.from(person, personalDetailsAndCircumstances),
       equalityDetailsTableData = DraftEqualityDetailsTableDataDto.from(person),
       contactDetailsTableData = DraftContactDetailsTableDataDto.from(person),
       additionalInformationDetailsTableData = DraftAdditionalInformationDetailsTableDataDto.from(),
@@ -40,22 +47,28 @@ data class CheckDraftReferralDetailsBffResponseDto(
   data class DraftPersonDetailsTableDataDto(
     val name: RefereeNameDto,
     val crn: String,
-    val dateOfBirth: String,
-    val preferredLanguage: String,
-    val disabilities: String,
+    val dateOfBirth: LocalDate,
+    val preferredLanguage: String?,
     val prisonNumbers: String?,
-    val currentCircumstances: String,
+    val personalCircumstances: List<PersonalCircumstance> = emptyList(),
+    val disabilities: List<Disability> = emptyList(),
   ) {
     companion object {
-      fun from(person: Person): DraftPersonDetailsTableDataDto = DraftPersonDetailsTableDataDto(
+      fun from(
+        person: Person,
+        personalDetailsAndCircumstances: PersonDetailsAndCircumstances,
+      ): DraftPersonDetailsTableDataDto {
+
+        return DraftPersonDetailsTableDataDto(
         name = RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
         crn = person.identifier,
-        dateOfBirth = person.dateOfBirth.toString(),
-        preferredLanguage = person.additionalDetails?.preferredLanguage ?: "",
-        disabilities = "", // OffenderProfileDto
+        dateOfBirth = person.dateOfBirth,
+        preferredLanguage = person.additionalDetails?.preferredLanguage,
+        personalCircumstances = personalDetailsAndCircumstances.personalCircumstances,
+        disabilities = personalDetailsAndCircumstances.disabilities,
         prisonNumbers = person.prisonNumbers,
-        currentCircumstances = "", // Delius OffenderProfileDto
       )
+      }
     }
   }
 
