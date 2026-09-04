@@ -159,8 +159,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personDetailsTableData.name.firstName shouldBe person.firstName
           body.personDetailsTableData.name.lastName shouldBe person.lastName
           body.personDetailsTableData.crn shouldBe CRN
+          body.personDetailsTableData.prisonNumber shouldBe null
           body.personDetailsTableData.dateOfBirth shouldBe person.dateOfBirth
-          body.personDetailsTableData.prisonNumbers shouldBe person.prisonNumbers
           body.personDetailsTableData.preferredLanguage shouldBe ""
           body.personDetailsTableData.disabilities.map { it.description } shouldBe listOf("Blind")
           body.personDetailsTableData.personalCircumstances.map { it.description } shouldBe listOf("Relationships", "Employment", "Dependants")
@@ -175,6 +175,28 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
           body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
+        }
+    }
+
+    @Test
+    fun `should return empty nDelius details for a person identified by prison number`() {
+      val person = referralHelper.createPerson(identifier = "A1234BC")
+      val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<CheckDraftReferralDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.personDetailsTableData.crn shouldBe null
+          body.personDetailsTableData.prisonNumber shouldBe person.identifier
+          body.personDetailsTableData.personalCircumstances shouldBe emptyList()
+          body.personDetailsTableData.disabilities shouldBe emptyList()
         }
     }
 

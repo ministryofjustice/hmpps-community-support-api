@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
@@ -82,9 +83,15 @@ class ReferralService(
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
-    val personalDetailsAndCircumstances = nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(person.identifier)
+    val identifier = identifierValidator.validate(person.identifier)
+    val personalDetailsAndCircumstances = if (identifier is PersonIdentifier.Crn) {
+      nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
+    } else {
+      logger.info("Skipping nDelius personal details lookup as person identifier is not a CRN")
+      PersonDetailsAndCircumstances()
+    }
 
-    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, personalDetailsAndCircumstances)
+    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, identifier, personalDetailsAndCircumstances)
   }
 
   fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(
