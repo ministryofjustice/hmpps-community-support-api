@@ -10,13 +10,16 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.whenever
 import org.testcontainers.utility.Base58.randomString
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SelectionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
@@ -196,6 +199,86 @@ class DraftReferralServiceTest {
         draftReferralService.getAdditionalInformationForTheDeliveryPartner(referralId)
       }
       assertThat(ex).hasMessage("Invalid Selection state: selected=true, value=null")
+    }
+  }
+
+  @Nested
+  inner class UpsertProbationPractitionerDetails {
+    val referralId: UUID = UUID.randomUUID()
+    val personId: UUID = UUID.randomUUID()
+    val userId: UUID = UUID.randomUUID()
+    val createdAt: OffsetDateTime = OffsetDateTime.parse("2026-08-13T10:09:02Z")
+    val createdBy: UUID = UUID.randomUUID()
+
+    val referral: Referral = Referral(
+      id = referralId,
+      personId = personId,
+      personIdentifier = "X123456",
+      createdAt = createdAt,
+      createdBy = createdBy,
+    )
+
+    @BeforeEach
+    fun setup() {
+      reset(referralRepository, probationPractitionerDetailsRepository)
+      whenever(referralRepository.findById(referralId)).thenReturn(Optional.of(referral))
+    }
+
+    @Test
+    fun `should create a new record including the phone number when none exists`() {
+      whenever(probationPractitionerDetailsRepository.findByReferralId(referralId)).thenReturn(null)
+      whenever(probationPractitionerDetailsRepository.save(any<ProbationPractitionerDetails>())).thenAnswer { it.arguments[0] }
+
+      val request = UpdateProbationPractitionerDetailsRequest(
+        name = "Jane Doe",
+        jobRole = "Probation practitioner",
+        emailAddress = "jane.doe@example.com",
+        pdu = "Northumberland",
+        probationOffice = "Newcastle Office",
+        teamPhoneNumber = "0123456789",
+        phoneNumber = "0987654321",
+        ppDetailsFoundAndCorrect = true,
+      )
+
+      val result = draftReferralService.upsertProbationPractitionerDetails(referralId, userId, request)
+
+      val captor = argumentCaptor<ProbationPractitionerDetails>()
+      verify(probationPractitionerDetailsRepository).save(captor.capture())
+
+      val saved = captor.firstValue
+      assertThat(saved.referralId).isEqualTo(referralId)
+      assertThat(saved.name).isEqualTo("Jane Doe")
+      assertThat(saved.teamPhoneNumber).isEqualTo("0123456789")
+      assertThat(saved.phoneNumber).isEqualTo("0987654321")
+      assertThat(saved.updatedBy).isEqualTo(userId)
+
+      assertThat(result.phoneNumber).isEqualTo("0987654321")
+      assertThat(result.teamPhoneNumber).isEqualTo("0123456789")
+    }
+
+    @Test
+    fun `should update the phone number on an existing record`() {
+      val existingRecord = ProbationPractitionerDetails(
+        id = UUID.randomUUID(),
+        referralId = referralId,
+        name = "Jane Doe",
+        phoneNumber = "0000000000",
+        updatedAt = createdAt,
+        updatedBy = createdBy,
+      )
+      whenever(probationPractitionerDetailsRepository.findByReferralId(referralId)).thenReturn(existingRecord)
+      whenever(probationPractitionerDetailsRepository.save(any<ProbationPractitionerDetails>())).thenAnswer { it.arguments[0] }
+
+      val request = UpdateProbationPractitionerDetailsRequest(
+        name = "Jane Doe",
+        phoneNumber = "0987654321",
+      )
+
+      val result = draftReferralService.upsertProbationPractitionerDetails(referralId, userId, request)
+
+      assertThat(existingRecord.phoneNumber).isEqualTo("0987654321")
+      assertThat(existingRecord.updatedBy).isEqualTo(userId)
+      assertThat(result.phoneNumber).isEqualTo("0987654321")
     }
   }
 }
