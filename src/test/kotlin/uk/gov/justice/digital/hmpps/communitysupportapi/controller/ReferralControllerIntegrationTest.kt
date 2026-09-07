@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.WithdrawalReasonBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
@@ -506,6 +507,42 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.ALREADY_REPORTED)
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/referral/withdrawal-reasons")
+  inner class WithdrawalReasonEndPoint {
+
+    private val url = "/bff/referral/withdrawal-reasons"
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(GET, url)
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(GET, url)
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(GET, url)
+    }
+
+    @Test
+    fun `should return all withdrawal reason values`() {
+      webTestClient.get()
+        .uri(url)
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<WithdrawalReasonBffResponseDto>()
+        .consumeWith { response ->
+          response.responseBody!!.withdrawalReasons shouldBe ReferralWithdrawalReasonCode.entries.map { it.name }
+        }
     }
   }
 
