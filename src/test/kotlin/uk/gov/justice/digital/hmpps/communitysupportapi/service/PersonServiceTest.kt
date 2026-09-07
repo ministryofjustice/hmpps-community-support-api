@@ -80,12 +80,14 @@ class PersonServiceTest {
       additionalDetails = cprPrisonPersonDto.toAdditionalDetails(),
     )
 
+    val knownCRN = personAggregate.person.knownCrns.first()
+
     whenever(cprProbationService.getPersonDetailsByPrisonNumber(PRISONER_NUMBER))
       .thenReturn(personAggregate)
 
     val expectedPersonDetailsAndCircumstances = PersonDetailsAndCircumstances.from(createPersonDetailsAndCircumstancesDto(), createHomeOfficeInterestDto())
 
-    whenever(nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(PRISONER_NUMBER)).thenReturn(expectedPersonDetailsAndCircumstances)
+    whenever(nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(knownCRN)).thenReturn(expectedPersonDetailsAndCircumstances)
 
     val result = personService.getPerson(PRISONER_NUMBER)
 

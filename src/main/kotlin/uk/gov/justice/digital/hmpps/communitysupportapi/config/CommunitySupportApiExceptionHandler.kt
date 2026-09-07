@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.config
 
 import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus.ALREADY_REPORTED
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.FORBIDDEN
@@ -14,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.resource.NoResourceFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.AlreadyReportedException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.hmpps.kotlin.common.ErrorResponse
@@ -116,6 +118,20 @@ class CommunitySupportApiExceptionHandler {
         developerMessage = e.message,
       ),
     ).also { log.error("Unexpected exception", e) }
+
+  @ExceptionHandler(AlreadyReportedException::class)
+  fun handleReferralAlreadyWithdrawnException(exception: AlreadyReportedException): ResponseEntity<ErrorResponse> {
+    log.warn("Already reported", exception)
+    return ResponseEntity
+      .status(ALREADY_REPORTED)
+      .body(
+        ErrorResponse(
+          status = ALREADY_REPORTED.value(),
+          userMessage = "Already reported: ${exception.message}",
+          developerMessage = exception.message,
+        ),
+      )
+  }
 
   private companion object {
     private val log = LoggerFactory.getLogger(this::class.java)

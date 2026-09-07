@@ -26,13 +26,16 @@ class ProbationPractitionerDetails(
   var emailAddress: String? = null,
 
   @Column(name = "pdu")
-  var pdu: String? = null,
+  var pdu: UUID? = null,
 
   @Column(name = "probation_office")
   var probationOffice: String? = null,
 
   @Column(name = "team_phone_number")
   var teamPhoneNumber: String? = null,
+
+  @Column(name = "phone_number")
+  var phoneNumber: String? = null,
 
   @Column(name = "pp_details_found_and_correct")
   var ppDetailsFoundAndCorrect: Boolean? = null,

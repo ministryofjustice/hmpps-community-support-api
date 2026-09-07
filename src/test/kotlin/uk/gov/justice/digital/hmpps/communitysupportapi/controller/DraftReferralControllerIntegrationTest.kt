@@ -4,6 +4,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.BeforeEach
@@ -51,7 +53,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprPrisonPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManager
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
@@ -60,6 +65,9 @@ import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
+
+private val COUNTY_DURHAM_AND_DARLINGTON_PDU_ID = UUID.fromString("63805267-d75e-485c-b8cd-ce15d63b6e7c")
+private val GATESHEAD_AND_SOUTH_TYNESIDE_PDU_ID = UUID.fromString("8b753a64-fdba-4c3a-9347-fd3d7dc5da06")
 
 class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
@@ -141,6 +149,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .create()
       personRepository.save(person)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+      stubNDeliusPersonalDetails()
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -157,9 +166,11 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personDetailsTableData.name.firstName shouldBe person.firstName
           body.personDetailsTableData.name.lastName shouldBe person.lastName
           body.personDetailsTableData.crn shouldBe CRN
-          body.personDetailsTableData.dateOfBirth shouldBe person.dateOfBirth.toString()
-          body.personDetailsTableData.prisonNumbers shouldBe person.prisonNumbers
+          body.personDetailsTableData.prisonNumber shouldBe null
+          body.personDetailsTableData.dateOfBirth shouldBe person.dateOfBirth
           body.personDetailsTableData.preferredLanguage shouldBe ""
+          body.personDetailsTableData.disabilities.map { it.description } shouldBe listOf("Blind")
+          body.personDetailsTableData.personalCircumstances.map { it.description } shouldBe listOf("Relationships", "Employment", "Dependants")
           body.equalityDetailsTableData.ethnicity shouldBe person.additionalDetails?.ethnicity
           body.equalityDetailsTableData.religionOrBelief shouldBe person.additionalDetails?.religionOrBelief
           body.equalityDetailsTableData.sex shouldBe person.gender
@@ -172,6 +183,64 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
           body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
         }
+    }
+
+    @Test
+    fun `should retrieve nDelius details using the CRN for a person identified by prison number`() {
+      val person = referralHelper.createPerson(identifier = "A1234BC")
+      val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+      stubCprPrisonPerson(person.identifier)
+      stubNDeliusPersonalDetails()
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<CheckDraftReferralDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.personDetailsTableData.crn shouldBe null
+          body.personDetailsTableData.prisonNumber shouldBe person.identifier
+          body.personDetailsTableData.disabilities.map { it.description } shouldBe listOf("Blind")
+          body.personDetailsTableData.personalCircumstances.map { it.description } shouldBe listOf("Relationships", "Employment", "Dependants")
+        }
+    }
+
+    private fun stubCprPrisonPerson(prisonNumber: String) {
+      stubFor(
+        get(urlPathEqualTo("/person/prison/$prisonNumber"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPrisonPersonJson(prisonNumber)),
+          ),
+      )
+    }
+
+    private fun stubNDeliusPersonalDetails() {
+      val identifierRegex = "[A-Z]\\d{6}"
+      stubFor(
+        get(urlPathMatching("/case/$identifierRegex"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createPersonDetailsAndCircumstances()),
+          ),
+      )
+      stubFor(
+        get(urlPathMatching("/case/$identifierRegex/home-office-interest"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createHomeOfficeInterest()),
+          ),
+      )
     }
 
     @Test
@@ -668,7 +737,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         name = "Jane Doe",
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
-        pdu = "Northumberland",
+        pdu = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
         probationOffice = "Newcastle Office",
         teamPhoneNumber = "0123456789",
         ppDetailsFoundAndCorrect = false,
@@ -686,7 +755,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.name shouldBe "Jane Doe"
           body.jobRole shouldBe "Probation practitioner"
           body.emailAddress shouldBe "jane.doe@example.com"
-          body.pdu shouldBe "Northumberland"
+          body.pdu shouldBe "County Durham and Darlington"
           body.probationOffice shouldBe "Newcastle Office"
           body.teamPhoneNumber shouldBe "0123456789"
           body.ppDetailsFoundAndCorrect shouldBe false
@@ -697,7 +766,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       persistedRecord!!.name shouldBe "Jane Doe"
       persistedRecord.jobRole shouldBe "Probation practitioner"
       persistedRecord.emailAddress shouldBe "jane.doe@example.com"
-      persistedRecord.pdu shouldBe "Northumberland"
+      persistedRecord.pdu shouldBe COUNTY_DURHAM_AND_DARLINGTON_PDU_ID
       persistedRecord.probationOffice shouldBe "Newcastle Office"
       persistedRecord.teamPhoneNumber shouldBe "0123456789"
       persistedRecord.ppDetailsFoundAndCorrect shouldBe false
@@ -713,7 +782,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val firstRequest = UpdateProbationPractitionerDetailsRequest(
         name = "Jane Doe",
-        pdu = "Northumberland",
+        pdu = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
       )
 
       webTestClient.patch()
@@ -726,13 +795,13 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val initialRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
       initialRecord shouldNotBe null
       initialRecord!!.name shouldBe "Jane Doe"
-      initialRecord.pdu shouldBe "Northumberland"
+      initialRecord.pdu shouldBe COUNTY_DURHAM_AND_DARLINGTON_PDU_ID
       val existingRecordId = initialRecord.id
 
       val secondRequest = UpdateProbationPractitionerDetailsRequest(
         name = "John Smith",
         jobRole = "Senior Probation practitioner",
-        pdu = "Yorkshire",
+        pdu = GATESHEAD_AND_SOUTH_TYNESIDE_PDU_ID,
       )
 
       webTestClient.patch()
@@ -746,7 +815,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
           body.name shouldBe "John Smith"
           body.jobRole shouldBe "Senior Probation practitioner"
-          body.pdu shouldBe "Yorkshire"
+          body.pdu shouldBe "Gateshead and South Tyneside"
         }
 
       val updatedRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
@@ -754,9 +823,119 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       updatedRecord!!.id shouldBe existingRecordId
       updatedRecord.name shouldBe "John Smith"
       updatedRecord.jobRole shouldBe "Senior Probation practitioner"
-      updatedRecord.pdu shouldBe "Yorkshire"
+      updatedRecord.pdu shouldBe GATESHEAD_AND_SOUTH_TYNESIDE_PDU_ID
       updatedRecord.updatedBy shouldBe testUser.id
       updatedRecord.updatedAt shouldNotBe null
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /draft-referral/{referralId}/main-point-of-contact-details")
+  inner class MainPointOfContactDetailsPatchTest {
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(PATCH, "/draft-referral/${UUID.randomUUID()}/main-point-of-contact-details")
+    }
+
+    @Test
+    fun `should return 404 when referral does not exist`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val request = UpdateProbationPractitionerDetailsRequest(name = "Jane Doe")
+
+      assertNotFound(PATCH, "/draft-referral/${UUID.randomUUID()}/main-point-of-contact-details", request)
+    }
+
+    @Test
+    fun `should return 200 and save main point of contact details including the phone number for a known referral`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      val request = UpdateProbationPractitionerDetailsRequest(
+        name = "Jane Doe",
+        jobRole = "Probation practitioner",
+        emailAddress = "jane.doe@example.com",
+        pdu = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+        probationOffice = "Newcastle Office",
+        teamPhoneNumber = "0123456789",
+        phoneNumber = "0987654321",
+        ppDetailsFoundAndCorrect = false,
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/main-point-of-contact-details")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ProbationPractitionerDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.name shouldBe "Jane Doe"
+          body.jobRole shouldBe "Probation practitioner"
+          body.emailAddress shouldBe "jane.doe@example.com"
+          body.pdu shouldBe "County Durham and Darlington"
+          body.probationOffice shouldBe "Newcastle Office"
+          body.teamPhoneNumber shouldBe "0123456789"
+          body.phoneNumber shouldBe "0987654321"
+          body.ppDetailsFoundAndCorrect shouldBe false
+        }
+
+      val persistedRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
+      persistedRecord shouldNotBe null
+      persistedRecord!!.name shouldBe "Jane Doe"
+      persistedRecord.teamPhoneNumber shouldBe "0123456789"
+      persistedRecord.phoneNumber shouldBe "0987654321"
+      persistedRecord.updatedBy shouldBe testUser.id
+    }
+
+    @Test
+    fun `should update the phone number on an existing probation practitioner details record`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          id = UUID.randomUUID(),
+          referralId = referral.id,
+          name = "Jane Doe",
+          phoneNumber = "0000000000",
+          updatedAt = OffsetDateTime.now(),
+          updatedBy = testUser.id,
+        ),
+      )
+
+      val request = UpdateProbationPractitionerDetailsRequest(
+        name = "Jane Doe",
+        phoneNumber = "0987654321",
+      )
+
+      webTestClient.patch()
+        .uri("/draft-referral/${referral.id}/main-point-of-contact-details")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ProbationPractitionerDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.phoneNumber shouldBe "0987654321"
+        }
+
+      val updatedRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
+      updatedRecord shouldNotBe null
+      updatedRecord!!.phoneNumber shouldBe "0987654321"
     }
   }
 

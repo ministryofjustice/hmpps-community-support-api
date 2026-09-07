@@ -4,7 +4,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.DisplayName
@@ -63,7 +65,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
               .withBody(createCprPrisonPersonDto(PRISONER_NUMBER).toJson()),
           ),
       )
-      setupNDeliusStubs(PRISONER_NUMBER)
+      setupNDeliusStubs()
 
       webTestClient.get()
         .uri("/bff/person/$PRISONER_NUMBER")
@@ -90,6 +92,40 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `should return OK with valid prison number identifier and empty additional info if no CRN available`() {
+      stubFor(
+        get(urlEqualTo("/person/prison/$PRISONER_NUMBER"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createCprPrisonPersonDto(PRISONER_NUMBER, hasCrns = false).toJson()),
+          ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/person/$PRISONER_NUMBER")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<PersonDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.id shouldNotBe null
+          body.personIdentifier shouldBe PRISONER_NUMBER
+          body.title shouldBe "Mr"
+          body.firstName shouldBe "John"
+          body.middleNames shouldBe "James"
+          body.lastName shouldBe "Smith"
+          body.dateOfBirth shouldBe LocalDate.of(1985, 1, 1).toFormattedDateOfBirth()
+          body.sex shouldBe "Male"
+          body.prisonNumbers shouldBe listOf(PRISONER_NUMBER)
+          body.personDetailsAndCircumstances.shouldBeNull()
+        }
+    }
+
+    @Test
     fun `should return OK with valid CRN identifier`() {
       stubFor(
         get(urlEqualTo("/person/probation/$CRN"))
@@ -100,7 +136,7 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
               .withBody(createCprProbationPersonDto(CRN).toJson()),
           ),
       )
-      setupNDeliusStubs(CRN)
+      setupNDeliusStubs()
 
       webTestClient.get()
         .uri("/bff/person/$CRN")
@@ -156,9 +192,10 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
       assertNotFound(GET, "/bff/person/$unknownCrn")
     }
 
-    private fun setupNDeliusStubs(identifier: String) {
+    private fun setupNDeliusStubs() {
+      val identifierRegex = "[A-Z]\\d{6}"
       stubFor(
-        get(urlEqualTo("/case/$identifier"))
+        get(urlPathMatching("/case/$identifierRegex"))
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -166,8 +203,9 @@ class PersonControllerIntegrationTest : IntegrationTestBase() {
               .withBody(createPersonDetailsAndCircumstances()),
           ),
       )
+
       stubFor(
-        get(urlEqualTo(("/case/$identifier/home-office-interest")))
+        get(urlPathMatching("/case/$identifierRegex/home-office-interest"))
           .willReturn(
             aResponse()
               .withStatus(200)

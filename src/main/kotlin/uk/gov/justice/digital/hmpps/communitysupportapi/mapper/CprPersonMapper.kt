@@ -37,6 +37,7 @@ fun CprPersonDto.toPrisonPerson(): Person = Person(
   title = title?.description,
   middleNames = middleNames,
   prisonNumbers = identifiers.prisonNumbers,
+  knownCrns = identifiers.crns,
 )
 
 fun CprPersonDto.toAdditionalDetails(): PersonAdditionalDetails {

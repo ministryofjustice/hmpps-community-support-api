@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralWithdrawalDetailsRepository
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -49,6 +50,9 @@ class ReferralServiceTest {
   lateinit var referralUserAssignmentRepository: ReferralUserAssignmentRepository
 
   @Mock
+  lateinit var referralWithdrawalDetailsRepository: ReferralWithdrawalDetailsRepository
+
+  @Mock
   lateinit var referenceGenerator: ReferralReferenceGenerator
 
   @Mock
@@ -65,6 +69,9 @@ class ReferralServiceTest {
 
   @Mock
   lateinit var personService: PersonService
+
+  @Mock
+  lateinit var nDeliusService: NDeliusService
 
   @Mock
   lateinit var actionPlanService: ActionPlanService
