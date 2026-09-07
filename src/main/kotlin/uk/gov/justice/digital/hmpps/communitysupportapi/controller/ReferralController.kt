@@ -27,10 +27,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.WithdrawalReasonBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.ReferralWithdrawalReasonCode
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.WithdrawReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.PersonService
@@ -247,6 +249,28 @@ class ReferralController(
 
     return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
   }
+
+  @Operation(summary = "Get withdrawal reasons")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Withdrawal reasons found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = WithdrawalReasonBffResponseDto::class),
+          ),
+        ],
+      ),
+    ],
+  )
+  @GetMapping("/bff/withdrawal-reason/")
+  fun getWithdrawalReasons(): ResponseEntity<WithdrawalReasonBffResponseDto> = ResponseEntity.ok(
+    WithdrawalReasonBffResponseDto(
+      withdrawalReasons = ReferralWithdrawalReasonCode.entries.map { it.name },
+    ),
+  )
 
   @Operation(summary = "Withdraw a referral")
   @ApiResponses(
