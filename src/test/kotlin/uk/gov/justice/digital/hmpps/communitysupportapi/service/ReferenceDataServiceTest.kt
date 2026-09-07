@@ -47,11 +47,12 @@ class ReferenceDataServiceTest : IntegrationTestBase() {
   }
 
   @Test
-  fun `should return PDU names sorted alphabetically`() {
-    val pduNames = referenceDataService.getPduNames()
+  fun `should return PDUs with id and name sorted alphabetically by name`() {
+    val pdus = referenceDataService.getPdus()
 
-    assertThat(pduNames).isNotEmpty
-    assertThat(pduNames).isEqualTo(pduNames.sorted())
-    assertThat(pduNames).contains("County Durham and Darlington", "Gateshead and South Tyneside")
+    assertThat(pdus).isNotEmpty
+    assertThat(pdus.map { it.name }).isEqualTo(pdus.map { it.name }.sorted())
+    pdus.forEach { pdu -> assertThat(pdu.id).isNotNull() }
+    assertThat(pdus.map { it.name }).contains("County Durham and Darlington", "Gateshead and South Tyneside")
   }
 }

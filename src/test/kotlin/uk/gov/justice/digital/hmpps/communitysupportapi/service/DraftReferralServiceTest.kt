@@ -226,14 +226,16 @@ class DraftReferralServiceTest {
 
     @Test
     fun `should create a new record including the phone number when none exists`() {
+      val pduId = UUID.randomUUID()
       whenever(probationPractitionerDetailsRepository.findByReferralId(referralId)).thenReturn(null)
       whenever(probationPractitionerDetailsRepository.save(any<ProbationPractitionerDetails>())).thenAnswer { it.arguments[0] }
+      whenever(pduRepository.findNameById(pduId)).thenReturn("Northumberland")
 
       val request = UpdateProbationPractitionerDetailsRequest(
         name = "Jane Doe",
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
-        pdu = "Northumberland",
+        pdu = pduId,
         probationOffice = "Newcastle Office",
         teamPhoneNumber = "0123456789",
         phoneNumber = "0987654321",
@@ -248,10 +250,12 @@ class DraftReferralServiceTest {
       val saved = captor.firstValue
       assertThat(saved.referralId).isEqualTo(referralId)
       assertThat(saved.name).isEqualTo("Jane Doe")
+      assertThat(saved.pdu).isEqualTo(pduId)
       assertThat(saved.teamPhoneNumber).isEqualTo("0123456789")
       assertThat(saved.phoneNumber).isEqualTo("0987654321")
       assertThat(saved.updatedBy).isEqualTo(userId)
 
+      assertThat(result.pdu).isEqualTo("Northumberland")
       assertThat(result.phoneNumber).isEqualTo("0987654321")
       assertThat(result.teamPhoneNumber).isEqualTo("0123456789")
     }

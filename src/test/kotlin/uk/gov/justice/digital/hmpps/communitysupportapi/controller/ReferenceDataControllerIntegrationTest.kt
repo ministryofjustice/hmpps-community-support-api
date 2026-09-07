@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Prison
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOffice
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.prisonsJson
@@ -80,7 +81,7 @@ class ReferenceDataControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return list of PDU names`() {
+    fun `should return list of PDUs with id and name`() {
       val response = webTestClient.get()
         .uri { uriBuilder ->
           uriBuilder
@@ -90,13 +91,16 @@ class ReferenceDataControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
-        .expectBody(object : ParameterizedTypeReference<List<String>>() {})
+        .expectBody(object : ParameterizedTypeReference<List<Pdu>>() {})
         .returnResult().responseBody!!
 
       assertThat(response).hasSize(99)
-      assertThat(response).isEqualTo(response.sorted())
-      response.forEach { pduName -> assertThat(pduName).isNotBlank() }
-      assertThat(response).contains("County Durham and Darlington", "Gateshead and South Tyneside")
+      assertThat(response.map { it.name }).isEqualTo(response.map { it.name }.sorted())
+      response.forEach { pdu ->
+        assertThat(pdu.id).isNotNull()
+        assertThat(pdu.name).isNotBlank()
+      }
+      assertThat(response.map { it.name }).contains("County Durham and Darlington", "Gateshead and South Tyneside")
     }
   }
 

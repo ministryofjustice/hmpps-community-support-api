@@ -51,13 +51,14 @@ class ProbationPractitionerDetailsBffResponseDtoTest {
 
   @Test
   fun `from entity should map persisted probation practitioner details`() {
+    val pduId = UUID.randomUUID()
     val entity = ProbationPractitionerDetails(
       id = UUID.randomUUID(),
       referralId = UUID.randomUUID(),
       name = "Jane Doe",
       jobRole = "Probation practitioner",
       emailAddress = "jane.doe@example.com",
-      pdu = "Northumberland",
+      pdu = pduId,
       probationOffice = "Newcastle Office",
       teamPhoneNumber = "0123456789",
       ppDetailsFoundAndCorrect = false,
@@ -65,7 +66,7 @@ class ProbationPractitionerDetailsBffResponseDtoTest {
       updatedBy = UUID.randomUUID(),
     )
 
-    val result = ProbationPractitionerDetailsBffResponseDto.from(entity)
+    val result = ProbationPractitionerDetailsBffResponseDto.from(entity, "Northumberland")
 
     result.name shouldBe "Jane Doe"
     result.jobRole shouldBe "Probation practitioner"

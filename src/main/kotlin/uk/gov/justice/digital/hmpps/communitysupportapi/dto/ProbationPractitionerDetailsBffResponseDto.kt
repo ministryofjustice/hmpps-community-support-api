@@ -28,11 +28,11 @@ data class ProbationPractitionerDetailsBffResponseDto(
       )
     }
 
-    fun from(entity: ProbationPractitionerDetails): ProbationPractitionerDetailsBffResponseDto = ProbationPractitionerDetailsBffResponseDto(
+    fun from(entity: ProbationPractitionerDetails, pduName: String?): ProbationPractitionerDetailsBffResponseDto = ProbationPractitionerDetailsBffResponseDto(
       name = entity.name,
       jobRole = entity.jobRole,
       emailAddress = entity.emailAddress,
-      pdu = entity.pdu,
+      pdu = pduName,
       probationOffice = entity.probationOffice,
       teamPhoneNumber = entity.teamPhoneNumber,
       phoneNumber = entity.phoneNumber,

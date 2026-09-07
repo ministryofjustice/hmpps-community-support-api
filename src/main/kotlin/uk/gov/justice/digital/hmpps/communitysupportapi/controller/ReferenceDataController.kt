@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Prison
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOffice
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferenceDataService
@@ -53,25 +54,25 @@ class ReferenceDataController(
     }
   }
 
-  @Operation(summary = "Get all Probation Delivery Unit (PDU) names")
+  @Operation(summary = "Get all Probation Delivery Units (PDUs)")
   @ApiResponses(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "Returns the list of Probation Delivery Unit names.",
-        content = [Content(mediaType = "application/json", array = ArraySchema(schema = Schema(implementation = String::class)))],
+        description = "Returns the list of Probation Delivery Units.",
+        content = [Content(mediaType = "application/json", array = ArraySchema(schema = Schema(implementation = Pdu::class)))],
       ),
       ApiResponse(
         responseCode = "500",
-        description = "Failed to retrieve Probation Delivery Unit names",
+        description = "Failed to retrieve Probation Delivery Units",
         content = [Content(mediaType = "application/json")],
       ),
     ],
   )
   @GetMapping("/pdus")
-  fun getPdus(): ResponseEntity<List<String>> {
+  fun getPdus(): ResponseEntity<List<Pdu>> {
     try {
-      val pdus = referenceDataService.getPduNames()
+      val pdus = referenceDataService.getPdus()
       return ResponseEntity.ok(pdus)
     } catch (e: Exception) {
       log.error("Error getting PDUs", e)

@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.PrisonApiClient
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Prison
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOffice
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
@@ -46,7 +47,9 @@ class ReferenceDataService(
     return cachedProbationOffices!!
   }
 
-  fun getPduNames(): List<String> = pduRepository.findAll().map { it.name }.sorted()
+  fun getPdus(): List<Pdu> = pduRepository.findAll()
+    .map { Pdu(id = it.id, name = it.name) }
+    .sortedBy { it.name }
 
   fun getPrisons(): List<Prison> = prisonApiClient.getPrisons()
     .filter { it.active }
