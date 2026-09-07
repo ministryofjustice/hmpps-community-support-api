@@ -4,6 +4,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.BeforeEach
@@ -51,7 +53,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprPrisonPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManager
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
@@ -140,6 +145,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .create()
       personRepository.save(person)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+      stubNDeliusPersonalDetails()
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -156,9 +162,11 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personDetailsTableData.name.firstName shouldBe person.firstName
           body.personDetailsTableData.name.lastName shouldBe person.lastName
           body.personDetailsTableData.crn shouldBe CRN
-          body.personDetailsTableData.dateOfBirth shouldBe person.dateOfBirth.toString()
-          body.personDetailsTableData.prisonNumbers shouldBe person.prisonNumbers
+          body.personDetailsTableData.prisonNumber shouldBe null
+          body.personDetailsTableData.dateOfBirth shouldBe person.dateOfBirth
           body.personDetailsTableData.preferredLanguage shouldBe ""
+          body.personDetailsTableData.disabilities.map { it.description } shouldBe listOf("Blind")
+          body.personDetailsTableData.personalCircumstances.map { it.description } shouldBe listOf("Relationships", "Employment", "Dependants")
           body.equalityDetailsTableData.ethnicity shouldBe person.additionalDetails?.ethnicity
           body.equalityDetailsTableData.religionOrBelief shouldBe person.additionalDetails?.religionOrBelief
           body.equalityDetailsTableData.sex shouldBe person.gender
@@ -171,6 +179,64 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
           body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
         }
+    }
+
+    @Test
+    fun `should retrieve nDelius details using the CRN for a person identified by prison number`() {
+      val person = referralHelper.createPerson(identifier = "A1234BC")
+      val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+      stubCprPrisonPerson(person.identifier)
+      stubNDeliusPersonalDetails()
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<CheckDraftReferralDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.personDetailsTableData.crn shouldBe null
+          body.personDetailsTableData.prisonNumber shouldBe person.identifier
+          body.personDetailsTableData.disabilities.map { it.description } shouldBe listOf("Blind")
+          body.personDetailsTableData.personalCircumstances.map { it.description } shouldBe listOf("Relationships", "Employment", "Dependants")
+        }
+    }
+
+    private fun stubCprPrisonPerson(prisonNumber: String) {
+      stubFor(
+        get(urlPathEqualTo("/person/prison/$prisonNumber"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPrisonPersonJson(prisonNumber)),
+          ),
+      )
+    }
+
+    private fun stubNDeliusPersonalDetails() {
+      val identifierRegex = "[A-Z]\\d{6}"
+      stubFor(
+        get(urlPathMatching("/case/$identifierRegex"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createPersonDetailsAndCircumstances()),
+          ),
+      )
+      stubFor(
+        get(urlPathMatching("/case/$identifierRegex/home-office-interest"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createHomeOfficeInterest()),
+          ),
+      )
     }
 
     @Test
