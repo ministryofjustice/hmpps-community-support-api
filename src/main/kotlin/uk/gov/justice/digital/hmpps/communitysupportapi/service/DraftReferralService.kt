@@ -40,6 +40,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -328,10 +329,45 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    // TODO: Replace with downstream service call to retrieve offence and sentence information when client details are confirmed
-    val offenceSentenceInfo = OffenceSentenceDto()
+    val crn = getCrn(person)
+      ?: throw ValidationException("Cannot retrieve offence sentence details for a person identified by prison number")
 
-    return OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
+    val savedOffenceSentence = referralOffenceSentenceRepository.findByReferralId(referralId)
+
+    // Temporary: GET returns simulated offence/date values and overlays persisted user-input licence fields from DB.
+    val offenceSentenceInfo = buildOffenceSentenceInfo()
+
+    val latestOffenceSentenceInfo = offenceSentenceInfo.copy(
+      hasLicenceConditionsOrZones = savedOffenceSentence?.hasLicenceConditionsOrZones,
+      licenceConditionsOrZonesDetails = savedOffenceSentence?.licenceConditionsOrZonesDetails,
+    )
+
+    return OffenceSentenceInfoBffResponseDto.from(person, crn, latestOffenceSentenceInfo)
+  }
+
+  // Temporary simulation for offence/date until external APIs are integrated;
+  // expectedReleaseDate wins only if future, otherwise sentenceEndDate.
+  private fun buildOffenceSentenceInfo(
+    sentenceEndDate: LocalDate? = null,
+    expectedReleaseDate: LocalDate? = null,
+    today: LocalDate = LocalDate.now(),
+  ): OffenceSentenceDto {
+    // Fallback placeholder values until nDelius/Prison API contracts are confirmed and wired in.
+    val sentenceEndDateFromNDelius = sentenceEndDate ?: today.plusMonths(1)
+    val expectedReleaseDateFromPrison = expectedReleaseDate ?: today.minusDays(1)
+
+    val resolvedExpectedReleaseDate = expectedReleaseDateFromPrison.takeIf { it.isAfter(today) }
+    val resolvedSentenceEndDate = sentenceEndDateFromNDelius.takeIf { resolvedExpectedReleaseDate == null }
+
+    return OffenceSentenceDto(
+      offence = "Theft",
+      offenceSubCategory = "Shoplifting",
+      outcome = "Community order",
+      expectedReleaseDate = resolvedExpectedReleaseDate,
+      sentenceEndDate = resolvedSentenceEndDate,
+      hasLicenceConditionsOrZones = null,
+      licenceConditionsOrZonesDetails = null,
+    )
   }
 
   @Transactional
@@ -342,16 +378,20 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
+    val crn = getCrn(person).orEmpty()
+
     val validatedRequest = request.validateAndNormalise()
 
-    val offenceSentenceInfo = OffenceSentenceDto(
-      offence = validatedRequest.offence,
-      offenceSubCategory = validatedRequest.offenceSubCategory,
-      outcome = validatedRequest.outcome,
-      sentenceEndDate = validatedRequest.sentenceEndDate,
-      expectedReleaseDate = validatedRequest.expectedReleaseDate,
-      hasLicenceConditionsOrZones = validatedRequest.hasLicenceConditionsOrZones,
-      licenceConditionsOrZonesDetails = validatedRequest.licenceConditionsOrZonesDetails,
+    val offenceSentenceInfo = normaliseOffenceSentenceDatesForUpsert(
+      OffenceSentenceDto(
+        offence = validatedRequest.offence,
+        offenceSubCategory = validatedRequest.offenceSubCategory,
+        outcome = validatedRequest.outcome,
+        sentenceEndDate = validatedRequest.sentenceEndDate,
+        expectedReleaseDate = validatedRequest.expectedReleaseDate,
+        hasLicenceConditionsOrZones = validatedRequest.hasLicenceConditionsOrZones,
+        licenceConditionsOrZonesDetails = validatedRequest.licenceConditionsOrZonesDetails,
+      ),
     )
 
     val existingRecord = referralOffenceSentenceRepository.findByReferralId(referralId)
@@ -386,7 +426,7 @@ class DraftReferralService(
       referralOffenceSentenceRepository.save(existingRecord)
     }
 
-    return OffenceSentenceInfoBffResponseDto.from(person, offenceSentenceInfo)
+    return OffenceSentenceInfoBffResponseDto.from(person, crn, offenceSentenceInfo)
   }
 
   fun getAdditionalInformationForTheDeliveryPartner(referralId: UUID): AdditionalInformationForTheDeliveryPartnerBffResponseDto {
@@ -425,11 +465,8 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    // TODO: temporary restriction until it's determined how to look up a Probation Practitioner for a person identified by prison number.
-    val crn = when (val identifier = identifierValidator.validate(person.identifier)) {
-      is PersonIdentifier.Crn -> identifier.value
-      is PersonIdentifier.PrisonerNumber -> throw ValidationException("Cannot retrieve Probation Practitioner details for a person identified by prison number")
-    }
+    val crn = getCrn(person)
+      ?: throw ValidationException("Cannot retrieve Probation Practitioner details for a person identified by prison number")
 
     val communityManager = nDeliusService.getCommunityManagerByIdentifier(crn)
 
@@ -477,5 +514,18 @@ class DraftReferralService(
     }
 
     return ProbationPractitionerDetailsBffResponseDto.from(savedRecord)
+  }
+
+  private fun getCrn(person: Person): String? = when (
+    val identifier = identifierValidator.validate(person.identifier)
+  ) {
+    is PersonIdentifier.Crn -> identifier.value
+    is PersonIdentifier.PrisonerNumber -> null
+  }
+
+  private fun normaliseOffenceSentenceDatesForUpsert(offenceSentenceInfo: OffenceSentenceDto): OffenceSentenceDto = if (offenceSentenceInfo.expectedReleaseDate != null) {
+    offenceSentenceInfo.copy(sentenceEndDate = null)
+  } else {
+    offenceSentenceInfo
   }
 }
