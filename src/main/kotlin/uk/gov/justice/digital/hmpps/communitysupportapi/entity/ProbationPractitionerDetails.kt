@@ -26,7 +26,7 @@ class ProbationPractitionerDetails(
   var emailAddress: String? = null,
 
   @Column(name = "pdu")
-  var pdu: String? = null,
+  var pdu: UUID? = null,
 
   @Column(name = "probation_office")
   var probationOffice: String? = null,
