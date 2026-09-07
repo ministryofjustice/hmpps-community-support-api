@@ -511,10 +511,10 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("GET /bff/withdrawal-reason/")
+  @DisplayName("GET /bff/referral/withdrawal-reasons")
   inner class WithdrawalReasonEndPoint {
 
-    private val url = "/bff/withdrawal-reason/"
+    private val url = "/bff/referral/withdrawal-reasons"
 
     @Test
     fun `should return unauthorized if no token`() {

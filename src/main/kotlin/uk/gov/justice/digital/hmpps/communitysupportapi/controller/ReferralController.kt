@@ -265,7 +265,7 @@ class ReferralController(
       ),
     ],
   )
-  @GetMapping("/bff/withdrawal-reason/")
+  @GetMapping("/bff/referral/withdrawal-reasons")
   fun getWithdrawalReasons(): ResponseEntity<WithdrawalReasonBffResponseDto> = ResponseEntity.ok(
     WithdrawalReasonBffResponseDto(
       withdrawalReasons = ReferralWithdrawalReasonCode.entries.map { it.name },
