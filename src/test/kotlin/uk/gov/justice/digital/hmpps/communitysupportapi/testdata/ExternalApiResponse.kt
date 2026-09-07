@@ -132,7 +132,7 @@ object ExternalApiResponse {
   )
 
   // CPR PRISON PERSON DATA
-  fun createCprPrisonPersonDto(vararg prisonNumbers: String): CprPersonDto = CprPersonDto(
+  fun createCprPrisonPersonDto(vararg prisonNumbers: String, hasCrns: Boolean = true): CprPersonDto = CprPersonDto(
     cprUUID = null,
     firstName = "John",
     middleNames = "James",
@@ -180,7 +180,7 @@ object ExternalApiResponse {
       ),
     ),
     identifiers = CprIdentifiersDto(
-      crns = listOf("A123456"),
+      crns = if (hasCrns) listOf("A123456") else emptyList(),
       prisonNumbers = prisonNumbers.asList(),
       pncs = listOf("12/394773H"),
       cros = listOf("29906/12J"),
