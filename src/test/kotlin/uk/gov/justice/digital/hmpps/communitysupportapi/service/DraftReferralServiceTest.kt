@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SelectionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
@@ -255,7 +256,7 @@ class DraftReferralServiceTest {
       assertThat(saved.phoneNumber).isEqualTo("0987654321")
       assertThat(saved.updatedBy).isEqualTo(userId)
 
-      assertThat(result.pdu).isEqualTo("Northumberland")
+      assertThat(result.pdu).isEqualTo(Pdu(id = pduId, name = "Northumberland"))
       assertThat(result.phoneNumber).isEqualTo("0987654321")
       assertThat(result.teamPhoneNumber).isEqualTo("0123456789")
     }

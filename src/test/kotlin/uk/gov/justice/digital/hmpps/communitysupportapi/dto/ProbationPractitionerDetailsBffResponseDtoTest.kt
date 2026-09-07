@@ -6,6 +6,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityMana
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -24,13 +25,14 @@ class ProbationPractitionerDetailsBffResponseDtoTest {
         teamPhoneNumber = "0123456789",
       ),
     )
+    val pduId = UUID.randomUUID()
 
-    val result = ProbationPractitionerDetailsBffResponseDto.from(response)
+    val result = ProbationPractitionerDetailsBffResponseDto.from(response, Pdu(id = pduId, name = "Northumberland"))
 
     result.name shouldBe "Jane Middle Doe"
     result.jobRole shouldBe "Probation practitioner"
     result.emailAddress shouldBe "jane.doe@example.com"
-    result.pdu shouldBe "Northumberland"
+    result.pdu shouldBe Pdu(id = pduId, name = "Northumberland")
     result.probationOffice shouldBe "Newcastle Office"
     result.teamPhoneNumber shouldBe "0123456789"
   }
@@ -39,7 +41,7 @@ class ProbationPractitionerDetailsBffResponseDtoTest {
   fun `from CommunityManagerDto should return empty name when community manager is missing`() {
     val response = CommunityManagerDto(crn = "X123456", communityManager = null)
 
-    val result = ProbationPractitionerDetailsBffResponseDto.from(response)
+    val result = ProbationPractitionerDetailsBffResponseDto.from(response, pdu = null)
 
     result.name shouldBe ""
     result.jobRole shouldBe null
@@ -66,12 +68,12 @@ class ProbationPractitionerDetailsBffResponseDtoTest {
       updatedBy = UUID.randomUUID(),
     )
 
-    val result = ProbationPractitionerDetailsBffResponseDto.from(entity, "Northumberland")
+    val result = ProbationPractitionerDetailsBffResponseDto.from(entity, Pdu(id = pduId, name = "Northumberland"))
 
     result.name shouldBe "Jane Doe"
     result.jobRole shouldBe "Probation practitioner"
     result.emailAddress shouldBe "jane.doe@example.com"
-    result.pdu shouldBe "Northumberland"
+    result.pdu shouldBe Pdu(id = pduId, name = "Northumberland")
     result.probationOffice shouldBe "Newcastle Office"
     result.teamPhoneNumber shouldBe "0123456789"
     result.ppDetailsFoundAndCorrect shouldBe false

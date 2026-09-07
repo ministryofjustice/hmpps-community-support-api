@@ -40,6 +40,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportN
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
@@ -667,7 +668,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
             aResponse()
               .withStatus(200)
               .withHeader("Content-Type", "application/json")
-              .withBody(createCommunityManager()),
+              .withBody(createCommunityManager(pdu = "County Durham and Darlington")),
           ),
       )
 
@@ -682,7 +683,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.name shouldBe "TestForename TestSurname"
           body.jobRole shouldBe "Probation practitioner"
           body.emailAddress shouldBe "testForename.testSurname@digital.justice.gov.uk"
-          body.pdu shouldBe "Northumberland"
+          body.pdu shouldBe Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington")
         }
     }
 
@@ -754,7 +755,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.name shouldBe "Jane Doe"
           body.jobRole shouldBe "Probation practitioner"
           body.emailAddress shouldBe "jane.doe@example.com"
-          body.pdu shouldBe "County Durham and Darlington"
+          body.pdu shouldBe Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington")
           body.probationOffice shouldBe "Newcastle Office"
           body.teamPhoneNumber shouldBe "0123456789"
           body.ppDetailsFoundAndCorrect shouldBe false
@@ -814,7 +815,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
           body.name shouldBe "John Smith"
           body.jobRole shouldBe "Senior Probation practitioner"
-          body.pdu shouldBe "Gateshead and South Tyneside"
+          body.pdu shouldBe Pdu(id = GATESHEAD_AND_SOUTH_TYNESIDE_PDU_ID, name = "Gateshead and South Tyneside")
         }
 
       val updatedRecord = probationPractitionerDetailsRepository.findByReferralId(referral.id)
@@ -882,7 +883,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.name shouldBe "Jane Doe"
           body.jobRole shouldBe "Probation practitioner"
           body.emailAddress shouldBe "jane.doe@example.com"
-          body.pdu shouldBe "County Durham and Darlington"
+          body.pdu shouldBe Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington")
           body.probationOffice shouldBe "Newcastle Office"
           body.teamPhoneNumber shouldBe "0123456789"
           body.phoneNumber shouldBe "0987654321"
