@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
@@ -433,7 +434,11 @@ class DraftReferralService(
 
     val communityManager = nDeliusService.getCommunityManagerByIdentifier(crn)
 
-    return ProbationPractitionerDetailsBffResponseDto.from(communityManager)
+    val pdu = communityManager.communityManager?.pdu?.let { pduName ->
+      pduRepository.findByName(pduName)?.let { Pdu(id = it.id, name = it.name) }
+    }
+
+    return ProbationPractitionerDetailsBffResponseDto.from(communityManager, pdu)
   }
 
   @Transactional
@@ -478,8 +483,10 @@ class DraftReferralService(
       probationPractitionerDetailsRepository.save(existingRecord)
     }
 
-    val pduName = savedRecord.pdu?.let { pduRepository.findNameById(it) }
+    val pdu = savedRecord.pdu?.let { pduId ->
+      pduRepository.findNameById(pduId)?.let { pduName -> Pdu(id = pduId, name = pduName) }
+    }
 
-    return ProbationPractitionerDetailsBffResponseDto.from(savedRecord, pduName)
+    return ProbationPractitionerDetailsBffResponseDto.from(savedRecord, pdu)
   }
 }

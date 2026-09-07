@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminoge
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Region
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -525,7 +526,7 @@ class TaskListStatusResponseDtoTest {
     name = "Jane Doe",
     jobRole = "Probation practitioner",
     emailAddress = "jane.doe@example.com",
-    pdu = "Northumberland",
+    pdu = Pdu(id = UUID.randomUUID(), name = "Northumberland"),
     probationOffice = "Newcastle Office",
     teamPhoneNumber = "0123456789",
   )

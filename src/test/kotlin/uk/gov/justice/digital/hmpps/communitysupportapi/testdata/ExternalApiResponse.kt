@@ -409,7 +409,7 @@ object ExternalApiResponse {
     ),
   )
 
-  fun createCommunityManager() = createCommunityManagerDto().toJson()
+  fun createCommunityManager(pdu: String = "Northumberland") = createCommunityManagerDto(pdu = pdu).toJson()
 
   fun personDetailsAndCircumstancesNotFoundJson() = """
         {

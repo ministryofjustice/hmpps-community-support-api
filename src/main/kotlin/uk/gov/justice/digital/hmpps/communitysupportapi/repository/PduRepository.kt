@@ -8,6 +8,8 @@ import java.util.UUID
 interface PduRepository : JpaRepository<Pdu, UUID> {
   fun findByContractAreaId(contractAreaId: UUID): List<Pdu>
 
+  fun findByName(name: String): Pdu?
+
   @Query("select p.name from Pdu p where p.id = :id")
   fun findNameById(id: UUID): String?
 }
