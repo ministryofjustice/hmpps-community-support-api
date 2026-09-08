@@ -63,6 +63,15 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
   @Autowired
   private lateinit var probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository
 
+  @Autowired
+  private lateinit var cprProbationService: CprProbationService
+
+  @Autowired
+  private lateinit var nDeliusService: NDeliusService
+
+  @Autowired
+  private lateinit var riskInformationService: RiskInformationService
+
   @Test
   fun `update additional information should be saved`() {
     val referralUser = referralHelper.ensureReferralUser()

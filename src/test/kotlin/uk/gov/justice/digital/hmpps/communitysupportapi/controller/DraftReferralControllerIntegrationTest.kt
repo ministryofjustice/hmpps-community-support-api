@@ -53,6 +53,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.arnsRoshRiskJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprPrisonPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
@@ -140,6 +141,16 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return OK with draft referral and person details`() {
+      stubFor(
+        get(urlEqualTo("/risks/crn/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(arnsRoshRiskJson()),
+          ),
+      )
+
       val person = referralHelper.createPerson(identifier = CRN)
       person.additionalDetails = PersonAdditionalDetailsFactory()
         .withPerson(person)
@@ -154,6 +165,12 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       personRepository.save(person)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
       stubNDeliusPersonalDetails()
+
+      val riskInfo = RiskInformationFactory()
+        .withReferral(referral)
+        .withUpdatedBy(testUser.id)
+        .create()
+      riskInformationRepository.save(riskInfo)
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -181,7 +198,15 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.contactDetailsTableData.phoneNumber shouldBe person.additionalDetails?.phoneNumber
           body.contactDetailsTableData.email shouldBe person.additionalDetails?.emailAddress
           body.contactDetailsTableData.address shouldBe person.additionalDetails?.address
-          body.riskInformationDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftRiskInformationDetailsTableDataDto()
+          body.riskInformationDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftRiskInformationDetailsTableDataDto(
+            whoIsAtRisk = "Staff and public are at risk",
+            natureOfRisk = "Risk of violence",
+            riskImminence = "Risk is imminent in community",
+            riskOfSelfHarm = "YES",
+            riskOfSuicide = "YES",
+            riskToSelfHostelSetting = "DK",
+            riskToSelfVulnerability = "YES",
+          )
           body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftAdditionalSupportNeedsDetailsTableDataDto()
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
