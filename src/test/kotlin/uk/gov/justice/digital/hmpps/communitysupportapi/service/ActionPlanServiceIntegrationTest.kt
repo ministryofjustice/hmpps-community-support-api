@@ -636,6 +636,83 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(listOf("Poor weather", null), radioRevisions.map { it.freeTextValue })
     }
 
+    @Test
+    fun `should support multiple selected checkbox answers using one header per selected option`() {
+      val referral = createReferral()
+      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+      val sessionDeliveryStep = createSessionDeliveryStep(actionPlanTemplate.id)
+      val checkboxQuestion = createSessionDeliveryQuestion(sessionDeliveryStep.id, 1, "Which of these are available?", ActionPlanQuestionAnswerType.CHECKBOX, 3)
+      createChoice(checkboxQuestion.id, 1, "In person", "IN_PERSON")
+      createChoice(checkboxQuestion.id, 2, "By phone", "PHONE")
+      createChoice(checkboxQuestion.id, 3, "By video call", "VIDEO")
+
+      val initialRequest = ActionPlanSessionDeliveryDetailsRequest(
+        answers = listOf(
+          SessionDeliveryDetailsQuestionAnswers(
+            questionId = checkboxQuestion.id,
+            incomingAnswerDetails = listOf(
+              SessionDeliveryDetailsQuestionAnswer(value = "IN_PERSON"),
+              SessionDeliveryDetailsQuestionAnswer(value = "PHONE"),
+            ),
+          ),
+        ),
+      )
+
+      actionPlanService.updateSessionDeliveryDetailsForActionPlan(referral.referenceNumber!!, initialRequest, user.id.toString())
+
+      val updateRequest = ActionPlanSessionDeliveryDetailsRequest(
+        answers = listOf(
+          SessionDeliveryDetailsQuestionAnswers(
+            questionId = checkboxQuestion.id,
+            incomingAnswerDetails = listOf(
+              SessionDeliveryDetailsQuestionAnswer(value = "IN_PERSON"),
+              SessionDeliveryDetailsQuestionAnswer(value = "VIDEO"),
+            ),
+          ),
+        ),
+      )
+
+      val updateResult = actionPlanService.updateSessionDeliveryDetailsForActionPlan(referral.referenceNumber!!, updateRequest, user.id.toString())
+      assertEquals(listOf("IN_PERSON", "VIDEO"), updateResult.questions.single { it.id == checkboxQuestion.id }.savedResponses.map { it.value })
+
+      val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+        .filter { it.actionPlanStepQuestionId == checkboxQuestion.id }
+      assertEquals(2, activeHeaders.size)
+      assertEquals(
+        setOf("IN_PERSON", "VIDEO"),
+        activeHeaders.map { header ->
+          actionPlanStepQuestionAnswerDetailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(header.id))
+            .maxByOrNull { it.revisionNumber }
+            ?.content
+        }.toSet(),
+      )
+
+      val deletedHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAll().filter {
+        it.actionPlanId == actionPlan.id &&
+          it.actionPlanStepQuestionId == checkboxQuestion.id &&
+          it.deletedAt != null
+      }
+      assertEquals(1, deletedHeaders.size)
+      assertEquals(
+        listOf("PHONE"),
+        deletedHeaders.flatMap { header ->
+          actionPlanStepQuestionAnswerDetailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(header.id))
+            .map { it.content }
+        },
+      )
+
+      val inPersonHeader = activeHeaders.single { header ->
+        actionPlanStepQuestionAnswerDetailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(header.id))
+          .maxByOrNull { it.revisionNumber }
+          ?.content == "IN_PERSON"
+      }
+      val inPersonRevisions = actionPlanStepQuestionAnswerDetailsRepository
+        .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(inPersonHeader.id))
+        .sortedBy { it.revisionNumber }
+      assertEquals(listOf("IN_PERSON", "IN_PERSON"), inPersonRevisions.map { it.content })
+    }
+
     private fun createSessionDeliveryStep(actionPlanTemplateId: UUID) = actionPlanStepRepository.save(
       ActionPlanStepFactory()
         .withActionPlanTemplateId(actionPlanTemplateId)
