@@ -126,7 +126,7 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedInterpreterNeeds?.createdBy).isEqualTo(referralUser.id)
   }
 
-    @Test
+  @Test
   fun `update community service provider should be saved`() {
     val referralUser = referralHelper.ensureReferralUser()
     val createReferralRequest = setUpData()
