@@ -61,4 +61,8 @@ class ReferenceDataService(
         agencyType = it.agencyType,
       )
     }
+
+  fun getProbationOfficeNameById(probationOfficeId: Int): String? = getProbationOffices()
+    .firstOrNull { it.probationOfficeId == probationOfficeId }
+    ?.name
 }

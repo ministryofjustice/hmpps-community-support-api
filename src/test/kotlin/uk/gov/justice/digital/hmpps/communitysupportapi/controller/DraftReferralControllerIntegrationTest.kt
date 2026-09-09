@@ -768,7 +768,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
         pduId = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
-        probationOffice = "Newcastle Office",
+        probationOfficeId = 1,
         teamPhoneNumber = "0123456789",
         ppDetailsFoundAndCorrect = false,
       )
@@ -786,7 +786,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.jobRole shouldBe "Probation practitioner"
           body.emailAddress shouldBe "jane.doe@example.com"
           body.pdu shouldBe Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington")
-          body.probationOffice shouldBe "Newcastle Office"
+          body.probationOffice shouldBe "Derby: Derwent Centre"
           body.teamPhoneNumber shouldBe "0123456789"
           body.ppDetailsFoundAndCorrect shouldBe false
         }
@@ -797,7 +797,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       persistedRecord.jobRole shouldBe "Probation practitioner"
       persistedRecord.emailAddress shouldBe "jane.doe@example.com"
       persistedRecord.pdu shouldBe COUNTY_DURHAM_AND_DARLINGTON_PDU_ID
-      persistedRecord.probationOffice shouldBe "Newcastle Office"
+      persistedRecord.probationOffice shouldBe 1
       persistedRecord.teamPhoneNumber shouldBe "0123456789"
       persistedRecord.ppDetailsFoundAndCorrect shouldBe false
       persistedRecord.updatedBy shouldBe testUser.id
@@ -895,7 +895,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
         pduId = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
-        probationOffice = "Newcastle Office",
+        probationOfficeId = 1,
         teamPhoneNumber = "0123456789",
         phoneNumber = "0987654321",
         ppDetailsFoundAndCorrect = false,
@@ -914,7 +914,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.jobRole shouldBe "Probation practitioner"
           body.emailAddress shouldBe "jane.doe@example.com"
           body.pdu shouldBe Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington")
-          body.probationOffice shouldBe "Newcastle Office"
+          body.probationOffice shouldBe "Derby: Derwent Centre"
           body.teamPhoneNumber shouldBe "0123456789"
           body.phoneNumber shouldBe "0987654321"
           body.ppDetailsFoundAndCorrect shouldBe false

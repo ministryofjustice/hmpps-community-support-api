@@ -368,7 +368,7 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
         pduId = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
-        probationOffice = "Newcastle Office",
+        probationOfficeId = 1,
         teamPhoneNumber = "0123456789",
         phoneNumber = "0987654321",
         ppDetailsFoundAndCorrect = true,
@@ -381,11 +381,13 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
       assertThat(saved?.referralId).isEqualTo(referral.id)
       assertThat(saved?.name).isEqualTo("Jane Doe")
       assertThat(saved?.pdu).isEqualTo(COUNTY_DURHAM_AND_DARLINGTON_PDU_ID)
+      assertThat(saved?.probationOffice).isEqualTo(1)
       assertThat(saved?.teamPhoneNumber).isEqualTo("0123456789")
       assertThat(saved?.phoneNumber).isEqualTo("0987654321")
       assertThat(saved?.updatedBy).isEqualTo(referralUser.id)
 
       assertThat(result.pdu).isEqualTo(Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington"))
+      assertThat(result.probationOffice).isEqualTo("Derby: Derwent Centre")
       assertThat(result.phoneNumber).isEqualTo("0987654321")
       assertThat(result.teamPhoneNumber).isEqualTo("0123456789")
     }
