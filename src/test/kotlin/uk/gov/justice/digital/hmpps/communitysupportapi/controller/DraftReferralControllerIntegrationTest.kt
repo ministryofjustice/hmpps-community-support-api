@@ -773,7 +773,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         name = "Jane Doe",
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
-        pdu = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+        pduId = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
         probationOffice = "Newcastle Office",
         teamPhoneNumber = "0123456789",
         ppDetailsFoundAndCorrect = false,
@@ -818,7 +818,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val firstRequest = UpdateProbationPractitionerDetailsRequest(
         name = "Jane Doe",
-        pdu = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+        pduId = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
       )
 
       webTestClient.patch()
@@ -837,7 +837,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val secondRequest = UpdateProbationPractitionerDetailsRequest(
         name = "John Smith",
         jobRole = "Senior Probation practitioner",
-        pdu = GATESHEAD_AND_SOUTH_TYNESIDE_PDU_ID,
+        pduId = GATESHEAD_AND_SOUTH_TYNESIDE_PDU_ID,
       )
 
       webTestClient.patch()
@@ -900,7 +900,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         name = "Jane Doe",
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
-        pdu = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+        pduId = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
         probationOffice = "Newcastle Office",
         teamPhoneNumber = "0123456789",
         phoneNumber = "0987654321",

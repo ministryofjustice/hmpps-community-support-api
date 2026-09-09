@@ -497,7 +497,7 @@ class DraftReferralService(
           name = request.name,
           jobRole = request.jobRole,
           emailAddress = request.emailAddress,
-          pdu = request.pdu,
+          pdu = request.pduId,
           probationOffice = request.probationOffice,
           teamPhoneNumber = request.teamPhoneNumber,
           phoneNumber = request.phoneNumber,
@@ -510,7 +510,7 @@ class DraftReferralService(
       existingRecord.name = request.name
       existingRecord.jobRole = request.jobRole
       existingRecord.emailAddress = request.emailAddress
-      existingRecord.pdu = request.pdu
+      existingRecord.pdu = request.pduId
       existingRecord.probationOffice = request.probationOffice
       existingRecord.teamPhoneNumber = request.teamPhoneNumber
       existingRecord.phoneNumber = request.phoneNumber

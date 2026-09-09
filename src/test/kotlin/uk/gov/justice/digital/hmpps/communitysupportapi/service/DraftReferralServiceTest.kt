@@ -236,7 +236,7 @@ class DraftReferralServiceTest {
         name = "Jane Doe",
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
-        pdu = pduId,
+        pduId = pduId,
         probationOffice = "Newcastle Office",
         teamPhoneNumber = "0123456789",
         phoneNumber = "0987654321",
