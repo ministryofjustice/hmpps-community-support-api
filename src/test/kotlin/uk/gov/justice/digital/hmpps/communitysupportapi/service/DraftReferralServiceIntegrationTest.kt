@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -26,11 +27,15 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ProbationPrac
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import java.time.OffsetDateTime
 import java.util.*
 
 private val COUNTY_DURHAM_AND_DARLINGTON_PDU_ID = UUID.fromString("63805267-d75e-485c-b8cd-ce15d63b6e7c")
+private const val DARLINGTON_PROBATION_OFFICE_ID = 90
+private const val DARLINGTON_PROBATION_OFFICE_NAME = "County Durham: Darlington Probation Office"
 
 class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
 
@@ -126,6 +131,7 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedInterpreterNeeds?.createdBy).isEqualTo(referralUser.id)
   }
 
+  @Test
   fun `update additional information should be saved without clearing needs interpreter information`() {
     val referralUser = referralHelper.ensureReferralUser()
     val createReferralRequest = setUpData()
@@ -368,7 +374,7 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
         pduId = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
-        probationOffice = "Newcastle Office",
+        probationOfficeId = DARLINGTON_PROBATION_OFFICE_ID,
         teamPhoneNumber = "0123456789",
         phoneNumber = "0987654321",
         ppDetailsFoundAndCorrect = true,
@@ -381,11 +387,13 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
       assertThat(saved?.referralId).isEqualTo(referral.id)
       assertThat(saved?.name).isEqualTo("Jane Doe")
       assertThat(saved?.pdu).isEqualTo(COUNTY_DURHAM_AND_DARLINGTON_PDU_ID)
+      assertThat(saved?.probationOffice).isEqualTo(DARLINGTON_PROBATION_OFFICE_ID)
       assertThat(saved?.teamPhoneNumber).isEqualTo("0123456789")
       assertThat(saved?.phoneNumber).isEqualTo("0987654321")
       assertThat(saved?.updatedBy).isEqualTo(referralUser.id)
 
       assertThat(result.pdu).isEqualTo(Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington"))
+      assertThat(result.probationOffice).isEqualTo(DARLINGTON_PROBATION_OFFICE_NAME)
       assertThat(result.phoneNumber).isEqualTo("0987654321")
       assertThat(result.teamPhoneNumber).isEqualTo("0123456789")
     }
@@ -431,6 +439,24 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(createCprProbationPersonDto(crn).toJson()),
+        ),
+    )
+    stubFor(
+      get(urlEqualTo("/case/$crn"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(createPersonDetailsAndCircumstances()),
+        ),
+    )
+    stubFor(
+      get(urlEqualTo("/case/$crn/home-office-interest"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(createHomeOfficeInterest()),
         ),
     )
     return CreateReferralRequest(personIdentifier = crn)

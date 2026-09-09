@@ -29,7 +29,7 @@ class ProbationPractitionerDetails(
   var pdu: UUID? = null,
 
   @Column(name = "probation_office")
-  var probationOffice: String? = null,
+  var probationOffice: Int? = null,
 
   @Column(name = "team_phone_number")
   var teamPhoneNumber: String? = null,

@@ -61,14 +61,14 @@ class ProbationPractitionerDetailsBffResponseDtoTest {
       jobRole = "Probation practitioner",
       emailAddress = "jane.doe@example.com",
       pdu = pduId,
-      probationOffice = "Newcastle Office",
+      probationOffice = 1,
       teamPhoneNumber = "0123456789",
       ppDetailsFoundAndCorrect = false,
       updatedAt = OffsetDateTime.now(),
       updatedBy = UUID.randomUUID(),
     )
 
-    val result = ProbationPractitionerDetailsBffResponseDto.from(entity, Pdu(id = pduId, name = "Northumberland"))
+    val result = ProbationPractitionerDetailsBffResponseDto.from(entity, Pdu(id = pduId, name = "Northumberland"), "Newcastle Office")
 
     result.name shouldBe "Jane Doe"
     result.jobRole shouldBe "Probation practitioner"
