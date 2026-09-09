@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.WithdrawReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
@@ -91,8 +92,14 @@ class ReferralService(
     val personalDetailsAndCircumstances = when (identifier) {
       is PersonIdentifier.Crn -> nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
       is PersonIdentifier.PrisonerNumber -> {
-        val crn = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value).person.knownCrns.first()
-        nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
+        val cprPerson = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
+        if (cprPerson.person.knownCrns.isNotEmpty()) {
+          val crn = cprPerson.person.knownCrns.first()
+          nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
+        } else {
+          logger.warn("No known CRN found for person with prison identifier {}", identifier.value)
+          PersonDetailsAndCircumstances()
+        }
       }
     }
 

@@ -56,12 +56,14 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformati
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprPrisonPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManager
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -207,6 +209,39 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personDetailsTableData.prisonNumber shouldBe person.identifier
           body.personDetailsTableData.disabilities.map { it.description } shouldBe listOf("Blind")
           body.personDetailsTableData.personalCircumstances.map { it.description } shouldBe listOf("Relationships", "Employment", "Dependants")
+        }
+    }
+
+    @Test
+    fun `should return empty list for circumstances and disabilities when prison person has no known CRNs`() {
+      val person = referralHelper.createPerson(identifier = "B2345CD")
+      val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+
+      // stub CPR prison person with no CRNs
+      stubFor(
+        get(urlPathEqualTo("/person/prison/${person.identifier}"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createCprPrisonPersonDto(person.identifier, hasCrns = false).toJson()),
+          ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<CheckDraftReferralDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.personDetailsTableData.crn shouldBe null
+          body.personDetailsTableData.prisonNumber shouldBe person.identifier
+          body.personDetailsTableData.personalCircumstances shouldBe emptyList()
+          body.personDetailsTableData.disabilities shouldBe emptyList()
         }
     }
 
