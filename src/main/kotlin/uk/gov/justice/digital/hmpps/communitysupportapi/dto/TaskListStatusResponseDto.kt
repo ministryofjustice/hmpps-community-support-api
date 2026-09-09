@@ -81,8 +81,9 @@ data class TaskListStatusResponseDto(
       communityManagerDto: CommunityManagerDto?,
       savedProbationPractitionerDetails: ProbationPractitionerDetails?,
     ): TaskListStatusItem? {
-      if (communityManagerDto != null && savedProbationPractitionerDetails == null) return TaskListStatusItem.notStarted()
       if (communityManagerDto == null) return null
+      if (savedProbationPractitionerDetails == null) return TaskListStatusItem.notStarted()
+      if (savedProbationPractitionerDetails.ppDetailsFoundAndCorrect == false) return null
       return TaskListStatusItem.completed()
     }
 
@@ -90,9 +91,8 @@ data class TaskListStatusResponseDto(
       communityManagerDto: CommunityManagerDto?,
       savedProbationPractitionerDetails: ProbationPractitionerDetails?,
     ): TaskListStatusItem? {
-      if (communityManagerDto != null) return null
-      if (savedProbationPractitionerDetails == null) return TaskListStatusItem.notStarted()
-      return null
+      if (communityManagerDto != null && savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect != false) return null
+      return savedProbationPractitionerDetails?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
     }
   }
 }
