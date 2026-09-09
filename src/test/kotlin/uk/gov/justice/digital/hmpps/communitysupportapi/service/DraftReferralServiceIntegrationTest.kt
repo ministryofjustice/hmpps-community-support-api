@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -26,6 +27,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ProbationPrac
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import java.time.OffsetDateTime
 import java.util.*
@@ -124,6 +127,57 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
     assertThat(savedInterpreterNeeds?.interpreterLanguage).isEqualTo("Spanish")
     assertThat(savedInterpreterNeeds?.interpreterNeeded).isTrue()
     assertThat(savedInterpreterNeeds?.createdBy).isEqualTo(referralUser.id)
+  }
+
+  @Test
+  fun `update additional information should be saved without clearing needs interpreter information`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val createReferralRequest = setUpData()
+
+    val result = referralService.createReferral(referralUser.id, createReferralRequest)
+    val savedReferral = result.referral
+
+    val interpreterNeeds = NeedsInterpreterRequest(
+      needsInterpreter = true,
+      language = "Spanish",
+    )
+
+    val updatedNeedsInterpreterResult = draftReferralService.upsertNeedsInterpreter(
+      savedReferral.id,
+      referralUser.id,
+      interpreterNeeds,
+    )
+    assertThat(updatedNeedsInterpreterResult).isNotNull()
+
+    val supportNeeds = AdditionalSupportNeedsRequest(
+      employmentResponsibilities = "Test employment responsibilities",
+      caringResponsibilities = "Test caring responsibilities",
+      needsAdditionalSupport = true,
+    )
+
+    val updatedResult = draftReferralService.upsertAdditionalSupportNeeds(
+      savedReferral.id,
+      referralUser.id,
+      supportNeeds,
+    )
+    assertThat(updatedResult).isNotNull()
+
+    val savedResult = personAdditionSupportNeedsRepository.findByReferralId(savedReferral.id)
+    assertThat(savedResult).isNotNull()
+    assertThat(savedResult?.referralId).isEqualTo(savedReferral.id)
+    assertThat(savedResult?.personId).isEqualTo(savedReferral.personId)
+    assertThat(savedResult?.caringResponsibilitiesDetails).isEqualTo("Test caring responsibilities")
+    assertThat(savedResult?.additionalSupportNeeded).isTrue()
+    assertThat(savedResult?.physicalHealthDetails).isNull()
+    assertThat(savedResult?.mentalEmotionalHealthDetails).isNull()
+    assertThat(savedResult?.diversityDetails).isNull()
+    assertThat(savedResult?.employmentResponsibilitiesDetails).isEqualTo("Test employment responsibilities")
+    assertThat(savedResult?.locationTravelDetails).isNull()
+    assertThat(savedResult?.neurodiversityDetails).isNull()
+    assertThat(savedResult?.anythingElseDetails).isNull()
+    assertThat(savedResult?.interpreterLanguage).isEqualTo("Spanish")
+    assertThat(savedResult?.interpreterNeeded).isTrue()
+    assertThat(savedResult?.createdBy).isEqualTo(referralUser.id)
   }
 
   @Test
@@ -383,6 +437,24 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(createCprProbationPersonDto(crn).toJson()),
+        ),
+    )
+    stubFor(
+      get(urlEqualTo("/case/$crn"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(createPersonDetailsAndCircumstances()),
+        ),
+    )
+    stubFor(
+      get(urlEqualTo("/case/$crn/home-office-interest"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(createHomeOfficeInterest()),
         ),
     )
     return CreateReferralRequest(personIdentifier = crn)
