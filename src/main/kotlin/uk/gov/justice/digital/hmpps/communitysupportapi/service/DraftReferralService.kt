@@ -61,6 +61,7 @@ class DraftReferralService(
   private val probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository,
   private val identifierValidator: PersonIdentifierValidator,
   private val nDeliusService: NDeliusService,
+  private val referenceDataService: ReferenceDataService,
 ) {
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
@@ -487,7 +488,7 @@ class DraftReferralService(
           jobRole = request.jobRole,
           emailAddress = request.emailAddress,
           pdu = request.pduId,
-          probationOffice = request.probationOffice,
+          probationOffice = request.probationOfficeId,
           teamPhoneNumber = request.teamPhoneNumber,
           phoneNumber = request.phoneNumber,
           ppDetailsFoundAndCorrect = request.ppDetailsFoundAndCorrect,
@@ -500,7 +501,7 @@ class DraftReferralService(
       existingRecord.jobRole = request.jobRole
       existingRecord.emailAddress = request.emailAddress
       existingRecord.pdu = request.pduId
-      existingRecord.probationOffice = request.probationOffice
+      existingRecord.probationOffice = request.probationOfficeId
       existingRecord.teamPhoneNumber = request.teamPhoneNumber
       existingRecord.phoneNumber = request.phoneNumber
       existingRecord.ppDetailsFoundAndCorrect = request.ppDetailsFoundAndCorrect
@@ -509,11 +510,16 @@ class DraftReferralService(
       probationPractitionerDetailsRepository.save(existingRecord)
     }
 
-    val pdu = savedRecord.pdu?.let { pduId ->
+    return buildResponseFromEntity(savedRecord)
+  }
+
+  private fun buildResponseFromEntity(entity: ProbationPractitionerDetails): ProbationPractitionerDetailsBffResponseDto {
+    val pdu = entity.pdu?.let { pduId ->
       pduRepository.findNameById(pduId)?.let { pduName -> Pdu(id = pduId, name = pduName) }
     }
+    val probationOfficeName = entity.probationOffice?.let { referenceDataService.getProbationOfficeNameById(it) }
 
-    return ProbationPractitionerDetailsBffResponseDto.from(savedRecord, pdu)
+    return ProbationPractitionerDetailsBffResponseDto.from(entity, pdu, probationOfficeName)
   }
 
   private fun getCrn(person: Person): String? = when (
@@ -533,10 +539,7 @@ class DraftReferralService(
     val probationPractitionerDetails = probationPractitionerDetailsRepository.findByReferralId(referralId)
 
     if (probationPractitionerDetails != null) {
-      val pdu = probationPractitionerDetails.pdu?.let { pduId ->
-        pduRepository.findNameById(pduId)?.let { pduName -> Pdu(id = pduId, name = pduName) }
-      }
-      return ProbationPractitionerDetailsBffResponseDto.from(probationPractitionerDetails, pdu)
+      return buildResponseFromEntity(probationPractitionerDetails)
     }
 
     val communityManagerDto = getCommunityManagerFromNDelius(referralId)

@@ -7,7 +7,7 @@ data class UpdateProbationPractitionerDetailsRequest(
   val jobRole: String? = null,
   val emailAddress: String? = null,
   val pduId: UUID? = null,
-  val probationOffice: String? = null,
+  val probationOfficeId: Int? = null,
   val teamPhoneNumber: String? = null,
   val phoneNumber: String? = null,
   val ppDetailsFoundAndCorrect: Boolean? = null,
