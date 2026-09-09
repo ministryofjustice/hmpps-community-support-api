@@ -324,7 +324,7 @@ class TaskListStatusResponseDtoTest {
 
     @Test
     fun `returns addMainPointOfContactCompleted as notStarted and checkProbationPractitionerDetailsCompleted as null when no probation practitioner details found`() {
-      val result = TaskListStatusResponseDto.from(referral, person, null, null, null, null, probationPractitionerDetails = null)
+      val result = TaskListStatusResponseDto.from(referral, person, null, null, null, null, communityManager = null)
 
       result.checkProbationPractitionerDetailsCompleted shouldBe null
       result.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
@@ -339,8 +339,8 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
-        savedProbationPractitionerDetails = null,
+        communityManager = buildProbationPractitionerDetailsBffResponseDto(),
+        probationPractitionerDetails = null,
       )
 
       result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.notStarted()
@@ -356,8 +356,8 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
-        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(),
+        communityManager = buildProbationPractitionerDetailsBffResponseDto(),
+        probationPractitionerDetails = buildSavedProbationPractitionerDetails(),
       )
 
       result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
@@ -373,8 +373,8 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
-        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = false),
+        communityManager = buildProbationPractitionerDetailsBffResponseDto(),
+        probationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = false),
       )
 
       result.checkProbationPractitionerDetailsCompleted shouldBe null
@@ -390,8 +390,8 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
-        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = true),
+        communityManager = buildProbationPractitionerDetailsBffResponseDto(),
+        probationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = true),
       )
 
       result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
@@ -407,8 +407,8 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
-        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = null),
+        communityManager = buildProbationPractitionerDetailsBffResponseDto(),
+        probationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = null),
       )
 
       result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()

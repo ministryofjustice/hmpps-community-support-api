@@ -66,7 +66,7 @@ class DraftReferralServiceTest {
   lateinit var referralOffenceSentenceRepository: ReferralOffenceSentenceRepository
 
   @Mock
-  lateinit var probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository
+  lateinit var communityManagerFromNDeliusRepository: ProbationPractitionerDetailsRepository
 
   @Mock
   lateinit var identifierValidator: PersonIdentifierValidator
@@ -221,15 +221,15 @@ class DraftReferralServiceTest {
 
     @BeforeEach
     fun setup() {
-      reset(referralRepository, probationPractitionerDetailsRepository)
+      reset(referralRepository, getCommunityManagerForReferralRepository)
       whenever(referralRepository.findById(referralId)).thenReturn(Optional.of(referral))
     }
 
     @Test
     fun `should create a new record including the phone number when none exists`() {
       val pduId = UUID.randomUUID()
-      whenever(probationPractitionerDetailsRepository.findByReferralId(referralId)).thenReturn(null)
-      whenever(probationPractitionerDetailsRepository.save(any<ProbationPractitionerDetails>())).thenAnswer { it.arguments[0] }
+      whenever(getCommunityManagerForReferralRepository.findByReferralId(referralId)).thenReturn(null)
+      whenever(getCommunityManagerForReferralRepository.save(any<ProbationPractitionerDetails>())).thenAnswer { it.arguments[0] }
       whenever(pduRepository.findNameById(pduId)).thenReturn("Northumberland")
 
       val request = UpdateProbationPractitionerDetailsRequest(
@@ -246,7 +246,7 @@ class DraftReferralServiceTest {
       val result = draftReferralService.upsertProbationPractitionerDetails(referralId, userId, request)
 
       val captor = argumentCaptor<ProbationPractitionerDetails>()
-      verify(probationPractitionerDetailsRepository).save(captor.capture())
+      verify(getCommunityManagerForReferralRepository).save(captor.capture())
 
       val saved = captor.firstValue
       assertThat(saved.referralId).isEqualTo(referralId)
@@ -271,8 +271,8 @@ class DraftReferralServiceTest {
         updatedAt = createdAt,
         updatedBy = createdBy,
       )
-      whenever(probationPractitionerDetailsRepository.findByReferralId(referralId)).thenReturn(existingRecord)
-      whenever(probationPractitionerDetailsRepository.save(any<ProbationPractitionerDetails>())).thenAnswer { it.arguments[0] }
+      whenever(getCommunityManagerForReferralRepository.findByReferralId(referralId)).thenReturn(existingRecord)
+      whenever(getCommunityManagerForReferralRepository.save(any<ProbationPractitionerDetails>())).thenAnswer { it.arguments[0] }
 
       val request = UpdateProbationPractitionerDetailsRequest(
         name = "Jane Doe",
