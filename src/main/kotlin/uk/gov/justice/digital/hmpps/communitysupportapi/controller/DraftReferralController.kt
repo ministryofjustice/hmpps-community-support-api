@@ -440,7 +440,7 @@ class DraftReferralController(
   fun getProbationPractitionerDetails(
     @PathVariable referralId: UUID,
   ): ResponseEntity<ProbationPractitionerDetailsBffResponseDto> = ResponseEntity.ok(
-    draftReferralService.getProbationPractitionerDetails(referralId),
+    draftReferralService.getProbationPractitionerDetailsForReferral(referralId),
   )
 
   @Operation(summary = "Save the Probation Practitioner details for a Draft Referral")

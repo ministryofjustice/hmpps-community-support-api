@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import io.kotest.matchers.shouldBe
@@ -55,7 +54,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprPrisonPersonJson
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManager
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
@@ -698,14 +697,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val person = referralHelper.createPerson()
       val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
 
-      stubFor(
-        get(urlEqualTo("/case/${person.identifier}/community-manager"))
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withHeader("Content-Type", "application/json")
-              .withBody(createCommunityManager(pdu = "County Durham and Darlington")),
-          ),
+      referralHelper.stubCommunityManagerForReferral(
+        person,
+        communityManager = createCommunityManagerDto(crn = person.identifier, pdu = "County Durham and Darlington"),
       )
 
       webTestClient.get()
@@ -773,7 +767,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         name = "Jane Doe",
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
-        pdu = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+        pduId = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
         probationOffice = "Newcastle Office",
         teamPhoneNumber = "0123456789",
         ppDetailsFoundAndCorrect = false,
@@ -818,7 +812,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val firstRequest = UpdateProbationPractitionerDetailsRequest(
         name = "Jane Doe",
-        pdu = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+        pduId = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
       )
 
       webTestClient.patch()
@@ -837,7 +831,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val secondRequest = UpdateProbationPractitionerDetailsRequest(
         name = "John Smith",
         jobRole = "Senior Probation practitioner",
-        pdu = GATESHEAD_AND_SOUTH_TYNESIDE_PDU_ID,
+        pduId = GATESHEAD_AND_SOUTH_TYNESIDE_PDU_ID,
       )
 
       webTestClient.patch()
@@ -900,7 +894,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         name = "Jane Doe",
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
-        pdu = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+        pduId = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
         probationOffice = "Newcastle Office",
         teamPhoneNumber = "0123456789",
         phoneNumber = "0987654321",
@@ -1082,7 +1076,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return 200 with all task list statuses as false`() {
       val testUser = referralHelper.createTestUser()
-      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val person = referralHelper.createPerson(identifier = "X123456")
       val additionalDetails = PersonAdditionalDetailsFactory()
         .withPerson(person)
         .withEthnicity("White")
@@ -1099,6 +1093,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser, targetServiceCompletionDate = null, targetServiceCompletionDateReason = null)
       referralRepository.save(savedReferral)
+
+      referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
 
       webTestClient.get()
         .uri("/bff/task-list-status/${savedReferral.id}")
@@ -1125,7 +1121,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return inProgress for addDetailsOfAnyAdditionalSupportNeedsCompleted when additionalSupportNeeds is partially complete`() {
       val testUser = referralHelper.createTestUser()
-      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val person = referralHelper.createPerson(identifier = "X123456")
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
       referralRepository.save(savedReferral)
 
@@ -1136,6 +1132,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withCreatedBy(testUser.id)
         .create()
       personAdditionalSupportNeedsRepository.save(supportNeeds)
+
+      referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
 
       webTestClient.get()
         .uri("/bff/task-list-status/${savedReferral.id}")
@@ -1153,7 +1151,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return completed for addDetailsOfAnyAdditionalSupportNeedsCompleted when additionalSupportNeeds is fully complete`() {
       val testUser = referralHelper.createTestUser()
-      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val person = referralHelper.createPerson(identifier = "X123456")
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
       referralRepository.save(savedReferral)
 
@@ -1165,6 +1163,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withCreatedBy(testUser.id)
         .create()
       personAdditionalSupportNeedsRepository.save(supportNeeds)
+
+      referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
 
       webTestClient.get()
         .uri("/bff/task-list-status/${savedReferral.id}")
@@ -1182,7 +1182,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return completed for checkRiskInformationCompleted when risk info exists`() {
       val testUser = referralHelper.createTestUser()
-      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val person = referralHelper.createPerson(identifier = "X123456")
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
       referralRepository.save(savedReferral)
 
@@ -1191,6 +1191,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withUpdatedBy(testUser.id)
         .create()
       riskInformationRepository.save(riskInfo)
+
+      referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
 
       webTestClient.get()
         .uri("/bff/task-list-status/${savedReferral.id}")
@@ -1208,12 +1210,14 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return completed for selectAnAreaForReferralCompleted when community service provider is assigned`() {
       val testUser = referralHelper.createTestUser()
-      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val person = referralHelper.createPerson(identifier = "X123456")
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
       referralRepository.save(savedReferral)
 
       val communityServiceProvider = referralHelper.getCommunityServiceProvider()
       referralHelper.createProviderAssignment(savedReferral, communityServiceProvider)
+
+      referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
 
       webTestClient.get()
         .uri("/bff/task-list-status/${savedReferral.id}")
@@ -1231,12 +1235,14 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return in progress for addAdditionalInformationCompleted when target date and reason exist without service days`() {
       val testUser = referralHelper.createTestUser()
-      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val person = referralHelper.createPerson(identifier = "X123456")
       val savedReferral = referralHelper.createReferral(
         person = person,
         submittedBy = testUser,
       )
       referralRepository.save(savedReferral)
+
+      referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
 
       webTestClient.get()
         .uri("/bff/task-list-status/${savedReferral.id}")
@@ -1254,13 +1260,15 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should return completed for addAdditionalInformationCompleted when target date reason and service days exist`() {
       val testUser = referralHelper.createTestUser()
-      val person = referralHelper.createPerson(identifier = "CRN12345")
+      val person = referralHelper.createPerson(identifier = "X123456")
       val savedReferral = referralHelper.createReferral(
         person = person,
         submittedBy = testUser,
         serviceDays = 40,
       )
       referralRepository.save(savedReferral)
+
+      referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
 
       webTestClient.get()
         .uri("/bff/task-list-status/${savedReferral.id}")
@@ -1282,10 +1290,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
       referralRepository.save(savedReferral)
 
-      stubFor(
-        get(urlEqualTo("/case/${person.identifier}/community-manager"))
-          .willReturn(aResponse().withStatus(404)),
-      )
+      referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
 
       webTestClient.get()
         .uri("/bff/task-list-status/${savedReferral.id}")
@@ -1308,15 +1313,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
       referralRepository.save(savedReferral)
 
-      stubFor(
-        get(urlEqualTo("/case/${person.identifier}/community-manager"))
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withHeader("Content-Type", "application/json")
-              .withBody(createCommunityManager()),
-          ),
-      )
+      referralHelper.stubCommunityManagerForReferral(person)
 
       webTestClient.get()
         .uri("/bff/task-list-status/${savedReferral.id}")
@@ -1339,15 +1336,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
       referralRepository.save(savedReferral)
 
-      stubFor(
-        get(urlEqualTo("/case/${person.identifier}/community-manager"))
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withHeader("Content-Type", "application/json")
-              .withBody(createCommunityManager()),
-          ),
-      )
+      referralHelper.stubCommunityManagerForReferral(person)
 
       probationPractitionerDetailsRepository.save(
         ProbationPractitionerDetails(
@@ -1380,15 +1369,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
       referralRepository.save(savedReferral)
 
-      stubFor(
-        get(urlEqualTo("/case/${person.identifier}/community-manager"))
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withHeader("Content-Type", "application/json")
-              .withBody(createCommunityManager()),
-          ),
-      )
+      referralHelper.stubCommunityManagerForReferral(person)
 
       probationPractitionerDetailsRepository.save(
         ProbationPractitionerDetails(
