@@ -1,10 +1,15 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.integration
 
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalDetails
@@ -19,12 +24,14 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ServiceProviderRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserAssignmentFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralUserFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -278,5 +285,26 @@ class ReferralTestSupport(
 
     person.additionalDetails = additionalDetails
     return person
+  }
+
+  /**
+   * Stubs the nDelius `/case/{crn}/community-manager` WireMock endpoint for the given person.
+   * Pass `communityManager = null` to simulate a 404 (no community manager found).
+   */
+  fun stubCommunityManagerForReferral(
+    person: Person,
+    communityManager: CommunityManagerDto? = ExternalApiResponse.createCommunityManagerDto(crn = person.identifier),
+  ) {
+    val response = communityManager?.let {
+      aResponse()
+        .withStatus(200)
+        .withHeader("Content-Type", "application/json")
+        .withBody(it.toJson())
+    } ?: aResponse().withStatus(404)
+
+    stubFor(
+      get(urlEqualTo("/case/${person.identifier}/community-manager"))
+        .willReturn(response),
+    )
   }
 }

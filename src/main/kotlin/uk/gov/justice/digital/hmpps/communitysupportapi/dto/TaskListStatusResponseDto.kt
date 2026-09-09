@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
@@ -28,8 +29,8 @@ data class TaskListStatusResponseDto(
       riskInfo: RiskInformation?,
       criminogenicNeeds: ReferralCriminogenicNeeds?,
       communityServiceProvider: CommunityServiceProvider?,
-      probationPractitionerDetails: ProbationPractitionerDetailsBffResponseDto? = null,
-      savedProbationPractitionerDetails: ProbationPractitionerDetails? = null,
+      communityManager: CommunityManagerDto? = null,
+      probationPractitionerDetails: ProbationPractitionerDetails? = null,
     ) = TaskListStatusResponseDto(
       fullName = person.firstName + " " + person.lastName,
       TaskListStatusItem.notStarted(),
@@ -39,8 +40,8 @@ data class TaskListStatusResponseDto(
       getAdditionalInformationStatus(referral),
       TaskListStatusItem.notStarted(),
       getCommunityServiceProviderStatus(communityServiceProvider),
-      getCheckProbationPractitionerDetailsStatus(probationPractitionerDetails, savedProbationPractitionerDetails),
-      getAddMainPointOfContactStatus(probationPractitionerDetails, savedProbationPractitionerDetails),
+      checkProbationPractitionerDetailsStatus(communityManager, probationPractitionerDetails),
+      getAddMainPointOfContactStatusStatus(communityManager, probationPractitionerDetails),
     )
 
     private fun getCommunityServiceProviderStatus(communityServiceProvider: CommunityServiceProvider?): TaskListStatusItem = communityServiceProvider?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
@@ -76,26 +77,22 @@ data class TaskListStatusResponseDto(
       }
     }
 
-    private fun getCheckProbationPractitionerDetailsStatus(
-      probationPractitionerDetails: ProbationPractitionerDetailsBffResponseDto?,
+    private fun checkProbationPractitionerDetailsStatus(
+      communityManagerDto: CommunityManagerDto?,
       savedProbationPractitionerDetails: ProbationPractitionerDetails?,
     ): TaskListStatusItem? {
-      if (probationPractitionerDetails == null) return null
-
-      if (savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect == false) return null
-
-      return savedProbationPractitionerDetails?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
+      if (communityManagerDto == null) return null
+      if (savedProbationPractitionerDetails == null) return TaskListStatusItem.notStarted()
+      if (savedProbationPractitionerDetails.ppDetailsFoundAndCorrect == false) return null
+      return TaskListStatusItem.completed()
     }
 
-    private fun getAddMainPointOfContactStatus(
-      probationPractitionerDetails: ProbationPractitionerDetailsBffResponseDto?,
+    private fun getAddMainPointOfContactStatusStatus(
+      communityManagerDto: CommunityManagerDto?,
       savedProbationPractitionerDetails: ProbationPractitionerDetails?,
     ): TaskListStatusItem? {
-      if (probationPractitionerDetails == null) return TaskListStatusItem.notStarted()
-
-      if (savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect == false) return TaskListStatusItem.completed()
-
-      return null
+      if (communityManagerDto != null && savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect != false) return null
+      return savedProbationPractitionerDetails?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
     }
   }
 }
