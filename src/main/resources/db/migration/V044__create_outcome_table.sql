@@ -5,6 +5,9 @@ CREATE TABLE IF NOT EXISTS outcome (
     order_number INTEGER NOT NULL,
     setting VARCHAR(20) NOT NULL,
 
+    CONSTRAINT fk_outcome_need
+        FOREIGN KEY (need_id) REFERENCES need(id) ON DELETE CASCADE,
+
     CONSTRAINT uk_outcome_need_order_number
         UNIQUE (need_id, order_number),
 
