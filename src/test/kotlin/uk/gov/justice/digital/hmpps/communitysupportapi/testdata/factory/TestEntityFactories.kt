@@ -41,6 +41,10 @@ object TestEntityFactories {
 
   fun personAdditionalDetails(): PersonAdditionalDetailsFactory = PersonAdditionalDetailsFactory()
 
+  fun need(): NeedFactory = NeedFactory()
+
+  fun outcome(): OutcomeFactory = OutcomeFactory()
+
   // ==============================
   // Convenience Combination Methods
   // ==============================

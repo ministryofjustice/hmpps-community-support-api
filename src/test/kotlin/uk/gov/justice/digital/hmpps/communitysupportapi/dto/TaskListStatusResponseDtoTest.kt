@@ -3,6 +3,9 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDetailsDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ContractArea
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
@@ -13,7 +16,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminoge
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Region
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -324,7 +326,7 @@ class TaskListStatusResponseDtoTest {
 
     @Test
     fun `returns addMainPointOfContactCompleted as notStarted and checkProbationPractitionerDetailsCompleted as null when no probation practitioner details found`() {
-      val result = TaskListStatusResponseDto.from(referral, person, null, null, null, null, probationPractitionerDetails = null)
+      val result = TaskListStatusResponseDto.from(referral, person, null, null, null, null, communityManager = null)
 
       result.checkProbationPractitionerDetailsCompleted shouldBe null
       result.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
@@ -339,8 +341,8 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
-        savedProbationPractitionerDetails = null,
+        communityManager = buildCommunityManager(),
+        probationPractitionerDetails = null,
       )
 
       result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.notStarted()
@@ -356,8 +358,8 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
-        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(),
+        communityManager = buildCommunityManager(),
+        probationPractitionerDetails = buildSavedProbationPractitionerDetails(),
       )
 
       result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
@@ -373,8 +375,8 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
-        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = false),
+        communityManager = buildCommunityManager(),
+        probationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = false),
       )
 
       result.checkProbationPractitionerDetailsCompleted shouldBe null
@@ -390,8 +392,8 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
-        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = true),
+        communityManager = buildCommunityManager(),
+        probationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = true),
       )
 
       result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
@@ -407,8 +409,8 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        probationPractitionerDetails = buildProbationPractitionerDetailsBffResponseDto(),
-        savedProbationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = null),
+        communityManager = buildCommunityManager(),
+        probationPractitionerDetails = buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect = null),
       )
 
       result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
@@ -522,13 +524,20 @@ class TaskListStatusResponseDtoTest {
     updatedBy = userId,
   )
 
-  private fun buildProbationPractitionerDetailsBffResponseDto() = ProbationPractitionerDetailsBffResponseDto(
-    name = "Jane Doe",
-    jobRole = "Probation practitioner",
-    emailAddress = "jane.doe@example.com",
-    pdu = Pdu(id = UUID.randomUUID(), name = "Northumberland"),
-    probationOffice = "Newcastle Office",
-    teamPhoneNumber = "0123456789",
+  private fun buildCommunityManager() = CommunityManagerDto(
+    "CRN123",
+    CommunityManagerDetailsDto(
+      name = CommunityManagerNameDto(
+        "Jane",
+        null,
+        "Doe",
+      ),
+      jobRole = "Probation practitioner",
+      emailAddress = "jane.doe@example.com",
+      pdu = UUID.randomUUID().toString(),
+      teamPhoneNumber = "0123456789",
+    ),
+
   )
 
   private fun buildSavedProbationPractitionerDetails(ppDetailsFoundAndCorrect: Boolean? = null) = ProbationPractitionerDetails(

@@ -78,14 +78,14 @@ class NDeliusServiceTest {
   }
 
   @Test
-  fun `should throw NotFoundException when nDelius fails to find community manager by CRN`() {
+  fun `should return null when nDelius fails to find community manager by CRN`() {
     val crn = "X123456"
 
     whenever(nDeliusClient.getCommunityManagerByCrn(crn)).thenThrow(NotFoundException("Person not found in nDelius with CRN: $crn"))
 
-    assertThrows(NotFoundException::class.java) {
-      nDeliusService.getCommunityManagerByIdentifier(crn)
-    }
+    val result = nDeliusService.getCommunityManagerByIdentifier(crn)
+
+    assertEquals(null, result)
 
     verify(nDeliusClient).getCommunityManagerByCrn(crn)
     verifyNoMoreInteractions(nDeliusClient)

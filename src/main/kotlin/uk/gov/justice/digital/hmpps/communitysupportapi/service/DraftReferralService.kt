@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoB
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ProbationPractitionerDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SelectionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSentenceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toTriState
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.value
@@ -60,6 +61,7 @@ class DraftReferralService(
   private val probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository,
   private val identifierValidator: PersonIdentifierValidator,
   private val nDeliusService: NDeliusService,
+  private val referenceDataService: ReferenceDataService,
 ) {
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
@@ -301,15 +303,9 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    val probationPractitionerDetails = try {
-      getProbationPractitionerDetails(referralId)
-    } catch (_: NotFoundException) {
-      null
-    } catch (_: ValidationException) {
-      null
-    }
+    val communityManager = getCommunityManagerFromNDelius(referralId)
 
-    val savedProbationPractitionerDetails = probationPractitionerDetailsRepository.findByReferralId(referralId)
+    val probationPractitionerDetails = probationPractitionerDetailsRepository.findByReferralId(referralId)
 
     return TaskListStatusResponseDto.from(
       referral,
@@ -318,8 +314,8 @@ class DraftReferralService(
       riskInfo,
       criminogenicNeeds,
       communityServiceProvider,
+      communityManager,
       probationPractitionerDetails,
-      savedProbationPractitionerDetails,
     )
   }
 
@@ -459,7 +455,7 @@ class DraftReferralService(
     return AdditionalInformationForTheDeliveryPartnerBffResponseDto.from(person, referral)
   }
 
-  fun getProbationPractitionerDetails(referralId: UUID): ProbationPractitionerDetailsBffResponseDto {
+  fun getCommunityManagerFromNDelius(referralId: UUID): CommunityManagerDto? {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
@@ -469,13 +465,7 @@ class DraftReferralService(
     val crn = getCrn(person)
       ?: throw ValidationException("Cannot retrieve Probation Practitioner details for a person identified by prison number")
 
-    val communityManager = nDeliusService.getCommunityManagerByIdentifier(crn)
-
-    val pdu = communityManager.communityManager?.pdu?.let { pduName ->
-      pduRepository.findByName(pduName)?.let { Pdu(id = it.id, name = it.name) }
-    }
-
-    return ProbationPractitionerDetailsBffResponseDto.from(communityManager, pdu)
+    return nDeliusService.getCommunityManagerByIdentifier(crn)
   }
 
   @Transactional
@@ -497,8 +487,8 @@ class DraftReferralService(
           name = request.name,
           jobRole = request.jobRole,
           emailAddress = request.emailAddress,
-          pdu = request.pdu,
-          probationOffice = request.probationOffice,
+          pdu = request.pduId,
+          probationOffice = request.probationOfficeId,
           teamPhoneNumber = request.teamPhoneNumber,
           phoneNumber = request.phoneNumber,
           ppDetailsFoundAndCorrect = request.ppDetailsFoundAndCorrect,
@@ -510,8 +500,8 @@ class DraftReferralService(
       existingRecord.name = request.name
       existingRecord.jobRole = request.jobRole
       existingRecord.emailAddress = request.emailAddress
-      existingRecord.pdu = request.pdu
-      existingRecord.probationOffice = request.probationOffice
+      existingRecord.pdu = request.pduId
+      existingRecord.probationOffice = request.probationOfficeId
       existingRecord.teamPhoneNumber = request.teamPhoneNumber
       existingRecord.phoneNumber = request.phoneNumber
       existingRecord.ppDetailsFoundAndCorrect = request.ppDetailsFoundAndCorrect
@@ -520,11 +510,16 @@ class DraftReferralService(
       probationPractitionerDetailsRepository.save(existingRecord)
     }
 
-    val pdu = savedRecord.pdu?.let { pduId ->
+    return buildResponseFromEntity(savedRecord)
+  }
+
+  private fun buildResponseFromEntity(entity: ProbationPractitionerDetails): ProbationPractitionerDetailsBffResponseDto {
+    val pdu = entity.pdu?.let { pduId ->
       pduRepository.findNameById(pduId)?.let { pduName -> Pdu(id = pduId, name = pduName) }
     }
+    val probationOfficeName = entity.probationOffice?.let { referenceDataService.getProbationOfficeNameById(it) }
 
-    return ProbationPractitionerDetailsBffResponseDto.from(savedRecord, pdu)
+    return ProbationPractitionerDetailsBffResponseDto.from(entity, pdu, probationOfficeName)
   }
 
   private fun getCrn(person: Person): String? = when (
@@ -538,5 +533,24 @@ class DraftReferralService(
     offenceSentenceInfo.copy(sentenceEndDate = null)
   } else {
     offenceSentenceInfo
+  }
+
+  fun getProbationPractitionerDetailsForReferral(referralId: UUID): ProbationPractitionerDetailsBffResponseDto? {
+    val probationPractitionerDetails = probationPractitionerDetailsRepository.findByReferralId(referralId)
+
+    if (probationPractitionerDetails != null) {
+      return buildResponseFromEntity(probationPractitionerDetails)
+    }
+
+    val communityManagerDto = getCommunityManagerFromNDelius(referralId)
+
+    if (communityManagerDto != null) {
+      val pdu = communityManagerDto.communityManager?.pdu?.let { pduName ->
+        pduRepository.findByName(pduName)?.let { Pdu(id = it.id, name = it.name) }
+      }
+      return ProbationPractitionerDetailsBffResponseDto.from(communityManagerDto, pdu)
+    }
+
+    return ProbationPractitionerDetailsBffResponseDto.empty()
   }
 }
