@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
@@ -58,30 +58,25 @@ class ActionPlanController(
     return ResponseEntity.ok(actionPlanService.getActionPlanSummaryForReferral(referralReference))
   }
 
-  @Operation(summary = "Get the needs with questions for an action plan")
+  @Operation(summary = "Get the needs and outcomes for select a need")
   @ApiResponses(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "Needs with questions returned",
+        description = "Needs and outcomes returned",
         content = [
           Content(
             mediaType = "application/json",
-            schema = Schema(implementation = ActionPlanNeedsResponse::class),
+            schema = Schema(implementation = ActionPlanSelectANeedResponse::class),
           ),
         ],
       ),
-      ApiResponse(
-        responseCode = "404",
-        description = "Referral not found",
-        content = [Content(mediaType = "application/json")],
-      ),
     ],
   )
-  @GetMapping("/bff/referral/{referralReference}/action-plan/needs")
-  fun getActionPlanNeeds(@PathVariable referralReference: String): ResponseEntity<ActionPlanNeedsResponse> {
-    log.info("Fetching action plan needs for referral={}", referralReference)
-    return ResponseEntity.ok(actionPlanService.getActionPlanNeedsForReferral(referralReference))
+  @GetMapping("/bff/referral/action-plan/select-a-need")
+  fun getNeedsAndOutcomes(): ResponseEntity<ActionPlanSelectANeedResponse> {
+    log.info("Fetching select-a-need data")
+    return ResponseEntity.ok(actionPlanService.getNeedsAndOutcomesForActionPlan())
   }
 
   @Operation(summary = "Get the session delivery details with questions and saved answers for an action plan")

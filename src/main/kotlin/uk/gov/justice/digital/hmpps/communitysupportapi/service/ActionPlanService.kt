@@ -4,13 +4,13 @@ import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedNeed
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedOutcome
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStepQuestionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestion
@@ -82,45 +82,21 @@ class ActionPlanService(
     )
   }
 
-  fun getActionPlanNeedsForReferral(referralReference: String): ActionPlanNeedsResponse {
-    val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
-      ?: throw NotFoundException("Referral not found for reference $referralReference")
-
-    val needSteps = actionPlanStepRepository.findNeedStepsByReferralId(referral.id)
-    if (needSteps.isEmpty()) {
-      logger.warn("No NEED step found for referral {}", referralReference)
-      return ActionPlanNeedsResponse(needs = emptyList())
-    }
-
-    val questions = actionPlanStepQuestionRepository
-      .findAllByActionPlanStepIdOrderByOrderNumberAsc(needSteps.first().id)
-      .filter { it.needId != null }
-
-    val needsMap = needRepository.findAllByOrderByOrderNumberAsc().associateBy { it.id }
-
-    val needsList = questions
-      .groupBy { it.needId }
-      .mapNotNull { (needId, needQuestions) ->
-        needId?.let { id ->
-          needsMap[id]?.let { need ->
-            NeedDto(
-              id = need.id,
-              label = need.label,
-              questions = needQuestions.map { question ->
-                QuestionDto(
-                  id = question.id,
-                  label = question.title,
-                  answerType = question.answerType,
-                )
-              },
-            )
-          }
-        }
-      }
-      .sortedBy { needsMap[it.id]?.orderNumber ?: Int.MAX_VALUE }
-
-    return ActionPlanNeedsResponse(needs = needsList)
-  }
+  @Transactional(readOnly = true)
+  fun getNeedsAndOutcomesForActionPlan(): ActionPlanSelectANeedResponse = ActionPlanSelectANeedResponse(
+    needs = needRepository.findAllByOrderByOrderNumberAsc().map { need ->
+      ActionPlanSelectANeedNeed(
+        id = need.id,
+        label = need.label,
+        outcomes = need.outcomes.map { outcome ->
+          ActionPlanSelectANeedOutcome(
+            id = outcome.id,
+            text = outcome.text,
+          )
+        },
+      )
+    },
+  )
 
   @Transactional(readOnly = true)
   fun getSessionDeliveryDetailsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
