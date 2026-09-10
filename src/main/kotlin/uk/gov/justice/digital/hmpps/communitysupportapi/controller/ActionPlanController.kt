@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -133,7 +134,7 @@ class ActionPlanController(
   @PatchMapping("/referral/{referralReference}/action-plan/session-delivery-details")
   fun patchSessionDeliveryDetails(
     @PathVariable referralReference: String,
-    @RequestBody request: ActionPlanSessionDeliveryDetailsRequest,
+    @Valid @RequestBody request: ActionPlanSessionDeliveryDetailsRequest,
   ): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
     val user = userMapper.fromToken(authenticationHolder)
     val changedBy = user.hmppsAuthUsername
