@@ -217,10 +217,12 @@ class ActionPlanService(
     val latestDetailsByHeaderId = getLatestDetailsByHeaderId(existingHeadersByQuestionId.values.flatten())
 
     questionAnswers.forEach { questionAnswer ->
+      val question = questionsById[questionAnswer.questionId]
+        ?: throw ValidationException("Question ${questionAnswer.questionId} does not belong to session delivery details")
+
       upsertQuestionAnswers(
         actionPlanId = actionPlanId,
-        questionId = questionAnswer.questionId,
-        question = questionsById[questionAnswer.questionId],
+        question = question,
         normalisedResponses = questionAnswer.incomingAnswerDetails.map { normaliseSavedResponse(it) },
         existingHeaders = existingHeadersByQuestionId[questionAnswer.questionId].orEmpty(),
         latestDetailsByHeaderId = latestDetailsByHeaderId,
@@ -253,33 +255,12 @@ class ActionPlanService(
     request: ActionPlanSessionDeliveryDetailsRequest,
     questionsById: Map<UUID, ActionPlanStepQuestion>,
   ) {
-    val duplicateQuestionIds = request.answers
-      .groupingBy { it.questionId }
-      .eachCount()
-      .filter { (_, count) -> count > 1 }
-      .keys
-
-    if (duplicateQuestionIds.isNotEmpty()) {
-      throw ValidationException("Duplicate question IDs provided: ${duplicateQuestionIds.joinToString(", ")}")
-    }
-
     request.answers.forEach { questionRequest ->
       val question = questionsById[questionRequest.questionId]
         ?: throw ValidationException("Question ${questionRequest.questionId} does not belong to session delivery details")
 
-      val maxResponses = question.maxNumberResponses.coerceAtLeast(1)
-      if (questionRequest.incomingAnswerDetails.size > maxResponses) {
-        throw ValidationException("Question ${question.id} accepts at most $maxResponses responses")
-      }
-
-      val duplicateValues = questionRequest.incomingAnswerDetails
-        .map { it.value.trim() }
-        .groupingBy { it }
-        .eachCount()
-        .filter { (_, count) -> count > 1 }
-        .keys
-      if (duplicateValues.isNotEmpty()) {
-        throw ValidationException("Question ${question.id} contains duplicate response values: ${duplicateValues.joinToString(", ")}")
+      if (questionRequest.incomingAnswerDetails.size > question.maxNumberResponses) {
+        throw ValidationException("Question ${question.id} accepts at most $question.maxNumberResponses responses")
       }
 
       questionRequest.incomingAnswerDetails.forEach { response ->
@@ -323,15 +304,14 @@ class ActionPlanService(
 
   private fun upsertQuestionAnswers(
     actionPlanId: UUID,
-    questionId: UUID,
-    question: ActionPlanStepQuestion?,
+    question: ActionPlanStepQuestion,
     normalisedResponses: List<NormalisedSavedResponse>,
     existingHeaders: List<ActionPlanStepQuestionAnswerHeader>,
     latestDetailsByHeaderId: Map<UUID, ActionPlanStepQuestionAnswerDetails>,
     changedBy: String,
     changedAt: OffsetDateTime,
   ) {
-    val supportsMultipleResponses = question != null && (question.answerType == ActionPlanQuestionAnswerType.CHECKBOX || question.maxNumberResponses > 1)
+    val supportsMultipleResponses = question.answerType == ActionPlanQuestionAnswerType.CHECKBOX || question.maxNumberResponses > 1
 
     if (!supportsMultipleResponses) {
       // handling single response
@@ -353,7 +333,7 @@ class ActionPlanService(
       val header = existingHeader ?: actionPlanStepQuestionAnswerHeaderRepository.save(
         ActionPlanStepQuestionAnswerHeader.from(
           actionPlanId = actionPlanId,
-          questionId = questionId,
+          questionId = question.id,
           orderNumber = 1,
           createdBy = changedBy,
           createdAt = changedAt,
@@ -411,7 +391,7 @@ class ActionPlanService(
         ?: actionPlanStepQuestionAnswerHeaderRepository.save(
           ActionPlanStepQuestionAnswerHeader.from(
             actionPlanId = actionPlanId,
-            questionId = questionId,
+            questionId = question.id,
             orderNumber = nextOrderNumber,
             createdBy = changedBy,
             createdAt = changedAt,
