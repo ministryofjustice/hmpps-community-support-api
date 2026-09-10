@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
 import jakarta.validation.Payload
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
+import java.util.UUID
 import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.TYPE)
@@ -22,12 +23,9 @@ class NoDuplicateQuestionIdsValidator : ConstraintValidator<NoDuplicateQuestionI
       return true
     }
 
-    val duplicates = value
-      .groupingBy { it.questionId }
-      .eachCount()
-      .filterValues { it > 1 }
-      .keys
+    val questionIds = HashSet<UUID>()
+    questionIds.addAll(value.map { it.questionId })
 
-    return duplicates.isEmpty()
+    return value.size == questionIds.size
   }
 }

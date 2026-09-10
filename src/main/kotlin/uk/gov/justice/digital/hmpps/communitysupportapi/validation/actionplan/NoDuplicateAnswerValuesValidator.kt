@@ -22,13 +22,7 @@ class NoDuplicateAnswerValuesValidator : ConstraintValidator<NoDuplicateAnswerVa
       return true
     }
 
-    val duplicates = value
-      .map { it.value.trim() }
-      .groupingBy { it }
-      .eachCount()
-      .filterValues { it > 1 }
-      .keys
-
-    return duplicates.isEmpty()
+    val trimmedValues = value.map { it.value.trim() }
+    return value.size == trimmedValues.distinct().size
   }
 }

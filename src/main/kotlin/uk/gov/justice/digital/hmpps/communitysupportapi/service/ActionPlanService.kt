@@ -317,13 +317,9 @@ class ActionPlanService(
       // handling single response
       val existingHeader = existingHeaders.singleOrNull()
       if (normalisedResponses.isEmpty()) {
-        if (existingHeader != null) {
-          // incoming answer response is empty, soft delete existing header
+        existingHeaders.singleOrNull()?.let { header ->
           actionPlanStepQuestionAnswerHeaderRepository.save(
-            existingHeader.copy(
-              deletedAt = changedAt,
-              deletedBy = changedBy,
-            ),
+            header.delete(changedAt, changedBy),
           )
         }
         return
