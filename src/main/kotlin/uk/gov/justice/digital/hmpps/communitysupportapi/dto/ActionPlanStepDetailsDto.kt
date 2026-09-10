@@ -1,16 +1,23 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import jakarta.validation.Valid
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.NullOrNotBlank
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.actionplan.NoDuplicateAnswerValues
 import java.util.UUID
 
 data class SessionDeliveryDetailsQuestionAnswer(
   val value: String,
+  @field:Valid
+  @field:NullOrNotBlank
   val additionalDetails: String? = null,
 )
 
 data class SessionDeliveryDetailsQuestionAnswers(
   val questionId: UUID,
+  @field:Valid
+  @field:NoDuplicateAnswerValues
   val incomingAnswerDetails: List<SessionDeliveryDetailsQuestionAnswer> = emptyList(),
 )
 

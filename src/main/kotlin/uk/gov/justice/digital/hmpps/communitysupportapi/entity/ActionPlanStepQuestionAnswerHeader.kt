@@ -67,6 +67,11 @@ data class ActionPlanStepQuestionAnswerHeader(
   @Column(name = "deleted_by")
   val deletedBy: String? = null,
 ) {
+  fun delete(
+    deletedAt: OffsetDateTime,
+    deletedBy: String,
+  ) = copy(deletedAt = deletedAt, deletedBy = deletedBy)
+
   companion object {
     fun from(
       actionPlanId: UUID,
