@@ -72,6 +72,9 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
   @Autowired
   private lateinit var riskInformationService: RiskInformationService
 
+  @Autowired
+  private lateinit var referenceDataService: ReferenceDataService
+
   @Test
   fun `update additional information should be saved`() {
     val referralUser = referralHelper.ensureReferralUser()

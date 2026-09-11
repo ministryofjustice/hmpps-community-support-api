@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStatusDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckDraftReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
@@ -31,7 +30,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toEntity
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.WithdrawReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
@@ -82,39 +80,6 @@ class ReferralService(
 
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
   }
-
-  fun getCheckDraftReferralDetailsPage(referralId: UUID): CheckDraftReferralDetailsBffResponseDto {
-    val referral = referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
-    val person = personRepository.findById(referral.personId)
-      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
-    val identifier = identifierValidator.validate(person.identifier)
-    val personalDetailsAndCircumstances = when (identifier) {
-      is PersonIdentifier.Crn -> nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
-      is PersonIdentifier.PrisonerNumber -> {
-        val cprPerson = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
-        if (cprPerson.person.knownCrns.isNotEmpty()) {
-          val crn = cprPerson.person.knownCrns.first()
-          nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
-        } else {
-          logger.warn("No known CRN found for person with prison identifier {}", identifier.value)
-          PersonDetailsAndCircumstances()
-        }
-      }
-    }
-
-    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, identifier, personalDetailsAndCircumstances)
-  }
-
-  fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(
-    referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id $referralId") },
-  )
-
-  fun getServiceDaysPage(referralId: UUID): ServiceDaysPageDto = ServiceDaysPageDto.from(
-    referralRepository.findById(referralId)
-      .orElseThrow { NotFoundException("Referral not found for id $referralId") },
-  )
 
   @Transactional
   fun updateReferralServiceEndDate(

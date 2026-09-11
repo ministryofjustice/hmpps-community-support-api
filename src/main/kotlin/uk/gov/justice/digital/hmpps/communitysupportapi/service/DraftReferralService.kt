@@ -309,8 +309,8 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
 
-    val probationPractitionerDetails = try {
-      getProbationPractitionerDetails(referralId)
+    val communityManager = try {
+      getCommunityManagerFromNDelius(referralId)
     } catch (_: NotFoundException) {
       null
     } catch (_: ValidationException) {
@@ -326,9 +326,8 @@ class DraftReferralService(
       riskInfo,
       criminogenicNeeds,
       communityServiceProvider,
-      probationPractitionerDetails,
-      savedProbationPractitionerDetails,
       communityManager,
+      savedProbationPractitionerDetails,
     )
   }
 
@@ -565,7 +564,7 @@ class DraftReferralService(
     return CheckDraftReferralDetailsBffResponseDto.from(
       referral,
       person,
-      identifier,
+     identifier,
       personalDetailsAndCircumstances,
       communitySupportRiskDto,
     )

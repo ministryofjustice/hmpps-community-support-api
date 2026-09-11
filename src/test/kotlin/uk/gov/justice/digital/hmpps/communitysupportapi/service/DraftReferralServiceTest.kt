@@ -80,6 +80,9 @@ class DraftReferralServiceTest {
   @Mock
   lateinit var riskInformationService: RiskInformationService
 
+  @Mock
+  lateinit var referenceDataService: ReferenceDataService
+
   @InjectMocks
   lateinit var draftReferralService: DraftReferralService
 
@@ -242,8 +245,8 @@ class DraftReferralServiceTest {
         name = "Jane Doe",
         jobRole = "Probation practitioner",
         emailAddress = "jane.doe@example.com",
-        pdu = pduId,
-        probationOffice = "Newcastle Office",
+        pduId = pduId,
+        probationOfficeId = 42,
         teamPhoneNumber = "0123456789",
         phoneNumber = "0987654321",
         ppDetailsFoundAndCorrect = true,
