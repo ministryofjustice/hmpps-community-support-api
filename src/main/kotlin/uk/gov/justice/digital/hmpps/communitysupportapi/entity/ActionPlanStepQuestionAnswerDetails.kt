@@ -60,17 +60,17 @@ data class ActionPlanStepQuestionAnswerDetails(
       headerId: UUID,
       revisionNumber: Int,
       content: String,
-      createdBy: String,
       freeTextValue: String?,
-      now: OffsetDateTime = OffsetDateTime.now(),
+      createdBy: String,
+      createdAt: OffsetDateTime = OffsetDateTime.now(),
     ): ActionPlanStepQuestionAnswerDetails = ActionPlanStepQuestionAnswerDetails(
       id = UUID.randomUUID(),
       actionPlanStepQuestionAnswerHeaderId = headerId,
       revisionNumber = revisionNumber,
       content = content,
       freeTextValue = freeTextValue,
-      createdAt = now,
       createdBy = createdBy,
+      createdAt = createdAt,
     )
   }
 }
