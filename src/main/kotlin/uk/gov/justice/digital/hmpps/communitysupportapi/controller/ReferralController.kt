@@ -24,16 +24,16 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.WithdrawalReasonBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.WithdrawalReasonsGroupedBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.ReferralWithdrawalReasonCode
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.WithdrawReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.PersonService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
+import uk.gov.justice.digital.hmpps.communitysupportapi.service.WithdrawalReasonService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
 
@@ -45,6 +45,7 @@ class ReferralController(
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
   private val personService: PersonService,
+  private val withdrawalReasonService: WithdrawalReasonService,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -149,25 +150,25 @@ class ReferralController(
     return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
   }
 
-  @Operation(summary = "Get withdrawal reasons")
+  @Operation(summary = "Get withdrawal reasons grouped by heading")
   @ApiResponses(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "Withdrawal reasons found",
+        description = "Withdrawal reasons found, grouped by heading",
         content = [
           Content(
             mediaType = "application/json",
-            schema = Schema(implementation = WithdrawalReasonBffResponseDto::class),
+            schema = Schema(implementation = WithdrawalReasonsGroupedBffResponseDto::class),
           ),
         ],
       ),
     ],
   )
   @GetMapping("/bff/referral/withdrawal-reasons")
-  fun getWithdrawalReasons(): ResponseEntity<WithdrawalReasonBffResponseDto> = ResponseEntity.ok(
-    WithdrawalReasonBffResponseDto(
-      withdrawalReasons = ReferralWithdrawalReasonCode.entries.map { it.name },
+  fun getGroupedWithdrawalReasons(): ResponseEntity<WithdrawalReasonsGroupedBffResponseDto> = ResponseEntity.ok(
+    WithdrawalReasonsGroupedBffResponseDto(
+      withdrawalReasons = withdrawalReasonService.getWithdrawalReasons(),
     ),
   )
 
