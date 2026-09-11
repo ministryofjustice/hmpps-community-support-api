@@ -564,7 +564,7 @@ class DraftReferralService(
     return CheckDraftReferralDetailsBffResponseDto.from(
       referral,
       person,
-     identifier,
+      identifier,
       personalDetailsAndCircumstances,
       communitySupportRiskDto,
     )
