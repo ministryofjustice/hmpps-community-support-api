@@ -33,7 +33,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationT
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.PersonTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.ReferralWithdrawalReasonCode
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.WithdrawReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
@@ -48,6 +47,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralWithdrawalDetailsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.WithdrawalReasonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
@@ -77,6 +77,9 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralWithdrawalDetailsRepository: ReferralWithdrawalDetailsRepository
+
+  @Autowired
+  private lateinit var withdrawalReasonRepository: WithdrawalReasonRepository
 
   @Autowired
   private lateinit var actionPlanRepository: ActionPlanRepository
@@ -467,14 +470,14 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       referral.referenceNumber!!,
       referralUser.id,
       WithdrawReferralRequest(
-        reasonCode = ReferralWithdrawalReasonCode.NOT_ENGAGED,
+        reasonCode = "Not engaged",
         additionalDetails = "User is not actively engaged.",
       ),
     )
 
     val savedWithdrawalDetails = referralWithdrawalDetailsRepository.findByReferralId(referral.id)
     assertThat(savedWithdrawalDetails).isNotNull()
-    assertThat(savedWithdrawalDetails?.reasonCode).isEqualTo("NOT_ENGAGED")
+    assertThat(savedWithdrawalDetails?.reasonId).isEqualTo(withdrawalReasonRepository.findByName("Not engaged")!!.id)
     assertThat(savedWithdrawalDetails?.reasonDetails).isEqualTo("User is not actively engaged.")
     assertThat(savedWithdrawalDetails?.createdBy).isEqualTo(referralUser.id)
 
@@ -494,7 +497,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
         NON_EXISTENT_REFERRAL_REFERENCE,
         referralUser.id,
         WithdrawReferralRequest(
-          reasonCode = ReferralWithdrawalReasonCode.SENTENCE_EXPIRED,
+          reasonCode = "Sentence expired",
           additionalDetails = "Some details",
         ),
       )
@@ -506,7 +509,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(submittedBy = referralUser)
     val request = WithdrawReferralRequest(
-      reasonCode = ReferralWithdrawalReasonCode.SENTENCE_EXPIRED,
+      reasonCode = "Sentence expired",
       additionalDetails = "Some details",
     )
 
@@ -517,6 +520,24 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       referralService.withdrawReferral(referral.referenceNumber!!, referralUser.id, request)
     }
     assertThat(referralWithdrawalDetailsRepository.findAll()).hasSize(1)
+  }
+
+  @Test
+  fun `withdrawReferral should throw ValidationException when reason code is not a known withdrawal reason`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val referral = referralHelper.createReferral(submittedBy = referralUser)
+
+    assertThrows(ValidationException::class.java) {
+      referralService.withdrawReferral(
+        referral.referenceNumber!!,
+        referralUser.id,
+        WithdrawReferralRequest(
+          reasonCode = "Not a real reason",
+          additionalDetails = "Some details",
+        ),
+      )
+    }
+    assertThat(referralWithdrawalDetailsRepository.findAll()).isEmpty()
   }
 
   @Test
