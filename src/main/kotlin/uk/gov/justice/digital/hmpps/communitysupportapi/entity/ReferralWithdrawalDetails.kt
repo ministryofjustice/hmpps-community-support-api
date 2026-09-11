@@ -16,6 +16,7 @@ class ReferralWithdrawalDetails(
   @Column(name = "referral_id", nullable = false)
   val referralId: UUID,
 
+  // References withdrawal_reason.name (enforced by fk_referral_withdrawal_details_reason_code)
   @Column(name = "reason_code", nullable = false)
   var reasonCode: String,
 

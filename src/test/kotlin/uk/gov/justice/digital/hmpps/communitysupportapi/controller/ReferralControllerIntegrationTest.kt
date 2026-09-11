@@ -31,7 +31,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.WithdrawalReasonBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.WithdrawalReasonsGroupedBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
@@ -42,7 +42,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentT
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.ReferralWithdrawalReasonCode
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.WithdrawReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
@@ -54,6 +53,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralWithdrawalDetailsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.WithdrawalReasonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonNoFixAbodeJson
@@ -89,6 +89,9 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralWithdrawalDetailsRepository: ReferralWithdrawalDetailsRepository
+
+  @Autowired
+  private lateinit var withdrawalReasonRepository: WithdrawalReasonRepository
 
   @Autowired
   private lateinit var appointmentRepository: AppointmentRepository
@@ -418,7 +421,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         HttpMethod.POST,
         "/referral/AB1234CD/withdraw",
         WithdrawReferralRequest(
-          reasonCode = ReferralWithdrawalReasonCode.SENTENCE_EXPIRED,
+          reasonCode = "Sentence expired",
           additionalDetails = "Some details",
         ),
       )
@@ -430,7 +433,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         HttpMethod.POST,
         "/referral/AB1234CD/withdraw",
         WithdrawReferralRequest(
-          reasonCode = ReferralWithdrawalReasonCode.SENTENCE_EXPIRED,
+          reasonCode = "Sentence expired",
           additionalDetails = "Some details",
         ),
       )
@@ -447,7 +450,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .bodyValue(
           WithdrawReferralRequest(
-            reasonCode = ReferralWithdrawalReasonCode.SENTENCE_EXPIRED,
+            reasonCode = "Sentence expired",
             additionalDetails = "  Sentence expired  ",
           ),
         )
@@ -457,7 +460,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val savedWithdrawalDetails = referralWithdrawalDetailsRepository.findByReferralId(referral.id)
       assertThat(savedWithdrawalDetails).isNotNull()
-      assertThat(savedWithdrawalDetails?.reasonCode).isEqualTo("SENTENCE_EXPIRED")
+      assertThat(savedWithdrawalDetails?.reasonCode).isEqualTo("Sentence expired")
       assertThat(savedWithdrawalDetails?.reasonDetails).isEqualTo("Sentence expired")
 
       val updatedReferral = referralRepository.findById(referral.id).get()
@@ -473,7 +476,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .bodyValue(
           WithdrawReferralRequest(
-            reasonCode = ReferralWithdrawalReasonCode.SENTENCE_EXPIRED,
+            reasonCode = "Sentence expired",
             additionalDetails = "Some details",
           ),
         )
@@ -488,7 +491,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val referral = referralHelper.createReferral(submittedBy = testUser)
       val request = WithdrawReferralRequest(
-        reasonCode = ReferralWithdrawalReasonCode.SENTENCE_EXPIRED,
+        reasonCode = "Sentence expired",
         additionalDetails = "Some details",
       )
 
@@ -508,11 +511,33 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectStatus()
         .isEqualTo(HttpStatus.ALREADY_REPORTED)
     }
+
+    @Test
+    fun `should return bad request when reason code is not a known withdrawal reason`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val referral = referralHelper.createReferral(submittedBy = testUser)
+
+      webTestClient.post()
+        .uri("/referral/${referral.referenceNumber}/withdraw")
+        .headers(setAuthorisation())
+        .bodyValue(
+          WithdrawReferralRequest(
+            reasonCode = "Not a real reason",
+            additionalDetails = "Some details",
+          ),
+        )
+        .exchange()
+        .expectStatus()
+        .isBadRequest
+
+      assertThat(referralWithdrawalDetailsRepository.findByReferralId(referral.id)).isNull()
+    }
   }
 
   @Nested
   @DisplayName("GET /bff/referral/withdrawal-reasons")
-  inner class WithdrawalReasonEndPoint {
+  inner class GroupedWithdrawalReasonEndPoint {
 
     private val url = "/bff/referral/withdrawal-reasons"
 
@@ -532,16 +557,49 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return all withdrawal reason values`() {
+    fun `should return withdrawal reasons grouped by heading`() {
+      val expectedGroupedReasons = withdrawalReasonRepository.findAllByOrderByGroupAscNameAsc()
+        .groupBy({ it.group }, { it.name })
+      assertThat(expectedGroupedReasons).isNotEmpty()
+
       webTestClient.get()
         .uri(url)
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
         .isOk
-        .expectBody<WithdrawalReasonBffResponseDto>()
+        .expectBody<WithdrawalReasonsGroupedBffResponseDto>()
         .consumeWith { response ->
-          response.responseBody!!.withdrawalReasons shouldBe ReferralWithdrawalReasonCode.entries.map { it.name }
+          response.responseBody!!.withdrawalReasons shouldBe expectedGroupedReasons
+        }
+    }
+
+    @Test
+    fun `should group withdrawal reasons under the correct headings`() {
+      webTestClient.get()
+        .uri(url)
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<WithdrawalReasonsGroupedBffResponseDto>()
+        .consumeWith { response ->
+          val reasons = response.responseBody!!.withdrawalReasons
+          reasons["Problem with referral"] shouldBe listOf("Ineligible referral", "Mistaken or duplicate referral")
+          reasons["Sentence or custody related"] shouldBe listOf(
+            "Acquitted on appeal",
+            "Returned to custody",
+            "Sentence expired",
+            "Sentence revoked",
+          )
+          reasons["User related"] shouldBe listOf(
+            "Another reason",
+            "Died",
+            "Moved out of service area",
+            "Needs met through another route",
+            "Not engaged",
+            "Work, caring commitments or sickness",
+          )
         }
     }
   }

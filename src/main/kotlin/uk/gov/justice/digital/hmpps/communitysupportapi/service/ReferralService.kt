@@ -66,6 +66,7 @@ class ReferralService(
   private val personService: PersonService,
   private val nDeliusService: NDeliusService,
   private val actionPlanService: ActionPlanService,
+  private val withdrawalReasonService: WithdrawalReasonService,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
@@ -237,7 +238,11 @@ class ReferralService(
     asOfDateTime: OffsetDateTime = OffsetDateTime.now(),
   ) {
     val foundReferral = referralLookupService.findByCaseIdentifier(referralReference)
-    val validatedRequest = request.normalise()
+    val withdrawReferralRequest = request.normalise()
+
+    if (!withdrawalReasonService.isValidReasonName(withdrawReferralRequest.reasonCode)) {
+      throw ValidationException("Invalid withdrawal reason code: ${withdrawReferralRequest.reasonCode}")
+    }
 
     if (referralWithdrawalDetailsRepository.findByReferralId(foundReferral.id) != null) {
       throw AlreadyReportedException("Referral $referralReference has already been withdrawn")
@@ -247,8 +252,8 @@ class ReferralService(
       ReferralWithdrawalDetails(
         id = UUID.randomUUID(),
         referralId = foundReferral.id,
-        reasonCode = validatedRequest.reasonCode.name,
-        reasonDetails = validatedRequest.additionalDetails,
+        reasonCode = withdrawReferralRequest.reasonCode,
+        reasonDetails = withdrawReferralRequest.additionalDetails,
         createdAt = asOfDateTime,
         createdBy = userId,
       ),
