@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.CommunitySupportRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Disability
@@ -30,6 +31,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       person: Person,
       personIdentifier: PersonIdentifier,
       personalDetailsAndCircumstances: PersonDetailsAndCircumstances,
+      communitySupportRiskDto: CommunitySupportRiskDto,
     ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
@@ -38,7 +40,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       equalityDetailsTableData = DraftEqualityDetailsTableDataDto.from(person),
       contactDetailsTableData = DraftContactDetailsTableDataDto.from(person),
       additionalInformationDetailsTableData = DraftAdditionalInformationDetailsTableDataDto.from(),
-      riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(),
+      riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(communitySupportRiskDto),
       additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(),
       personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(),
       referralAreaTableData = DraftReferralAreaTableDataDto.from(),
@@ -122,7 +124,20 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val additionalInformation: String? = null,
   ) {
     companion object {
-      fun from(): DraftRiskInformationDetailsTableDataDto = DraftRiskInformationDetailsTableDataDto()
+      fun from(riskInformation: CommunitySupportRiskDto): DraftRiskInformationDetailsTableDataDto {
+        val summary = riskInformation.summary
+        val riskToSelf = riskInformation.riskToSelf
+        return DraftRiskInformationDetailsTableDataDto(
+          whoIsAtRisk = summary?.whoIsAtRisk,
+          natureOfRisk = summary?.natureOfRisk,
+          riskImminence = summary?.riskImminence,
+          riskOfSelfHarm = riskToSelf?.selfHarm?.currentConcern,
+          riskOfSuicide = riskToSelf?.suicide?.currentConcern,
+          riskToSelfHostelSetting = riskToSelf?.hostelSetting?.currentConcern,
+          riskToSelfVulnerability = riskToSelf?.vulnerability?.currentConcern,
+          additionalInformation = riskInformation.additionalInformation,
+        )
+      }
     }
   }
 
