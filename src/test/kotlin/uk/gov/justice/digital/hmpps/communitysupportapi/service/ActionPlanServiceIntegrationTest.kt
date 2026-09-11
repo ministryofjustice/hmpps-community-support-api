@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionResponseEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
@@ -23,6 +24,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTe
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanQuestionResponseEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
@@ -56,6 +58,9 @@ class ActionPlanServiceIntegrationTest :
 
   @Autowired
   private lateinit var actionPlanEventRepository: ActionPlanEventRepository
+
+  @Autowired
+  private lateinit var actionPlanQuestionResponseEventRepository: ActionPlanQuestionResponseEventRepository
 
   @Autowired
   private lateinit var actionPlanRepository: ActionPlanRepository
@@ -557,6 +562,33 @@ class ActionPlanServiceIntegrationTest :
         .sortedBy { it.revisionNumber }
       assertEquals(listOf("OTHER", "FACE_TO_FACE"), radioRevisions.map { it.content })
       assertEquals(listOf("Poor weather", null), radioRevisions.map { it.freeTextValue })
+
+      val questionResponseEvents = actionPlanQuestionResponseEventRepository.findByActionPlanId(actionPlan.id)
+      assertEquals(4, questionResponseEvents.size)
+      assertEquals(2, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.CREATED })
+      assertEquals(1, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.UPDATED })
+      assertEquals(1, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.DELETED })
+      assertTrue(questionResponseEvents.all { it.questionResponseChangeBatchId != null })
+      assertEquals(2, questionResponseEvents.mapNotNull { it.questionResponseChangeBatchId }.distinct().size)
+
+      val radioEvents = questionResponseEvents.filter { it.actionPlanStepQuestionAnswerHeaderId == radioAnswer.id }
+        .sortedBy { it.createdAt }
+      assertEquals(
+        listOf(ActionPlanQuestionResponseEventType.CREATED, ActionPlanQuestionResponseEventType.UPDATED),
+        radioEvents.map { it.eventType },
+      )
+
+      val deletedHeader = actionPlanStepQuestionAnswerHeaderRepository.findAll().single {
+        it.actionPlanId == actionPlan.id &&
+          it.actionPlanStepQuestionId == secondQuestion.id &&
+          it.deletedAt != null
+      }
+      val deletedEvents = questionResponseEvents.filter { it.actionPlanStepQuestionAnswerHeaderId == deletedHeader.id }
+        .sortedBy { it.createdAt }
+      assertEquals(
+        listOf(ActionPlanQuestionResponseEventType.CREATED, ActionPlanQuestionResponseEventType.DELETED),
+        deletedEvents.map { it.eventType },
+      )
     }
 
     @Test
@@ -634,6 +666,41 @@ class ActionPlanServiceIntegrationTest :
         .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(inPersonHeader.id))
         .sortedBy { it.revisionNumber }
       assertEquals(listOf("IN_PERSON", "IN_PERSON"), inPersonRevisions.map { it.content })
+
+      val questionResponseEvents = actionPlanQuestionResponseEventRepository.findByActionPlanId(actionPlan.id)
+      assertEquals(5, questionResponseEvents.size)
+      assertEquals(3, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.CREATED })
+      assertEquals(1, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.UPDATED })
+      assertEquals(1, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.DELETED })
+      assertTrue(questionResponseEvents.all { it.questionResponseChangeBatchId != null })
+      assertEquals(
+        listOf(2, 3),
+        questionResponseEvents
+          .mapNotNull { it.questionResponseChangeBatchId }
+          .groupingBy { it }
+          .eachCount()
+          .values
+          .sorted(),
+      )
+
+      val eventTypesByHeaderId = questionResponseEvents.groupBy { it.actionPlanStepQuestionAnswerHeaderId }
+      assertEquals(
+        listOf(ActionPlanQuestionResponseEventType.CREATED, ActionPlanQuestionResponseEventType.UPDATED),
+        eventTypesByHeaderId[inPersonHeader.id]!!.sortedBy { it.createdAt }.map { it.eventType },
+      )
+      val videoHeader = activeHeaders.single { header ->
+        actionPlanStepQuestionAnswerDetailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(header.id))
+          .maxByOrNull { it.revisionNumber }
+          ?.content == "VIDEO"
+      }
+      assertEquals(
+        listOf(ActionPlanQuestionResponseEventType.CREATED),
+        eventTypesByHeaderId[videoHeader.id]!!.sortedBy { it.createdAt }.map { it.eventType },
+      )
+      assertEquals(
+        listOf(ActionPlanQuestionResponseEventType.CREATED, ActionPlanQuestionResponseEventType.DELETED),
+        eventTypesByHeaderId[deletedHeaders.single().id]!!.sortedBy { it.createdAt }.map { it.eventType },
+      )
     }
 
     private fun createSessionDeliveryStep(actionPlanTemplateId: UUID) = actionPlanStepRepository.save(
