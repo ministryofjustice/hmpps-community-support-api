@@ -9,5 +9,5 @@ import java.util.UUID
 interface WithdrawalReasonRepository : JpaRepository<WithdrawalReason, UUID> {
   fun findAllByOrderByGroupAscNameAsc(): List<WithdrawalReason>
 
-  fun existsByName(name: String): Boolean
+  fun findByName(name: String): WithdrawalReason?
 }

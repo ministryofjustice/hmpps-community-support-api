@@ -1,4 +1,4 @@
--- V045: Seed static reference data for withdrawal reasons
+-- V047: Seed static reference data for withdrawal reasons
 
 INSERT INTO withdrawal_reason (id, name, group_name)
 VALUES

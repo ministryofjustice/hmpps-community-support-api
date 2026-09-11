@@ -31,12 +31,15 @@ class WithdrawalReasonRepositoryTest : IntegrationTestBase() {
   }
 
   @Test
-  fun `existsByName should return true for a seeded withdrawal reason name`() {
-    assertThat(withdrawalReasonRepository.existsByName("Sentence expired")).isTrue()
+  fun `findByName should return the seeded withdrawal reason with a matching name`() {
+    val reason = withdrawalReasonRepository.findByName("Sentence expired")
+
+    assertThat(reason).isNotNull()
+    assertThat(reason?.group).isEqualTo("Sentence or custody related")
   }
 
   @Test
-  fun `existsByName should return false for an unknown withdrawal reason name`() {
-    assertThat(withdrawalReasonRepository.existsByName("Not a real reason")).isFalse()
+  fun `findByName should return null for an unknown withdrawal reason name`() {
+    assertThat(withdrawalReasonRepository.findByName("Not a real reason")).isNull()
   }
 }

@@ -240,9 +240,8 @@ class ReferralService(
     val foundReferral = referralLookupService.findByCaseIdentifier(referralReference)
     val withdrawReferralRequest = request.normalise()
 
-    if (!withdrawalReasonService.isValidReasonName(withdrawReferralRequest.reasonCode)) {
-      throw ValidationException("Invalid withdrawal reason code: ${withdrawReferralRequest.reasonCode}")
-    }
+    val reasonId = withdrawalReasonService.findReasonIdByName(withdrawReferralRequest.reasonCode)
+      ?: throw ValidationException("Invalid withdrawal reason code: ${withdrawReferralRequest.reasonCode}")
 
     if (referralWithdrawalDetailsRepository.findByReferralId(foundReferral.id) != null) {
       throw AlreadyReportedException("Referral $referralReference has already been withdrawn")
@@ -252,7 +251,7 @@ class ReferralService(
       ReferralWithdrawalDetails(
         id = UUID.randomUUID(),
         referralId = foundReferral.id,
-        reasonCode = withdrawReferralRequest.reasonCode,
+        reasonId = reasonId,
         reasonDetails = withdrawReferralRequest.additionalDetails,
         createdAt = asOfDateTime,
         createdBy = userId,

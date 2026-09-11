@@ -47,6 +47,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralWithdrawalDetailsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.WithdrawalReasonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
@@ -76,6 +77,9 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var referralWithdrawalDetailsRepository: ReferralWithdrawalDetailsRepository
+
+  @Autowired
+  private lateinit var withdrawalReasonRepository: WithdrawalReasonRepository
 
   @Autowired
   private lateinit var actionPlanRepository: ActionPlanRepository
@@ -473,7 +477,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
 
     val savedWithdrawalDetails = referralWithdrawalDetailsRepository.findByReferralId(referral.id)
     assertThat(savedWithdrawalDetails).isNotNull()
-    assertThat(savedWithdrawalDetails?.reasonCode).isEqualTo("Not engaged")
+    assertThat(savedWithdrawalDetails?.reasonId).isEqualTo(withdrawalReasonRepository.findByName("Not engaged")!!.id)
     assertThat(savedWithdrawalDetails?.reasonDetails).isEqualTo("User is not actively engaged.")
     assertThat(savedWithdrawalDetails?.createdBy).isEqualTo(referralUser.id)
 

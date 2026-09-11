@@ -1,4 +1,4 @@
--- V044: Create withdrawal reason reference data table
+-- V046: Create withdrawal reason reference data table
 
 CREATE TABLE IF NOT EXISTS withdrawal_reason (
     id UUID NOT NULL PRIMARY KEY,
@@ -12,11 +12,17 @@ COMMENT ON COLUMN withdrawal_reason.id IS 'Unique identifier for the withdrawal 
 COMMENT ON COLUMN withdrawal_reason.name IS 'Human-readable withdrawal reason text shown to the user';
 COMMENT ON COLUMN withdrawal_reason.group_name IS 'Heading under which the withdrawal reason radio button appears';
 
--- Add foreign key from referral_withdrawal_details.reason_code to withdrawal_reason.name
+-- Replace referral_withdrawal_details.reason_code (free text) with reason_id referencing withdrawal_reason.id
 
 ALTER TABLE referral_withdrawal_details
-    ADD CONSTRAINT fk_referral_withdrawal_details_reason_code
-        FOREIGN KEY (reason_code)
-            REFERENCES withdrawal_reason(name);
+    DROP COLUMN reason_code;
 
-COMMENT ON COLUMN referral_withdrawal_details.reason_code IS 'Reason given for withdrawing the referral; references withdrawal_reason.name';
+ALTER TABLE referral_withdrawal_details
+    ADD COLUMN reason_id UUID NOT NULL;
+
+ALTER TABLE referral_withdrawal_details
+    ADD CONSTRAINT fk_referral_withdrawal_details_reason_id
+        FOREIGN KEY (reason_id)
+            REFERENCES withdrawal_reason(id);
+
+COMMENT ON COLUMN referral_withdrawal_details.reason_id IS 'Reason given for withdrawing the referral; references withdrawal_reason.id';

@@ -460,7 +460,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val savedWithdrawalDetails = referralWithdrawalDetailsRepository.findByReferralId(referral.id)
       assertThat(savedWithdrawalDetails).isNotNull()
-      assertThat(savedWithdrawalDetails?.reasonCode).isEqualTo("Sentence expired")
+      assertThat(savedWithdrawalDetails?.reasonId).isEqualTo(withdrawalReasonRepository.findByName("Sentence expired")!!.id)
       assertThat(savedWithdrawalDetails?.reasonDetails).isEqualTo("Sentence expired")
 
       val updatedReferral = referralRepository.findById(referral.id).get()

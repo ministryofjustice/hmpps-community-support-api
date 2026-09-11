@@ -19,8 +19,11 @@ class ReferralWithdrawalDetailsRepositoryTest : IntegrationTestBase() {
   @Autowired
   private lateinit var referralHelper: ReferralTestSupport
 
+  @Autowired
+  private lateinit var withdrawalReasonRepository: WithdrawalReasonRepository
+
   @Test
-  fun `should save withdrawal details when reason code matches a known withdrawal reason name`() {
+  fun `should save withdrawal details when reason id matches a known withdrawal reason`() {
     val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(submittedBy = referralUser)
 
@@ -28,7 +31,7 @@ class ReferralWithdrawalDetailsRepositoryTest : IntegrationTestBase() {
       ReferralWithdrawalDetails(
         id = UUID.randomUUID(),
         referralId = referral.id,
-        reasonCode = "Sentence expired",
+        reasonId = withdrawalReasonRepository.findByName("Sentence expired")!!.id,
         reasonDetails = null,
         createdAt = OffsetDateTime.now(),
         createdBy = referralUser.id,
@@ -39,7 +42,7 @@ class ReferralWithdrawalDetailsRepositoryTest : IntegrationTestBase() {
   }
 
   @Test
-  fun `should reject withdrawal details when reason code does not match a known withdrawal reason name`() {
+  fun `should reject withdrawal details when reason id does not match a known withdrawal reason`() {
     val referralUser = referralHelper.ensureReferralUser()
     val referral = referralHelper.createReferral(submittedBy = referralUser)
 
@@ -48,7 +51,7 @@ class ReferralWithdrawalDetailsRepositoryTest : IntegrationTestBase() {
         ReferralWithdrawalDetails(
           id = UUID.randomUUID(),
           referralId = referral.id,
-          reasonCode = "Not a real reason",
+          reasonId = UUID.randomUUID(),
           reasonDetails = null,
           createdAt = OffsetDateTime.now(),
           createdBy = referralUser.id,

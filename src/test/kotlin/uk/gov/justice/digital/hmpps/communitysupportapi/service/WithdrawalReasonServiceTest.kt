@@ -1,8 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -62,16 +61,17 @@ class WithdrawalReasonServiceTest {
   }
 
   @Test
-  fun `isValidReasonName should return true when the repository has a matching reason name`() {
-    whenever(withdrawalReasonRepository.existsByName("Sentence expired")).thenReturn(true)
+  fun `findReasonIdByName should return the id when the repository has a matching reason name`() {
+    val reason = aWithdrawalReason("Sentence expired", "Sentence or custody related")
+    whenever(withdrawalReasonRepository.findByName("Sentence expired")).thenReturn(reason)
 
-    assertTrue(withdrawalReasonService.isValidReasonName("Sentence expired"))
+    assertEquals(reason.id, withdrawalReasonService.findReasonIdByName("Sentence expired"))
   }
 
   @Test
-  fun `isValidReasonName should return false when the repository has no matching reason name`() {
-    whenever(withdrawalReasonRepository.existsByName("Not a real reason")).thenReturn(false)
+  fun `findReasonIdByName should return null when the repository has no matching reason name`() {
+    whenever(withdrawalReasonRepository.findByName("Not a real reason")).thenReturn(null)
 
-    assertFalse(withdrawalReasonService.isValidReasonName("Not a real reason"))
+    assertNull(withdrawalReasonService.findReasonIdByName("Not a real reason"))
   }
 }
