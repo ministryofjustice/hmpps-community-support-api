@@ -17,6 +17,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuest
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionResponseEvent
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionResponseEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
@@ -24,6 +26,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanQuestionResponseEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
@@ -40,6 +43,7 @@ import java.util.UUID
 class ActionPlanService(
   private val actionPlanRepository: ActionPlanRepository,
   private val actionPlanEventRepository: ActionPlanEventRepository,
+  private val actionPlanQuestionResponseEventRepository: ActionPlanQuestionResponseEventRepository,
   private val actionPlanTemplateRepository: ActionPlanTemplateRepository,
   private val actionPlanStepRepository: ActionPlanStepRepository,
   private val actionPlanStepQuestionRepository: ActionPlanStepQuestionRepository,
@@ -179,6 +183,7 @@ class ActionPlanService(
     changedBy: String,
     changedAt: OffsetDateTime,
   ) {
+    val questionResponseChangeBatchId = UUID.randomUUID()
     val requestedQuestionIds = questionAnswers.map { it.questionId }.toSet()
     val existingHeadersByQuestionId = if (requestedQuestionIds.isEmpty()) {
       emptyMap()
@@ -204,6 +209,7 @@ class ActionPlanService(
         latestDetailsByHeaderId = latestDetailsByHeaderId,
         changedBy = changedBy,
         changedAt = changedAt,
+        questionResponseChangeBatchId = questionResponseChangeBatchId,
       )
     }
   }
@@ -286,6 +292,7 @@ class ActionPlanService(
     latestDetailsByHeaderId: Map<UUID, ActionPlanStepQuestionAnswerDetails>,
     changedBy: String,
     changedAt: OffsetDateTime,
+    questionResponseChangeBatchId: UUID,
   ) {
     val supportsMultipleResponses = question.answerType == ActionPlanQuestionAnswerType.CHECKBOX || question.maxNumberResponses > 1
 
@@ -296,6 +303,16 @@ class ActionPlanService(
         existingHeaders.singleOrNull()?.let { header ->
           actionPlanStepQuestionAnswerHeaderRepository.save(
             header.delete(changedAt, changedBy),
+          )
+          actionPlanQuestionResponseEventRepository.save(
+            ActionPlanQuestionResponseEvent.actionPlanQuestionResponseEventForResponses(
+              actionPlanId = actionPlanId,
+              responseHeaderId = header.id,
+              eventType = ActionPlanQuestionResponseEventType.DELETED,
+              createdBy = changedBy,
+              createdAt = changedAt,
+              questionResponseChangeBatchId = questionResponseChangeBatchId,
+            ),
           )
         }
         return
@@ -331,6 +348,16 @@ class ActionPlanService(
           createdAt = changedAt,
         ),
       )
+      actionPlanQuestionResponseEventRepository.save(
+        ActionPlanQuestionResponseEvent.actionPlanQuestionResponseEventForResponses(
+          actionPlanId = actionPlanId,
+          responseHeaderId = header.id,
+          eventType = if (existingHeader == null) ActionPlanQuestionResponseEventType.CREATED else ActionPlanQuestionResponseEventType.UPDATED,
+          createdBy = changedBy,
+          createdAt = changedAt,
+          questionResponseChangeBatchId = questionResponseChangeBatchId,
+        ),
+      )
       return
     }
 
@@ -352,6 +379,16 @@ class ActionPlanService(
           header.copy(
             deletedAt = changedAt,
             deletedBy = changedBy,
+          ),
+        )
+        actionPlanQuestionResponseEventRepository.save(
+          ActionPlanQuestionResponseEvent.actionPlanQuestionResponseEventForResponses(
+            actionPlanId = actionPlanId,
+            responseHeaderId = header.id,
+            eventType = ActionPlanQuestionResponseEventType.DELETED,
+            createdBy = changedBy,
+            createdAt = changedAt,
+            questionResponseChangeBatchId = questionResponseChangeBatchId,
           ),
         )
       }
@@ -381,6 +418,16 @@ class ActionPlanService(
           freeTextValue = normalisedResponse.additionalDetails,
           createdBy = changedBy,
           createdAt = changedAt,
+        ),
+      )
+      actionPlanQuestionResponseEventRepository.save(
+        ActionPlanQuestionResponseEvent.actionPlanQuestionResponseEventForResponses(
+          actionPlanId = actionPlanId,
+          responseHeaderId = header.id,
+          eventType = if (activeHeaderByValue[normalisedResponse.value] == null) ActionPlanQuestionResponseEventType.CREATED else ActionPlanQuestionResponseEventType.UPDATED,
+          createdBy = changedBy,
+          createdAt = changedAt,
+          questionResponseChangeBatchId = questionResponseChangeBatchId,
         ),
       )
     }
