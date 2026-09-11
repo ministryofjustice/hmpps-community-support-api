@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.validation.ValidationException
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalInformationForTheDeliveryPartnerBffResponseDto
@@ -31,6 +32,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportN
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
@@ -69,6 +71,9 @@ class DraftReferralService(
   private val riskInformationService: RiskInformationService,
   private val referenceDataService: ReferenceDataService,
 ) {
+  companion object {
+    private val logger = LoggerFactory.getLogger(ReferralService::class.java)
+  }
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
     val person: Person,
@@ -549,19 +554,20 @@ class DraftReferralService(
     val personalDetailsAndCircumstances = when (identifier) {
       is PersonIdentifier.Crn -> nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
       is PersonIdentifier.PrisonerNumber -> {
-        val crn = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value).person.knownCrns.first()
-        nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
+        val cprPerson = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
+        if (cprPerson.person.knownCrns.isNotEmpty()) {
+          val crn = cprPerson.person.knownCrns.first()
+          nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
+        } else {
+          logger.warn("No known CRN found for person with prison identifier {}", identifier.value)
+          PersonDetailsAndCircumstances()
+        }
       }
     }
+
     val communitySupportRiskDto: CommunitySupportRiskDto = riskInformationService.getRoshRisksByReferralId(referralId)
 
-    return CheckDraftReferralDetailsBffResponseDto.from(
-      referral,
-      person,
-      identifier,
-      personalDetailsAndCircumstances,
-      communitySupportRiskDto,
-    )
+    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, identifier, personalDetailsAndCircumstances, communitySupportRiskDto)
   }
 
   fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(
