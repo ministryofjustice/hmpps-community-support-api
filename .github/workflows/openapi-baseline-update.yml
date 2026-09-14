@@ -34,7 +34,9 @@ jobs:
         run: ./gradlew test --tests '*OpenApiSpecExportTest'
 
       - name: Update baseline
-        run: jq -S 'del(.info.version)' build/openapi/openapi.json > openapi/openapi-baseline.json
+        run: |
+          mkdir -p openapi
+          jq -S 'del(.info.version)' build/openapi/openapi.json > openapi/openapi-baseline.json
 
       - name: Commit updated baseline
         run: |

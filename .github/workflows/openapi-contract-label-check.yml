@@ -6,7 +6,11 @@ on:
       - labeled
       - unlabeled
     branches:
-      - main
+      # On the first run of this workflow, we won't have any openapi spec
+      # so nothing to compare a diff against.  After merging through this
+      # workflow, I will update the branch to `main`
+      # --TJWC 2026-09-14
+      - change-me
 
 permissions:
   checks: write
