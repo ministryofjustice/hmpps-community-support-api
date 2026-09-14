@@ -567,10 +567,11 @@ class DraftReferralService(
         }
       }
     }
-
     val communitySupportRiskDto: CommunitySupportRiskDto = riskInformationService.getRoshRisksByReferralId(referralId)
+    val cprPerson = cprProbationService.getPersonDetailsByCrn(communitySupportRiskDto.crn)
+    val nationalities = cprPerson.additionalDetails?.nationalities ?: emptyList()
 
-    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, identifier, personalDetailsAndCircumstances, communitySupportRiskDto)
+    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, identifier, personalDetailsAndCircumstances, communitySupportRiskDto, nationalities)
   }
 
   fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(

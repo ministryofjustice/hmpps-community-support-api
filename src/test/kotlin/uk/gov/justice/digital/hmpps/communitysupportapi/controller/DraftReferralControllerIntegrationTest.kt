@@ -55,8 +55,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.arnsRoshRiskJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprPrisonPersonJson
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
@@ -152,6 +154,15 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
               .withBody(arnsRoshRiskJson()),
           ),
       )
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprProbationPersonJson(CRN)),
+          ),
+      )
 
       val person = referralHelper.createPerson(identifier = CRN)
       person.additionalDetails = PersonAdditionalDetailsFactory()
@@ -218,7 +229,16 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should retrieve nDelius details using the CRN for a person identified by prison number`() {
-      val person = referralHelper.createPerson(identifier = "A1234BC")
+      stubFor(
+        get(urlEqualTo("/person/probation/$PRISONER_NUMBER"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprProbationPersonJson(PRISONER_NUMBER)),
+          ),
+      )
+      val person = referralHelper.createPerson(identifier = PRISONER_NUMBER)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
       stubCprPrisonPerson(person.identifier)
       stubNDeliusPersonalDetails()
@@ -242,6 +262,15 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return empty list for circumstances and disabilities when prison person has no known CRNs`() {
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprProbationPersonJson(CRN)),
+          ),
+      )
       val person = referralHelper.createPerson(identifier = "B2345CD")
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
 
