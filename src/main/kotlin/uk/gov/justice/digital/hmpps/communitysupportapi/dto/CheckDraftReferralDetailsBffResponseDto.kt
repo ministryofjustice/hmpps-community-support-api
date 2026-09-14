@@ -131,10 +131,10 @@ data class CheckDraftReferralDetailsBffResponseDto(
           whoIsAtRisk = summary?.whoIsAtRisk,
           natureOfRisk = summary?.natureOfRisk,
           riskImminence = summary?.riskImminence,
-          riskOfSelfHarm = riskToSelf?.selfHarm?.currentConcern,
-          riskOfSuicide = riskToSelf?.suicide?.currentConcern,
-          riskToSelfHostelSetting = riskToSelf?.hostelSetting?.currentConcern,
-          riskToSelfVulnerability = riskToSelf?.vulnerability?.currentConcern,
+          riskOfSelfHarm = riskToSelf?.selfHarm?.currentConcernsReason,
+          riskOfSuicide = riskToSelf?.suicide?.currentConcernsReason,
+          riskToSelfHostelSetting = riskToSelf?.hostelSetting?.currentConcernsReason,
+          riskToSelfVulnerability = riskToSelf?.vulnerability?.currentConcernsReason,
           additionalInformation = riskInformation.additionalInformation,
         )
       }

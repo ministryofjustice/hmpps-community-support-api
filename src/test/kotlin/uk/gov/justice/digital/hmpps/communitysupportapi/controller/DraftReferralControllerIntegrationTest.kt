@@ -203,10 +203,10 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
             whoIsAtRisk = "Staff and public are at risk",
             natureOfRisk = "Risk of violence",
             riskImminence = "Risk is imminent in community",
-            riskOfSelfHarm = "YES",
-            riskOfSuicide = "YES",
-            riskToSelfHostelSetting = "DK",
-            riskToSelfVulnerability = "YES",
+            riskOfSelfHarm = "Current self harm concerns",
+            riskOfSuicide = "Current suicide concerns",
+            riskToSelfHostelSetting = null,
+            riskToSelfVulnerability = "Vulnerability concerns noted",
           )
           body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftAdditionalSupportNeedsDetailsTableDataDto()
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
