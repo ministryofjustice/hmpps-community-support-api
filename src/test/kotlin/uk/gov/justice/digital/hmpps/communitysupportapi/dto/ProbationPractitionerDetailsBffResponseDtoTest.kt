@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityMana
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -26,14 +27,15 @@ class ProbationPractitionerDetailsBffResponseDtoTest {
       ),
     )
     val pduId = UUID.randomUUID()
+    val probationOffice = ProbationOfficeSummary(id = 95, name = "Newcastle Office")
 
-    val result = ProbationPractitionerDetailsBffResponseDto.from(response, Pdu(id = pduId, name = "Northumberland"))
+    val result = ProbationPractitionerDetailsBffResponseDto.from(response, Pdu(id = pduId, name = "Northumberland"), probationOffice)
 
     result.name shouldBe "Jane Middle Doe"
     result.jobRole shouldBe "Probation practitioner"
     result.emailAddress shouldBe "jane.doe@example.com"
     result.pdu shouldBe Pdu(id = pduId, name = "Northumberland")
-    result.probationOffice shouldBe "Newcastle Office"
+    result.probationOffice shouldBe probationOffice
     result.teamPhoneNumber shouldBe "0123456789"
   }
 
@@ -67,14 +69,15 @@ class ProbationPractitionerDetailsBffResponseDtoTest {
       updatedAt = OffsetDateTime.now(),
       updatedBy = UUID.randomUUID(),
     )
+    val probationOffice = ProbationOfficeSummary(id = 1, name = "Newcastle Office")
 
-    val result = ProbationPractitionerDetailsBffResponseDto.from(entity, Pdu(id = pduId, name = "Northumberland"), "Newcastle Office")
+    val result = ProbationPractitionerDetailsBffResponseDto.from(entity, Pdu(id = pduId, name = "Northumberland"), probationOffice)
 
     result.name shouldBe "Jane Doe"
     result.jobRole shouldBe "Probation practitioner"
     result.emailAddress shouldBe "jane.doe@example.com"
     result.pdu shouldBe Pdu(id = pduId, name = "Northumberland")
-    result.probationOffice shouldBe "Newcastle Office"
+    result.probationOffice shouldBe probationOffice
     result.teamPhoneNumber shouldBe "0123456789"
     result.ppDetailsFoundAndCorrect shouldBe false
   }

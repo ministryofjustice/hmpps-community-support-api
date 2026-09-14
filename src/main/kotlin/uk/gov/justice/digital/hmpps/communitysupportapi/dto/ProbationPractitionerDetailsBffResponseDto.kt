@@ -3,19 +3,20 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 
 data class ProbationPractitionerDetailsBffResponseDto(
   val name: String,
   val jobRole: String?,
   val emailAddress: String?,
   val pdu: Pdu?,
-  val probationOffice: String?,
+  val probationOffice: ProbationOfficeSummary?,
   val teamPhoneNumber: String?,
   val phoneNumber: String? = null,
   val ppDetailsFoundAndCorrect: Boolean? = null,
 ) {
   companion object {
-    fun from(communityManager: CommunityManagerDto?, pdu: Pdu?): ProbationPractitionerDetailsBffResponseDto {
+    fun from(communityManager: CommunityManagerDto?, pdu: Pdu?, probationOffice: ProbationOfficeSummary? = null): ProbationPractitionerDetailsBffResponseDto {
       val cmDetails = communityManager?.communityManager
       val name = cmDetails?.name
 
@@ -24,17 +25,17 @@ data class ProbationPractitionerDetailsBffResponseDto(
         jobRole = cmDetails?.jobRole,
         emailAddress = cmDetails?.emailAddress,
         pdu = pdu,
-        probationOffice = cmDetails?.officeName,
+        probationOffice = probationOffice,
         teamPhoneNumber = cmDetails?.teamPhoneNumber,
       )
     }
 
-    fun from(entity: ProbationPractitionerDetails, pdu: Pdu?, probationOfficeName: String?): ProbationPractitionerDetailsBffResponseDto = ProbationPractitionerDetailsBffResponseDto(
+    fun from(entity: ProbationPractitionerDetails, pdu: Pdu?, probationOffice: ProbationOfficeSummary?): ProbationPractitionerDetailsBffResponseDto = ProbationPractitionerDetailsBffResponseDto(
       name = entity.name,
       jobRole = entity.jobRole,
       emailAddress = entity.emailAddress,
       pdu = pdu,
-      probationOffice = probationOfficeName,
+      probationOffice = probationOffice,
       teamPhoneNumber = entity.teamPhoneNumber,
       phoneNumber = entity.phoneNumber,
       ppDetailsFoundAndCorrect = entity.ppDetailsFoundAndCorrect,
