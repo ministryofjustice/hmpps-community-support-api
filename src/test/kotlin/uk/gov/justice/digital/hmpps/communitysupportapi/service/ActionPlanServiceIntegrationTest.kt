@@ -665,16 +665,16 @@ class ActionPlanServiceIntegrationTest :
       val inPersonRevisions = actionPlanStepQuestionAnswerDetailsRepository
         .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(inPersonHeader.id))
         .sortedBy { it.revisionNumber }
-      assertEquals(listOf("IN_PERSON", "IN_PERSON"), inPersonRevisions.map { it.content })
+      assertEquals(listOf("IN_PERSON"), inPersonRevisions.map { it.content })
 
       val questionResponseEvents = actionPlanQuestionResponseEventRepository.findByActionPlanId(actionPlan.id)
-      assertEquals(5, questionResponseEvents.size)
+      assertEquals(4, questionResponseEvents.size)
       assertEquals(3, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.CREATED })
-      assertEquals(1, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.UPDATED })
+      assertEquals(0, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.UPDATED })
       assertEquals(1, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.DELETED })
       assertTrue(questionResponseEvents.all { it.questionResponseChangeBatchId != null })
       assertEquals(
-        listOf(2, 3),
+        listOf(2, 2),
         questionResponseEvents
           .mapNotNull { it.questionResponseChangeBatchId }
           .groupingBy { it }
@@ -685,7 +685,7 @@ class ActionPlanServiceIntegrationTest :
 
       val eventTypesByHeaderId = questionResponseEvents.groupBy { it.actionPlanStepQuestionAnswerHeaderId }
       assertEquals(
-        listOf(ActionPlanQuestionResponseEventType.CREATED, ActionPlanQuestionResponseEventType.UPDATED),
+        listOf(ActionPlanQuestionResponseEventType.CREATED),
         eventTypesByHeaderId[inPersonHeader.id]!!.sortedBy { it.createdAt }.map { it.eventType },
       )
       val videoHeader = activeHeaders.single { header ->

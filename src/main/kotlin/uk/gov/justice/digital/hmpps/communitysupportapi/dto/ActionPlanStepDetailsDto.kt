@@ -52,4 +52,9 @@ data class QuestionChoice(
 data class SavedResponse(
   val value: String,
   val additionalDetails: String? = null,
-)
+) {
+  fun normalised(): SavedResponse = SavedResponse(
+    value = value.trim(),
+    additionalDetails = additionalDetails?.trim()?.takeIf { it.isNotEmpty() },
+  )
+}
