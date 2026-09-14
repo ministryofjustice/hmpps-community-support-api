@@ -61,4 +61,18 @@ class ReferenceDataServiceTest : IntegrationTestBase() {
     pdus.forEach { pdu -> assertThat(pdu.id).isNotNull() }
     assertThat(pdus.map { it.name }).contains("County Durham and Darlington", "Gateshead and South Tyneside")
   }
+
+  @Test
+  fun `should return probation office id by name`() {
+    val probationOfficeId = referenceDataService.getProbationOfficeIdByName("County Durham: Darlington Probation Office")
+
+    assertThat(probationOfficeId).isEqualTo(90)
+  }
+
+  @Test
+  fun `should return null when probation office name is not found`() {
+    val probationOfficeId = referenceDataService.getProbationOfficeIdByName("Not a real office")
+
+    assertThat(probationOfficeId).isNull()
+  }
 }

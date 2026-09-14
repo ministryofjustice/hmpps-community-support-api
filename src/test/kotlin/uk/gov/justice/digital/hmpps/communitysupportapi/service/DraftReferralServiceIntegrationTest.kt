@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServicePr
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
@@ -405,7 +406,7 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
       assertThat(saved?.updatedBy).isEqualTo(referralUser.id)
 
       assertThat(result.pdu).isEqualTo(Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington"))
-      assertThat(result.probationOffice).isEqualTo(DARLINGTON_PROBATION_OFFICE_NAME)
+      assertThat(result.probationOffice).isEqualTo(ProbationOfficeSummary(id = DARLINGTON_PROBATION_OFFICE_ID, name = DARLINGTON_PROBATION_OFFICE_NAME))
       assertThat(result.phoneNumber).isEqualTo("0987654321")
       assertThat(result.teamPhoneNumber).isEqualTo("0123456789")
     }
