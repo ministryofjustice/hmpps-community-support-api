@@ -80,4 +80,7 @@ data class ActionPlanStepQuestion(
   @OneToMany(fetch = FetchType.LAZY)
   @JoinColumn(name = "action_plan_step_question_id", insertable = false, updatable = false)
   val choices: MutableList<ActionPlanStepQuestionChoice> = mutableListOf(),
-)
+) {
+  val supportsMultipleResponses: Boolean
+    get() = answerType == ActionPlanQuestionAnswerType.CHECKBOX || maxNumberResponses > 1
+}
