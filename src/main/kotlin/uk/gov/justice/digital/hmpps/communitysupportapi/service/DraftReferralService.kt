@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
@@ -528,9 +529,11 @@ class DraftReferralService(
     val pdu = entity.pdu?.let { pduId ->
       pduRepository.findNameById(pduId)?.let { pduName -> Pdu(id = pduId, name = pduName) }
     }
-    val probationOfficeName = entity.probationOffice?.let { referenceDataService.getProbationOfficeNameById(it) }
+    val probationOffice = entity.probationOffice?.let { officeId ->
+      referenceDataService.getProbationOfficeNameById(officeId)?.let { officeName -> ProbationOfficeSummary(id = officeId, name = officeName) }
+    }
 
-    return ProbationPractitionerDetailsBffResponseDto.from(entity, pdu, probationOfficeName)
+    return ProbationPractitionerDetailsBffResponseDto.from(entity, pdu, probationOffice)
   }
 
   private fun getCrn(person: Person): String? = when (
@@ -593,7 +596,10 @@ class DraftReferralService(
       val pdu = communityManagerDto.communityManager?.pdu?.let { pduName ->
         pduRepository.findByName(pduName)?.let { Pdu(id = it.id, name = it.name) }
       }
-      return ProbationPractitionerDetailsBffResponseDto.from(communityManagerDto, pdu)
+      val probationOffice = communityManagerDto.communityManager?.officeName?.let { officeName ->
+        referenceDataService.getProbationOfficeIdByName(officeName)?.let { officeId -> ProbationOfficeSummary(id = officeId, name = officeName) }
+      }
+      return ProbationPractitionerDetailsBffResponseDto.from(communityManagerDto, pdu, probationOffice)
     }
 
     return ProbationPractitionerDetailsBffResponseDto.empty()

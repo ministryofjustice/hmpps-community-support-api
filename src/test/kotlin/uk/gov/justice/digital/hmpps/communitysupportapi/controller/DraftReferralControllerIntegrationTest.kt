@@ -41,6 +41,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServicePr
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
@@ -814,7 +815,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.jobRole shouldBe "Probation practitioner"
           body.emailAddress shouldBe "jane.doe@example.com"
           body.pdu shouldBe Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington")
-          body.probationOffice shouldBe DARLINGTON_PROBATION_OFFICE_NAME
+          body.probationOffice shouldBe ProbationOfficeSummary(id = DARLINGTON_PROBATION_OFFICE_ID, name = DARLINGTON_PROBATION_OFFICE_NAME)
           body.teamPhoneNumber shouldBe "0123456789"
           body.ppDetailsFoundAndCorrect shouldBe false
         }
@@ -942,7 +943,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.jobRole shouldBe "Probation practitioner"
           body.emailAddress shouldBe "jane.doe@example.com"
           body.pdu shouldBe Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington")
-          body.probationOffice shouldBe DARLINGTON_PROBATION_OFFICE_NAME
+          body.probationOffice shouldBe ProbationOfficeSummary(id = DARLINGTON_PROBATION_OFFICE_ID, name = DARLINGTON_PROBATION_OFFICE_NAME)
           body.teamPhoneNumber shouldBe "0123456789"
           body.phoneNumber shouldBe "0987654321"
           body.ppDetailsFoundAndCorrect shouldBe false
