@@ -1,0 +1,86 @@
+name: OpenAPI contract check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  checks: write
+  issues: write
+
+jobs:
+  openapi-contract:
+    name: Check OpenAPI contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+
+      - name: Reject pull request baseline edits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: git diff --quiet "$BASE_SHA...$HEAD_SHA" -- openapi/openapi-baseline.json
+
+      - name: Export OpenAPI spec
+        run: ./gradlew test --tests '*OpenApiSpecExportTest'
+
+      - name: Compare OpenAPI spec with baseline
+        id: compare
+        run: |
+          jq -S 'del(.info.version)' openapi/openapi-baseline.json > /tmp/openapi-baseline.json
+          jq -S 'del(.info.version)' build/openapi/openapi.json > /tmp/openapi-current.json
+
+          if cmp -s /tmp/openapi-baseline.json /tmp/openapi-current.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "OpenAPI contract unchanged."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "OpenAPI contract changed."
+          fi
+
+      - name: Create OpenAPI contract check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed='${{ steps.compare.outputs.changed }}'
+
+          conclusion=success
+          title='OpenAPI contract unchanged'
+          summary='No changes to the OpenAPI contract were detected.'
+
+          if [[ "$changed" == 'true' ]]; then
+            conclusion=failure
+            title='UI pull request required'
+            summary="Changes to the OpenAPI contract detected. The ui-pr-required label has been applied. Please double check the UI Types don't need updating. If they do, open a PR in the UI repo, add a comment with its link, and add the ui-pr-created label to this PR."
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" \
+              -f 'labels[]=ui-pr-required' >/dev/null
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              -f body="$summary" >/dev/null
+          fi
+
+          jq -n \
+            --arg name 'open-api-changed' \
+            --arg head_sha "$HEAD_SHA" \
+            --arg conclusion "$conclusion" \
+            --arg title "$title" \
+            --arg summary "$summary" \
+            '{name: $name, head_sha: $head_sha, status: "completed", conclusion: $conclusion, output: {title: $title, summary: $summary}}' \
+            | gh api --method POST "repos/${GITHUB_REPOSITORY}/check-runs" --input - >/dev/null
+
+          echo "$summary" >> "$GITHUB_STEP_SUMMARY"

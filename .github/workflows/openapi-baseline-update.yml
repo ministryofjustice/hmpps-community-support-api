@@ -1,0 +1,51 @@
+name: Update OpenAPI baseline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: openapi-baseline-main
+  cancel-in-progress: false
+
+jobs:
+  update-baseline:
+    name: Update committed OpenAPI baseline
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Set up Java
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+
+      - name: Export OpenAPI spec
+        run: ./gradlew test --tests '*OpenApiSpecExportTest'
+
+      - name: Update baseline
+        run: jq -S 'del(.info.version)' build/openapi/openapi.json > openapi/openapi-baseline.json
+
+      - name: Commit updated baseline
+        run: |
+          if git diff --quiet -- openapi/openapi-baseline.json; then
+            echo "OpenAPI baseline is already current."
+            exit 0
+          fi
+
+          # To verify this bot: https://api.github.com/users/github-actions%5Bbot%5D
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add openapi/openapi-baseline.json
+          git commit -m 'Update OpenAPI baseline'
+          git push

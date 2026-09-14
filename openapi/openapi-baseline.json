@@ -1,0 +1,6417 @@
+{
+  "components": {
+    "schemas": {
+      "ActionPlanNeedsResponse": {
+        "properties": {
+          "needs": {
+            "items": {
+              "$ref": "#/components/schemas/NeedDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "needs"
+        ],
+        "type": "object"
+      },
+      "ActionPlanSessionDeliveryDetailsRequest": {
+        "properties": {
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/SessionDeliveryDetailsQuestionAnswers"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "answers"
+        ],
+        "type": "object"
+      },
+      "ActionPlanSessionDeliveryDetailsResponse": {
+        "properties": {
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/SessionDeliveryQuestion"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "questions"
+        ],
+        "type": "object"
+      },
+      "ActionPlanStatus": {
+        "properties": {
+          "statusText": {
+            "type": "string"
+          },
+          "submitted": {
+            "type": "boolean"
+          },
+          "tag": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "statusText",
+          "submitted"
+        ],
+        "type": "object"
+      },
+      "ActionPlanStatusDto": {
+        "properties": {
+          "actionPlanId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ActionPlanStatus"
+          }
+        },
+        "required": [
+          "actionPlanId",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ActionPlanSummaryDto": {
+        "properties": {
+          "needs": {
+            "items": {
+              "$ref": "#/components/schemas/ActionPlanSummaryNeed"
+            },
+            "type": "array"
+          },
+          "personDetails": {
+            "$ref": "#/components/schemas/ActionPlanSummaryPersonDetails"
+          }
+        },
+        "required": [
+          "needs",
+          "personDetails"
+        ],
+        "type": "object"
+      },
+      "ActionPlanSummaryNeed": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "outcomes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "outcomes"
+        ],
+        "type": "object"
+      },
+      "ActionPlanSummaryPersonDetails": {
+        "properties": {
+          "fullName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName"
+        ],
+        "type": "object"
+      },
+      "AdditionalInformationForTheDeliveryPartnerBffResponseDto": {
+        "properties": {
+          "details": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/No"
+              },
+              {
+                "$ref": "#/components/schemas/Unanswered"
+              },
+              {
+                "$ref": "#/components/schemas/Yes"
+              }
+            ]
+          },
+          "refereeName": {
+            "$ref": "#/components/schemas/RefereeNameDto"
+          }
+        },
+        "required": [
+          "details",
+          "refereeName"
+        ],
+        "type": "object"
+      },
+      "AdditionalSupportNeedsBffResponseDto": {
+        "properties": {
+          "anythingElse": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/No"
+              },
+              {
+                "$ref": "#/components/schemas/Unanswered"
+              },
+              {
+                "$ref": "#/components/schemas/Yes"
+              }
+            ]
+          },
+          "caringResponsibilities": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/No"
+              },
+              {
+                "$ref": "#/components/schemas/Unanswered"
+              },
+              {
+                "$ref": "#/components/schemas/Yes"
+              }
+            ]
+          },
+          "diversity": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/No"
+              },
+              {
+                "$ref": "#/components/schemas/Unanswered"
+              },
+              {
+                "$ref": "#/components/schemas/Yes"
+              }
+            ]
+          },
+          "employmentResponsibilities": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/No"
+              },
+              {
+                "$ref": "#/components/schemas/Unanswered"
+              },
+              {
+                "$ref": "#/components/schemas/Yes"
+              }
+            ]
+          },
+          "locationTravel": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/No"
+              },
+              {
+                "$ref": "#/components/schemas/Unanswered"
+              },
+              {
+                "$ref": "#/components/schemas/Yes"
+              }
+            ]
+          },
+          "mentalEmotionalHealth": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/No"
+              },
+              {
+                "$ref": "#/components/schemas/Unanswered"
+              },
+              {
+                "$ref": "#/components/schemas/Yes"
+              }
+            ]
+          },
+          "needsAdditionalSupport": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "neurodiversity": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/No"
+              },
+              {
+                "$ref": "#/components/schemas/Unanswered"
+              },
+              {
+                "$ref": "#/components/schemas/Yes"
+              }
+            ]
+          },
+          "physicalHealth": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/No"
+              },
+              {
+                "$ref": "#/components/schemas/Unanswered"
+              },
+              {
+                "$ref": "#/components/schemas/Yes"
+              }
+            ]
+          },
+          "refereeName": {
+            "$ref": "#/components/schemas/RefereeNameDto"
+          }
+        },
+        "required": [
+          "anythingElse",
+          "caringResponsibilities",
+          "diversity",
+          "employmentResponsibilities",
+          "locationTravel",
+          "mentalEmotionalHealth",
+          "neurodiversity",
+          "physicalHealth",
+          "refereeName"
+        ],
+        "type": "object"
+      },
+      "AdditionalSupportNeedsRequest": {
+        "properties": {
+          "anythingElse": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "caringResponsibilities": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "diversity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "employmentResponsibilities": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "locationTravel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mentalEmotionalHealth": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "needsAdditionalSupport": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "neurodiversity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "physicalHealth": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "AppointmentDelivery": {
+        "properties": {
+          "addressLine1": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressLine2": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "county": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "PHONE_CALL",
+              "VIDEO_CALL",
+              "IN_PERSON_PROBATION_OFFICE",
+              "IN_PERSON_OTHER_LOCATION"
+            ],
+            "type": "string"
+          },
+          "methodDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "townOrCity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "method"
+        ],
+        "type": "object"
+      },
+      "AppointmentDetailsDto": {
+        "properties": {
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "enum": [
+              "PHONE_CALL",
+              "VIDEO_CALL",
+              "IN_PERSON_PROBATION_OFFICE",
+              "IN_PERSON_OTHER_LOCATION"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "time": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "AppointmentIcsFeedbackResponse": {
+        "description": "ICS appointment session feedback",
+        "properties": {
+          "appointmentIcsId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "issuesOrConcernsIdentified": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "issuesOrConcernsNotifyProbationPractitioner": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "nextStepsActionsBeforeNextSession": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nextStepsPlannedForNextSession": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionAddressLine1": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionAddressLine2": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionCounty": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionDidPersonAttend": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "recordSessionDidSessionHappen": {
+            "type": "boolean"
+          },
+          "recordSessionHowSessionTookPlace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionNoAttendanceInformation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionNotHappenReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionNotHappenReasonDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionNotInPersonReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionPdu": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionPostcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionTownOrCity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sessionDetailsDuration": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sessionDetailsLateReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sessionDetailsWasPersonLate": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "sessionFeedbackAppointmentDetails": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionFeedbackAppointmentDetailsDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sessionFeedbackBehaviour": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sessionFeedbackStrengthsIdentified": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sessionFeedbackWhatHappened": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "appointmentIcsId",
+          "createdAt",
+          "id",
+          "recordSessionDidSessionHappen"
+        ],
+        "type": "object"
+      },
+      "AppointmentIcsResponse": {
+        "properties": {
+          "appointmentDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "appointmentIcsId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "appointmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "appointmentStatus": {
+            "enum": [
+              "SCHEDULED",
+              "NEEDS_FEEDBACK",
+              "COMPLETED",
+              "CHANGED",
+              "DID_NOT_ATTEND",
+              "DID_NOT_HAPPEN"
+            ],
+            "type": "string"
+          },
+          "appointmentTime": {
+            "$ref": "#/components/schemas/AppointmentTimeResponse"
+          },
+          "appointmentType": {
+            "enum": [
+              "ICS"
+            ],
+            "type": "string"
+          },
+          "caseReference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "changeAppointmentDetails": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChangeAppointmentDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "referralFirstName": {
+            "type": "string"
+          },
+          "referralId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "referralLastName": {
+            "type": "string"
+          },
+          "sessionCommunications": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sessionMethod": {
+            "$ref": "#/components/schemas/SessionMethod"
+          }
+        },
+        "required": [
+          "appointmentDate",
+          "appointmentIcsId",
+          "appointmentId",
+          "appointmentStatus",
+          "appointmentTime",
+          "appointmentType",
+          "createdAt",
+          "referralFirstName",
+          "referralId",
+          "referralLastName",
+          "sessionCommunications",
+          "sessionMethod"
+        ],
+        "type": "object"
+      },
+      "AppointmentTimeRequest": {
+        "properties": {
+          "amPm": {
+            "type": "string"
+          },
+          "hour": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "minute": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "amPm",
+          "hour"
+        ],
+        "type": "object"
+      },
+      "AppointmentTimeResponse": {
+        "properties": {
+          "amPm": {
+            "type": "string"
+          },
+          "hour": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "minute": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "amPm",
+          "hour",
+          "minute"
+        ],
+        "type": "object"
+      },
+      "AreaConfirmationBffResponseDto": {
+        "properties": {
+          "associatedPdus": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "contractArea": {
+            "type": "string"
+          },
+          "crn": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "deliveryPartner": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "associatedPdus",
+          "contractArea",
+          "crn",
+          "dateOfBirth",
+          "deliveryPartner"
+        ],
+        "type": "object"
+      },
+      "ArnsRiskConcernsToSelfDto": {
+        "properties": {
+          "custody": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArnsRiskDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hostelSetting": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArnsRiskDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "selfHarm": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArnsRiskDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "suicide": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArnsRiskDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vulnerability": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArnsRiskDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ArnsRiskDto": {
+        "properties": {
+          "current": {
+            "type": "string"
+          },
+          "currentConcernsText": {
+            "type": "string"
+          },
+          "previous": {
+            "type": "string"
+          },
+          "previousConcernsText": {
+            "type": "string"
+          },
+          "risk": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ArnsRiskRoshSummaryDto": {
+        "properties": {
+          "analysisOfRiskFactors": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "natureOfRisk": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "overallRiskLevel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskImminence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskInCommunity": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object"
+          },
+          "riskInCustody": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object"
+          },
+          "riskIncreaseFactors": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskMitigationFactors": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "whoIsAtRisk": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "riskInCommunity",
+          "riskInCustody"
+        ],
+        "type": "object"
+      },
+      "AssignCaseWorkersRequest": {
+        "properties": {
+          "emails": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "emails"
+        ],
+        "type": "object"
+      },
+      "AssignCaseWorkersResult": {
+        "properties": {
+          "failureList": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentFailureDto"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "succeededList": {
+            "items": {
+              "$ref": "#/components/schemas/CaseWorkerDto"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message",
+          "success"
+        ],
+        "type": "object"
+      },
+      "AssignmentFailureDto": {
+        "properties": {
+          "emailAddress": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "emailAddress",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "CaseWorkerDto": {
+        "properties": {
+          "emailAddress": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "userId": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "userType": {
+            "enum": [
+              "INTERNAL",
+              "EXTERNAL"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "emailAddress",
+          "userType"
+        ],
+        "type": "object"
+      },
+      "CaseWorkerSummaryDto": {
+        "properties": {
+          "emailAddress": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "emailAddress"
+        ],
+        "type": "object"
+      },
+      "ChangeAppointmentDetails": {
+        "properties": {
+          "changeRequestedBy": {
+            "enum": [
+              "DELIVERY_PARTNER",
+              "PROBATION_PRACTITIONER",
+              "REFERRAL_USER"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reasonForChange": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "CheckDraftReferralDetailsBffResponseDto": {
+        "properties": {
+          "additionalInformationDetailsTableData": {
+            "$ref": "#/components/schemas/DraftAdditionalInformationDetailsTableDataDto"
+          },
+          "additionalSupportNeedsDetailsTableData": {
+            "$ref": "#/components/schemas/DraftAdditionalSupportNeedsDetailsTableDataDto"
+          },
+          "contactDetailsTableData": {
+            "$ref": "#/components/schemas/DraftContactDetailsTableDataDto"
+          },
+          "createdDate": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "equalityDetailsTableData": {
+            "$ref": "#/components/schemas/DraftEqualityDetailsTableDataDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mainPocDetailsTableData": {
+            "$ref": "#/components/schemas/DraftMainPOCDetailsTableDataDto"
+          },
+          "personDetailsTableData": {
+            "$ref": "#/components/schemas/DraftPersonDetailsTableDataDto"
+          },
+          "personNeedsDetailsTableData": {
+            "$ref": "#/components/schemas/DraftPersonNeedsDetailsTableDataDto"
+          },
+          "referenceNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "referralAreaTableData": {
+            "$ref": "#/components/schemas/DraftReferralAreaTableDataDto"
+          },
+          "riskInformationDetailsTableData": {
+            "$ref": "#/components/schemas/DraftRiskInformationDetailsTableDataDto"
+          }
+        },
+        "required": [
+          "additionalInformationDetailsTableData",
+          "additionalSupportNeedsDetailsTableData",
+          "contactDetailsTableData",
+          "createdDate",
+          "equalityDetailsTableData",
+          "id",
+          "mainPocDetailsTableData",
+          "personDetailsTableData",
+          "personNeedsDetailsTableData",
+          "referralAreaTableData",
+          "riskInformationDetailsTableData"
+        ],
+        "type": "object"
+      },
+      "CheckReferralInformationDto": {
+        "properties": {
+          "communityServiceProviderName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "deliveryPartner": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "personIdentifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prisonNumbers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "referralId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "region": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sex": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "dateOfBirth",
+          "fullName",
+          "prisonNumbers",
+          "referralId"
+        ],
+        "type": "object"
+      },
+      "CommunityServiceProviderBffResponseDto": {
+        "properties": {
+          "communityServiceProviderId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "communityServiceProviderName": {
+            "type": "string"
+          },
+          "referralId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "communityServiceProviderId",
+          "communityServiceProviderName",
+          "referralId"
+        ],
+        "type": "object"
+      },
+      "CommunityServiceProviderRequest": {
+        "properties": {
+          "communityServiceProviderId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "communityServiceProviderId"
+        ],
+        "type": "object"
+      },
+      "CommunitySupportRiskDto": {
+        "properties": {
+          "additionalInformation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "assessedOn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "assessmentWithin12Months": {
+            "type": "boolean"
+          },
+          "crn": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "riskToSelf": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArnsRiskConcernsToSelfDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArnsRiskRoshSummaryDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "assessmentWithin12Months",
+          "crn",
+          "dateOfBirth",
+          "firstName",
+          "lastName"
+        ],
+        "type": "object"
+      },
+      "CommunitySupportRiskInformationDto": {
+        "properties": {
+          "additionalInformation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskSummaryNatureOfRisk": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskSummaryRiskImminence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskSummaryWhoIsAtRisk": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskToSelfHostelSetting": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskToSelfSelfHarm": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskToSelfSuicide": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskToSelfVulnerability": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "CommunitySupportServiceDto": {
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pdus": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "providerName": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "area",
+          "description",
+          "id",
+          "name",
+          "pdus",
+          "providerName",
+          "region"
+        ],
+        "type": "object"
+      },
+      "CommunitySupportServicesDto": {
+        "properties": {
+          "communitySupportServices": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/CommunitySupportServiceDto"
+              },
+              "type": "array"
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "communitySupportServices"
+        ],
+        "type": "object"
+      },
+      "ConfirmPersonDetailsBffDto": {
+        "properties": {
+          "contactDetails": {
+            "$ref": "#/components/schemas/ConfirmPersonalDetailsContact"
+          },
+          "equalityMonitoring": {
+            "$ref": "#/components/schemas/ConfirmPersonalDetailsEqualityMonitoring"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "personalDetails": {
+            "$ref": "#/components/schemas/ConfirmPersonalPersonalDetails"
+          }
+        },
+        "required": [
+          "contactDetails",
+          "equalityMonitoring",
+          "id",
+          "personalDetails"
+        ],
+        "type": "object"
+      },
+      "ConfirmPersonDetailsContactAddress": {
+        "properties": {
+          "noFixedAbode": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "startAt": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "noFixedAbode",
+          "notes",
+          "startAt",
+          "type",
+          "updatedAt",
+          "value"
+        ],
+        "type": "object"
+      },
+      "ConfirmPersonalDetailsContact": {
+        "properties": {
+          "address": {
+            "$ref": "#/components/schemas/ConfirmPersonDetailsContactAddress"
+          },
+          "emailAddress": {
+            "type": "string"
+          },
+          "mobileNumber": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "emailAddress",
+          "mobileNumber",
+          "phoneNumber"
+        ],
+        "type": "object"
+      },
+      "ConfirmPersonalDetailsCurrentCircumstances": {
+        "properties": {
+          "updatedAt": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "updatedAt",
+          "value"
+        ],
+        "type": "object"
+      },
+      "ConfirmPersonalDetailsDisabilities": {
+        "properties": {
+          "allDisabilities": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "allDisabilities",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ConfirmPersonalDetailsEqualityMonitoring": {
+        "properties": {
+          "ethnicity": {
+            "type": "string"
+          },
+          "nationalities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "religionOrBelief": {
+            "type": "string"
+          },
+          "sex": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ethnicity",
+          "nationalities",
+          "religionOrBelief",
+          "sex"
+        ],
+        "type": "object"
+      },
+      "ConfirmPersonalPersonalDetails": {
+        "properties": {
+          "crn": {
+            "type": "string"
+          },
+          "currentCircumstances": {
+            "$ref": "#/components/schemas/ConfirmPersonalDetailsCurrentCircumstances"
+          },
+          "dateOfBirth": {
+            "format": "date",
+            "type": "string"
+          },
+          "disabilities": {
+            "$ref": "#/components/schemas/ConfirmPersonalDetailsDisabilities"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "middleNames": {
+            "type": "string"
+          },
+          "preferredLanguage": {
+            "type": "string"
+          },
+          "prisonNumbers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "crn",
+          "currentCircumstances",
+          "dateOfBirth",
+          "disabilities",
+          "firstName",
+          "lastName",
+          "middleNames",
+          "preferredLanguage",
+          "prisonNumbers"
+        ],
+        "type": "object"
+      },
+      "ContactDetailsTableDataDto": {
+        "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mobileNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "CreateAppointmentRequest": {
+        "properties": {
+          "changeAppointmentDetails": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChangeAppointmentDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "sessionCommunication": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sessionMethodRequest": {
+            "$ref": "#/components/schemas/SessionMethodRequest"
+          },
+          "time": {
+            "$ref": "#/components/schemas/AppointmentTimeRequest"
+          }
+        },
+        "required": [
+          "date",
+          "sessionCommunication",
+          "sessionMethodRequest",
+          "time"
+        ],
+        "type": "object"
+      },
+      "CreateIcsFeedbackRequest": {
+        "properties": {
+          "issuesAndConcerns": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssuesAndConcernsRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextSteps": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NextStepsRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "record": {
+            "$ref": "#/components/schemas/RecordSessionRequest"
+          },
+          "sessionDetails": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionDetailsRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sessionFeedback": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionFeedbackRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "record"
+        ],
+        "type": "object"
+      },
+      "CreateReferralRequest": {
+        "properties": {
+          "personIdentifier": {
+            "type": "string"
+          },
+          "urgency": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "personIdentifier"
+        ],
+        "type": "object"
+      },
+      "CriminogenicNeedsRequest": {
+        "properties": {
+          "accommodationDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "alcoholUseDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "drugUseDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "employmentEducationDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "financialDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hasAccommodationNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasAlcoholUseNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasDrugUseNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasEmploymentEducationNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasFinancialNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasHealthWellbeingNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasPersonalRelationshipsCommunityNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasThinkingBehavioursAttitudeNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "healthWellbeingDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "personalRelationshipsCommunityDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "thinkingBehavioursAttitudeDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "Disability": {
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "DraftAdditionalInformationDetailsTableDataDto": {
+        "properties": {
+          "homeOfficeInterest": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "offenderPersonalityDisorderPathway": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "DraftAdditionalSupportNeedsDetailsTableDataDto": {
+        "properties": {
+          "anyOtherNeeds": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "caringResponsibilities": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "diversity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "employmentResponsibilities": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interpreterLanguage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "locationAndTravel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mentalOrEmotionalHealth": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "needsInterpreter": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "neurodiversity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "physicalHealth": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "DraftContactDetailsTableDataDto": {
+        "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mobileNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "DraftEqualityDetailsTableDataDto": {
+        "properties": {
+          "ethnicity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "religionOrBelief": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sex": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sex"
+        ],
+        "type": "object"
+      },
+      "DraftMainPOCDetailsTableDataDto": {
+        "properties": {
+          "areTheseDetailsCorrect": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isProbationOfficer": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "jobRole": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pdu": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "teamPhoneNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "DraftPersonDetailsTableDataDto": {
+        "properties": {
+          "crn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dateOfBirth": {
+            "format": "date",
+            "type": "string"
+          },
+          "disabilities": {
+            "items": {
+              "$ref": "#/components/schemas/Disability"
+            },
+            "type": "array"
+          },
+          "name": {
+            "$ref": "#/components/schemas/RefereeNameDto"
+          },
+          "personalCircumstances": {
+            "items": {
+              "$ref": "#/components/schemas/PersonalCircumstance"
+            },
+            "type": "array"
+          },
+          "preferredLanguage": {
+            "type": "string"
+          },
+          "prisonNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "dateOfBirth",
+          "disabilities",
+          "name",
+          "personalCircumstances",
+          "preferredLanguage"
+        ],
+        "type": "object"
+      },
+      "DraftPersonNeedsDetailsTableDataDto": {
+        "properties": {
+          "accommodationDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "alcoholUseDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "drugUseDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "employmentAndEducation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "financialDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hasAccommodationNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "healthWellbeingDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "personalRelationshipsCommunityDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "thinkingBehavioursAttitudeDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "DraftReferralAreaTableDataDto": {
+        "properties": {
+          "area": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "DraftRiskInformationDetailsTableDataDto": {
+        "properties": {
+          "additionalInformation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "natureOfRisk": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskImminence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskOfSelfHarm": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskOfSuicide": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskToSelfHostelSetting": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "riskToSelfVulnerability": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "whoIsAtRisk": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "EqualityDetailsTableDataDto": {
+        "properties": {
+          "ethnicity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "religionOrBelief": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sex": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sex"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "developerMessage": {
+            "description": "A developer friendly message for the error",
+            "example": "null",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errorCode": {
+            "description": "An application-specific error code",
+            "example": 404,
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "moreInfo": {
+            "description": "Additional information about the error",
+            "example": "null",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "description": "The HTTP status code returned by the server",
+            "example": 404,
+            "format": "int32",
+            "type": "integer"
+          },
+          "userMessage": {
+            "description": "A human readable message for the error",
+            "example": "Referral Not found",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackSessionDto": {
+        "properties": {
+          "appointmentDetails": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AppointmentDetailsDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "otherAppointmentMethods": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "fullName"
+        ],
+        "type": "object"
+      },
+      "InPersonAppointment": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SessionMethod"
+          },
+          {
+            "properties": {
+              "addressLine1": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "addressLine2": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "county": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "postcode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "probationOfficeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "townOrCity": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          }
+        ],
+        "required": [
+          "type"
+        ]
+      },
+      "IssuesAndConcernsRequest": {
+        "properties": {
+          "identified": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notifyProbationPractitioner": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "NeedDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "questions"
+        ],
+        "type": "object"
+      },
+      "NeedsInterpreterBffResponseDto": {
+        "properties": {
+          "language": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/No"
+              },
+              {
+                "$ref": "#/components/schemas/Unanswered"
+              },
+              {
+                "$ref": "#/components/schemas/Yes"
+              }
+            ]
+          },
+          "refereeName": {
+            "$ref": "#/components/schemas/RefereeNameDto"
+          }
+        },
+        "required": [
+          "language",
+          "refereeName"
+        ],
+        "type": "object"
+      },
+      "NeedsInterpreterRequest": {
+        "properties": {
+          "language": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "needsInterpreter": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "NextStepsRequest": {
+        "properties": {
+          "actionsBeforeNextSession": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "plannedForNextSession": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "No": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SelectionDto"
+          }
+        ]
+      },
+      "OffenceSentenceDto": {
+        "properties": {
+          "expectedReleaseDate": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hasLicenceConditionsOrZones": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "licenceConditionsOrZonesDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "offence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "offenceSubCategory": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sentenceEndDate": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "OffenceSentenceInfoBffResponseDto": {
+        "properties": {
+          "crn": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "offenceSentenceInfo": {
+            "$ref": "#/components/schemas/OffenceSentenceDto"
+          }
+        },
+        "required": [
+          "crn",
+          "dateOfBirth",
+          "firstName",
+          "lastName",
+          "offenceSentenceInfo"
+        ],
+        "type": "object"
+      },
+      "Pageable": {
+        "properties": {
+          "page": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "sort": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "Pdu": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "PersonAdditionalDetails": {
+        "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressStartDate": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressTypeVerified": {
+            "type": "boolean"
+          },
+          "disability": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "emailAddress": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ethnicity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interestToImmigration": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "mobileNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nationalities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "neurodiverseConditions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "noFixedAbode": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "preferredLanguage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "religionOrBelief": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "addressTypeVerified",
+          "nationalities"
+        ],
+        "type": "object"
+      },
+      "PersonDetailsAndCircumstances": {
+        "properties": {
+          "disabilities": {
+            "items": {
+              "$ref": "#/components/schemas/Disability"
+            },
+            "type": "array"
+          },
+          "homeOfficeInterestNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ofHomeOfficeInterest": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "offenderPersonalityDisorder": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "personalCircumstances": {
+            "items": {
+              "$ref": "#/components/schemas/PersonalCircumstance"
+            },
+            "type": "array"
+          },
+          "preferredLanguage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "disabilities",
+          "personalCircumstances"
+        ],
+        "type": "object"
+      },
+      "PersonDetailsTableDataDto": {
+        "properties": {
+          "crn": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "disabilities": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "preferredLanguage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "crn",
+          "dateOfBirth",
+          "disabilities",
+          "name",
+          "preferredLanguage"
+        ],
+        "type": "object"
+      },
+      "PersonDto": {
+        "properties": {
+          "additionalDetails": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonAdditionalDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "middleNames": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "personDetailsAndCircumstances": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonDetailsAndCircumstances"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personIdentifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prisonNumbers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sex": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "dateOfBirth",
+          "firstName",
+          "id",
+          "lastName",
+          "prisonNumbers"
+        ],
+        "type": "object"
+      },
+      "PersonalCircumstance": {
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subDescription": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "Prison": {
+        "properties": {
+          "agencyType": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "longDescription": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "agencyType",
+          "code",
+          "description"
+        ],
+        "type": "object"
+      },
+      "ProbationOffice": {
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "deliusCRSLocationId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "govUkUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "probationOfficeId": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "probationRegionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "name",
+          "probationOfficeId",
+          "probationRegionId"
+        ],
+        "type": "object"
+      },
+      "ProbationPractitionerDetailsBffResponseDto": {
+        "properties": {
+          "emailAddress": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "jobRole": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "pdu": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Pdu"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ppDetailsFoundAndCorrect": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "probationOffice": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "teamPhoneNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "QuestionChoice": {
+        "properties": {
+          "additionalDetailsLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "displayAdditionalDetailsOnSelect": {
+            "type": "boolean"
+          },
+          "displayOrder": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayAdditionalDetailsOnSelect",
+          "displayOrder",
+          "label",
+          "value"
+        ],
+        "type": "object"
+      },
+      "QuestionDto": {
+        "properties": {
+          "answerType": {
+            "enum": [
+              "TEXTAREA",
+              "RADIO",
+              "CHECKBOX"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "answerType",
+          "id",
+          "label"
+        ],
+        "type": "object"
+      },
+      "RecordSessionRequest": {
+        "properties": {
+          "didPersonAttend": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "didSessionHappen": {
+            "type": "boolean"
+          },
+          "howSessionTookPlace": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionMethodRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "noAttendanceInformation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sessionNotHappenReason": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionNotHappenReasonRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "didSessionHappen"
+        ],
+        "type": "object"
+      },
+      "RefereeNameDto": {
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "middleName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName"
+        ],
+        "type": "object"
+      },
+      "ReferralAppointmentHistoryDto": {
+        "properties": {
+          "appointmentIcsId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "dateTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "icsFeedbackId": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "SCHEDULED",
+              "NEEDS_FEEDBACK",
+              "COMPLETED",
+              "CHANGED",
+              "DID_NOT_ATTEND",
+              "DID_NOT_HAPPEN"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "ICS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "appointmentIcsId",
+          "dateTime",
+          "status",
+          "type"
+        ],
+        "type": "object"
+      },
+      "ReferralCaseListDto": {
+        "properties": {
+          "caseWorkers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "date": {
+            "type": "string"
+          },
+          "personIdentifier": {
+            "type": "string"
+          },
+          "personName": {
+            "type": "string"
+          },
+          "referenceNumber": {
+            "type": "string"
+          },
+          "referralId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "caseWorkers",
+          "date",
+          "personIdentifier",
+          "personName",
+          "referenceNumber",
+          "referralId"
+        ],
+        "type": "object"
+      },
+      "ReferralCriminogenicNeedsDto": {
+        "properties": {
+          "accommodationDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "alcoholUseDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "drugUseDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "employmentEducationDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "financialDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hasAccommodationNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasAlcoholUseNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasDrugUseNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasEmploymentEducationNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasFinancialNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasHealthWellbeingNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasPersonalRelationshipsCommunityNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "hasThinkingBehavioursAttitudeNeeds": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "healthWellbeingDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "personalRelationshipsCommunityDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "refereeName": {
+            "$ref": "#/components/schemas/RefereeNameDto"
+          },
+          "referralId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "thinkingBehavioursAttitudeDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedBy": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "refereeName",
+          "referralId",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object"
+      },
+      "ReferralDetailsBffResponseDto": {
+        "properties": {
+          "contactDetailsTableData": {
+            "$ref": "#/components/schemas/ContactDetailsTableDataDto"
+          },
+          "createdDate": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "equalityDetailsTableData": {
+            "$ref": "#/components/schemas/EqualityDetailsTableDataDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "personDetailsTableData": {
+            "$ref": "#/components/schemas/PersonDetailsTableDataDto"
+          },
+          "referenceNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "referralDetailsTableData": {
+            "$ref": "#/components/schemas/ReferralDetailsTableDataDto"
+          },
+          "serviceDays": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "targetServiceCompletionDate": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "targetServiceCompletionDateReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "contactDetailsTableData",
+          "createdDate",
+          "equalityDetailsTableData",
+          "id",
+          "personDetailsTableData",
+          "referralDetailsTableData"
+        ],
+        "type": "object"
+      },
+      "ReferralDetailsTableDataDto": {
+        "properties": {
+          "assignedTo": {
+            "items": {
+              "$ref": "#/components/schemas/CaseWorkerDto"
+            },
+            "type": "array"
+          },
+          "referralDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "assignedTo",
+          "referralDate"
+        ],
+        "type": "object"
+      },
+      "ReferralInformationDto": {
+        "properties": {
+          "communityServiceProviderId": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "communityServiceProviderName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deliveryPartner": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "firstName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "personId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "personIdentifier": {
+            "type": "string"
+          },
+          "referenceNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "referralDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "referralId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "region": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sex": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "personId",
+          "personIdentifier",
+          "referralDate",
+          "referralId"
+        ],
+        "type": "object"
+      },
+      "ReferralProgressDto": {
+        "properties": {
+          "actionPlanStatus": {
+            "$ref": "#/components/schemas/ActionPlanStatusDto"
+          },
+          "appointments": {
+            "items": {
+              "$ref": "#/components/schemas/ReferralAppointmentHistoryDto"
+            },
+            "type": "array"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "referralId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "actionPlanStatus",
+          "appointments",
+          "fullName",
+          "referralId"
+        ],
+        "type": "object"
+      },
+      "SavedResponse": {
+        "properties": {
+          "additionalDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      },
+      "SelectionDto": {
+        "discriminator": {
+          "propertyName": "selected"
+        },
+        "properties": {
+          "selected": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "selected"
+        ]
+      },
+      "ServiceDaysPageDto": {
+        "properties": {
+          "service_days": {
+            "description": "The number of service days allocated to the referral",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ServiceEndDatePageDto": {
+        "properties": {
+          "target_service_completion_date": {
+            "description": "The target service completion date for the referral",
+            "format": "date-time",
+            "type": "string"
+          },
+          "target_service_completion_reason": {
+            "description": "The reason the target service completion date was set",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SessionDeliveryDetailsQuestionAnswer": {
+        "properties": {
+          "additionalDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      },
+      "SessionDeliveryDetailsQuestionAnswers": {
+        "properties": {
+          "incomingAnswerDetails": {
+            "items": {
+              "$ref": "#/components/schemas/SessionDeliveryDetailsQuestionAnswer"
+            },
+            "type": "array"
+          },
+          "questionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "incomingAnswerDetails",
+          "questionId"
+        ],
+        "type": "object"
+      },
+      "SessionDeliveryQuestion": {
+        "properties": {
+          "answerType": {
+            "enum": [
+              "TEXTAREA",
+              "RADIO",
+              "CHECKBOX"
+            ],
+            "type": "string"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionChoice"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "displayOrder": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "maximumNumberOfResponses": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "savedResponses": {
+            "items": {
+              "$ref": "#/components/schemas/SavedResponse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "answerType",
+          "displayOrder",
+          "id",
+          "label",
+          "maximumNumberOfResponses",
+          "savedResponses"
+        ],
+        "type": "object"
+      },
+      "SessionDetailsRequest": {
+        "properties": {
+          "duration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionDurationRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lateReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "wasPersonLate": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "SessionDurationRequest": {
+        "properties": {
+          "hours": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "minutes": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "hours"
+        ],
+        "type": "object"
+      },
+      "SessionFeedbackAppointmentDetailsDto": {
+        "properties": {
+          "appointmentDeliveryDetails": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AppointmentDelivery"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currentCaseworkers": {
+            "items": {
+              "$ref": "#/components/schemas/CaseWorkerSummaryDto"
+            },
+            "type": "array"
+          },
+          "feedbackSubmittedBy": {
+            "$ref": "#/components/schemas/CaseWorkerSummaryDto"
+          },
+          "personFirstName": {
+            "type": "string"
+          },
+          "sessionCommunications": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "startDateTime": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currentCaseworkers",
+          "feedbackSubmittedBy",
+          "personFirstName",
+          "startDateTime"
+        ],
+        "type": "object"
+      },
+      "SessionFeedbackRequest": {
+        "properties": {
+          "behaviour": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "strengthsIdentified": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "whatHappened": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "SessionMethod": {
+        "discriminator": {
+          "mapping": {
+            "IN_PERSON": "#/components/schemas/InPersonAppointment",
+            "VIRTUAL": "#/components/schemas/VirtualAppointment"
+          },
+          "propertyName": "appointmentCategory"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/VirtualAppointment"
+          },
+          {
+            "$ref": "#/components/schemas/InPersonAppointment"
+          }
+        ],
+        "properties": {
+          "appointmentCategory": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "appointmentCategory",
+          "type"
+        ],
+        "type": "object"
+      },
+      "SessionMethodRequest": {
+        "properties": {
+          "additionalDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressLine1": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressLine2": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "county": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pdu": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "townOrCity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "enum": [
+              "PHONE",
+              "VIDEO",
+              "IN_PERSON_PROBATION_OFFICE",
+              "IN_PERSON_OTHER_LOCATION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "SessionNotHappenReasonRequest": {
+        "properties": {
+          "details": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "enum": [
+              "SERVICE_PROVIDER_ISSUE",
+              "REFERRAL_COULD_NOT_TAKE_PART",
+              "REFERRAL_DID_NOT_COMPLY"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
+      "SubmitReferralResponseDto": {
+        "properties": {
+          "personId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "referenceNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "referralId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "personId",
+          "referralId"
+        ],
+        "type": "object"
+      },
+      "TaskListStatusItem": {
+        "properties": {
+          "completed": {
+            "type": "boolean"
+          },
+          "statusText": {
+            "type": "string"
+          },
+          "tag": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "completed",
+          "statusText"
+        ],
+        "type": "object"
+      },
+      "TaskListStatusResponseDto": {
+        "properties": {
+          "addAdditionalInformationCompleted": {
+            "$ref": "#/components/schemas/TaskListStatusItem"
+          },
+          "addDetailsOfAnyAdditionalSupportNeedsCompleted": {
+            "$ref": "#/components/schemas/TaskListStatusItem"
+          },
+          "addDetailsOfMainPointOfContactCompleted": {
+            "$ref": "#/components/schemas/TaskListStatusItem"
+          },
+          "addMainPointOfContactCompleted": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TaskListStatusItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checkProbationPractitionerDetailsCompleted": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TaskListStatusItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checkRiskInformationCompleted": {
+            "$ref": "#/components/schemas/TaskListStatusItem"
+          },
+          "confirmPersonalDetailsCompleted": {
+            "$ref": "#/components/schemas/TaskListStatusItem"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "selectAnAreaForReferralCompleted": {
+            "$ref": "#/components/schemas/TaskListStatusItem"
+          },
+          "selectThePersonsNeedsCompleted": {
+            "$ref": "#/components/schemas/TaskListStatusItem"
+          }
+        },
+        "required": [
+          "addAdditionalInformationCompleted",
+          "addDetailsOfAnyAdditionalSupportNeedsCompleted",
+          "addDetailsOfMainPointOfContactCompleted",
+          "checkRiskInformationCompleted",
+          "confirmPersonalDetailsCompleted",
+          "fullName",
+          "selectAnAreaForReferralCompleted",
+          "selectThePersonsNeedsCompleted"
+        ],
+        "type": "object"
+      },
+      "Unanswered": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SelectionDto"
+          }
+        ]
+      },
+      "UpdateOffenceSentenceRequest": {
+        "properties": {
+          "expectedReleaseDate": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hasLicenceConditionsOrZones": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "licenceConditionsOrZonesDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "offence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "offenceSubCategory": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sentenceEndDate": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "UpdateProbationPractitionerDetailsRequest": {
+        "properties": {
+          "emailAddress": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "jobRole": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "pduId": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ppDetailsFoundAndCorrect": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "probationOfficeId": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "teamPhoneNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "VirtualAppointment": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SessionMethod"
+          },
+          {
+            "properties": {
+              "whyNotInPersonReason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          }
+        ],
+        "required": [
+          "type"
+        ]
+      },
+      "WithdrawReferralRequest": {
+        "properties": {
+          "additionalDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reasonCode": {
+            "enum": [
+              "INELIGIBLE_REFERRAL",
+              "MISTAKEN_OR_DUPLICATE_REFERRAL",
+              "NOT_ENGAGED",
+              "NEEDS_MET_THROUGH_ANOTHER_ROUTE",
+              "USER_DIED",
+              "WORK_CARING_COMMITMENTS_OR_SICKNESS",
+              "ACQUITTED_ON_APPEAL",
+              "RETURNED_TO_CUSTODY",
+              "SENTENCE_REVOKED",
+              "SENTENCE_EXPIRED",
+              "OTHER_CHANGE_OF_CIRCUMSTANCE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "reasonCode"
+        ],
+        "type": "object"
+      },
+      "WithdrawalReasonBffResponseDto": {
+        "properties": {
+          "withdrawalReasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "withdrawalReasons"
+        ],
+        "type": "object"
+      },
+      "Yes": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SelectionDto"
+          },
+          {
+            "properties": {
+              "value": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        ],
+        "required": [
+          "value"
+        ]
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "email": "feedback@digital.justice.gov.uk",
+      "name": "HMPPS Digital Studio"
+    },
+    "title": "HMPPS Community Support Api"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/bff/case-list/in-progress": {
+      "get": {
+        "operationId": "getInProgressCases",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "pageable",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReferralCaseListDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "List of in-progress referrals for the provider"
+          },
+          "401": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was unauthorised"
+          },
+          "403": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden. The client is not authorised to access the case list."
+          }
+        },
+        "summary": "Get in-progress referrals for a community service provider",
+        "tags": [
+          "case-list-controller"
+        ]
+      }
+    },
+    "/bff/case-list/unassigned": {
+      "get": {
+        "operationId": "getUnassignedCases",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "pageable",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReferralCaseListDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "List of unassigned referrals for the provider"
+          },
+          "401": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was unauthorised"
+          },
+          "403": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden. The client is not authorised to access the case list."
+          }
+        },
+        "summary": "Get unassigned referrals for a community service provider",
+        "tags": [
+          "case-list-controller"
+        ]
+      }
+    },
+    "/bff/confirm-person-details/{referralId}": {
+      "get": {
+        "operationId": "getReferralPersonDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Person details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmPersonDetailsBffDto"
+                }
+              }
+            },
+            "description": "Person details not found"
+          }
+        },
+        "summary": "Get the details necessary to Confirm a Person's Detail in the Referral flow",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/bff/draft-referral/additional-information-for-the-delivery-partner/{referralId}": {
+      "get": {
+        "operationId": "getAdditionalInformationForTheDeliveryPartner",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdditionalInformationForTheDeliveryPartnerBffResponseDto"
+                }
+              }
+            },
+            "description": "additional information found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "additional information not found"
+          }
+        },
+        "summary": "Get additional information for the delivery partner for a draft referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/bff/draft-referral/additional-support-needs/{referralId}": {
+      "get": {
+        "operationId": "getAdditionalSupportNeedsPage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdditionalSupportNeedsBffResponseDto"
+                }
+              }
+            },
+            "description": "Additional support needs data found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral, or the Referral's Person, not found"
+          }
+        },
+        "summary": "Get additional support needs page data",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/bff/draft-referral/check-draft-referral-details/{referralId}": {
+      "get": {
+        "operationId": "getCheckDraftReferralDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckDraftReferralDetailsBffResponseDto"
+                }
+              }
+            },
+            "description": "Check draft referral details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get check draft referral details page data",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/bff/draft-referral/needs-interpreter/{referralId}": {
+      "get": {
+        "operationId": "getNeedsInterpreterPage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeedsInterpreterBffResponseDto"
+                }
+              }
+            },
+            "description": "Interpreter needs data found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral, or the Referral's Person, not found"
+          }
+        },
+        "summary": "Get interpreter needs page data",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/bff/draft-referral/person-needs/{referralId}": {
+      "get": {
+        "operationId": "getPersonCriminogenicNeeds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralCriminogenicNeedsDto"
+                }
+              }
+            },
+            "description": "Referral criminogenic needs data found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral criminogenic needs data not found"
+          }
+        },
+        "summary": "Get criminogenic needs for a referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/bff/draft-referral/risk-information/{referralId}": {
+      "get": {
+        "operationId": "getRoshRisksByReferralId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunitySupportRiskDto"
+                }
+              }
+            },
+            "description": "ROSH risks found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found, or ROSH risks not found for the referral's CRN"
+          }
+        },
+        "summary": "Get ROSH risks for a referral",
+        "tags": [
+          "risk-controller"
+        ]
+      }
+    },
+    "/bff/draft-referral/{referralId}/community-service-provider/{providerId}": {
+      "get": {
+        "operationId": "getAreaConfirmationDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "providerId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaConfirmationBffResponseDto"
+                }
+              }
+            },
+            "description": "Community service provider found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Community service provider not found"
+          }
+        },
+        "summary": "Get area confirmation details for a community service provider by ID",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/bff/draft-referral/{referralId}/offence-sentence": {
+      "get": {
+        "operationId": "getOffenceSentenceDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffenceSentenceInfoBffResponseDto"
+                }
+              }
+            },
+            "description": "Offence and Sentence information found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Offence and Sentence information not found"
+          }
+        },
+        "summary": "Get Offence and Sentence information for a draft referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/bff/draft-referral/{referralId}/probation-practitioner-details": {
+      "get": {
+        "operationId": "getProbationPractitionerDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbationPractitionerDetailsBffResponseDto"
+                }
+              }
+            },
+            "description": "Probation Practitioner details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral, or the Referral's Person, not found"
+          }
+        },
+        "summary": "Get Probation Practitioner details for a draft referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{icsFeedbackId}": {
+      "get": {
+        "operationId": "getIcsFeedback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "icsFeedbackId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentIcsFeedbackResponse"
+                }
+              }
+            },
+            "description": "ICS feedback found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "ICS feedback not found"
+          }
+        },
+        "summary": "Get a single ICS feedback record by its ID",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/person/{personIdentifier}": {
+      "get": {
+        "operationId": "getPersonDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "personIdentifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonDto"
+                }
+              }
+            },
+            "description": "Person found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Person not found"
+          }
+        },
+        "summary": "Find a person by an identifier i.e Prison Number or CRN",
+        "tags": [
+          "person-controller"
+        ]
+      }
+    },
+    "/bff/reference-data/pdus": {
+      "get": {
+        "operationId": "getPdus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Pdu"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Returns the list of Probation Delivery Units."
+          },
+          "500": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Failed to retrieve Probation Delivery Units"
+          }
+        },
+        "summary": "Get all Probation Delivery Units (PDUs)",
+        "tags": [
+          "reference-data-controller"
+        ]
+      }
+    },
+    "/bff/reference-data/prisons": {
+      "get": {
+        "operationId": "getPrisons",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Prison"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Returns the list of active Prisons."
+          },
+          "500": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Failed to retrieve Prisons"
+          }
+        },
+        "summary": "Get all active Prisons",
+        "tags": [
+          "reference-data-controller"
+        ]
+      }
+    },
+    "/bff/reference-data/probation-offices": {
+      "get": {
+        "operationId": "getProbationOffices",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProbationOffice"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Returns the list of Probation Offices Information."
+          },
+          "500": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Failed to retrieve Probation Offices Information"
+          }
+        },
+        "summary": "Get all Probation Offices Information",
+        "tags": [
+          "reference-data-controller"
+        ]
+      }
+    },
+    "/bff/referral-assignments/{identifier}": {
+      "get": {
+        "operationId": "getAssignedCaseWorkers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CaseWorkerDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Assignments found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get assigned case workers of a referral",
+        "tags": [
+          "referral-user-assignment-controller"
+        ]
+      }
+    },
+    "/bff/referral-details-page/{caseIdentifier}": {
+      "get": {
+        "operationId": "getReferralDetailsPage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseIdentifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralDetailsBffResponseDto"
+                }
+              }
+            },
+            "description": "Referral Details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral details page data",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/bff/referral-details/{caseReference}/ics": {
+      "get": {
+        "operationId": "getICSDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AppointmentIcsResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "ICS details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "ICS details not found"
+          }
+        },
+        "summary": "Get ICS Details",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/bff/referral-details/{referralIdentifier}/progress": {
+      "get": {
+        "operationId": "getReferralProgressDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralIdentifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReferralProgressDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Referral progress details"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral progress page data",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/bff/referral-details/{referralId}": {
+      "get": {
+        "operationId": "getReferral",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralDetailsBffResponseDto"
+                }
+              }
+            },
+            "description": "Referral found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get a referral by ID",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/bff/referral-information/{caseIdentifier}": {
+      "get": {
+        "operationId": "getReferralInformation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseIdentifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralInformationDto"
+                }
+              }
+            },
+            "description": "Referral information found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral information",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/bff/referral-select-a-service": {
+      "get": {
+        "operationId": "getServices",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunitySupportServicesDto"
+                }
+              }
+            },
+            "description": "List of community support services"
+          },
+          "401": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was unauthorised"
+          },
+          "403": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden. The client is not authorised to access to select a referral service."
+          }
+        },
+        "summary": "Get community support services for referral select-a-service",
+        "tags": [
+          "community-service-provider-controller"
+        ]
+      }
+    },
+    "/bff/referral/check-referral-information/{caseIdentifier}": {
+      "get": {
+        "operationId": "getReferralAndPersonInformation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseIdentifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckReferralInformationDto"
+                }
+              }
+            },
+            "description": "Referral information found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get check-referral-information page data",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/bff/referral/withdrawal-reasons": {
+      "get": {
+        "operationId": "getWithdrawalReasons",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WithdrawalReasonBffResponseDto"
+                }
+              }
+            },
+            "description": "Withdrawal reasons found"
+          }
+        },
+        "summary": "Get withdrawal reasons",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/bff/referral/{caseReference}/ics": {
+      "get": {
+        "operationId": "getIcsAppointments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AppointmentIcsResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "List of ICS appointments"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get all ICS appointments for a referral",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/referral/{caseReference}/ics/{icsId}": {
+      "get": {
+        "operationId": "getIcsAppointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "icsId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentIcsResponse"
+                }
+              }
+            },
+            "description": "ICS appointment found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Appointment not found"
+          }
+        },
+        "summary": "Get a single ICS appointment by ID",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/referral/{caseReference}/ics_appointment_feedback_details": {
+      "get": {
+        "operationId": "getIcsFeedbackSession",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackSessionDto"
+                }
+              }
+            },
+            "description": "ICS feedback session details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "ICS feedback session details not found"
+          }
+        },
+        "summary": "Get ICS feedback session details",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/referral/{referralReference}/action-plan": {
+      "get": {
+        "operationId": "getActionPlanSummary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSummaryDto"
+                }
+              }
+            },
+            "description": "Action Plan, and Referral, found - data returned"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get the Action Plan summary information associated with a Referral",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/bff/referral/{referralReference}/action-plan/needs": {
+      "get": {
+        "operationId": "getActionPlanNeeds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanNeedsResponse"
+                }
+              }
+            },
+            "description": "Needs with questions returned"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get the needs with questions for an action plan",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/bff/referral/{referralReference}/action-plan/session-delivery-details": {
+      "get": {
+        "operationId": "getSessionDeliveryDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSessionDeliveryDetailsResponse"
+                }
+              }
+            },
+            "description": "Session delivery details with questions and saved answered returned"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get the session delivery details with questions and saved answers for an action plan",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/bff/service-days-page/{referralId}": {
+      "get": {
+        "operationId": "getServiceDaysPage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceDaysPageDto"
+                }
+              }
+            },
+            "description": "Service days details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get service days page data",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/bff/service-end-date-page/{referralId}": {
+      "get": {
+        "operationId": "getServiceEndDatePage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceEndDatePageDto"
+                }
+              }
+            },
+            "description": "Service end date details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get service end date page data",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/bff/task-list-status/{referralId}": {
+      "get": {
+        "operationId": "getTaskListStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskListStatusResponseDto"
+                }
+              }
+            },
+            "description": "Task list status found"
+          }
+        },
+        "summary": "Get task list status",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/draft-referral/additional-information-for-the-delivery-partner/{referralId}": {
+      "patch": {
+        "operationId": "updateAdditionalInformationForTheDeliveryPartner",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/No"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Unanswered"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Yes"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdditionalInformationForTheDeliveryPartnerBffResponseDto"
+                }
+              }
+            },
+            "description": "Additional information for the delivery partner updated"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Update additional information for the delivery partner for a referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/draft-referral/additional-support-needs/{referralId}": {
+      "patch": {
+        "operationId": "updateAdditionalSupportNeeds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdditionalSupportNeedsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdditionalSupportNeedsBffResponseDto"
+                }
+              }
+            },
+            "description": "Additional support needs information updated"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Update the Additional Support Needs information for a Draft Referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/draft-referral/community-service-provider/{referralId}": {
+      "patch": {
+        "operationId": "updateCommunityServiceProvider",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommunityServiceProviderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityServiceProviderBffResponseDto"
+                }
+              }
+            },
+            "description": "Community Service Provider updated"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral, or the Community Service Provider, not found"
+          }
+        },
+        "summary": "Update the Community Service Provider for a Draft Referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/draft-referral/needs-interpreter/{referralId}": {
+      "patch": {
+        "operationId": "updateNeedsInterpreter",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NeedsInterpreterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeedsInterpreterBffResponseDto"
+                }
+              }
+            },
+            "description": "Interpreter needs information updated"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Update the Interpreter Needs information for a Draft Referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/draft-referral/person-needs/{referralId}": {
+      "patch": {
+        "operationId": "updateCriminogenicNeeds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriminogenicNeedsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralCriminogenicNeedsDto"
+                }
+              }
+            },
+            "description": "Criminogenic needs information updated"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Update criminogenic needs for a referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/draft-referral/risk-information/{referralId}": {
+      "put": {
+        "operationId": "saveRiskInformation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommunitySupportRiskInformationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunitySupportRiskInformationDto"
+                }
+              }
+            },
+            "description": "Save Risk information"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Save draft OASys risk information for a referral",
+        "tags": [
+          "risk-controller"
+        ]
+      }
+    },
+    "/draft-referral/{referralId}/main-point-of-contact-details": {
+      "patch": {
+        "operationId": "updateMainPointOfContactDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProbationPractitionerDetailsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbationPractitionerDetailsBffResponseDto"
+                }
+              }
+            },
+            "description": "Main Point of Contact details saved"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Save the Main Point of Contact details for a Draft Referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/draft-referral/{referralId}/offence-sentence": {
+      "patch": {
+        "operationId": "updateOffenceSentenceDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOffenceSentenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffenceSentenceInfoBffResponseDto"
+                }
+              }
+            },
+            "description": "Offence and Sentence information updated"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Update the Offence and Sentence information for a Draft Referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/draft-referral/{referralId}/probation-practitioner-details": {
+      "patch": {
+        "operationId": "updateProbationPractitionerDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProbationPractitionerDetailsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbationPractitionerDetailsBffResponseDto"
+                }
+              }
+            },
+            "description": "Probation Practitioner details saved"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Save the Probation Practitioner details for a Draft Referral",
+        "tags": [
+          "draft-referral-controller"
+        ]
+      }
+    },
+    "/draft-referral/{referralId}/service-days": {
+      "patch": {
+        "operationId": "updateServiceDaysPage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceDaysPageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceDaysPageDto"
+                }
+              }
+            },
+            "description": "Service days details updated"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Update service days page data",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/referral": {
+      "post": {
+        "operationId": "createReferral",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReferralRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralInformationDto"
+                }
+              }
+            },
+            "description": "Referral created"
+          }
+        },
+        "summary": "Create a referral",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/referral/{caseIdentifier}/ics": {
+      "post": {
+        "operationId": "createIcsAppointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseIdentifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAppointmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentIcsResponse"
+                }
+              }
+            },
+            "description": "Appointment created successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Invalid request body"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Book an ICS appointment for a referral",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/referral/{caseReference}/ics": {
+      "put": {
+        "operationId": "changeIcsAppointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAppointmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentIcsResponse"
+                }
+              }
+            },
+            "description": "Appointment changed successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Invalid request body"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "The ICS id does not match the latest ICS record"
+          }
+        },
+        "summary": "Change an ICS appointment for a referral",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/referral/{caseReference}/ics/{icsId}/feedback": {
+      "post": {
+        "operationId": "submitIcsFeedback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "icsId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIcsFeedbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentIcsFeedbackResponse"
+                }
+              }
+            },
+            "description": "ICS Appointment feedback submitted successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Invalid request body"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral or ICS appointment not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "ICS feedback already exists for this appointment"
+          }
+        },
+        "summary": "Submit feedback for an ICS appointment",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/referral/{identifier}/assign": {
+      "post": {
+        "operationId": "assignCaseWorkers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignCaseWorkersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignCaseWorkersResult"
+                }
+              }
+            },
+            "description": "Assign case workers to a referral"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignCaseWorkersResult"
+                }
+              }
+            },
+            "description": "Failed to assign case worker(s)"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Assign case workers to a referral",
+        "tags": [
+          "referral-user-assignment-controller"
+        ]
+      }
+    },
+    "/referral/{referralId}/service-end-date": {
+      "patch": {
+        "operationId": "updateServiceEndDatePage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceEndDatePageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceEndDatePageDto"
+                }
+              }
+            },
+            "description": "Service end date details updated"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Update service end date page data",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/referral/{referralReference}/action-plan/session-delivery-details": {
+      "patch": {
+        "operationId": "patchSessionDeliveryDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionPlanSessionDeliveryDetailsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSessionDeliveryDetailsResponse"
+                }
+              }
+            },
+            "description": "Session delivery details answers saved"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Validation failure"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Save and update answers for session delivery details",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/referral/{referralReference}/withdraw": {
+      "post": {
+        "operationId": "withdrawReferral",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawReferralRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral withdrawn"
+          },
+          "208": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral already withdrawn"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Withdraw a referral",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    },
+    "/{referralId}/submit-a-referral": {
+      "post": {
+        "operationId": "submitReferral",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitReferralResponseDto"
+                }
+              }
+            },
+            "description": "Referral submitted"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Submit a referral",
+        "tags": [
+          "referral-controller"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Development",
+      "url": "https://community-support-api-dev.hmpps.service.justice.gov.uk"
+    },
+    {
+      "description": "Pre-Production",
+      "url": "https://community-support-api-preprod.hmpps.service.justice.gov.uk"
+    },
+    {
+      "description": "Production",
+      "url": "https://community-support-api.hmpps.service.justice.gov.uk"
+    },
+    {
+      "description": "Local",
+      "url": "http://localhost:8080"
+    }
+  ],
+  "tags": []
+}
