@@ -41,6 +41,13 @@ jobs:
       - name: Compare OpenAPI spec with baseline
         id: compare
         run: |
+          # If the baseline file doesn't exist, treat it as a change
+          if [ ! -f openapi/openapi-baseline.json ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "OpenAPI contract changed."
+            exit 0
+          fi
+          
           jq -S 'del(.info.version)' openapi/openapi-baseline.json > /tmp/openapi-baseline.json
           jq -S 'del(.info.version)' build/openapi/openapi.json > /tmp/openapi-current.json
 
