@@ -35,6 +35,7 @@ object ExternalApiResponse {
 
   const val CRN = "X123456"
   const val PRISONER_NUMBER = "A1234BC"
+  const val PRISONER_CRN = "A123456"
 
   // CPR PROBATION PERSON DATA
 
@@ -180,7 +181,7 @@ object ExternalApiResponse {
       ),
     ),
     identifiers = CprIdentifiersDto(
-      crns = if (hasCrns) listOf("A123456") else emptyList(),
+      crns = if (hasCrns) listOf(PRISONER_CRN) else emptyList(),
       prisonNumbers = prisonNumbers.asList(),
       pncs = listOf("12/394773H"),
       cros = listOf("29906/12J"),
@@ -224,7 +225,7 @@ object ExternalApiResponse {
   fun cprProbationPersonJson(crn: String) = createCprProbationPersonDto(crn).toJson()
   fun cprProbationPersonNoFixAbodeJson(crn: String) = createCprProbationPersonDto(crn, noFixedAbodeAddress).toJson()
 
-  fun cprPrisonPersonJson(prisonNumber: String) = createCprPrisonPersonDto(prisonNumber).toJson()
+  fun cprPrisonPersonJson(prisonNumber: String, hasCrns: Boolean = true) = createCprPrisonPersonDto(prisonNumber, hasCrns = hasCrns).toJson()
 
   fun cprPersonNotFoundJson() = """
         {

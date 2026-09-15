@@ -554,24 +554,35 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
     val identifier = identifierValidator.validate(person.identifier)
-    val personalDetailsAndCircumstances = when (identifier) {
-      is PersonIdentifier.Crn -> nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
-      is PersonIdentifier.PrisonerNumber -> {
-        val cprPerson = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
-        if (cprPerson.person.knownCrns.isNotEmpty()) {
-          val crn = cprPerson.person.knownCrns.first()
-          nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
-        } else {
-          logger.warn("No known CRN found for person with prison identifier {}", identifier.value)
-          PersonDetailsAndCircumstances()
-        }
+    val personalDetailsAndCircumstances = personDetailsAndCircumstances(identifier)
+    val communitySupportRiskDto: CommunitySupportRiskDto = riskInformationService.getRoshRisksByReferralId(referralId)
+    val nationalities = nationalities(identifier)
+    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, identifier, personalDetailsAndCircumstances, communitySupportRiskDto, nationalities)
+  }
+
+  private fun nationalities(identifier: PersonIdentifier): List<String> = when (identifier) {
+    is PersonIdentifier.Crn -> {
+      val cprPerson = cprProbationService.getPersonDetailsByCrn(identifier.value)
+      cprPerson.additionalDetails?.nationalities ?: emptyList()
+    }
+    is PersonIdentifier.PrisonerNumber -> {
+      val cprPerson = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
+      cprPerson.additionalDetails?.nationalities ?: emptyList()
+    }
+  }
+
+  private fun personDetailsAndCircumstances(identifier: PersonIdentifier): PersonDetailsAndCircumstances = when (identifier) {
+    is PersonIdentifier.Crn -> nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
+    is PersonIdentifier.PrisonerNumber -> {
+      val cprPerson = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
+      if (cprPerson.person.knownCrns.isNotEmpty()) {
+        val crn = cprPerson.person.knownCrns.first()
+        nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
+      } else {
+        logger.warn("No known CRN found for person with prison identifier {}", identifier.value)
+        PersonDetailsAndCircumstances()
       }
     }
-    val communitySupportRiskDto: CommunitySupportRiskDto = riskInformationService.getRoshRisksByReferralId(referralId)
-    val cprPerson = cprProbationService.getPersonDetailsByCrn(communitySupportRiskDto.crn)
-    val nationalities = cprPerson.additionalDetails?.nationalities ?: emptyList()
-
-    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, identifier, personalDetailsAndCircumstances, communitySupportRiskDto, nationalities)
   }
 
   fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(

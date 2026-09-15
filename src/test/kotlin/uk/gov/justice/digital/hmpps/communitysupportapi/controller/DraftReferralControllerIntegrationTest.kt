@@ -60,14 +60,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprPrisonPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManagerDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
-import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -262,34 +260,26 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return empty list for circumstances and disabilities when prison person has no known CRNs`() {
+      val cprPrisonPersonJson = cprPrisonPersonJson(PRISONER_NUMBER, false)
       stubFor(
-        get(urlEqualTo("/person/probation/$CRN"))
+        get(urlEqualTo("/person/probation/$PRISONER_NUMBER"))
           .willReturn(
             aResponse()
               .withStatus(200)
               .withHeader("Content-Type", "application/json")
-              .withBody(cprProbationPersonJson(CRN)),
+              .withBody(cprPrisonPersonJson),
           ),
       )
-      val person = referralHelper.createPerson(identifier = "B2345CD")
+      val person = referralHelper.createPerson(identifier = PRISONER_NUMBER)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
 
       stubFor(
-        get(urlEqualTo("/person/prison/${person.identifier}"))
+        get(urlEqualTo("/person/prison/$PRISONER_NUMBER"))
           .willReturn(
             aResponse()
               .withStatus(200)
               .withHeader("Content-Type", "application/json")
-              .withBody(cprPrisonPersonJson(PRISONER_NUMBER)),
-          ),
-      )
-      stubFor(
-        get(urlEqualTo("/case/$CRN"))
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withHeader("Content-Type", "application/json")
-              .withBody(createPersonDetailsAndCircumstances()),
+              .withBody(cprPrisonPersonJson),
           ),
       )
 
