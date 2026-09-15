@@ -274,14 +274,22 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val person = referralHelper.createPerson(identifier = "B2345CD")
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
 
-      // stub CPR prison person with no CRNs
       stubFor(
-        get(urlPathEqualTo("/person/prison/${person.identifier}"))
+        get(urlEqualTo("/person/prison/${person.identifier}"))
           .willReturn(
             aResponse()
               .withStatus(200)
               .withHeader("Content-Type", "application/json")
-              .withBody(createCprPrisonPersonDto(person.identifier, hasCrns = false).toJson()),
+              .withBody(cprPrisonPersonJson(PRISONER_NUMBER)),
+          ),
+      )
+      stubFor(
+        get(urlEqualTo("/case/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createPersonDetailsAndCircumstances()),
           ),
       )
 
