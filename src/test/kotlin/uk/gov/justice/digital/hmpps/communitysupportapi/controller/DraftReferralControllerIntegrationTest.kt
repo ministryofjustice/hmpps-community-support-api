@@ -206,7 +206,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
             riskImminence = "Risk is imminent in community",
             riskOfSelfHarm = "Current self harm concerns",
             riskOfSuicide = "Current suicide concerns",
-            riskToSelfHostelSetting = null,
+            riskToSelfHostelSetting = "Don't know",
             riskToSelfVulnerability = "Vulnerability concerns noted",
           )
           body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftAdditionalSupportNeedsDetailsTableDataDto()
