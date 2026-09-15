@@ -6,9 +6,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 /**
- * Exports the current OpenAPI spec so CI can diff it against the committed baseline
- * (see openapi/openapi-baseline.json and .github/workflows/openapi_contract_check.yml)
- * to detect breaking API changes without needing a separately built/deployed app.
+ * Exports the current OpenAPI spec so CI can diff it against the committed baseline.
+ * Exports to: openapi/openapi-baseline.json
+ * 
+ * See openapi-baseline-update.yml and.openapi-contract-check.yml in the .github/workflows 
+ * directory for specifics on generating and checking this file.
  */
 class OpenApiSpecExportTest : IntegrationTestBase() {
 
