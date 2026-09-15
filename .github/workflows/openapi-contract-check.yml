@@ -9,6 +9,7 @@ permissions:
   contents: read
   checks: write
   issues: write
+  pull-requests: write
 
 jobs:
   openapi-contract:
@@ -44,18 +45,21 @@ jobs:
           # If the baseline file doesn't exist, treat it as a change
           if [ ! -f openapi/openapi-baseline.json ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "OpenAPI contract changed."
+            echo "reason=missing-baseline" >> "$GITHUB_OUTPUT"
+            echo "OpenAPI baseline is not present; treating the contract as changed."
             exit 0
           fi
-          
+
           jq -S 'del(.info.version)' openapi/openapi-baseline.json > /tmp/openapi-baseline.json
           jq -S 'del(.info.version)' build/openapi/openapi.json > /tmp/openapi-current.json
 
           if cmp -s /tmp/openapi-baseline.json /tmp/openapi-current.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=unchanged" >> "$GITHUB_OUTPUT"
             echo "OpenAPI contract unchanged."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "reason=changed" >> "$GITHUB_OUTPUT"
             echo "OpenAPI contract changed."
           fi
 
@@ -66,6 +70,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           changed='${{ steps.compare.outputs.changed }}'
+          reason='${{ steps.compare.outputs.reason }}'
 
           conclusion=success
           title='OpenAPI contract unchanged'
@@ -75,6 +80,11 @@ jobs:
             conclusion=failure
             title='UI pull request required'
             summary="Changes to the OpenAPI contract detected. The ui-pr-required label has been applied. Please double check the UI Types don't need updating. If they do, open a PR in the UI repo, add a comment with its link, and add the ui-pr-created label to this PR."
+
+            if [[ "$reason" == 'missing-baseline' ]]; then
+              summary="The OpenAPI baseline is not present, so this bootstrap run treats the current contract as changed. The ui-pr-required label has been applied. Please double check the UI Types don't need updating. If they do, open a PR in the UI repo, add a comment with its link, and add the ui-pr-created label to this PR."
+            fi
+
             gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" \
               -f 'labels[]=ui-pr-required' >/dev/null
             gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
