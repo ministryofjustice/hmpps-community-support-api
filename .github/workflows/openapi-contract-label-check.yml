@@ -6,11 +6,14 @@ on:
       - labeled
       - unlabeled
     branches:
-      # On the first run of this workflow, we won't have any openapi spec
-      # so nothing to compare a diff against.  After merging through this
-      # workflow, I will update the branch to `main`
-      # --TJWC 2026-09-14
-      - change-me
+      - main
+  # Escape hatch: the open-api-changed check run is posted via the API rather
+  # than being a job, so re-running the Actions jobs cannot clear a stuck one.
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to re-evaluate
+        required: true
 
 permissions:
   checks: write
@@ -25,9 +28,13 @@ jobs:
       - name: Update OpenAPI contract check
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          if [[ -z "$HEAD_SHA" ]]; then
+            HEAD_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')"
+          fi
+
           labels="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --jq '[.[].name]')"
           ui_pr_required="$(jq 'index("ui-pr-required") != null' <<< "$labels")"
           ui_pr_created="$(jq 'index("ui-pr-created") != null' <<< "$labels")"
