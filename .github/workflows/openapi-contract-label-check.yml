@@ -1,0 +1,70 @@
+name: OpenAPI contract label check
+
+on:
+  pull_request_target:
+    types:
+      - labeled
+      - unlabeled
+    branches:
+      - main
+  # Escape hatch: the open-api-changed check run is posted via the API rather
+  # than being a job, so re-running the Actions jobs cannot clear a stuck one.
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to re-evaluate
+        required: true
+
+permissions:
+  checks: write
+  issues: write
+  pull-requests: read
+
+jobs:
+  openapi-contract-label:
+    name: Check OpenAPI contract labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update OpenAPI contract check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [[ -z "$HEAD_SHA" ]]; then
+            HEAD_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha')"
+          fi
+
+          labels="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --jq '[.[].name]')"
+          ui_pr_required="$(jq 'index("ui-pr-required") != null' <<< "$labels")"
+          ui_pr_created="$(jq 'index("ui-pr-created") != null' <<< "$labels")"
+
+          conclusion=failure
+          title='UI pull request still required'
+          summary='The ui-pr-required label is present without ui-pr-created. Open the UI PR, add a comment with its link, and add the ui-pr-created label.'
+
+          if [[ "$ui_pr_created" == 'true' ]]; then
+            conclusion=success
+            title='UI pull request claimed'
+            summary='Developer has claimed to open a UI PR, going to pass checks.'
+          elif [[ "$ui_pr_required" != 'true' ]]; then
+            conclusion=success
+            title='OpenAPI contract labels cleared'
+            summary='The ui-pr-required label is not present.'
+          fi
+
+          jq -n \
+            --arg name 'open-api-changed' \
+            --arg head_sha "$HEAD_SHA" \
+            --arg conclusion "$conclusion" \
+            --arg title "$title" \
+            --arg summary "$summary" \
+            '{name: $name, head_sha: $head_sha, status: "completed", conclusion: $conclusion, output: {title: $title, summary: $summary}}' \
+            | gh api --method POST "repos/${GITHUB_REPOSITORY}/check-runs" --input - >/dev/null
+
+          if [[ "$conclusion" == 'success' ]]; then
+            echo "$summary" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "$summary" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi

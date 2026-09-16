@@ -52,12 +52,31 @@ class ReferenceDataControllerIntegrationTest : IntegrationTestBase() {
         .returnResult().responseBody!!
 
       assertThat(response).hasSize(130)
+      assertThat(response.map { it.name }).isEqualTo(response.map { it.name }.sorted())
       response.forEach { probationOffice ->
         assertThat(probationOffice.probationOfficeId).isNotNull()
         assertThat(probationOffice.name).isNotBlank()
         assertThat(probationOffice.address).isNotBlank()
         assertThat(probationOffice.probationRegionId).isNotBlank()
       }
+    }
+
+    @Test
+    fun `should return list of probation offices in descending name order`() {
+      val response = webTestClient.get()
+        .uri { uriBuilder ->
+          uriBuilder
+            .path("/bff/reference-data/probation-offices")
+            .queryParam("sortOrder", "DESC")
+            .build()
+        }
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody(object : ParameterizedTypeReference<List<ProbationOffice>>() {})
+        .returnResult().responseBody!!
+
+      assertThat(response.map { it.name }).isEqualTo(response.map { it.name }.sortedDescending())
     }
   }
 

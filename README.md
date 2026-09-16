@@ -180,6 +180,36 @@ Or to automatically format
 Run
 `./gradlew clean test`
 
+## OpenAPI contract checks
+
+Pull requests targeting `main` run the OpenAPI contract check. The workflow starts the application using the existing integration-test setup, exports the OpenAPI document, and compares it with the committed baseline at `openapi/openapi-baseline.json`.
+
+If the OpenAPI contract has changed, the `open-api-changed` check fails, the `ui-pr-required` label is applied to the GitHub PR, and a comment is added to the pull request.
+
+Before merging, check whether the UI types need updating. The process for generating types is documented in the [Generating API Types](https://github.com/ministryofjustice/hmpps-community-support-ui#generating-api-types) section of the UI repository README.
+
+When a corresponding UI pull request has been opened:
+
+1. add a comment containing a link to that PR to your API PR
+2. apply the `ui-pr-created` label to the API pull request.
+
+The label workflow will then pass the `open-api-changed` check.
+
+If you push another API change after claiming the UI work, the contract check deliberately fails again and asks you to double-check the UI types. Apply `ui-pr-created` again only after confirming that the latest API contract change has been handled by the UI.
+
+### First-run bootstrap
+
+The OpenAPI baseline is generated only on `main`; do not create or edit `openapi/openapi-baseline.json` by hand.
+
+When setting this up for the first time:
+
+1. Merge the workflow changes to `main`, using an administrator or ruleset bypass for the initial merge because the baseline and required check do not exist yet.
+2. Run the `Update OpenAPI baseline` workflow manually against `main`.
+3. The workflow generates and commits `openapi/openapi-baseline.json` to `main`.
+4. Re-enable the GitHub Actions workflow for PRs targeting `main`.
+
+After this bootstrap, the baseline updater runs automatically after pushes to `main`. The pull request workflow compares against that trusted baseline and feature branches must not edit it directly.
+
 ## Building
 
 `./gradlew clean build`

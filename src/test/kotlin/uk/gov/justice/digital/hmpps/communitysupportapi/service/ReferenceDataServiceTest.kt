@@ -1,11 +1,11 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOffice
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.SortOrder
 
 class ReferenceDataServiceTest : IntegrationTestBase() {
   @Autowired
@@ -41,9 +41,15 @@ class ReferenceDataServiceTest : IntegrationTestBase() {
     val probationOffices = referenceDataService.getProbationOffices()
 
     assertThat(probationOffices).isNotEmpty
-    assertEquals(mockProbationOffices[0], probationOffices[0])
-    assertEquals(mockProbationOffices[1], probationOffices[4])
-    assertEquals(mockProbationOffices[2], probationOffices[127])
+    assertThat(probationOffices.map { it.name }).isEqualTo(probationOffices.map { it.name }.sorted())
+    assertThat(probationOffices).containsAll(mockProbationOffices)
+  }
+
+  @Test
+  fun `should return Probation Offices in descending name order`() {
+    val probationOffices = referenceDataService.getProbationOffices(SortOrder.DESC)
+
+    assertThat(probationOffices.map { it.name }).isEqualTo(probationOffices.map { it.name }.sortedDescending())
   }
 
   @Test
