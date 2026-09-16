@@ -41,7 +41,7 @@ jobs:
 
       - name: Create baseline pull request
         env:
-          BASELINE_BRANCH: automated/openapi-baseline-${{ github.sha }}
+          BASELINE_BRANCH: no-ticket/openapi-baseline-${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
         run: |
           # git add first so untracked/new files are picked up by the diff, not just modified ones

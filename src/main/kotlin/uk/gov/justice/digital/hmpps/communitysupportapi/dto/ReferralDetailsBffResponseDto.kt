@@ -18,9 +18,10 @@ data class ReferralDetailsBffResponseDto(
   val equalityDetailsTableData: EqualityDetailsTableDataDto,
   val contactDetailsTableData: ContactDetailsTableDataDto,
   val referralDetailsTableData: ReferralDetailsTableDataDto,
+  val withdrawReferral: Boolean,
 ) {
   companion object {
-    fun from(referral: Referral, person: Person, referralAssignments: List<ReferralUserAssignment>): ReferralDetailsBffResponseDto = ReferralDetailsBffResponseDto(
+    fun from(referral: Referral, person: Person, referralAssignments: List<ReferralUserAssignment>, withdrawReferral: Boolean): ReferralDetailsBffResponseDto = ReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
       createdDate = referral.createdAt,
@@ -31,6 +32,7 @@ data class ReferralDetailsBffResponseDto(
       equalityDetailsTableData = EqualityDetailsTableDataDto.from(person),
       contactDetailsTableData = ContactDetailsTableDataDto.from(person),
       referralDetailsTableData = ReferralDetailsTableDataDto.from(referral, referralAssignments),
+      withdrawReferral = withdrawReferral,
     )
   }
 

@@ -52,7 +52,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       personDetailsTableData = DraftPersonDetailsTableDataDto.from(person, personIdentifier, personalDetailsAndCircumstances),
       equalityDetailsTableData = DraftEqualityDetailsTableDataDto.from(person, nationalities),
       contactDetailsTableData = DraftContactDetailsTableDataDto.from(person),
-      additionalInformationDetailsTableData = DraftAdditionalInformationDetailsTableDataDto.from(),
+      additionalInformationDetailsTableData = DraftAdditionalInformationDetailsTableDataDto.from(personalDetailsAndCircumstances),
       riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(communitySupportRiskDto),
       additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(),
       personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(),
@@ -104,11 +104,16 @@ data class CheckDraftReferralDetailsBffResponseDto(
   }
 
   data class DraftAdditionalInformationDetailsTableDataDto(
-    val homeOfficeInterest: String? = null,
+    val ofHomeOfficeInterest: Boolean? = null,
+    val homeOfficeInterestNotes: String? = null,
     val offenderPersonalityDisorderPathway: String? = null,
   ) {
     companion object {
-      fun from(): DraftAdditionalInformationDetailsTableDataDto = DraftAdditionalInformationDetailsTableDataDto()
+      fun from(personalDetailsAndCircumstances: PersonDetailsAndCircumstances): DraftAdditionalInformationDetailsTableDataDto = DraftAdditionalInformationDetailsTableDataDto(
+        ofHomeOfficeInterest = personalDetailsAndCircumstances.ofHomeOfficeInterest,
+        homeOfficeInterestNotes = personalDetailsAndCircumstances.homeOfficeInterestNotes,
+        offenderPersonalityDisorderPathway = personalDetailsAndCircumstances.offenderPersonalityDisorder,
+      )
     }
   }
 

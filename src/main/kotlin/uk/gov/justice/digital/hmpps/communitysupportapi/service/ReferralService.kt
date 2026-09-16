@@ -62,7 +62,6 @@ class ReferralService(
   private val cprProbationService: CprProbationService,
   private val identifierValidator: PersonIdentifierValidator,
   private val personService: PersonService,
-  private val nDeliusService: NDeliusService,
   private val actionPlanService: ActionPlanService,
   private val withdrawalReasonService: WithdrawalReasonService,
 ) {
@@ -78,8 +77,9 @@ class ReferralService(
     val personDetails = personService.getPerson(foundReferral.personIdentifier)
     val person = upsertPerson(personDetails)
     val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(foundReferral.id)
+    val withdrawReferral = referralWithdrawalDetailsRepository.findByReferralId(foundReferral.id) != null
 
-    return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
+    return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments, withdrawReferral)
   }
 
   @Transactional

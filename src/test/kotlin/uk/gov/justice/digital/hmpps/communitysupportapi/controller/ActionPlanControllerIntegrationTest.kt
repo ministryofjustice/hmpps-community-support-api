@@ -192,28 +192,10 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           ActionPlanStepQuestionFactory()
             .withActionPlanStepId(sessionDeliveryStep.id)
             .withOrderNumber(1)
-            .withTitle("How will the session be delivered?")
-            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withTitle("How often will sessions take place?")
+            .withHint("For example, every week, every 2 weeks, every month.")
+            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
             .withMaxNumberResponses(1)
-            .create(),
-        )
-
-        actionPlanStepQuestionChoiceRepository.save(
-          ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(question1.id)
-            .withOrderNumber(1)
-            .withLabel("Face-to-face")
-            .withValue("FACE_TO_FACE")
-            .create(),
-        )
-        actionPlanStepQuestionChoiceRepository.save(
-          ActionPlanStepQuestionChoiceFactory()
-            .withActionPlanStepQuestionId(question1.id)
-            .withOrderNumber(2)
-            .withLabel("Other")
-            .withValue("OTHER")
-            .withHasFreeText(true)
-            .withFreeTextLabel("Reason for not meeting face-to-face")
             .create(),
         )
 
@@ -221,9 +203,72 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           ActionPlanStepQuestionFactory()
             .withActionPlanStepId(sessionDeliveryStep.id)
             .withOrderNumber(2)
-            .withTitle("How many sessions are required?")
-            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
+            .withTitle("How will the sessions take place?")
+            .withHint("Select one option.")
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
             .withMaxNumberResponses(1)
+            .create(),
+        )
+
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(question2.id)
+            .withOrderNumber(1)
+            .withLabel("In person")
+            .withValue("IN_PERSON")
+            .withHasFreeText(true)
+            .withFreeTextLabel("Reason for not being in person")
+            .withFreeTextHint("Why are the sessions not in person?")
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(question2.id)
+            .withOrderNumber(2)
+            .withLabel("Video call")
+            .withValue("VIDEO_CALL")
+            .withHasFreeText(true)
+            .withFreeTextLabel("Reason for not being in person")
+            .withFreeTextHint("Why are the sessions not in person?")
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(question2.id)
+            .withOrderNumber(3)
+            .withLabel("Phone call")
+            .withValue("PHONE_CALL")
+            .withHasFreeText(true)
+            .withFreeTextLabel("Reason for not being in person")
+            .withFreeTextHint("Why are the sessions not in person?")
+            .create(),
+        )
+
+        val question3 = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(sessionDeliveryStep.id)
+            .withOrderNumber(3)
+            .withTitle("What format will you use for the sessions?")
+            .withHint("Select all that apply.")
+            .withAnswerType(ActionPlanQuestionAnswerType.CHECKBOX)
+            .withMaxNumberResponses(2)
+            .create(),
+        )
+
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(question3.id)
+            .withOrderNumber(1)
+            .withLabel("One-to-one session")
+            .withValue("ONE_TO_ONE_SESSION")
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(question3.id)
+            .withOrderNumber(2)
+            .withLabel("Group session")
+            .withValue("GROUP_SESSION")
             .create(),
         )
 
@@ -236,23 +281,36 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .consumeWith { response ->
             val body = response.responseBody!!
 
-            body.questions.size shouldBe 2
+            body.questions.size shouldBe 3
             body.questions[0].id shouldBe question1.id
-            body.questions[0].label shouldBe "How will the session be delivered?"
-            body.questions[0].answerType shouldBe ActionPlanQuestionAnswerType.RADIO
+            body.questions[0].label shouldBe "How often will sessions take place?"
+            body.questions[0].hint shouldBe "For example, every week, every 2 weeks, every month."
+            body.questions[0].answerType shouldBe ActionPlanQuestionAnswerType.TEXTAREA
             body.questions[0].maximumNumberOfResponses shouldBe 1
             body.questions[0].displayOrder shouldBe 1
             body.questions[0].savedResponses shouldBe emptyList()
-            body.questions[0].choices?.map { it.value } shouldBe listOf("FACE_TO_FACE", "OTHER")
-            body.questions[0].choices?.map { it.label } shouldBe listOf("Face-to-face", "Other")
-            body.questions[0].choices?.get(1)?.displayAdditionalDetailsOnSelect shouldBe true
-            body.questions[0].choices?.get(1)?.additionalDetailsLabel shouldBe "Reason for not meeting face-to-face"
+            body.questions[0].choices shouldBe null
 
             body.questions[1].id shouldBe question2.id
-            body.questions[1].label shouldBe "How many sessions are required?"
-            body.questions[1].answerType shouldBe ActionPlanQuestionAnswerType.TEXTAREA
+            body.questions[1].label shouldBe "How will the sessions take place?"
+            body.questions[1].hint shouldBe "Select one option."
+            body.questions[1].answerType shouldBe ActionPlanQuestionAnswerType.RADIO
             body.questions[1].maximumNumberOfResponses shouldBe 1
             body.questions[1].displayOrder shouldBe 2
+            body.questions[1].choices?.map { it.label } shouldBe listOf("In person", "Video call", "Phone call")
+            body.questions[1].choices?.map { it.additionalDetailsHint } shouldBe listOf(
+              "Why are the sessions not in person?",
+              "Why are the sessions not in person?",
+              "Why are the sessions not in person?",
+            )
+
+            body.questions[2].id shouldBe question3.id
+            body.questions[2].label shouldBe "What format will you use for the sessions?"
+            body.questions[2].hint shouldBe "Select all that apply."
+            body.questions[2].answerType shouldBe ActionPlanQuestionAnswerType.CHECKBOX
+            body.questions[2].maximumNumberOfResponses shouldBe 2
+            body.questions[2].displayOrder shouldBe 3
+            body.questions[2].choices?.map { it.label } shouldBe listOf("One-to-one session", "Group session")
           }
       }
 

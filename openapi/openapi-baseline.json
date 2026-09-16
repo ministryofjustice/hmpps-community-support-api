@@ -1848,9 +1848,15 @@
       },
       "DraftAdditionalInformationDetailsTableDataDto": {
         "properties": {
-          "homeOfficeInterest": {
+          "homeOfficeInterestNotes": {
             "type": [
               "string",
+              "null"
+            ]
+          },
+          "ofHomeOfficeInterest": {
+            "type": [
+              "boolean",
               "null"
             ]
           },
@@ -2981,6 +2987,12 @@
       },
       "QuestionChoice": {
         "properties": {
+          "additionalDetailsHint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "additionalDetailsLabel": {
             "type": [
               "string",
@@ -3325,6 +3337,9 @@
               "string",
               "null"
             ]
+          },
+          "withdrawReferral": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3333,7 +3348,8 @@
           "equalityDetailsTableData",
           "id",
           "personDetailsTableData",
-          "referralDetailsTableData"
+          "referralDetailsTableData",
+          "withdrawReferral"
         ],
         "type": "object"
       },
@@ -3569,6 +3585,12 @@
           "displayOrder": {
             "format": "int32",
             "type": "integer"
+          },
+          "hint": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "format": "uuid",

@@ -25,6 +25,7 @@ data class ActionPlanStepQuestionDto(
   val id: UUID,
   val displayOrder: Int,
   val label: String,
+  val hint: String? = null,
   val answerType: ActionPlanQuestionAnswerType,
   val maximumNumberOfResponses: Int,
   val choices: List<QuestionChoice>? = null,
@@ -35,6 +36,7 @@ data class ActionPlanStepQuestionDto(
       id = question.id,
       displayOrder = question.orderNumber,
       label = question.title,
+      hint = question.hint,
       answerType = question.answerType,
       maximumNumberOfResponses = question.maxNumberResponses,
     )
@@ -47,6 +49,7 @@ data class QuestionChoice(
   val displayOrder: Int,
   val displayAdditionalDetailsOnSelect: Boolean = false,
   val additionalDetailsLabel: String?,
+  val additionalDetailsHint: String? = null,
 )
 
 data class SavedResponse(

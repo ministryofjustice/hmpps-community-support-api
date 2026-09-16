@@ -13,6 +13,7 @@ class SessionDeliveryQuestion(
   val id: UUID,
   val displayOrder: Int,
   val label: String,
+  val hint: String? = null,
   val answerType: ActionPlanQuestionAnswerType,
   val maximumNumberOfResponses: Int,
   val choices: List<QuestionChoice>? = null,
@@ -27,6 +28,7 @@ class SessionDeliveryQuestion(
       id = question.id,
       displayOrder = question.displayOrder,
       label = question.label,
+      hint = question.hint,
       answerType = question.answerType,
       maximumNumberOfResponses = question.maximumNumberOfResponses,
       savedResponses = responses.map { response ->
@@ -38,6 +40,7 @@ class SessionDeliveryQuestion(
           label = choice.label,
           displayAdditionalDetailsOnSelect = choice.hasFreeText,
           additionalDetailsLabel = if (choice.hasFreeText) choice.freeTextLabel else null,
+          additionalDetailsHint = if (choice.hasFreeText) choice.freeTextHint else null,
           displayOrder = choice.orderNumber,
         )
       }
