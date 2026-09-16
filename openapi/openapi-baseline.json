@@ -2981,6 +2981,12 @@
       },
       "QuestionChoice": {
         "properties": {
+          "additionalDetailsHint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "additionalDetailsLabel": {
             "type": [
               "string",
@@ -3573,6 +3579,12 @@
           "displayOrder": {
             "format": "int32",
             "type": "integer"
+          },
+          "hint": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "format": "uuid",
