@@ -39,6 +39,9 @@ data class ActionPlanStepQuestionChoice(
   @Column(name = "free_text_label")
   val freeTextLabel: String? = null,
 
+  @Column(name = "free_text_hint")
+  val freeTextHint: String? = null,
+
   @Column(name = "created_at", nullable = false)
   val createdAt: OffsetDateTime? = null,
 

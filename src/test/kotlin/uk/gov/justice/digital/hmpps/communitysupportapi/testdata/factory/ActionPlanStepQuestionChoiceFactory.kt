@@ -13,6 +13,7 @@ class ActionPlanStepQuestionChoiceFactory : TestEntityFactory<ActionPlanStepQues
   private var value: String = "test-value"
   private var hasFreeText: Boolean = false
   private var freeTextLabel: String? = null
+  private var freeTextHint: String? = null
   private var createdAt: OffsetDateTime? = OffsetDateTime.now()
   private var createdBy: String = "SYSTEM"
 
@@ -30,6 +31,8 @@ class ActionPlanStepQuestionChoiceFactory : TestEntityFactory<ActionPlanStepQues
 
   fun withFreeTextLabel(freeTextLabel: String?) = apply { this.freeTextLabel = freeTextLabel }
 
+  fun withFreeTextHint(freeTextHint: String?) = apply { this.freeTextHint = freeTextHint }
+
   fun withCreatedAt(createdAt: OffsetDateTime?) = apply { this.createdAt = createdAt }
 
   fun withCreatedBy(createdBy: String) = apply { this.createdBy = createdBy }
@@ -42,6 +45,7 @@ class ActionPlanStepQuestionChoiceFactory : TestEntityFactory<ActionPlanStepQues
     value = value,
     hasFreeText = hasFreeText,
     freeTextLabel = freeTextLabel,
+    freeTextHint = freeTextHint,
     createdAt = createdAt,
     createdBy = createdBy,
   )
