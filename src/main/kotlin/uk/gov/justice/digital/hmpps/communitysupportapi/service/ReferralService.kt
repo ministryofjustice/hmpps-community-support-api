@@ -78,8 +78,9 @@ class ReferralService(
     val personDetails = personService.getPerson(foundReferral.personIdentifier)
     val person = upsertPerson(personDetails)
     val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(foundReferral.id)
+    val withdrawReferral = referralWithdrawalDetailsRepository.findByReferralId(foundReferral.id) != null
 
-    return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments)
+    return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments, withdrawReferral)
   }
 
   @Transactional
