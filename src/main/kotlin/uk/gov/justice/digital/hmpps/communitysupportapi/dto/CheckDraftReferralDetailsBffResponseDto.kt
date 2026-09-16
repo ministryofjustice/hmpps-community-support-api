@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.CommunitySupportRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Disability
@@ -9,6 +11,17 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonalCircumstan
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
+
+private fun riskValue(risk: ArnsRiskDto?): String? = if (risk?.currentConcernsReason.isNullOrBlank()) {
+  when (risk?.riskIndicator) {
+    "YES" -> "Yes"
+    "NO" -> "No"
+    "DK" -> "Don't know"
+    else -> null
+  }
+} else {
+  risk.currentConcernsReason
+}
 
 data class CheckDraftReferralDetailsBffResponseDto(
   val id: UUID,
@@ -30,15 +43,17 @@ data class CheckDraftReferralDetailsBffResponseDto(
       person: Person,
       personIdentifier: PersonIdentifier,
       personalDetailsAndCircumstances: PersonDetailsAndCircumstances,
+      communitySupportRiskDto: CommunitySupportRiskDto,
+      nationalities: List<String>,
     ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
       createdDate = referral.createdAt,
       personDetailsTableData = DraftPersonDetailsTableDataDto.from(person, personIdentifier, personalDetailsAndCircumstances),
-      equalityDetailsTableData = DraftEqualityDetailsTableDataDto.from(person),
+      equalityDetailsTableData = DraftEqualityDetailsTableDataDto.from(person, nationalities),
       contactDetailsTableData = DraftContactDetailsTableDataDto.from(person),
       additionalInformationDetailsTableData = DraftAdditionalInformationDetailsTableDataDto.from(),
-      riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(),
+      riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(communitySupportRiskDto),
       additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(),
       personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(),
       referralAreaTableData = DraftReferralAreaTableDataDto.from(),
@@ -73,15 +88,17 @@ data class CheckDraftReferralDetailsBffResponseDto(
   }
 
   data class DraftEqualityDetailsTableDataDto(
+    val nationality: String?,
     val ethnicity: String?,
     val religionOrBelief: String?,
     val sex: String,
   ) {
     companion object {
-      fun from(person: Person): DraftEqualityDetailsTableDataDto = DraftEqualityDetailsTableDataDto(
+      fun from(person: Person, nationalities: List<String> = emptyList()): DraftEqualityDetailsTableDataDto = DraftEqualityDetailsTableDataDto(
         ethnicity = person.additionalDetails?.ethnicity ?: "",
         religionOrBelief = person.additionalDetails?.religionOrBelief ?: "",
         sex = person.gender,
+        nationality = nationalities.joinToString(", "),
       )
     }
   }
@@ -122,7 +139,20 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val additionalInformation: String? = null,
   ) {
     companion object {
-      fun from(): DraftRiskInformationDetailsTableDataDto = DraftRiskInformationDetailsTableDataDto()
+      fun from(riskInformation: CommunitySupportRiskDto): DraftRiskInformationDetailsTableDataDto {
+        val summary = riskInformation.summary
+        val riskToSelf = riskInformation.riskToSelf
+        return DraftRiskInformationDetailsTableDataDto(
+          whoIsAtRisk = summary?.whoIsAtRisk,
+          natureOfRisk = summary?.natureOfRisk,
+          riskImminence = summary?.riskImminence,
+          riskOfSelfHarm = riskValue(riskToSelf?.selfHarm),
+          riskOfSuicide = riskValue(riskToSelf?.suicide),
+          riskToSelfHostelSetting = riskValue(riskToSelf?.hostelSetting),
+          riskToSelfVulnerability = riskValue(riskToSelf?.vulnerability),
+          additionalInformation = riskInformation.additionalInformation,
+        )
+      }
     }
   }
 

@@ -24,6 +24,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoB
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ProbationPractitionerDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SelectionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
@@ -72,7 +74,105 @@ class DraftReferralController(
     ],
   )
   @GetMapping("/bff/draft-referral/check-draft-referral-details/{referralId}")
-  fun getCheckDraftReferralDetails(@PathVariable referralId: UUID): ResponseEntity<CheckDraftReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getCheckDraftReferralDetailsPage(referralId))
+  fun getCheckDraftReferralDetails(@PathVariable referralId: UUID): ResponseEntity<CheckDraftReferralDetailsBffResponseDto> = ResponseEntity.ok(draftReferralService.getCheckDraftReferralDetailsPage(referralId))
+
+  @Operation(summary = "Get service end date page data")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Service end date details found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ServiceEndDatePageDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/service-end-date-page/{referralId}")
+  fun getServiceEndDatePage(@PathVariable referralId: UUID): ResponseEntity<ServiceEndDatePageDto> = ResponseEntity.ok(draftReferralService.getServiceEndDatePage(referralId))
+
+  @Operation(summary = "Get service days page data")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Service days details found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ServiceDaysPageDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/service-days-page/{referralId}")
+  fun getServiceDaysPage(@PathVariable referralId: UUID): ResponseEntity<ServiceDaysPageDto> = ResponseEntity.ok(draftReferralService.getServiceDaysPage(referralId))
+
+  @Operation(summary = "Update service end date page data")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Service end date details updated",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ServiceEndDatePageDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/referral/{referralId}/service-end-date")
+  fun updateServiceEndDatePage(
+    @PathVariable referralId: UUID,
+    @RequestBody request: ServiceEndDatePageDto,
+  ): ResponseEntity<ServiceEndDatePageDto> = ResponseEntity.ok(referralService.updateReferralServiceEndDate(referralId, request))
+
+  @Operation(summary = "Update service days page data")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Service days details updated",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ServiceDaysPageDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/draft-referral/{referralId}/service-days")
+  fun updateServiceDaysPage(
+    @PathVariable referralId: UUID,
+    @RequestBody request: ServiceDaysPageDto,
+  ): ResponseEntity<ServiceDaysPageDto> = ResponseEntity.ok(referralService.updateReferralServiceDays(referralId, request))
 
   @Operation(summary = "Get additional support needs page data")
   @ApiResponses(

@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.client.PrisonApiClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Prison
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOffice
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.SortOrder
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PduRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.CsvFileHelper
 
@@ -40,11 +41,14 @@ class ReferenceDataService(
     },
   )
 
-  fun getProbationOffices(): List<ProbationOffice> {
+  fun getProbationOffices(sortOrder: SortOrder = SortOrder.ASC): List<ProbationOffice> {
     if (cachedProbationOffices == null) {
       cachedProbationOffices = loadProbationOffices()
     }
-    return cachedProbationOffices!!
+    return when (sortOrder) {
+      SortOrder.ASC -> cachedProbationOffices!!.sortedBy { it.name }
+      SortOrder.DESC -> cachedProbationOffices!!.sortedByDescending { it.name }
+    }
   }
 
   fun getPdus(): List<Pdu> = pduRepository.findAll()
@@ -65,4 +69,8 @@ class ReferenceDataService(
   fun getProbationOfficeNameById(probationOfficeId: Int): String? = getProbationOffices()
     .firstOrNull { it.probationOfficeId == probationOfficeId }
     ?.name
+
+  fun getProbationOfficeIdByName(name: String): Int? = getProbationOffices()
+    .firstOrNull { it.name == name }
+    ?.probationOfficeId
 }

@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import io.kotest.matchers.shouldBe
@@ -40,6 +41,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServicePr
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CriminogenicNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
@@ -53,16 +55,17 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProvi
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.arnsRoshRiskJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprPrisonPersonJson
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCommunityManagerDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprPrisonPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
-import uk.gov.justice.digital.hmpps.communitysupportapi.util.toJson
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -140,6 +143,25 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return OK with draft referral and person details`() {
+      stubFor(
+        get(urlEqualTo("/risks/crn/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(arnsRoshRiskJson()),
+          ),
+      )
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprProbationPersonJson(CRN)),
+          ),
+      )
+
       val person = referralHelper.createPerson(identifier = CRN)
       person.additionalDetails = PersonAdditionalDetailsFactory()
         .withPerson(person)
@@ -154,6 +176,12 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       personRepository.save(person)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
       stubNDeliusPersonalDetails()
+
+      val riskInfo = RiskInformationFactory()
+        .withReferral(referral)
+        .withUpdatedBy(testUser.id)
+        .create()
+      riskInformationRepository.save(riskInfo)
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -181,7 +209,15 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.contactDetailsTableData.phoneNumber shouldBe person.additionalDetails?.phoneNumber
           body.contactDetailsTableData.email shouldBe person.additionalDetails?.emailAddress
           body.contactDetailsTableData.address shouldBe person.additionalDetails?.address
-          body.riskInformationDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftRiskInformationDetailsTableDataDto()
+          body.riskInformationDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftRiskInformationDetailsTableDataDto(
+            whoIsAtRisk = "Staff and public are at risk",
+            natureOfRisk = "Risk of violence",
+            riskImminence = "Risk is imminent in community",
+            riskOfSelfHarm = "Current self harm concerns",
+            riskOfSuicide = "Current suicide concerns",
+            riskToSelfHostelSetting = "Don't know",
+            riskToSelfVulnerability = "Vulnerability concerns noted",
+          )
           body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftAdditionalSupportNeedsDetailsTableDataDto()
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
@@ -191,7 +227,16 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should retrieve nDelius details using the CRN for a person identified by prison number`() {
-      val person = referralHelper.createPerson(identifier = "A1234BC")
+      stubFor(
+        get(urlEqualTo("/person/probation/$PRISONER_NUMBER"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprProbationPersonJson(PRISONER_NUMBER)),
+          ),
+      )
+      val person = referralHelper.createPerson(identifier = PRISONER_NUMBER)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
       stubCprPrisonPerson(person.identifier)
       stubNDeliusPersonalDetails()
@@ -215,17 +260,26 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return empty list for circumstances and disabilities when prison person has no known CRNs`() {
-      val person = referralHelper.createPerson(identifier = "B2345CD")
-      val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
-
-      // stub CPR prison person with no CRNs
+      val cprPrisonPersonJson = cprPrisonPersonJson(PRISONER_NUMBER, false)
       stubFor(
-        get(urlPathEqualTo("/person/prison/${person.identifier}"))
+        get(urlEqualTo("/person/probation/$PRISONER_NUMBER"))
           .willReturn(
             aResponse()
               .withStatus(200)
               .withHeader("Content-Type", "application/json")
-              .withBody(createCprPrisonPersonDto(person.identifier, hasCrns = false).toJson()),
+              .withBody(cprPrisonPersonJson),
+          ),
+      )
+      val person = referralHelper.createPerson(identifier = PRISONER_NUMBER)
+      val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+
+      stubFor(
+        get(urlEqualTo("/person/prison/$PRISONER_NUMBER"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPrisonPersonJson),
           ),
       )
 
@@ -788,7 +842,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.jobRole shouldBe "Probation practitioner"
           body.emailAddress shouldBe "jane.doe@example.com"
           body.pdu shouldBe Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington")
-          body.probationOffice shouldBe DARLINGTON_PROBATION_OFFICE_NAME
+          body.probationOffice shouldBe ProbationOfficeSummary(id = DARLINGTON_PROBATION_OFFICE_ID, name = DARLINGTON_PROBATION_OFFICE_NAME)
           body.teamPhoneNumber shouldBe "0123456789"
           body.ppDetailsFoundAndCorrect shouldBe false
         }
@@ -916,7 +970,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.jobRole shouldBe "Probation practitioner"
           body.emailAddress shouldBe "jane.doe@example.com"
           body.pdu shouldBe Pdu(id = COUNTY_DURHAM_AND_DARLINGTON_PDU_ID, name = "County Durham and Darlington")
-          body.probationOffice shouldBe DARLINGTON_PROBATION_OFFICE_NAME
+          body.probationOffice shouldBe ProbationOfficeSummary(id = DARLINGTON_PROBATION_OFFICE_ID, name = DARLINGTON_PROBATION_OFFICE_NAME)
           body.teamPhoneNumber shouldBe "0123456789"
           body.phoneNumber shouldBe "0987654321"
           body.ppDetailsFoundAndCorrect shouldBe false

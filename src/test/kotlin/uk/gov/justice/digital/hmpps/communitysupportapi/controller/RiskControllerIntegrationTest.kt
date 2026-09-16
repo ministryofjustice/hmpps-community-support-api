@@ -367,5 +367,65 @@ class RiskControllerIntegrationTest : IntegrationTestBase() {
       updated.riskSummaryWhoIsAtRisk shouldBe "Updated summary"
       updated.riskToSelfVulnerability shouldBe "Vulnerability identified"
     }
+
+    @Test
+    fun `should not save empty strings when updating existing draft risk information for the referral`() {
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
+
+      val existing = RiskInformationFactory()
+        .withReferral(referral)
+        .withRiskSummaryWhoIsAtRisk("Old summary")
+        .withRiskSummaryNatureOfRisk("Old Nature of risk")
+        .withRiskSummaryRiskImminence("Old risk imminence")
+        .withRiskToSelfSuicide("Old suicide")
+        .withRiskToSelfSelfHarm("Old self harm")
+        .withRiskToSelfHostelSetting("Old hostel setting")
+        .withRiskToSelfVulnerability("Old vulnerability")
+        .withUpdatedBy(testUser.id)
+        .create()
+      riskInformationRepository.save(existing)
+
+      val request = CommunitySupportRiskInformationDto(
+        riskSummaryWhoIsAtRisk = "",
+        riskSummaryNatureOfRisk = "",
+        riskSummaryRiskImminence = "",
+        riskToSelfSuicide = "",
+        riskToSelfSelfHarm = "",
+        riskToSelfHostelSetting = "",
+        riskToSelfVulnerability = "",
+        additionalInformation = "",
+      )
+
+      webTestClient.put()
+        .uri("/draft-referral/risk-information/${referral.id}")
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<CommunitySupportRiskInformationDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.riskSummaryWhoIsAtRisk shouldBe null
+          body.riskSummaryNatureOfRisk shouldBe null
+          body.riskSummaryRiskImminence shouldBe null
+          body.riskToSelfSuicide shouldBe null
+          body.riskToSelfSelfHarm shouldBe null
+          body.riskToSelfVulnerability shouldBe null
+          body.additionalInformation shouldBe null
+        }
+
+      val updated = riskInformationRepository.findByReferralId(referral.id)!!
+      updated.id shouldBe existing.id
+      updated.updatedBy shouldBe testUser.id
+      updated.riskSummaryWhoIsAtRisk shouldBe null
+      updated.riskSummaryNatureOfRisk shouldBe null
+      updated.riskSummaryRiskImminence shouldBe null
+      updated.riskToSelfSuicide shouldBe null
+      updated.riskToSelfHarm shouldBe null
+      updated.riskToSelfVulnerability shouldBe null
+      updated.additionalInformation shouldBe null
+    }
   }
 }

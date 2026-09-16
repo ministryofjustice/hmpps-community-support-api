@@ -4,19 +4,22 @@ import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedNeed
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedOutcome
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStepQuestionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SavedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionResponseEvent
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionResponseEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
@@ -24,6 +27,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanQuestionResponseEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
@@ -40,6 +44,7 @@ import java.util.UUID
 class ActionPlanService(
   private val actionPlanRepository: ActionPlanRepository,
   private val actionPlanEventRepository: ActionPlanEventRepository,
+  private val actionPlanQuestionResponseEventRepository: ActionPlanQuestionResponseEventRepository,
   private val actionPlanTemplateRepository: ActionPlanTemplateRepository,
   private val actionPlanStepRepository: ActionPlanStepRepository,
   private val actionPlanStepQuestionRepository: ActionPlanStepQuestionRepository,
@@ -51,6 +56,62 @@ class ActionPlanService(
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ActionPlanService::class.java)
+  }
+
+  private inner class QuestionAnswerHelper(
+    private val actionPlanId: UUID,
+    private val question: ActionPlanStepQuestion,
+    private val changedBy: String,
+    private val changedAt: OffsetDateTime,
+    private val questionResponseChangeBatchId: UUID,
+    private val latestDetailsByHeaderId: Map<UUID, ActionPlanStepQuestionAnswerDetails>,
+  ) {
+    fun latestDetails(header: ActionPlanStepQuestionAnswerHeader): ActionPlanStepQuestionAnswerDetails? = latestDetailsByHeaderId[header.id]
+
+    fun createHeader(orderNumber: Int): ActionPlanStepQuestionAnswerHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+      ActionPlanStepQuestionAnswerHeader.from(
+        actionPlanId = actionPlanId,
+        questionId = question.id,
+        orderNumber = orderNumber,
+        createdBy = changedBy,
+        createdAt = changedAt,
+      ),
+    )
+
+    fun softDelete(header: ActionPlanStepQuestionAnswerHeader) {
+      actionPlanStepQuestionAnswerHeaderRepository.save(header.delete(changedAt, changedBy))
+      recordEvent(header.id, ActionPlanQuestionResponseEventType.DELETED)
+    }
+
+    fun writeDetailsRevision(
+      header: ActionPlanStepQuestionAnswerHeader,
+      response: SavedResponse,
+      latestDetails: ActionPlanStepQuestionAnswerDetails?,
+    ) {
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetails.from(
+          headerId = header.id,
+          revisionNumber = (latestDetails?.revisionNumber ?: 0) + 1,
+          content = response.value,
+          freeTextValue = response.additionalDetails,
+          createdBy = changedBy,
+          createdAt = changedAt,
+        ),
+      )
+    }
+
+    fun recordEvent(headerId: UUID, eventType: ActionPlanQuestionResponseEventType) {
+      actionPlanQuestionResponseEventRepository.save(
+        ActionPlanQuestionResponseEvent.actionPlanQuestionResponseEventForResponses(
+          actionPlanId = actionPlanId,
+          responseHeaderId = headerId,
+          eventType = eventType,
+          createdBy = changedBy,
+          createdAt = changedAt,
+          questionResponseChangeBatchId = questionResponseChangeBatchId,
+        ),
+      )
+    }
   }
 
   @Transactional
@@ -82,45 +143,21 @@ class ActionPlanService(
     )
   }
 
-  fun getActionPlanNeedsForReferral(referralReference: String): ActionPlanNeedsResponse {
-    val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
-      ?: throw NotFoundException("Referral not found for reference $referralReference")
-
-    val needSteps = actionPlanStepRepository.findNeedStepsByReferralId(referral.id)
-    if (needSteps.isEmpty()) {
-      logger.warn("No NEED step found for referral {}", referralReference)
-      return ActionPlanNeedsResponse(needs = emptyList())
-    }
-
-    val questions = actionPlanStepQuestionRepository
-      .findAllByActionPlanStepIdOrderByOrderNumberAsc(needSteps.first().id)
-      .filter { it.needId != null }
-
-    val needsMap = needRepository.findAllByOrderByOrderNumberAsc().associateBy { it.id }
-
-    val needsList = questions
-      .groupBy { it.needId }
-      .mapNotNull { (needId, needQuestions) ->
-        needId?.let { id ->
-          needsMap[id]?.let { need ->
-            NeedDto(
-              id = need.id,
-              label = need.label,
-              questions = needQuestions.map { question ->
-                QuestionDto(
-                  id = question.id,
-                  label = question.title,
-                  answerType = question.answerType,
-                )
-              },
-            )
-          }
-        }
-      }
-      .sortedBy { needsMap[it.id]?.orderNumber ?: Int.MAX_VALUE }
-
-    return ActionPlanNeedsResponse(needs = needsList)
-  }
+  @Transactional(readOnly = true)
+  fun getNeedsAndOutcomesForActionPlan(): ActionPlanSelectANeedResponse = ActionPlanSelectANeedResponse(
+    needs = needRepository.findAllByOrderByOrderNumberAsc().map { need ->
+      ActionPlanSelectANeedNeed(
+        id = need.id,
+        label = need.label,
+        outcomes = need.outcomes.map { outcome ->
+          ActionPlanSelectANeedOutcome(
+            id = outcome.id,
+            text = outcome.text,
+          )
+        },
+      )
+    },
+  )
 
   @Transactional(readOnly = true)
   fun getSessionDeliveryDetailsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
@@ -173,6 +210,7 @@ class ActionPlanService(
     referralReference: String,
     request: ActionPlanSessionDeliveryDetailsRequest,
     changedBy: String,
+    changedAt: OffsetDateTime = OffsetDateTime.now(),
   ): ActionPlanSessionDeliveryDetailsResponse {
     val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
       ?: throw NotFoundException("Referral not found for reference $referralReference")
@@ -189,7 +227,7 @@ class ActionPlanService(
     val questionsById = questions.associateBy { it.id }
 
     validateSessionDeliveryDetailsRequest(request, questionsById)
-    patchQuestionAnswers(actionPlan.id, request.answers, changedBy)
+    patchQuestionAnswers(actionPlan.id, questionsById, request.answers, changedBy, changedAt)
 
     return getSessionDeliveryDetailsForReferral(referralReference)
   }
@@ -197,9 +235,12 @@ class ActionPlanService(
   @Transactional
   fun patchQuestionAnswers(
     actionPlanId: UUID,
+    questionsById: Map<UUID, ActionPlanStepQuestion>,
     questionAnswers: List<SessionDeliveryDetailsQuestionAnswers>,
     changedBy: String,
+    changedAt: OffsetDateTime,
   ) {
+    val questionResponseChangeBatchId = UUID.randomUUID()
     val requestedQuestionIds = questionAnswers.map { it.questionId }.toSet()
     val existingHeadersByQuestionId = if (requestedQuestionIds.isEmpty()) {
       emptyMap()
@@ -212,17 +253,25 @@ class ActionPlanService(
         .groupBy { it.actionPlanStepQuestionId }
     }
     val latestDetailsByHeaderId = getLatestDetailsByHeaderId(existingHeadersByQuestionId.values.flatten())
-    val now = OffsetDateTime.now()
 
     questionAnswers.forEach { questionAnswer ->
+      val question = questionsById[questionAnswer.questionId]
+        ?: throw ValidationException("Question ${questionAnswer.questionId} does not belong to session delivery details")
+
       upsertQuestionAnswers(
         actionPlanId = actionPlanId,
-        questionId = questionAnswer.questionId,
-        normalisedResponse = questionAnswer.incomingAnswerDetails.singleOrNull()?.let { normaliseSavedResponse(it) },
+        question = question,
+        responses = questionAnswer.incomingAnswerDetails.map {
+          SavedResponse(
+            value = it.value,
+            additionalDetails = it.additionalDetails,
+          )
+        },
         existingHeaders = existingHeadersByQuestionId[questionAnswer.questionId].orEmpty(),
         latestDetailsByHeaderId = latestDetailsByHeaderId,
         changedBy = changedBy,
-        now = now,
+        changedAt = changedAt,
+        questionResponseChangeBatchId = questionResponseChangeBatchId,
       )
     }
   }
@@ -250,22 +299,12 @@ class ActionPlanService(
     request: ActionPlanSessionDeliveryDetailsRequest,
     questionsById: Map<UUID, ActionPlanStepQuestion>,
   ) {
-    val duplicateQuestionIds = request.answers
-      .groupingBy { it.questionId }
-      .eachCount()
-      .filterValues { count -> count > 1 }
-      .keys
-
-    if (duplicateQuestionIds.isNotEmpty()) {
-      throw ValidationException("Duplicate question IDs provided: ${duplicateQuestionIds.joinToString(", ")}")
-    }
-
     request.answers.forEach { questionRequest ->
       val question = questionsById[questionRequest.questionId]
         ?: throw ValidationException("Question ${questionRequest.questionId} does not belong to session delivery details")
 
-      if (questionRequest.incomingAnswerDetails.size > 1) {
-        throw ValidationException("Question ${question.id} accepts only one response")
+      if (questionRequest.incomingAnswerDetails.size > question.maxNumberResponses) {
+        throw ValidationException("Question ${question.id} accepts at most $question.maxNumberResponses responses")
       }
 
       questionRequest.incomingAnswerDetails.forEach { response ->
@@ -309,59 +348,101 @@ class ActionPlanService(
 
   private fun upsertQuestionAnswers(
     actionPlanId: UUID,
-    questionId: UUID,
-    normalisedResponse: NormalisedSavedResponse?,
+    question: ActionPlanStepQuestion,
+    responses: List<SavedResponse>,
     existingHeaders: List<ActionPlanStepQuestionAnswerHeader>,
     latestDetailsByHeaderId: Map<UUID, ActionPlanStepQuestionAnswerDetails>,
     changedBy: String,
-    now: OffsetDateTime,
+    changedAt: OffsetDateTime,
+    questionResponseChangeBatchId: UUID,
   ) {
-    // note: will handle multiple answers in future, but for now we only support one answer per question
-    val existingHeader = when (existingHeaders.size) {
-      0 -> null
-      1 -> existingHeaders.single()
-      else -> throw ValidationException("Question $questionId has multiple saved answers, which is not supported")
+    val normalisedResponses = responses.map { it.normalised() }
+    val questionAnswerhelper = QuestionAnswerHelper(
+      actionPlanId = actionPlanId,
+      question = question,
+      changedBy = changedBy,
+      changedAt = changedAt,
+      questionResponseChangeBatchId = questionResponseChangeBatchId,
+      latestDetailsByHeaderId = latestDetailsByHeaderId,
+    )
+
+    if (question.supportsMultipleResponses) {
+      upsertMultipleResponses(questionAnswerhelper, normalisedResponses, existingHeaders)
+    } else {
+      upsertSingleResponse(questionAnswerhelper, normalisedResponses.singleOrNull(), existingHeaders.singleOrNull())
+    }
+  }
+
+  private fun upsertSingleResponse(
+    questionAnswerHelper: QuestionAnswerHelper,
+    response: SavedResponse?,
+    existingHeader: ActionPlanStepQuestionAnswerHeader?,
+  ) {
+    if (response == null) {
+      existingHeader?.let { questionAnswerHelper.softDelete(it) }
+      return
     }
 
-    if (normalisedResponse == null) {
-      if (existingHeader != null) {
-        actionPlanStepQuestionAnswerHeaderRepository.save(
-          existingHeader.copy(
-            deletedAt = now,
-            deletedBy = changedBy,
-          ),
-        )
+    val header = existingHeader ?: questionAnswerHelper.createHeader(orderNumber = 1)
+    val latestDetails = questionAnswerHelper.latestDetails(header)
+
+    if (latestDetails?.hasSameContentAs(response) == true) {
+      return
+    }
+
+    questionAnswerHelper.writeDetailsRevision(header, response, latestDetails)
+    questionAnswerHelper.recordEvent(
+      headerId = header.id,
+      eventType = if (existingHeader == null) {
+        ActionPlanQuestionResponseEventType.CREATED
+      } else {
+        ActionPlanQuestionResponseEventType.UPDATED
+      },
+    )
+  }
+
+  private fun upsertMultipleResponses(
+    questionAnswerHelper: QuestionAnswerHelper,
+    responses: List<SavedResponse>,
+    existingHeaders: List<ActionPlanStepQuestionAnswerHeader>,
+  ) {
+    val requestedValues = responses.map { it.value }.toSet()
+    val activeHeaderByValue = existingHeaders
+      .mapNotNull { header ->
+        questionAnswerHelper.latestDetails(header)?.content?.let { it to header }
       }
-      return
-    }
+      .toMap()
 
-    val header = existingHeader ?: actionPlanStepQuestionAnswerHeaderRepository.save(
-      ActionPlanStepQuestionAnswerHeader.from(
-        actionPlanId = actionPlanId,
-        questionId = questionId,
-        orderNumber = 1,
-        createdBy = changedBy,
-        createdAt = now,
-      ),
-    )
+    existingHeaders
+      .filter { header ->
+        val currentValue = questionAnswerHelper.latestDetails(header)?.content
+        currentValue != null && currentValue !in requestedValues
+      }
+      .forEach { questionAnswerHelper.softDelete(it) }
 
-    val latestDetails = latestDetailsByHeaderId[header.id]
-    if (latestDetails?.content == normalisedResponse.value &&
-      latestDetails.freeTextValue == normalisedResponse.additionalDetails
-    ) {
-      return
-    }
+    var nextOrderNumber = (existingHeaders.maxOfOrNull { it.orderNumber } ?: 0) + 1
 
-    actionPlanStepQuestionAnswerDetailsRepository.save(
-      ActionPlanStepQuestionAnswerDetails.from(
+    responses.forEach { response ->
+      val existingHeader = activeHeaderByValue[response.value]
+      val header = existingHeader ?: questionAnswerHelper.createHeader(orderNumber = nextOrderNumber).also {
+        nextOrderNumber += 1
+      }
+      val latestDetails = questionAnswerHelper.latestDetails(header)
+
+      if (latestDetails?.hasSameContentAs(response) == true) {
+        return@forEach
+      }
+
+      questionAnswerHelper.writeDetailsRevision(header, response, latestDetails)
+      questionAnswerHelper.recordEvent(
         headerId = header.id,
-        revisionNumber = (latestDetails?.revisionNumber ?: 0) + 1,
-        content = normalisedResponse.value,
-        createdBy = changedBy,
-        freeTextValue = normalisedResponse.additionalDetails,
-        now = now,
-      ),
-    )
+        eventType = if (existingHeader == null) {
+          ActionPlanQuestionResponseEventType.CREATED
+        } else {
+          ActionPlanQuestionResponseEventType.UPDATED
+        },
+      )
+    }
   }
 
   private fun getLatestDetailsByHeaderId(
@@ -383,16 +464,6 @@ class ActionPlanService(
       }
       .toMap()
   }
-
-  private fun normaliseSavedResponse(response: SessionDeliveryDetailsQuestionAnswer): NormalisedSavedResponse = NormalisedSavedResponse(
-    value = response.value.trim(),
-    additionalDetails = response.additionalDetails?.trim()?.takeIf { it.isNotBlank() },
-  )
-
-  private data class NormalisedSavedResponse(
-    val value: String,
-    val additionalDetails: String?,
-  )
 
   private fun getOutcomesByNeedIdForActionPlan(
     actionPlanId: UUID,

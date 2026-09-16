@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -24,19 +23,17 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralProgressDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.WithdrawalReasonBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.WithdrawalReasonsGroupedBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.ReferralWithdrawalReasonCode
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.WithdrawReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.PersonService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
+import uk.gov.justice.digital.hmpps.communitysupportapi.service.WithdrawalReasonService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
 
@@ -48,6 +45,7 @@ class ReferralController(
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
   private val personService: PersonService,
+  private val withdrawalReasonService: WithdrawalReasonService,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -101,104 +99,6 @@ class ReferralController(
   @GetMapping("/bff/referral-details-page/{caseIdentifier}")
   fun getReferralDetailsPage(@PathVariable caseIdentifier: String): ResponseEntity<ReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getReferralDetailsPage(caseIdentifier))
 
-  @Operation(summary = "Get service end date page data")
-  @ApiResponses(
-    value = [
-      ApiResponse(
-        responseCode = "200",
-        description = "Service end date details found",
-        content = [
-          Content(
-            mediaType = "application/json",
-            schema = Schema(implementation = ServiceEndDatePageDto::class),
-          ),
-        ],
-      ),
-      ApiResponse(
-        responseCode = "404",
-        description = "Referral not found",
-        content = [Content(mediaType = "application/json")],
-      ),
-    ],
-  )
-  @GetMapping("/bff/service-end-date-page/{referralId}")
-  fun getServiceEndDatePage(@PathVariable referralId: UUID): ResponseEntity<ServiceEndDatePageDto> = ResponseEntity.ok(referralService.getServiceEndDatePage(referralId))
-
-  @Operation(summary = "Get service days page data")
-  @ApiResponses(
-    value = [
-      ApiResponse(
-        responseCode = "200",
-        description = "Service days details found",
-        content = [
-          Content(
-            mediaType = "application/json",
-            schema = Schema(implementation = ServiceDaysPageDto::class),
-          ),
-        ],
-      ),
-      ApiResponse(
-        responseCode = "404",
-        description = "Referral not found",
-        content = [Content(mediaType = "application/json")],
-      ),
-    ],
-  )
-  @GetMapping("/bff/service-days-page/{referralId}")
-  fun getServiceDaysPage(@PathVariable referralId: UUID): ResponseEntity<ServiceDaysPageDto> = ResponseEntity.ok(referralService.getServiceDaysPage(referralId))
-
-  @Operation(summary = "Update service end date page data")
-  @ApiResponses(
-    value = [
-      ApiResponse(
-        responseCode = "200",
-        description = "Service end date details updated",
-        content = [
-          Content(
-            mediaType = "application/json",
-            schema = Schema(implementation = ServiceEndDatePageDto::class),
-          ),
-        ],
-      ),
-      ApiResponse(
-        responseCode = "404",
-        description = "Referral not found",
-        content = [Content(mediaType = "application/json")],
-      ),
-    ],
-  )
-  @PatchMapping("/referral/{referralId}/service-end-date")
-  fun updateServiceEndDatePage(
-    @PathVariable referralId: UUID,
-    @RequestBody request: ServiceEndDatePageDto,
-  ): ResponseEntity<ServiceEndDatePageDto> = ResponseEntity.ok(referralService.updateReferralServiceEndDate(referralId, request))
-
-  @Operation(summary = "Update service days page data")
-  @ApiResponses(
-    value = [
-      ApiResponse(
-        responseCode = "200",
-        description = "Service days details updated",
-        content = [
-          Content(
-            mediaType = "application/json",
-            schema = Schema(implementation = ServiceDaysPageDto::class),
-          ),
-        ],
-      ),
-      ApiResponse(
-        responseCode = "404",
-        description = "Referral not found",
-        content = [Content(mediaType = "application/json")],
-      ),
-    ],
-  )
-  @PatchMapping("/draft-referral/{referralId}/service-days")
-  fun updateServiceDaysPage(
-    @PathVariable referralId: UUID,
-    @RequestBody request: ServiceDaysPageDto,
-  ): ResponseEntity<ServiceDaysPageDto> = ResponseEntity.ok(referralService.updateReferralServiceDays(referralId, request))
-
   @Operation(summary = "Create a referral")
   @ApiResponses(
     value = [
@@ -250,25 +150,25 @@ class ReferralController(
     return ResponseEntity.ok(referralService.submitReferral(referralId, user.id))
   }
 
-  @Operation(summary = "Get withdrawal reasons")
+  @Operation(summary = "Get withdrawal reasons grouped by heading")
   @ApiResponses(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "Withdrawal reasons found",
+        description = "Withdrawal reasons found, grouped by heading",
         content = [
           Content(
             mediaType = "application/json",
-            schema = Schema(implementation = WithdrawalReasonBffResponseDto::class),
+            schema = Schema(implementation = WithdrawalReasonsGroupedBffResponseDto::class),
           ),
         ],
       ),
     ],
   )
   @GetMapping("/bff/referral/withdrawal-reasons")
-  fun getWithdrawalReasons(): ResponseEntity<WithdrawalReasonBffResponseDto> = ResponseEntity.ok(
-    WithdrawalReasonBffResponseDto(
-      withdrawalReasons = ReferralWithdrawalReasonCode.entries.map { it.name },
+  fun getGroupedWithdrawalReasons(): ResponseEntity<WithdrawalReasonsGroupedBffResponseDto> = ResponseEntity.ok(
+    WithdrawalReasonsGroupedBffResponseDto(
+      withdrawalReasons = withdrawalReasonService.getWithdrawalReasons(),
     ),
   )
 

@@ -7,6 +7,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SavedResponse
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -55,22 +56,24 @@ data class ActionPlanStepQuestionAnswerDetails(
   @Column(name = "created_by", nullable = false)
   val createdBy: String = "SYSTEM",
 ) {
+  fun hasSameContentAs(response: SavedResponse): Boolean = content == response.value && freeTextValue == response.additionalDetails
+
   companion object {
     fun from(
       headerId: UUID,
       revisionNumber: Int,
       content: String,
-      createdBy: String,
       freeTextValue: String?,
-      now: OffsetDateTime = OffsetDateTime.now(),
+      createdBy: String,
+      createdAt: OffsetDateTime = OffsetDateTime.now(),
     ): ActionPlanStepQuestionAnswerDetails = ActionPlanStepQuestionAnswerDetails(
       id = UUID.randomUUID(),
       actionPlanStepQuestionAnswerHeaderId = headerId,
       revisionNumber = revisionNumber,
       content = content,
       freeTextValue = freeTextValue,
-      createdAt = now,
       createdBy = createdBy,
+      createdAt = createdAt,
     )
   }
 }

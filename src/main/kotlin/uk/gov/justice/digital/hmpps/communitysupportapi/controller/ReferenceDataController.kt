@@ -11,11 +11,13 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Prison
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOffice
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.SortOrder
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferenceDataService
 
 @RestController
@@ -44,9 +46,11 @@ class ReferenceDataController(
     ],
   )
   @GetMapping("/probation-offices")
-  fun getProbationOffices(): ResponseEntity<List<ProbationOffice>> {
+  fun getProbationOffices(
+    @RequestParam(defaultValue = "ASC") sortOrder: SortOrder,
+  ): ResponseEntity<List<ProbationOffice>> {
     try {
-      val probationOffices = referenceDataService.getProbationOffices()
+      val probationOffices = referenceDataService.getProbationOffices(sortOrder)
       return ResponseEntity.ok(probationOffices)
     } catch (e: Exception) {
       log.error("Error getting Probation Offices", e)

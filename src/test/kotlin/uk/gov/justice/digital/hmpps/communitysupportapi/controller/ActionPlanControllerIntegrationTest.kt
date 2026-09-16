@@ -13,7 +13,7 @@ import org.springframework.http.HttpMethod.PATCH
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
@@ -105,117 +105,53 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Nested
-    @DisplayName("GET /bff/referral/{referralReference}/action-plan/needs")
-    inner class GetActionPlanNeedsEndpoint {
+    @DisplayName("GET /bff/referral/action-plan/select-a-need")
+    inner class GetSelectANeedEndpoint {
       @Test
       fun `should return unauthorized if no token`() {
-        assertUnauthorized(GET, "/bff/referral/AB1234CD/action-plan/needs")
+        assertUnauthorized(GET, "/bff/referral/action-plan/select-a-need")
       }
 
       @Test
       fun `should return forbidden if no role`() {
-        assertForbiddenNoRole(GET, "/bff/referral/AB1234CD/action-plan/needs")
+        assertForbiddenNoRole(GET, "/bff/referral/action-plan/select-a-need")
       }
 
       @Test
       fun `should return forbidden if wrong role`() {
-        assertForbiddenWrongRole(GET, "/bff/referral/AB1234CD/action-plan/needs")
+        assertForbiddenWrongRole(GET, "/bff/referral/action-plan/select-a-need")
       }
 
       @Test
-      fun `should return action plan needs grouped by need and ordered by question order`() {
-        val referral = createReferral("Jo", "Bloggs")
-        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
-        actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
-
-        val orderedNeeds = needRepository.findAllByOrderByOrderNumberAsc().take(2)
-        val firstNeed = orderedNeeds[0]
-        val secondNeed = orderedNeeds[1]
-
-        val needStep = actionPlanStepRepository.save(
-          ActionPlanStepFactory()
-            .withActionPlanTemplateId(actionPlanTemplate.id)
-            .withOrderNumber(1)
-            .withName("Needs")
-            .withStepType(ActionPlanStepType.NEED)
-            .create(),
-        )
-
-        actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(needStep.id)
-            .withOrderNumber(1)
-            .withTitle("Question for second need")
-            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
-            .withNeedId(secondNeed.id)
-            .create(),
-        )
-        actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(needStep.id)
-            .withOrderNumber(2)
-            .withTitle("First question for first need")
-            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
-            .withNeedId(firstNeed.id)
-            .create(),
-        )
-        actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(needStep.id)
-            .withOrderNumber(3)
-            .withTitle("Second question for first need")
-            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
-            .withNeedId(firstNeed.id)
-            .create(),
-        )
-        actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(needStep.id)
-            .withOrderNumber(4)
-            .withTitle("Question without need")
-            .withNeedId(null)
-            .create(),
-        )
+      fun `should return needs with related outcomes ordered by need and outcome order`() {
+        val expectedNeeds = needRepository.findAllByOrderByOrderNumberAsc()
 
         webTestClient.get()
-          .uri("/bff/referral/${referral.referenceNumber}/action-plan/needs")
+          .uri("/bff/referral/action-plan/select-a-need")
           .headers(setAuthorisation())
           .exchange()
           .expectStatus().isOk
-          .expectBody<ActionPlanNeedsResponse>()
+          .expectBody<ActionPlanSelectANeedResponse>()
           .consumeWith { response ->
             val body = response.responseBody!!
 
-            body.needs.map { it.id } shouldBe listOf(firstNeed.id, secondNeed.id)
-            body.needs[0].label shouldBe "Accommodation"
-            body.needs[0].questions.map { it.label } shouldBe listOf(
-              "First question for first need",
-              "Second question for first need",
+            body.needs.map { it.id } shouldBe expectedNeeds.map { it.id }
+            body.needs.map { it.label } shouldBe expectedNeeds.map { it.label }
+            body.needs[0].outcomes.map { it.id } shouldBe listOf(
+              UUID.fromString("f2a3c4d5-e6f7-4801-9001-000000000001"),
+              UUID.fromString("f2a3c4d5-e6f7-4801-9001-000000000002"),
             )
-            body.needs[0].questions.map { it.answerType } shouldBe listOf(
-              ActionPlanQuestionAnswerType.TEXTAREA,
-              ActionPlanQuestionAnswerType.TEXTAREA,
+            body.needs[0].outcomes.map { it.text } shouldBe listOf(
+              "I want to secure and maintain settled and suitable accommodation.",
+              "I want to manage my tenancy and prevent rent arrears or other debts while I am in custody.",
             )
-
-            body.needs[1].label shouldBe secondNeed.label
-            body.needs[1].questions.map { it.label } shouldBe listOf("Question for second need")
-            body.needs[1].questions.map { it.answerType } shouldBe listOf(ActionPlanQuestionAnswerType.TEXTAREA)
+            body.needs[1].outcomes.map { it.id } shouldBe listOf(
+              UUID.fromString("f2a3c4d5-e6f7-4801-9001-000000000003"),
+            )
+            body.needs[1].outcomes.map { it.text } shouldBe listOf(
+              "I want to find and keep suitable employment, or take steps towards employment through education, training, or other opportunities.",
+            )
           }
-      }
-
-      @Test
-      fun `should return not found for unknown referral reference`() {
-        assertNotFound(GET, "/bff/referral/ZZ9999ZZ/action-plan/needs")
-      }
-
-      private fun createReferral(firstName: String, lastName: String): Referral {
-        val user = referralHelper.ensureReferralUser()
-        val person = referralHelper.createPerson(firstName = firstName, lastName = lastName)
-        return referralHelper.createReferral(
-          person = person,
-          referenceNumber = randomReferralReference(),
-          submittedBy = user,
-        )
       }
     }
 

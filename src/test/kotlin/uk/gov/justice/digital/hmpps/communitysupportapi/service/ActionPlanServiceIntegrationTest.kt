@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.beans.factory.annotation.Autowired
@@ -13,6 +12,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionResponseEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTe
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanQuestionResponseEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
@@ -57,6 +58,9 @@ class ActionPlanServiceIntegrationTest :
 
   @Autowired
   private lateinit var actionPlanEventRepository: ActionPlanEventRepository
+
+  @Autowired
+  private lateinit var actionPlanQuestionResponseEventRepository: ActionPlanQuestionResponseEventRepository
 
   @Autowired
   private lateinit var actionPlanRepository: ActionPlanRepository
@@ -434,82 +438,6 @@ class ActionPlanServiceIntegrationTest :
   }
 
   @Nested
-  @DisplayName("getActionPlanNeedsForReferral")
-  inner class GetActionPlanNeedsForReferral {
-    val user = referralHelper.ensureReferralUser()
-
-    @Test
-    fun `should return grouped needs and questions sorted by configured need order`() {
-      val (referral, actionPlanTemplateId) = createReferralWithActionPlan()
-
-      val orderedNeeds = needRepository.findAllByOrderByOrderNumberAsc().take(2)
-      val firstNeed = orderedNeeds[0]
-      val secondNeed = orderedNeeds[1]
-
-      val needStep = createNeedStep(actionPlanTemplateId)
-      createNeedQuestion(needStep.id, 1, "Question for second need", secondNeed.id)
-      createNeedQuestion(needStep.id, 2, "First question for first need", firstNeed.id)
-      createNeedQuestion(needStep.id, 3, "Second question for first need", firstNeed.id)
-      createNeedQuestion(needStep.id, 4, "Question without need", null)
-
-      val result = actionPlanService.getActionPlanNeedsForReferral(referral.referenceNumber!!)
-
-      assertEquals(listOf(firstNeed.id, secondNeed.id), result.needs.map { it.id })
-      assertEquals(firstNeed.label, result.needs[0].label)
-      assertEquals(listOf("First question for first need", "Second question for first need"), result.needs[0].questions.map { it.label })
-      assertEquals(
-        listOf(ActionPlanQuestionAnswerType.TEXTAREA, ActionPlanQuestionAnswerType.TEXTAREA),
-        result.needs[0].questions.map { it.answerType },
-      )
-      assertEquals(secondNeed.label, result.needs[1].label)
-      assertEquals(listOf("Question for second need"), result.needs[1].questions.map { it.label })
-      assertEquals(listOf(ActionPlanQuestionAnswerType.TEXTAREA), result.needs[1].questions.map { it.answerType })
-    }
-
-    @Test
-    fun `should throw not found when referral reference does not exist`() {
-      val exception = assertThrows<NotFoundException> {
-        actionPlanService.getActionPlanNeedsForReferral("UNKNOWN")
-      }
-
-      assertEquals("Referral not found for reference UNKNOWN", exception.message)
-    }
-
-    private fun createNeedStep(actionPlanTemplateId: UUID) = actionPlanStepRepository.save(
-      ActionPlanStepFactory()
-        .withActionPlanTemplateId(actionPlanTemplateId)
-        .withOrderNumber(1)
-        .withName("Needs")
-        .withStepType(ActionPlanStepType.NEED)
-        .create(),
-    )
-
-    private fun createNeedQuestion(actionPlanStepId: UUID, orderNumber: Int, title: String, needId: UUID?) {
-      actionPlanStepQuestionRepository.save(
-        ActionPlanStepQuestionFactory()
-          .withActionPlanStepId(actionPlanStepId)
-          .withOrderNumber(orderNumber)
-          .withTitle(title)
-          .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
-          .withNeedId(needId)
-          .create(),
-      )
-    }
-
-    private fun createReferral(): Referral {
-      val person = referralHelper.createPerson(firstName = "Nina", lastName = "Jones")
-      return referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
-    }
-
-    private fun createReferralWithActionPlan(): Pair<Referral, UUID> {
-      val referral = createReferral()
-      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
-      actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
-      return referral to actionPlanTemplate.id
-    }
-  }
-
-  @Nested
   @DisplayName("session delivery details")
   inner class SessionDeliveryDetails {
     val user = referralHelper.ensureReferralUser()
@@ -634,6 +562,145 @@ class ActionPlanServiceIntegrationTest :
         .sortedBy { it.revisionNumber }
       assertEquals(listOf("OTHER", "FACE_TO_FACE"), radioRevisions.map { it.content })
       assertEquals(listOf("Poor weather", null), radioRevisions.map { it.freeTextValue })
+
+      val questionResponseEvents = actionPlanQuestionResponseEventRepository.findByActionPlanId(actionPlan.id)
+      assertEquals(4, questionResponseEvents.size)
+      assertEquals(2, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.CREATED })
+      assertEquals(1, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.UPDATED })
+      assertEquals(1, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.DELETED })
+      assertTrue(questionResponseEvents.all { it.questionResponseChangeBatchId != null })
+      assertEquals(2, questionResponseEvents.mapNotNull { it.questionResponseChangeBatchId }.distinct().size)
+
+      val radioEvents = questionResponseEvents.filter { it.actionPlanStepQuestionAnswerHeaderId == radioAnswer.id }
+        .sortedBy { it.createdAt }
+      assertEquals(
+        listOf(ActionPlanQuestionResponseEventType.CREATED, ActionPlanQuestionResponseEventType.UPDATED),
+        radioEvents.map { it.eventType },
+      )
+
+      val deletedHeader = actionPlanStepQuestionAnswerHeaderRepository.findAll().single {
+        it.actionPlanId == actionPlan.id &&
+          it.actionPlanStepQuestionId == secondQuestion.id &&
+          it.deletedAt != null
+      }
+      val deletedEvents = questionResponseEvents.filter { it.actionPlanStepQuestionAnswerHeaderId == deletedHeader.id }
+        .sortedBy { it.createdAt }
+      assertEquals(
+        listOf(ActionPlanQuestionResponseEventType.CREATED, ActionPlanQuestionResponseEventType.DELETED),
+        deletedEvents.map { it.eventType },
+      )
+    }
+
+    @Test
+    fun `should support multiple selected checkbox answers using one header per selected option`() {
+      val referral = createReferral()
+      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+      val sessionDeliveryStep = createSessionDeliveryStep(actionPlanTemplate.id)
+      val checkboxQuestion = createSessionDeliveryQuestion(sessionDeliveryStep.id, 1, "Which of these are available?", ActionPlanQuestionAnswerType.CHECKBOX, 3)
+      createChoice(checkboxQuestion.id, 1, "In person", "IN_PERSON")
+      createChoice(checkboxQuestion.id, 2, "By phone", "PHONE")
+      createChoice(checkboxQuestion.id, 3, "By video call", "VIDEO")
+
+      val initialRequest = ActionPlanSessionDeliveryDetailsRequest(
+        answers = listOf(
+          SessionDeliveryDetailsQuestionAnswers(
+            questionId = checkboxQuestion.id,
+            incomingAnswerDetails = listOf(
+              SessionDeliveryDetailsQuestionAnswer(value = "IN_PERSON"),
+              SessionDeliveryDetailsQuestionAnswer(value = "PHONE"),
+            ),
+          ),
+        ),
+      )
+
+      actionPlanService.updateSessionDeliveryDetailsForActionPlan(referral.referenceNumber!!, initialRequest, user.id.toString())
+
+      val updateRequest = ActionPlanSessionDeliveryDetailsRequest(
+        answers = listOf(
+          SessionDeliveryDetailsQuestionAnswers(
+            questionId = checkboxQuestion.id,
+            incomingAnswerDetails = listOf(
+              SessionDeliveryDetailsQuestionAnswer(value = "IN_PERSON"),
+              SessionDeliveryDetailsQuestionAnswer(value = "VIDEO"),
+            ),
+          ),
+        ),
+      )
+
+      val updateResult = actionPlanService.updateSessionDeliveryDetailsForActionPlan(referral.referenceNumber!!, updateRequest, user.id.toString())
+      assertEquals(listOf("IN_PERSON", "VIDEO"), updateResult.questions.single { it.id == checkboxQuestion.id }.savedResponses.map { it.value })
+
+      val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+        .filter { it.actionPlanStepQuestionId == checkboxQuestion.id }
+      assertEquals(2, activeHeaders.size)
+      assertEquals(
+        setOf("IN_PERSON", "VIDEO"),
+        activeHeaders.map { header ->
+          actionPlanStepQuestionAnswerDetailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(header.id))
+            .maxByOrNull { it.revisionNumber }
+            ?.content
+        }.toSet(),
+      )
+
+      val deletedHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAll().filter {
+        it.actionPlanId == actionPlan.id &&
+          it.actionPlanStepQuestionId == checkboxQuestion.id &&
+          it.deletedAt != null
+      }
+      assertEquals(1, deletedHeaders.size)
+      assertEquals(
+        listOf("PHONE"),
+        deletedHeaders.flatMap { header ->
+          actionPlanStepQuestionAnswerDetailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(header.id))
+            .map { it.content }
+        },
+      )
+
+      val inPersonHeader = activeHeaders.single { header ->
+        actionPlanStepQuestionAnswerDetailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(header.id))
+          .maxByOrNull { it.revisionNumber }
+          ?.content == "IN_PERSON"
+      }
+      val inPersonRevisions = actionPlanStepQuestionAnswerDetailsRepository
+        .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(inPersonHeader.id))
+        .sortedBy { it.revisionNumber }
+      assertEquals(listOf("IN_PERSON"), inPersonRevisions.map { it.content })
+
+      val questionResponseEvents = actionPlanQuestionResponseEventRepository.findByActionPlanId(actionPlan.id)
+      assertEquals(4, questionResponseEvents.size)
+      assertEquals(3, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.CREATED })
+      assertEquals(0, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.UPDATED })
+      assertEquals(1, questionResponseEvents.count { it.eventType == ActionPlanQuestionResponseEventType.DELETED })
+      assertTrue(questionResponseEvents.all { it.questionResponseChangeBatchId != null })
+      assertEquals(
+        listOf(2, 2),
+        questionResponseEvents
+          .mapNotNull { it.questionResponseChangeBatchId }
+          .groupingBy { it }
+          .eachCount()
+          .values
+          .sorted(),
+      )
+
+      val eventTypesByHeaderId = questionResponseEvents.groupBy { it.actionPlanStepQuestionAnswerHeaderId }
+      assertEquals(
+        listOf(ActionPlanQuestionResponseEventType.CREATED),
+        eventTypesByHeaderId[inPersonHeader.id]!!.sortedBy { it.createdAt }.map { it.eventType },
+      )
+      val videoHeader = activeHeaders.single { header ->
+        actionPlanStepQuestionAnswerDetailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(header.id))
+          .maxByOrNull { it.revisionNumber }
+          ?.content == "VIDEO"
+      }
+      assertEquals(
+        listOf(ActionPlanQuestionResponseEventType.CREATED),
+        eventTypesByHeaderId[videoHeader.id]!!.sortedBy { it.createdAt }.map { it.eventType },
+      )
+      assertEquals(
+        listOf(ActionPlanQuestionResponseEventType.CREATED, ActionPlanQuestionResponseEventType.DELETED),
+        eventTypesByHeaderId[deletedHeaders.single().id]!!.sortedBy { it.createdAt }.map { it.eventType },
+      )
     }
 
     private fun createSessionDeliveryStep(actionPlanTemplateId: UUID) = actionPlanStepRepository.save(

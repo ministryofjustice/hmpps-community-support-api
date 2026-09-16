@@ -1,17 +1,22 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.validation.ValidationException
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalInformationForTheDeliveryPartnerBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckDraftReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ProbationPractitionerDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SelectionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceDaysPageDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.CommunitySupportRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSentenceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toTriState
@@ -27,7 +32,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportN
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateProbationPractitionerDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
@@ -61,8 +68,13 @@ class DraftReferralService(
   private val probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository,
   private val identifierValidator: PersonIdentifierValidator,
   private val nDeliusService: NDeliusService,
+  private val cprProbationService: CprProbationService,
+  private val riskInformationService: RiskInformationService,
   private val referenceDataService: ReferenceDataService,
 ) {
+  companion object {
+    private val logger = LoggerFactory.getLogger(ReferralService::class.java)
+  }
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
     val person: Person,
@@ -517,9 +529,11 @@ class DraftReferralService(
     val pdu = entity.pdu?.let { pduId ->
       pduRepository.findNameById(pduId)?.let { pduName -> Pdu(id = pduId, name = pduName) }
     }
-    val probationOfficeName = entity.probationOffice?.let { referenceDataService.getProbationOfficeNameById(it) }
+    val probationOffice = entity.probationOffice?.let { officeId ->
+      referenceDataService.getProbationOfficeNameById(officeId)?.let { officeName -> ProbationOfficeSummary(id = officeId, name = officeName) }
+    }
 
-    return ProbationPractitionerDetailsBffResponseDto.from(entity, pdu, probationOfficeName)
+    return ProbationPractitionerDetailsBffResponseDto.from(entity, pdu, probationOffice)
   }
 
   private fun getCrn(person: Person): String? = when (
@@ -534,6 +548,52 @@ class DraftReferralService(
   } else {
     offenceSentenceInfo
   }
+  fun getCheckDraftReferralDetailsPage(referralId: UUID): CheckDraftReferralDetailsBffResponseDto {
+    val referral = referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral $referralId") }
+    val identifier = identifierValidator.validate(person.identifier)
+    val personalDetailsAndCircumstances = personDetailsAndCircumstances(identifier)
+    val communitySupportRiskDto: CommunitySupportRiskDto = riskInformationService.getRoshRisksByReferralId(referralId)
+    val nationalities = nationalities(identifier)
+    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, identifier, personalDetailsAndCircumstances, communitySupportRiskDto, nationalities)
+  }
+
+  private fun nationalities(identifier: PersonIdentifier): List<String> = when (identifier) {
+    is PersonIdentifier.Crn -> {
+      val cprPerson = cprProbationService.getPersonDetailsByCrn(identifier.value)
+      cprPerson.additionalDetails?.nationalities ?: emptyList()
+    }
+    is PersonIdentifier.PrisonerNumber -> {
+      val cprPerson = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
+      cprPerson.additionalDetails?.nationalities ?: emptyList()
+    }
+  }
+
+  private fun personDetailsAndCircumstances(identifier: PersonIdentifier): PersonDetailsAndCircumstances = when (identifier) {
+    is PersonIdentifier.Crn -> nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
+    is PersonIdentifier.PrisonerNumber -> {
+      val cprPerson = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
+      if (cprPerson.person.knownCrns.isNotEmpty()) {
+        val crn = cprPerson.person.knownCrns.first()
+        nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
+      } else {
+        logger.warn("No known CRN found for person with prison identifier {}", identifier.value)
+        PersonDetailsAndCircumstances()
+      }
+    }
+  }
+
+  fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(
+    referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") },
+  )
+
+  fun getServiceDaysPage(referralId: UUID): ServiceDaysPageDto = ServiceDaysPageDto.from(
+    referralRepository.findById(referralId)
+      .orElseThrow { NotFoundException("Referral not found for id $referralId") },
+  )
 
   fun getProbationPractitionerDetailsForReferral(referralId: UUID): ProbationPractitionerDetailsBffResponseDto? {
     val probationPractitionerDetails = probationPractitionerDetailsRepository.findByReferralId(referralId)
@@ -548,7 +608,10 @@ class DraftReferralService(
       val pdu = communityManagerDto.communityManager?.pdu?.let { pduName ->
         pduRepository.findByName(pduName)?.let { Pdu(id = it.id, name = it.name) }
       }
-      return ProbationPractitionerDetailsBffResponseDto.from(communityManagerDto, pdu)
+      val probationOffice = communityManagerDto.communityManager?.officeName?.let { officeName ->
+        referenceDataService.getProbationOfficeIdByName(officeName)?.let { officeId -> ProbationOfficeSummary(id = officeId, name = officeName) }
+      }
+      return ProbationPractitionerDetailsBffResponseDto.from(communityManagerDto, pdu, probationOffice)
     }
 
     return ProbationPractitionerDetailsBffResponseDto.empty()

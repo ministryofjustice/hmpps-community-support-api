@@ -76,6 +76,9 @@ class ReferralServiceTest {
   @Mock
   lateinit var actionPlanService: ActionPlanService
 
+  @Mock
+  lateinit var withdrawalReasonService: WithdrawalReasonService
+
   @InjectMocks
   lateinit var referralService: ReferralService
 
