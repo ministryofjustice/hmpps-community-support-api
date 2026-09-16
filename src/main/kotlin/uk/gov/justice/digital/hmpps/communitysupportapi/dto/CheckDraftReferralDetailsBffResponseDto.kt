@@ -110,7 +110,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     companion object {
       fun from(personalDetailsAndCircumstances: PersonDetailsAndCircumstances): DraftAdditionalInformationDetailsTableDataDto = DraftAdditionalInformationDetailsTableDataDto(
         homeOfficeInterest = if (personalDetailsAndCircumstances.ofHomeOfficeInterest == true) {
-          personalDetailsAndCircumstances.homeOfficeInterestNotes
+          personalDetailsAndCircumstances.homeOfficeInterestNotes ?: "Yes"
         } else {
           null
         },
