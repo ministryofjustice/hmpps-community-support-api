@@ -62,7 +62,6 @@ class ReferralService(
   private val cprProbationService: CprProbationService,
   private val identifierValidator: PersonIdentifierValidator,
   private val personService: PersonService,
-  private val nDeliusService: NDeliusService,
   private val actionPlanService: ActionPlanService,
   private val withdrawalReasonService: WithdrawalReasonService,
 ) {
