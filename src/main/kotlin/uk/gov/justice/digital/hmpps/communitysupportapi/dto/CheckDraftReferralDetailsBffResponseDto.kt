@@ -44,12 +44,13 @@ data class CheckDraftReferralDetailsBffResponseDto(
       personIdentifier: PersonIdentifier,
       personalDetailsAndCircumstances: PersonDetailsAndCircumstances,
       communitySupportRiskDto: CommunitySupportRiskDto,
+      nationalities: List<String>,
     ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
       createdDate = referral.createdAt,
       personDetailsTableData = DraftPersonDetailsTableDataDto.from(person, personIdentifier, personalDetailsAndCircumstances),
-      equalityDetailsTableData = DraftEqualityDetailsTableDataDto.from(person),
+      equalityDetailsTableData = DraftEqualityDetailsTableDataDto.from(person, nationalities),
       contactDetailsTableData = DraftContactDetailsTableDataDto.from(person),
       additionalInformationDetailsTableData = DraftAdditionalInformationDetailsTableDataDto.from(),
       riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(communitySupportRiskDto),
@@ -87,15 +88,17 @@ data class CheckDraftReferralDetailsBffResponseDto(
   }
 
   data class DraftEqualityDetailsTableDataDto(
+    val nationality: String?,
     val ethnicity: String?,
     val religionOrBelief: String?,
     val sex: String,
   ) {
     companion object {
-      fun from(person: Person): DraftEqualityDetailsTableDataDto = DraftEqualityDetailsTableDataDto(
+      fun from(person: Person, nationalities: List<String> = emptyList()): DraftEqualityDetailsTableDataDto = DraftEqualityDetailsTableDataDto(
         ethnicity = person.additionalDetails?.ethnicity ?: "",
         religionOrBelief = person.additionalDetails?.religionOrBelief ?: "",
         sex = person.gender,
+        nationality = nationalities.joinToString(", "),
       )
     }
   }
