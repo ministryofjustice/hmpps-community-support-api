@@ -617,6 +617,29 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     assertEquals(referral.personIdentifier, result.personDetailsTableData.crn)
     assertEquals(referralUser.fullName, result.referralDetailsTableData.assignedTo.first().fullName)
     assertEquals(referralUser.hmppsAuthUsername, result.referralDetailsTableData.assignedTo.first().emailAddress)
+    assertThat(result.withdrawReferral).isFalse()
+  }
+
+  @Test
+  fun `view referral detail page bff should return withdrawReferral true when referral has been withdrawn`() {
+    val referralUser = referralHelper.ensureReferralUser()
+    val person = referralHelper.createPerson()
+    val referral = referralHelper.createReferral(person, submittedBy = referralUser)
+
+    stubCprProbationPerson(person.identifier, createCprProbationPersonDto(person.identifier))
+
+    referralService.withdrawReferral(
+      referral.referenceNumber!!,
+      referralUser.id,
+      WithdrawReferralRequest(
+        reasonCode = "Not engaged",
+        additionalDetails = "User is not actively engaged.",
+      ),
+    )
+
+    val result = referralService.getReferralDetailsPage(referral.id.toString())
+
+    assertThat(result.withdrawReferral).isTrue()
   }
 
   @Test

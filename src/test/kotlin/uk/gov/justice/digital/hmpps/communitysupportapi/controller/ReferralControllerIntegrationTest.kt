@@ -38,6 +38,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralWithdrawalDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
@@ -608,7 +609,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   @DisplayName("GET /bff/referral-details-page/{referralId}")
   inner class ReferralViewPageEndPoint {
 
-    fun createReferralDetailsBffResponseDto(person: Person, testUser: ReferralUser): ReferralDetailsBffResponseDto {
+    fun createReferralDetailsBffResponseDto(person: Person, testUser: ReferralUser, withdrawReferral: Boolean = false): ReferralDetailsBffResponseDto {
       val savedReferral = referralHelper.createReferral(
         person = person,
         submittedBy = testUser,
@@ -653,6 +654,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         equalityDetailsTableData = equalityDetailsTable,
         contactDetailsTableData = contactDetailsTable,
         referralDetailsTableData = referralDetailsTable,
+        withdrawReferral = withdrawReferral,
       )
     }
 
@@ -713,11 +715,55 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personDetailsTableData shouldBe referralDetailsDto.personDetailsTableData
           body.equalityDetailsTableData shouldBe referralDetailsDto.equalityDetailsTableData
           body.contactDetailsTableData shouldBe referralDetailsDto.contactDetailsTableData
+          body.withdrawReferral shouldBe false
 
           val nanosDiff =
             Duration.between(referralDetailsDto.createdDate, body.createdDate).abs().toNanos()
           // allow up to 1-millisecond difference to avoid nanosecond serialization jitter
           assertThat(nanosDiff).isLessThanOrEqualTo(1_000_000L)
+        }
+    }
+
+    @Test
+    fun `should return withdrawReferral true when referral has been withdrawn`() {
+      val cprPersonDTO = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDTO.toJson()),
+          ),
+      )
+
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
+      personRepository.save(person)
+
+      val referralDetailsDto = createReferralDetailsBffResponseDto(person, testUser, withdrawReferral = true)
+
+      referralWithdrawalDetailsRepository.save(
+        ReferralWithdrawalDetails(
+          id = UUID.randomUUID(),
+          referralId = referralDetailsDto.id,
+          reasonId = withdrawalReasonRepository.findByName("Sentence expired")!!.id,
+          reasonDetails = null,
+          createdAt = OffsetDateTime.now(),
+          createdBy = testUser.id,
+        ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/referral-details-page/${referralDetailsDto.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ReferralDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.withdrawReferral shouldBe true
         }
     }
 
