@@ -31,6 +31,9 @@ jobs:
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
 
       - name: Reject pull request baseline edits
+        if: >-
+          !startsWith(github.event.pull_request.head.ref, 'automated/openapi-baseline-') ||
+          github.event.pull_request.user.login != 'github-actions[bot]'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
