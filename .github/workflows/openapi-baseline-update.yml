@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: openapi-baseline-main
@@ -38,9 +39,15 @@ jobs:
           mkdir -p openapi
           jq -S 'del(.info.version)' build/openapi/openapi.json > openapi/openapi-baseline.json
 
-      - name: Commit updated baseline
+      - name: Create baseline pull request
+        env:
+          BASELINE_BRANCH: automated/openapi-baseline-${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet -- openapi/openapi-baseline.json; then
+          # git add first so untracked/new files are picked up by the diff, not just modified ones
+          git add openapi/openapi-baseline.json
+
+          if git diff --cached --quiet -- openapi/openapi-baseline.json; then
             echo "OpenAPI baseline is already current."
             exit 0
           fi
@@ -48,6 +55,10 @@ jobs:
           # To verify this bot: https://api.github.com/users/github-actions%5Bbot%5D
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add openapi/openapi-baseline.json
           git commit -m 'Update OpenAPI baseline'
-          git push
+          git push origin "HEAD:refs/heads/${BASELINE_BRANCH}"
+          gh pr create \
+            --base main \
+            --head "$BASELINE_BRANCH" \
+            --title 'Update OpenAPI baseline' \
+            --body 'Automated update of the committed OpenAPI baseline.'
