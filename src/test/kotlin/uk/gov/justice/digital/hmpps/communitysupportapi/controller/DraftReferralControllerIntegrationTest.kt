@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.BeforeEach
@@ -240,7 +241,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
           body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
-          body.additionalInformationDetailsTableData.homeOfficeInterest shouldBe "Is of interest"
+          body.additionalInformationDetailsTableData.ofHomeOfficeInterest shouldBe true
+          body.additionalInformationDetailsTableData.homeOfficeInterestNotes shouldBe "Is of interest"
           body.additionalInformationDetailsTableData.offenderPersonalityDisorderPathway shouldBe "N/A"
         }
     }
