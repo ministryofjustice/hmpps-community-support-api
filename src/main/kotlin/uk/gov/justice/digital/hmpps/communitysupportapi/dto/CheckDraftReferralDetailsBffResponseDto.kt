@@ -104,16 +104,14 @@ data class CheckDraftReferralDetailsBffResponseDto(
   }
 
   data class DraftAdditionalInformationDetailsTableDataDto(
-    val homeOfficeInterest: String? = null,
+    val ofHomeOfficeInterest: Boolean? = null,
+    val homeOfficeInterestNotes: String? = null,
     val offenderPersonalityDisorderPathway: String? = null,
   ) {
     companion object {
       fun from(personalDetailsAndCircumstances: PersonDetailsAndCircumstances): DraftAdditionalInformationDetailsTableDataDto = DraftAdditionalInformationDetailsTableDataDto(
-        homeOfficeInterest = if (personalDetailsAndCircumstances.ofHomeOfficeInterest == true) {
-          personalDetailsAndCircumstances.homeOfficeInterestNotes ?: "Yes"
-        } else {
-          null
-        },
+        ofHomeOfficeInterest = personalDetailsAndCircumstances.ofHomeOfficeInterest,
+        homeOfficeInterestNotes = personalDetailsAndCircumstances.homeOfficeInterestNotes,
         offenderPersonalityDisorderPathway = personalDetailsAndCircumstances.offenderPersonalityDisorder,
       )
     }
