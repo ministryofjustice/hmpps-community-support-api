@@ -59,6 +59,9 @@ data class ActionPlanStepQuestion(
   @Column(name = "title", nullable = false)
   val title: String,
 
+  @Column(name = "hint")
+  val hint: String? = null,
+
   @Column(name = "answer_type", nullable = false)
   @Enumerated(EnumType.STRING)
   val answerType: ActionPlanQuestionAnswerType,
