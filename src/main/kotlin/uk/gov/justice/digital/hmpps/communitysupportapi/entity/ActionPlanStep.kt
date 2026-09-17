@@ -18,6 +18,10 @@ import java.util.UUID
 enum class ActionPlanStepType {
   NEED,
   SESSION_DELIVERY,
+  RISK_AND_ADJUSTMENTS,
+  SRV_END_DATE_CHECK,
+  CHANGE_SRV_END_DATE,
+  USER_INVOLVEMENT,
   CATCH_ALL,
 }
 
