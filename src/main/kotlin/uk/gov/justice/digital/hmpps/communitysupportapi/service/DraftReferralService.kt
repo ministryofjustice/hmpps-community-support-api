@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.validation.ValidationException
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalInformationForTheDeliveryPartnerBffResponseDto
@@ -71,10 +70,6 @@ class DraftReferralService(
   private val riskInformationService: RiskInformationService,
   private val referenceDataService: ReferenceDataService,
 ) {
-  companion object {
-    private val logger = LoggerFactory.getLogger(ReferralService::class.java)
-  }
-
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
     val person: Person,
@@ -567,6 +562,7 @@ class DraftReferralService(
     return CheckDraftReferralDetailsBffResponseDto.from(
       referral,
       person,
+      cprPerson,
       identifier,
       personalDetailsAndCircumstances,
       communitySupportRiskDto,
