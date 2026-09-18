@@ -32,7 +32,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportN
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
@@ -561,9 +560,10 @@ class DraftReferralService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
     val identifier = identifierValidator.validate(person.identifier)
-    val personalDetailsAndCircumstances = personDetailsAndCircumstances(identifier)
+    val cprPerson = cprProbationService.getPersonDetails(identifier)
+    val personalDetailsAndCircumstances = nDeliusService.getPersonalDetailsAndCircumstances(cprPerson)
     val communitySupportRiskDto: CommunitySupportRiskDto = riskInformationService.getRoshRisksByReferralId(referralId)
-    val nationalities = nationalities(identifier)
+    val nationalities = cprPerson.additionalDetails?.nationalities ?: emptyList()
     return CheckDraftReferralDetailsBffResponseDto.from(
       referral,
       person,
@@ -573,10 +573,6 @@ class DraftReferralService(
       nationalities,
     )
   }
-
-  private fun nationalities(identifier: PersonIdentifier): List<String> = cprProbationService.getPersonDetails(identifier).additionalDetails?.nationalities ?: emptyList()
-
-  private fun personDetailsAndCircumstances(identifier: PersonIdentifier): PersonDetailsAndCircumstances = nDeliusService.getPersonalDetailsAndCircumstances(cprProbationService.getPersonDetails(identifier))
 
   fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(
     referralRepository.findById(referralId)
