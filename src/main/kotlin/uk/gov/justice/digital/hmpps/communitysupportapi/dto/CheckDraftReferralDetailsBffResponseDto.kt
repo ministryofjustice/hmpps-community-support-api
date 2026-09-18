@@ -130,6 +130,9 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val mobileNumber: String?,
     val email: String?,
     val address: String?,
+    val addressType: String?,
+    val addressStartDate: LocalDate?,
+    val addressNotes: String?,
   ) {
     companion object {
       fun from(cprPerson: PersonAggregate): DraftContactDetailsTableDataDto = DraftContactDetailsTableDataDto(
@@ -137,6 +140,9 @@ data class CheckDraftReferralDetailsBffResponseDto(
         mobileNumber = cprPerson.additionalDetails?.mobileNumber,
         email = cprPerson.additionalDetails?.emailAddress,
         address = cprPerson.additionalDetails?.address,
+        addressType = cprPerson.additionalDetails?.addressType,
+        addressStartDate = cprPerson.additionalDetails?.addressStartDate,
+        addressNotes = cprPerson.additionalDetails?.addressNotes,
       )
     }
   }
