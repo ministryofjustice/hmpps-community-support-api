@@ -316,6 +316,43 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
       }
 
       @Test
+      fun `should return date answer types`() {
+        val referral = createReferral("Jane", "Doe")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+        val sessionDeliveryStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(2)
+            .withName("Service Delivery Details")
+            .withStepType(ActionPlanStepType.SESSION_DELIVERY)
+            .create(),
+        )
+
+        actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(sessionDeliveryStep.id)
+            .withOrderNumber(1)
+            .withTitle("What is the new service end date?")
+            .withAnswerType(ActionPlanQuestionAnswerType.DATE)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+
+        webTestClient.get()
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.questions.single().answerType shouldBe ActionPlanQuestionAnswerType.DATE
+          }
+      }
+
+      @Test
       fun `should return 404 when no session delivery step exists`() {
         val referral = createReferral("John", "Smith")
         val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
