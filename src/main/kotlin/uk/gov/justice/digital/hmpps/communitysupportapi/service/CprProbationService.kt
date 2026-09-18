@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toAdditionalDetai
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toPrisonPerson
 import uk.gov.justice.digital.hmpps.communitysupportapi.mapper.toProbationPerson
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 
 @Service
 class CprProbationService(
@@ -32,5 +33,10 @@ class CprProbationService(
       person = cprPersonDto.toPrisonPerson(),
       additionalDetails = cprPersonDto.toAdditionalDetails(),
     )
+  }
+
+  fun getPersonDetails(identifier: PersonIdentifier): PersonAggregate=when (identifier) {
+    is PersonIdentifier.PrisonerNumber -> getPersonDetailsByPrisonNumber(identifier.value)
+    is PersonIdentifier.Crn -> getPersonDetailsByCrn(identifier.value)
   }
 }
