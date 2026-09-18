@@ -138,7 +138,7 @@ class ActionPlanService(
     }
 
     return ActionPlanSummaryDto(
-      personDetails = ActionPlanSummaryDto.ActionPlanSummaryPersonDetails(fullName = "${person.firstName} ${person.lastName}"),
+      personDetails = ActionPlanSummaryDto.ActionPlanSummaryPersonDetails(person.firstName, person.lastName),
       needs = needs,
     )
   }
