@@ -32,7 +32,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportN
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
@@ -385,7 +384,7 @@ class DraftReferralService(
   fun upsertOffenceSentenceDetails(
     referralId: UUID,
     userId: UUID,
-    request: UpdateOffenceSentenceRequest
+    request: UpdateOffenceSentenceRequest,
   ): OffenceSentenceInfoBffResponseDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
@@ -550,12 +549,11 @@ class DraftReferralService(
     is PersonIdentifier.PrisonerNumber -> null
   }
 
-  private fun normaliseOffenceSentenceDatesForUpsert(offenceSentenceInfo: OffenceSentenceDto): OffenceSentenceDto =
-    if (offenceSentenceInfo.expectedReleaseDate != null) {
-      offenceSentenceInfo.copy(sentenceEndDate = null)
-    } else {
-      offenceSentenceInfo
-    }
+  private fun normaliseOffenceSentenceDatesForUpsert(offenceSentenceInfo: OffenceSentenceDto): OffenceSentenceDto = if (offenceSentenceInfo.expectedReleaseDate != null) {
+    offenceSentenceInfo.copy(sentenceEndDate = null)
+  } else {
+    offenceSentenceInfo
+  }
 
   fun getCheckDraftReferralDetailsPage(referralId: UUID): CheckDraftReferralDetailsBffResponseDto {
     val referral = referralRepository.findById(referralId)
@@ -572,7 +570,7 @@ class DraftReferralService(
       identifier,
       personalDetailsAndCircumstances,
       communitySupportRiskDto,
-      nationalities
+      nationalities,
     )
   }
 

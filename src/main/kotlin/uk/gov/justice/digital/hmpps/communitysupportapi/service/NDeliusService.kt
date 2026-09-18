@@ -9,7 +9,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
-import uk.gov.justice.digital.hmpps.communitysupportapi.service.DraftReferralService.Companion.logger
 
 @Service
 class NDeliusService(
@@ -28,18 +27,18 @@ class NDeliusService(
     return PersonDetailsAndCircumstances.from(personalCircumstances, homeOfficeInterest)
   }
 
-  fun getPersonalDetailsAndCircumstances(cprPerson: PersonAggregate): PersonDetailsAndCircumstances = when(val identifier = cprPerson.person.identifier){
-        is PersonIdentifier.Crn -> getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
-        is PersonIdentifier.PrisonerNumber -> {
-          if (cprPerson.person.knownCrns.isNotEmpty()) {
-            val crn = cprPerson.person.knownCrns.first()
-            getPersonalDetailsAndCircumstancesByIdentifier(crn)
-          } else {
-            log.warn("No known CRN found for person with prison identifier {}", identifier.value)
-            PersonDetailsAndCircumstances()
-          }
-        }
+  fun getPersonalDetailsAndCircumstances(cprPerson: PersonAggregate): PersonDetailsAndCircumstances = when (val identifier = cprPerson.person.identifier) {
+    is PersonIdentifier.Crn -> getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
+    is PersonIdentifier.PrisonerNumber -> {
+      if (cprPerson.person.knownCrns.isNotEmpty()) {
+        val crn = cprPerson.person.knownCrns.first()
+        getPersonalDetailsAndCircumstancesByIdentifier(crn)
+      } else {
+        log.warn("No known CRN found for person with prison identifier {}", identifier.value)
+        PersonDetailsAndCircumstances()
+      }
     }
+  }
 
   fun getCommunityManagerByIdentifier(identifier: String): CommunityManagerDto? {
     log.debug("Fetching Community Manager for crn {}", identifier)

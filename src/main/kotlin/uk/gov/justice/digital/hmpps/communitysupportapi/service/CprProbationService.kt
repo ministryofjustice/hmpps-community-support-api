@@ -35,7 +35,7 @@ class CprProbationService(
     )
   }
 
-  fun getPersonDetails(identifier: PersonIdentifier): PersonAggregate=when (identifier) {
+  fun getPersonDetails(identifier: PersonIdentifier): PersonAggregate = when (identifier) {
     is PersonIdentifier.PrisonerNumber -> getPersonDetailsByPrisonNumber(identifier.value)
     is PersonIdentifier.Crn -> getPersonDetailsByCrn(identifier.value)
   }
