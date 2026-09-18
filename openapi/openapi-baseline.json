@@ -162,12 +162,16 @@
       },
       "ActionPlanSummaryPersonDetails": {
         "properties": {
-          "fullName": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
             "type": "string"
           }
         },
         "required": [
-          "fullName"
+          "firstName",
+          "lastName"
         ],
         "type": "object"
       },
