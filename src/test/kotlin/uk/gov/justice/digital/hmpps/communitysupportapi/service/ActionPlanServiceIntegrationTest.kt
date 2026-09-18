@@ -163,7 +163,8 @@ class ActionPlanServiceIntegrationTest :
       val result = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
 
       // Then
-      assertEquals("Adam Smith", result.personDetails.fullName)
+      assertEquals("Adam", result.personDetails.firstName)
+      assertEquals("Smith", result.personDetails.lastName)
       assertEquals(needRepository.findAllByOrderByOrderNumberAsc().map { it.label }, result.needs.map { it.label })
       assertTrue(result.needs.all { it.outcomes.isEmpty() })
     }

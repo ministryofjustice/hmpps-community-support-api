@@ -97,7 +97,8 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<ActionPlanSummaryDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-          body.personDetails.fullName shouldBe "Adam Smith"
+          body.personDetails.firstName shouldBe "Adam"
+          body.personDetails.lastName shouldBe "Smith"
           body.needs.size shouldBe expectedNeeds.size
           body.needs.map { it.label } shouldBe expectedNeeds.map { it.label }
           body.needs.map { it.id } shouldBe expectedNeeds.map { it.id }
