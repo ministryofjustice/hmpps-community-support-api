@@ -11,5 +11,4 @@ local:
 	$(GRADLEW) bootRunLocal
 
 local-down:
-    $(COMPOSE) down
-    
+	$(COMPOSE) down
