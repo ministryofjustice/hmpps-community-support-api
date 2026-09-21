@@ -1946,15 +1946,43 @@
               "null"
             ]
           },
+          "addressNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressStartDate": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "email": {
             "type": [
               "string",
               "null"
             ]
           },
+          "inCustody": {
+            "type": "boolean"
+          },
           "mobileNumber": {
             "type": [
               "string",
+              "null"
+            ]
+          },
+          "noFixedAddress": {
+            "type": [
+              "boolean",
               "null"
             ]
           },
@@ -1965,6 +1993,9 @@
             ]
           }
         },
+        "required": [
+          "inCustody"
+        ],
         "type": "object"
       },
       "DraftEqualityDetailsTableDataDto": {
