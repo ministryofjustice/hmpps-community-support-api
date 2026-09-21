@@ -122,6 +122,11 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val mobileNumber: String?,
     val email: String?,
     val address: String?,
+    val noFixedAddress: Boolean?,
+    val inCustody: Boolean,
+    val addressType: String?,
+    val addressStartDate: LocalDate?,
+    val addressNotes: String?,
   ) {
     companion object {
       fun from(person: Person): DraftContactDetailsTableDataDto = DraftContactDetailsTableDataDto(
@@ -129,6 +134,11 @@ data class CheckDraftReferralDetailsBffResponseDto(
         mobileNumber = null,
         email = person.additionalDetails?.emailAddress,
         address = person.additionalDetails?.address,
+        noFixedAddress = null,
+        inCustody = false,
+        addressType = null,
+        addressStartDate = null,
+        addressNotes = null,
       )
     }
   }
