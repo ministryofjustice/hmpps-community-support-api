@@ -6,7 +6,9 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.NDeliusClient
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 
 @Service
 class NDeliusService(
@@ -23,6 +25,19 @@ class NDeliusService(
     val homeOfficeInterest = nDeliusClient.getHomeOfficeInterestByCrn(identifier)
 
     return PersonDetailsAndCircumstances.from(personalCircumstances, homeOfficeInterest)
+  }
+
+  fun getPersonalDetailsAndCircumstances(cprPerson: PersonAggregate): PersonDetailsAndCircumstances = when (val identifier = cprPerson.person.identifier) {
+    is PersonIdentifier.Crn -> getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
+    is PersonIdentifier.PrisonerNumber -> {
+      if (cprPerson.person.knownCrns.isNotEmpty()) {
+        val crn = cprPerson.person.knownCrns.first()
+        getPersonalDetailsAndCircumstancesByIdentifier(crn)
+      } else {
+        log.warn("No known CRN found for person with prison identifier {}", identifier.value)
+        PersonDetailsAndCircumstances()
+      }
+    }
   }
 
   fun getCommunityManagerByIdentifier(identifier: String): CommunityManagerDto? {
