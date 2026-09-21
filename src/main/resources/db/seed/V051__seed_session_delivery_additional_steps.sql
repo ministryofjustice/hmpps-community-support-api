@@ -1,5 +1,10 @@
 -- V51: Seed session delivery additional steps and choices - risk and adjustments, service end date, user involvement steps
 
+ALTER TABLE action_plan_step
+    ALTER COLUMN step_type TYPE VARCHAR(50);
+
+COMMENT ON COLUMN action_plan_step.step_type IS 'Defines whether this step links to a need or is a catch-all section';
+
 -- patch existing free_text_label values to update the label for session delivery details step
 UPDATE action_plan_step_question_choice
 SET has_free_text = false,
@@ -110,8 +115,8 @@ VALUES (
            'e8f3b4f9-8d84-4b3a-9f47-5f78f4cb3003',
            'c191398c-9661-4983-bafb-be649d877183',
            12,
-           'Is service end date changed',
-           'SRV_END_DATE_CHECK'
+           'Service end date',
+           'SERVICE_END_DATE_CHECK'
        )
     ON CONFLICT (id) DO UPDATE
                             SET action_plan_template_id = EXCLUDED.action_plan_template_id,
@@ -172,8 +177,8 @@ VALUES (
            'e8f3b4f9-8d84-4b3a-9f47-5f78f4cb3004',
            'c191398c-9661-4983-bafb-be649d877183',
            13,
-           'Change service end date',
-           'CHANGE_SRV_END_DATE'
+           'Change the service end date',
+           'CHANGE_SERVICE_END_DATE'
        )
     ON CONFLICT (id) DO UPDATE
                             SET action_plan_template_id = EXCLUDED.action_plan_template_id,
