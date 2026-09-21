@@ -101,3 +101,11 @@ tasks.register<Test>("initialiseDatabase") {
   include("**/InitialiseDatabase.class")
   onlyIf { gradle.startParameter.taskNames.contains("initialiseDatabase") }
 }
+
+tasks.register<JavaExec>("bootRunLocal") {
+  group = "application"
+  description = "Runs the Spring Boot application with the local profile."
+  classpath = sourceSets.main.get().runtimeClasspath
+  mainClass.set("uk.gov.justice.digital.hmpps.communitysupportapi.CommunitySupportApiKt")
+  args = listOf("--spring.profiles.active=local")
+}
