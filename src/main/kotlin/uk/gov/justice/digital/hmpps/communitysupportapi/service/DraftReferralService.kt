@@ -147,13 +147,9 @@ class DraftReferralService(
     request: NeedsInterpreterRequest,
   ): NeedsInterpreterBffResponseDto {
     val context = getReferralSupportNeedsContext(referralId)
-    println("upsertNeedsInterpreter - context.additionalSupportNeeds = ${context.additionalSupportNeeds}")
-    println("upsertNeedsInterpreter - request = $request")
     val personAdditionalSupportNeeds = if (context.additionalSupportNeeds == null) {
-      println("createNeedsInterpreter")
       createNeedsInterpreter(referralId, context.person.id, request, userId)
     } else {
-      println("updateNeedsInterpreter")
       updateNeedsInterpreter(context.additionalSupportNeeds, request, userId)
     }
 
@@ -250,9 +246,7 @@ class DraftReferralService(
     request: NeedsInterpreterRequest,
     createdBy: UUID,
   ): PersonAdditionalSupportNeeds {
-    println("createNeedsInterpreter - request = $request")
     val normalisedRequest = request.normaliseAgainstNeedsInterpreter()
-    println("createNeedsInterpreter - normalisedRequest = $normalisedRequest")
     val supportNeeds = PersonAdditionalSupportNeeds(
       id = UUID.randomUUID(),
       referralId = referralId,
@@ -262,7 +256,6 @@ class DraftReferralService(
       createdBy = createdBy,
       createdAt = OffsetDateTime.now(),
     )
-    println("createNeedsInterpreter - supportNeeds = $supportNeeds")
     return personAdditionalSupportNeedsRepository.save(supportNeeds)
   }
 
@@ -271,16 +264,13 @@ class DraftReferralService(
     newRecord: NeedsInterpreterRequest,
     updatedBy: UUID,
   ): PersonAdditionalSupportNeeds {
-    println("updateNeedsInterpreter - newRecord = $newRecord")
     val normalisedRecord = newRecord.normaliseAgainstNeedsInterpreter()
-    println("updateNeedsInterpreter - normalisedRecord = $normalisedRecord")
     val copyRecord = existingRecord.copy(
       interpreterLanguage = normalisedRecord.language,
       interpreterNeeded = normalisedRecord.needsInterpreter,
       updatedBy = updatedBy,
       updatedAt = OffsetDateTime.now(),
     )
-    println("updateNeedsInterpreter - copyRecord = $copyRecord")
     return personAdditionalSupportNeedsRepository.save(copyRecord)
   }
 
