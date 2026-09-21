@@ -9,3 +9,7 @@ local:
 		sleep 2; \
 	done
 	$(GRADLEW) bootRunLocal
+
+local-down:
+    $(COMPOSE) down
+    
