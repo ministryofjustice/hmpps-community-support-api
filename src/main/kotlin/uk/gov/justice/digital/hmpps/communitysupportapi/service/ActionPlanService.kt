@@ -4,6 +4,8 @@ import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedNeed
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedOutcome
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
@@ -16,6 +18,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetai
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanActivity
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionResponseEvent
@@ -26,6 +29,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanQuestionResponseEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
@@ -35,6 +39,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.OutcomeRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import java.time.OffsetDateTime
@@ -50,9 +55,11 @@ class ActionPlanService(
   private val actionPlanStepQuestionRepository: ActionPlanStepQuestionRepository,
   private val actionPlanStepQuestionAnswerHeaderRepository: ActionPlanStepQuestionAnswerHeaderRepository,
   private val actionPlanStepQuestionAnswerDetailsRepository: ActionPlanStepQuestionAnswerDetailsRepository,
+  private val actionPlanActivityRepository: ActionPlanActivityRepository,
   private val referralRepository: ReferralRepository,
   private val personRepository: PersonRepository,
   private val needRepository: NeedRepository,
+  private val outcomeRepository: OutcomeRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ActionPlanService::class.java)
@@ -507,5 +514,113 @@ class ActionPlanService(
         needId to content
       }
       .groupBy(keySelector = { it.first }, valueTransform = { it.second })
+  }
+
+  @Transactional
+  fun submitActionForReferral(
+    referralReference: String,
+    request: ActionPlanActionRequest,
+    changedBy: String,
+  ): ActionPlanActionResponse {
+    val changedAt = OffsetDateTime.now()
+    // Find the referral for our action plan
+    val referral = referralRepository.findReferenceNumberOrNull(referralReference)
+      ?: throw NotFoundException("Referral not found with reference=$referralReference")
+
+    // Find the action plan for our referral or create it
+    val actionPlan = findOrCreateByReferralId(referral.id)
+
+    // find the outcome for our action plan step
+    val outcome = outcomeRepository.findById(request.outcomeId)
+      .orElseThrow { NotFoundException("Outcome not found with id=${request.outcomeId}") }
+
+    // check the outcome belongs to the need
+    if (outcome.needId != request.needId) {
+      throw ValidationException("Outcome ${request.outcomeId} does not belong to need ${request.needId}")
+    }
+
+    // find the need step for our action plan
+    val needSteps = actionPlanStepRepository.findAllByActionPlanTemplateIdOrderByOrderNumberAsc(
+      actionPlan.actionPlanTemplateId,
+    ).filter { it.stepType == ActionPlanStepType.NEED }
+
+    if (needSteps.isEmpty()) {
+      throw NotFoundException("No NEED step found in action plan template")
+    }
+
+    // find the need step question for our action plan
+    val needStepQuestions = actionPlanStepQuestionRepository
+      .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
+      .filter { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == request.needId }
+
+    if (needStepQuestions.isEmpty()) {
+      throw NotFoundException("No outcome question found for need ${request.needId}")
+    }
+
+    val question = needStepQuestions.first()
+    val questionResponseChangeBatchId = UUID.randomUUID()
+
+    val existingHeader = actionPlanStepQuestionAnswerHeaderRepository
+      .findActiveByPlanAndQuestionIds(actionPlan.id, listOf(question.id))
+      .firstOrNull()
+
+    val answerHeader = existingHeader ?: actionPlanStepQuestionAnswerHeaderRepository.save(
+      ActionPlanStepQuestionAnswerHeader.from(
+        actionPlanId = actionPlan.id,
+        questionId = question.id,
+        orderNumber = 1,
+        createdBy = changedBy,
+        createdAt = changedAt,
+      ),
+    )
+
+    if (existingHeader != null) {
+      actionPlanActivityRepository.deleteByActionPlanStepQuestionAnswerHeaderId(existingHeader.id)
+    }
+
+    val latestRevisionNumber = actionPlanStepQuestionAnswerDetailsRepository
+      .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(answerHeader.id))
+      .maxOfOrNull { it.revisionNumber } ?: 0
+
+    actionPlanStepQuestionAnswerDetailsRepository.save(
+      ActionPlanStepQuestionAnswerDetails.from(
+        headerId = answerHeader.id,
+        revisionNumber = latestRevisionNumber + 1,
+        content = request.outcomeId.toString(),
+        freeTextValue = null,
+        createdBy = changedBy,
+        createdAt = changedAt,
+      ),
+    )
+
+    request.activities.forEach { activity ->
+      actionPlanActivityRepository.save(
+        ActionPlanActivity(
+          id = UUID.randomUUID(),
+          actionPlanStepQuestionAnswerHeaderId = answerHeader.id,
+          who = activity.who,
+          activityDetails = activity.activityDetails,
+          status = activity.status,
+        ),
+      )
+    }
+
+    actionPlanQuestionResponseEventRepository.save(
+      ActionPlanQuestionResponseEvent.actionPlanQuestionResponseEventForResponses(
+        actionPlanId = actionPlan.id,
+        responseHeaderId = answerHeader.id,
+        eventType = if (existingHeader == null) ActionPlanQuestionResponseEventType.CREATED else ActionPlanQuestionResponseEventType.UPDATED,
+        questionResponseChangeBatchId = questionResponseChangeBatchId,
+        createdAt = changedAt,
+        createdBy = changedBy,
+      ),
+    )
+
+    logger.info("Successfully submitted action for referral={} with need={} and outcome={}", referralReference, request.needId, request.outcomeId)
+
+    return ActionPlanActionResponse(
+      success = true,
+      message = "Action submitted successfully",
+    )
   }
 }
