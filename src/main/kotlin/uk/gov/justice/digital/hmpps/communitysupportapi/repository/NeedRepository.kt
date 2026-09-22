@@ -5,5 +5,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Need
 import java.util.UUID
 
 interface NeedRepository : JpaRepository<Need, UUID> {
+  fun findAllByIdInOrderByOrderNumberAsc(needIds: Collection<UUID>): List<Need>
   fun findAllByOrderByOrderNumberAsc(): List<Need>
 }
