@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -13,6 +14,9 @@ import org.springframework.http.HttpMethod.PATCH
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActivityRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
@@ -20,6 +24,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
@@ -28,11 +33,14 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionChoiceRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
@@ -67,6 +75,15 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var actionPlanStepQuestionAnswerDetailsRepository: ActionPlanStepQuestionAnswerDetailsRepository
+
+  @Autowired
+  private lateinit var actionPlanActivityRepository: ActionPlanActivityRepository
+
+  @Autowired
+  private lateinit var actionPlanRepository: ActionPlanRepository
+
+  @Autowired
+  private lateinit var actionPlanTemplateRepository: ActionPlanTemplateRepository
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
@@ -727,6 +744,451 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           "/referral/ZZ9999ZZ/action-plan/session-delivery-details",
           ActionPlanSessionDeliveryDetailsRequest(answers = emptyList()),
         )
+      }
+    }
+
+    @Nested
+    @DisplayName("POST /referral/{referralReference}/action-plan/action")
+    inner class PostActionEndpoint {
+      @Test
+      fun `should return unauthorized if no token`() {
+        assertUnauthorized(
+          org.springframework.http.HttpMethod.POST,
+          "/referral/AB1234CD/action-plan/action",
+        )
+      }
+
+      @Test
+      fun `should return forbidden if no role`() {
+        assertForbiddenNoRole(
+          org.springframework.http.HttpMethod.POST,
+          "/referral/AB1234CD/action-plan/action",
+          ActionPlanActionRequest(
+            needId = UUID.randomUUID(),
+            outcomeId = UUID.randomUUID(),
+            activities = listOf(
+              ActionPlanActivityRequest(
+                who = "test",
+                activityDetails = "test",
+                status = "test",
+              ),
+            ),
+          ),
+        )
+      }
+
+      @Test
+      fun `should return forbidden if wrong role`() {
+        assertForbiddenWrongRole(
+          org.springframework.http.HttpMethod.POST,
+          "/referral/AB1234CD/action-plan/action",
+          ActionPlanActionRequest(
+            needId = UUID.randomUUID(),
+            outcomeId = UUID.randomUUID(),
+            activities = listOf(
+              ActionPlanActivityRequest(
+                who = "test",
+                activityDetails = "test",
+                status = "test",
+              ),
+            ),
+          ),
+        )
+      }
+
+      @Test
+      fun `should return 404 when referral not found`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+        val needId = needRepository.findAllByOrderByOrderNumberAsc().first().id
+        val outcomeId = needRepository.findAllByOrderByOrderNumberAsc().first().outcomes.first().id
+
+        webTestClient.post()
+          .uri("/referral/INVALID-REF/action-plan/action")
+          .headers(setAuthorisation())
+          .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+          .bodyValue(
+            ActionPlanActionRequest(
+              needId = needId,
+              outcomeId = outcomeId,
+              activities = listOf(
+                ActionPlanActivityRequest(
+                  who = "Service provider",
+                  activityDetails = "Weekly session",
+                  status = "Active",
+                ),
+              ),
+            ),
+          )
+          .exchange()
+          .expectStatus().isNotFound
+      }
+
+      @Test
+      fun `should submit action with need, outcome and activities successfully`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+        val referral = createReferral("Sarah", "Williams")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+        val needStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(1)
+            .withName("Select a Need")
+            .withStepType(ActionPlanStepType.NEED)
+            .create(),
+        )
+
+        val need = needRepository.findAllByOrderByOrderNumberAsc().first()
+        val outcome = need.outcomes.first()
+
+        val question = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(needStep.id)
+            .withOrderNumber(1)
+            .withTitle("Select an outcome for ${need.label}")
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withQuestionType(ActionPlanQuestionType.OUTCOME)
+            .withMaxNumberResponses(1)
+            .withNeedId(need.id)
+            .create(),
+        )
+
+        val activities = listOf(
+          ActionPlanActivityRequest(
+            who = "Service provider",
+            activityDetails = "Weekly one-to-one sessions",
+            status = "Active",
+          ),
+          ActionPlanActivityRequest(
+            who = "Service user",
+            activityDetails = "Attend all sessions",
+            status = "Active",
+          ),
+        )
+
+        webTestClient.post()
+          .uri("/referral/${referral.referenceNumber}/action-plan/action")
+          .headers(setAuthorisation())
+          .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+          .bodyValue(
+            ActionPlanActionRequest(
+              needId = need.id,
+              outcomeId = outcome.id,
+              activities = activities,
+            ),
+          )
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanActionResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.success shouldBe true
+            body.message shouldBe "Action submitted successfully"
+          }
+
+        val savedAnswerHeader = actionPlanStepQuestionAnswerHeaderRepository
+          .findActiveByPlanAndQuestionIds(actionPlan.id, listOf(question.id))
+          .first()
+
+        val savedAnswerDetails = actionPlanStepQuestionAnswerDetailsRepository
+          .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(savedAnswerHeader.id))
+          .first()
+
+        savedAnswerDetails.content shouldBe outcome.id.toString()
+
+        val savedActivities = actionPlanActivityRepository
+          .findByActionPlanStepQuestionAnswerHeaderId(savedAnswerHeader.id)
+
+        savedActivities.size shouldBe 2
+        savedActivities[0].who shouldBe "Service provider"
+        savedActivities[0].activityDetails shouldBe "Weekly one-to-one sessions"
+        savedActivities[0].status shouldBe "Active"
+        savedActivities[1].who shouldBe "Service user"
+        savedActivities[1].activityDetails shouldBe "Attend all sessions"
+        savedActivities[1].status shouldBe "Active"
+      }
+
+      @Test
+      fun `should replace existing action when submitting new action for same need`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+        val referral = createReferral("Thomas", "Brown")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+        val needStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(1)
+            .withName("Select a Need")
+            .withStepType(ActionPlanStepType.NEED)
+            .create(),
+        )
+
+        val need = needRepository.findAllByOrderByOrderNumberAsc().first()
+        val outcomes = need.outcomes
+        val firstOutcome = outcomes[0]
+        val secondOutcome = outcomes[1]
+
+        val question = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(needStep.id)
+            .withOrderNumber(1)
+            .withTitle("Select an outcome for ${need.label}")
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withQuestionType(ActionPlanQuestionType.OUTCOME)
+            .withMaxNumberResponses(1)
+            .withNeedId(need.id)
+            .create(),
+        )
+
+        webTestClient.post()
+          .uri("/referral/${referral.referenceNumber}/action-plan/action")
+          .headers(setAuthorisation())
+          .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+          .bodyValue(
+            ActionPlanActionRequest(
+              needId = need.id,
+              outcomeId = firstOutcome.id,
+              activities = listOf(
+                ActionPlanActivityRequest(
+                  who = "Provider",
+                  activityDetails = "First set of activities",
+                  status = "Active",
+                ),
+              ),
+            ),
+          )
+          .exchange()
+          .expectStatus().isOk
+
+        val firstAnswerHeaders = actionPlanStepQuestionAnswerHeaderRepository
+          .findActiveByPlanAndQuestionIds(actionPlan.id, listOf(question.id))
+
+        firstAnswerHeaders.size shouldBe 1
+
+        webTestClient.post()
+          .uri("/referral/${referral.referenceNumber}/action-plan/action")
+          .headers(setAuthorisation())
+          .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+          .bodyValue(
+            ActionPlanActionRequest(
+              needId = need.id,
+              outcomeId = secondOutcome.id,
+              activities = listOf(
+                ActionPlanActivityRequest(
+                  who = "Provider",
+                  activityDetails = "Second set of activities",
+                  status = "Active",
+                ),
+              ),
+            ),
+          )
+          .exchange()
+          .expectStatus().isOk
+
+        val secondAnswerHeaders = actionPlanStepQuestionAnswerHeaderRepository
+          .findActiveByPlanAndQuestionIds(actionPlan.id, listOf(question.id))
+
+        secondAnswerHeaders.size shouldBe 1
+        secondAnswerHeaders.first().id shouldBe firstAnswerHeaders.first().id
+
+        val secondAnswerDetails = actionPlanStepQuestionAnswerDetailsRepository
+          .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(secondAnswerHeaders.first().id))
+          .maxByOrNull { it.revisionNumber }
+          ?: error("Expected answer details for updated action")
+
+        secondAnswerDetails.content shouldBe secondOutcome.id.toString()
+
+        val secondActivities = actionPlanActivityRepository
+          .findByActionPlanStepQuestionAnswerHeaderId(secondAnswerHeaders.first().id)
+
+        secondActivities.size shouldBe 1
+        secondActivities.first().activityDetails shouldBe "Second set of activities"
+      }
+
+      @Test
+      fun `should return 400 when outcome does not belong to need`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+        val referral = createReferral("Michael", "Davis")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+        val needs = needRepository.findAllByOrderByOrderNumberAsc()
+        val firstNeed = needs[0]
+        val secondNeed = needs[1]
+        val wrongOutcome = secondNeed.outcomes.first()
+
+        webTestClient.post()
+          .uri("/referral/${referral.referenceNumber}/action-plan/action")
+          .headers(setAuthorisation())
+          .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+          .bodyValue(
+            ActionPlanActionRequest(
+              needId = firstNeed.id,
+              outcomeId = wrongOutcome.id,
+              activities = listOf(
+                ActionPlanActivityRequest(
+                  who = "Provider",
+                  activityDetails = "Activities",
+                  status = "Active",
+                ),
+              ),
+            ),
+          )
+          .exchange()
+          .expectStatus().isBadRequest
+      }
+
+      @Test
+      fun `should return 400 when activities list is empty`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+        val referral = createReferral("Jennifer", "Miller")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+        val need = needRepository.findAllByOrderByOrderNumberAsc().first()
+        val outcome = need.outcomes.first()
+
+        webTestClient.post()
+          .uri("/referral/${referral.referenceNumber}/action-plan/action")
+          .headers(setAuthorisation())
+          .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+          .bodyValue(
+            ActionPlanActionRequest(
+              needId = need.id,
+              outcomeId = outcome.id,
+              activities = emptyList(),
+            ),
+          )
+          .exchange()
+          .expectStatus().isBadRequest
+      }
+
+      @Test
+      fun `should return 400 when activity field is blank`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+        val referral = createReferral("Robert", "Taylor")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+        val need = needRepository.findAllByOrderByOrderNumberAsc().first()
+        val outcome = need.outcomes.first()
+
+        webTestClient.post()
+          .uri("/referral/${referral.referenceNumber}/action-plan/action")
+          .headers(setAuthorisation())
+          .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+          .bodyValue(
+            ActionPlanActionRequest(
+              needId = need.id,
+              outcomeId = outcome.id,
+              activities = listOf(
+                ActionPlanActivityRequest(
+                  who = "",
+                  activityDetails = "Activities",
+                  status = "Active",
+                ),
+              ),
+            ),
+          )
+          .exchange()
+          .expectStatus().isBadRequest
+      }
+
+      @Test
+      fun `should create action plan if it does not exist`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+        val referral = createReferral("Alice", "Johnson")
+        // Find or create the activeGlobal template - there's a unique constraint so only one can exist
+        val actionPlanTemplate = actionPlanTemplateRepository.findFirstByActiveGlobalTrueOrderByIdAsc()
+          ?: actionPlanHelper.createActionPlanTemplate(activeGlobal = true)
+        // Note: NOT creating an action plan - it should be auto-created
+
+        val need = needRepository.findAllByOrderByOrderNumberAsc().first()
+        val outcome = need.outcomes.first()
+
+        // Find the NEED step in the template, or create it if it doesn't exist
+        val needSteps = actionPlanStepRepository
+          .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplate.id)
+          .filter { it.stepType == ActionPlanStepType.NEED }
+
+        val needStep = if (needSteps.isNotEmpty()) {
+          needSteps.first()
+        } else {
+          actionPlanStepRepository.save(
+            ActionPlanStepFactory()
+              .withActionPlanTemplateId(actionPlanTemplate.id)
+              .withOrderNumber(1)
+              .withName("Needs")
+              .withStepType(ActionPlanStepType.NEED)
+              .create(),
+          )
+        }
+
+        // Find or create the outcome question for this need
+        val questions = actionPlanStepQuestionRepository
+          .findAllByActionPlanStepIdInOrderByOrderNumberAsc(listOf(needStep.id))
+          .filter { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == need.id }
+
+        val question = if (questions.isNotEmpty()) {
+          questions.first()
+        } else {
+          actionPlanStepQuestionRepository.save(
+            ActionPlanStepQuestionFactory()
+              .withActionPlanStepId(needStep.id)
+              .withOrderNumber(1)
+              .withTitle("What is the desired outcome?")
+              .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
+              .withQuestionType(ActionPlanQuestionType.OUTCOME)
+              .withMaxNumberResponses(10)
+              .withNeedId(need.id)
+              .create(),
+          )
+        }
+
+        webTestClient.post()
+          .uri("/referral/${referral.referenceNumber}/action-plan/action")
+          .headers(setAuthorisation())
+          .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+          .bodyValue(
+            ActionPlanActionRequest(
+              needId = need.id,
+              outcomeId = outcome.id,
+              activities = listOf(
+                ActionPlanActivityRequest(
+                  who = "Service provider",
+                  activityDetails = "Support activities",
+                  status = "Active",
+                ),
+              ),
+            ),
+          )
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanActionResponse>()
+          .consumeWith { response ->
+            response.responseBody shouldNotBe null
+          }
+
+        val savedActionPlan = actionPlanRepository.findByReferralId(referral.id)
+        savedActionPlan shouldNotBe null
+
+        val savedAnswerHeader = actionPlanStepQuestionAnswerHeaderRepository
+          .findActiveByPlanAndQuestionIds(savedActionPlan!!.id, listOf(question.id))
+          .first()
+
+        val savedActivities = actionPlanActivityRepository
+          .findByActionPlanStepQuestionAnswerHeaderId(savedAnswerHeader.id)
+
+        savedActivities.size shouldBe 1
+        savedActivities.first().activityDetails shouldBe "Support activities"
       }
     }
 

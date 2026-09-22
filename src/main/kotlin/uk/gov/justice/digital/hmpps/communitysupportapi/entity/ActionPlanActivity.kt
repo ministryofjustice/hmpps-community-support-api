@@ -21,7 +21,7 @@ class ActionPlanActivity(
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "action_plan_step_question_answer_header_id", insertable = false, updatable = false, nullable = false)
-  val actionPlanStepQuestionAnswerHeader: ActionPlanStepQuestionAnswerHeader,
+  val actionPlanStepQuestionAnswerHeader: ActionPlanStepQuestionAnswerHeader? = null,
 
   @Column(name = "who", nullable = false)
   val who: String,

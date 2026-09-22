@@ -12,9 +12,12 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
@@ -140,5 +143,41 @@ class ActionPlanController(
     val changedBy = user.hmppsAuthUsername
     log.info("Saving session delivery details for referral={}", referralReference)
     return ResponseEntity.ok(actionPlanService.updateSessionDeliveryDetailsForActionPlan(referralReference, request, changedBy))
+  }
+
+  @Operation(summary = "Submit a need, outcome, and activities for an action plan")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Action submitted successfully",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanActionResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Validation failure",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PostMapping("/referral/{referralReference}/action-plan/action")
+  fun submitAction(
+    @PathVariable referralReference: String,
+    @Valid @RequestBody request: ActionPlanActionRequest,
+  ): ResponseEntity<ActionPlanActionResponse> {
+    val user = userMapper.fromToken(authenticationHolder)
+    val changedBy = user.hmppsAuthUsername
+    log.info("Submitting action for referral={} with need={}", referralReference, request.needId)
+    return ResponseEntity.ok(actionPlanService.submitActionForReferral(referralReference, request, changedBy))
   }
 }
