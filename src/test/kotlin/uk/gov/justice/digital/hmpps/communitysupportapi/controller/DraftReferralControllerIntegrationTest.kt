@@ -161,6 +161,25 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
               .withBody(cprProbationPersonJson(CRN)),
           ),
       )
+      stubFor(
+        get(urlEqualTo("/case/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createPersonDetailsAndCircumstances()),
+          ),
+      )
+
+      stubFor(
+        get(urlEqualTo("/case/$CRN/home-office-interest"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(createHomeOfficeInterest()),
+          ),
+      )
 
       val person = referralHelper.createPerson(identifier = CRN)
       person.additionalDetails = PersonAdditionalDetailsFactory()
@@ -169,9 +188,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withPreferredLanguage("")
         .withNeurodiverseConditions("None")
         .withReligionOrBelief("Christianity")
-        .withAddress("1 Test Street, Test Town, TEST 1AB")
+        .withAddress("1, Test Street, Testville, TE1 1ST")
         .withPhoneNumber("01234567890")
-        .withEmailAddress("test@example.com")
+        .withEmailAddress("john.smith@example.com")
         .create()
       personRepository.save(person)
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
@@ -192,7 +211,6 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<CheckDraftReferralDetailsBffResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-
           body.id shouldBe referral.id
           body.referenceNumber shouldBe referral.referenceNumber
           body.personDetailsTableData.name.firstName shouldBe person.firstName
@@ -222,6 +240,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
           body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
+          body.additionalInformationDetailsTableData.ofHomeOfficeInterest shouldBe true
+          body.additionalInformationDetailsTableData.homeOfficeInterestNotes shouldBe "Is of interest"
+          body.additionalInformationDetailsTableData.offenderPersonalityDisorderPathway shouldBe "N/A"
         }
     }
 

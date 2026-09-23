@@ -1,6 +1,68 @@
 {
   "components": {
     "schemas": {
+      "ActionPlanActionRequest": {
+        "properties": {
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/ActionPlanActivityRequest"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "needId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "outcomeId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "activities",
+          "needId",
+          "outcomeId"
+        ],
+        "type": "object"
+      },
+      "ActionPlanActionResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message",
+          "success"
+        ],
+        "type": "object"
+      },
+      "ActionPlanActivityRequest": {
+        "properties": {
+          "activityDetails": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "who": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "activityDetails",
+          "status",
+          "who"
+        ],
+        "type": "object"
+      },
       "ActionPlanSelectANeedNeed": {
         "properties": {
           "id": {
@@ -162,12 +224,16 @@
       },
       "ActionPlanSummaryPersonDetails": {
         "properties": {
-          "fullName": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
             "type": "string"
           }
         },
         "required": [
-          "fullName"
+          "firstName",
+          "lastName"
         ],
         "type": "object"
       },
@@ -1848,9 +1914,15 @@
       },
       "DraftAdditionalInformationDetailsTableDataDto": {
         "properties": {
-          "homeOfficeInterest": {
+          "homeOfficeInterestNotes": {
             "type": [
               "string",
+              "null"
+            ]
+          },
+          "ofHomeOfficeInterest": {
+            "type": [
+              "boolean",
               "null"
             ]
           },
@@ -1936,15 +2008,53 @@
               "null"
             ]
           },
+          "addressNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressStartDate": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addressUpdatedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "email": {
             "type": [
               "string",
               "null"
             ]
           },
+          "inCustody": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "mobileNumber": {
             "type": [
               "string",
+              "null"
+            ]
+          },
+          "noFixedAddress": {
+            "type": [
+              "boolean",
               "null"
             ]
           },
@@ -2981,6 +3091,12 @@
       },
       "QuestionChoice": {
         "properties": {
+          "additionalDetailsHint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "additionalDetailsLabel": {
             "type": [
               "string",
@@ -3573,6 +3689,12 @@
           "displayOrder": {
             "format": "int32",
             "type": "integer"
+          },
+          "hint": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "format": "uuid",
@@ -6262,6 +6384,59 @@
         "summary": "Update service end date page data",
         "tags": [
           "draft-referral-controller"
+        ]
+      }
+    },
+    "/referral/{referralReference}/action-plan/action": {
+      "post": {
+        "operationId": "submitAction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionPlanActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanActionResponse"
+                }
+              }
+            },
+            "description": "Action submitted successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Validation failure"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Submit a need, outcome, and activities for an action plan",
+        "tags": [
+          "action-plan-controller"
         ]
       }
     },

@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.validation.ValidationException
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalInformationForTheDeliveryPartnerBffResponseDto
@@ -32,7 +31,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.AdditionalSupportN
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CommunityServiceProviderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.NeedsInterpreterRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Pdu
-import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.UpdateOffenceSentenceRequest
@@ -72,9 +70,6 @@ class DraftReferralService(
   private val riskInformationService: RiskInformationService,
   private val referenceDataService: ReferenceDataService,
 ) {
-  companion object {
-    private val logger = LoggerFactory.getLogger(ReferralService::class.java)
-  }
   private data class ReferralSupportNeedsContext(
     val referral: Referral,
     val person: Person,
@@ -147,13 +142,9 @@ class DraftReferralService(
     request: NeedsInterpreterRequest,
   ): NeedsInterpreterBffResponseDto {
     val context = getReferralSupportNeedsContext(referralId)
-    println("upsertNeedsInterpreter - context.additionalSupportNeeds = ${context.additionalSupportNeeds}")
-    println("upsertNeedsInterpreter - request = $request")
     val personAdditionalSupportNeeds = if (context.additionalSupportNeeds == null) {
-      println("createNeedsInterpreter")
       createNeedsInterpreter(referralId, context.person.id, request, userId)
     } else {
-      println("updateNeedsInterpreter")
       updateNeedsInterpreter(context.additionalSupportNeeds, request, userId)
     }
 
@@ -250,9 +241,7 @@ class DraftReferralService(
     request: NeedsInterpreterRequest,
     createdBy: UUID,
   ): PersonAdditionalSupportNeeds {
-    println("createNeedsInterpreter - request = $request")
     val normalisedRequest = request.normaliseAgainstNeedsInterpreter()
-    println("createNeedsInterpreter - normalisedRequest = $normalisedRequest")
     val supportNeeds = PersonAdditionalSupportNeeds(
       id = UUID.randomUUID(),
       referralId = referralId,
@@ -262,7 +251,6 @@ class DraftReferralService(
       createdBy = createdBy,
       createdAt = OffsetDateTime.now(),
     )
-    println("createNeedsInterpreter - supportNeeds = $supportNeeds")
     return personAdditionalSupportNeedsRepository.save(supportNeeds)
   }
 
@@ -271,16 +259,13 @@ class DraftReferralService(
     newRecord: NeedsInterpreterRequest,
     updatedBy: UUID,
   ): PersonAdditionalSupportNeeds {
-    println("updateNeedsInterpreter - newRecord = $newRecord")
     val normalisedRecord = newRecord.normaliseAgainstNeedsInterpreter()
-    println("updateNeedsInterpreter - normalisedRecord = $normalisedRecord")
     val copyRecord = existingRecord.copy(
       interpreterLanguage = normalisedRecord.language,
       interpreterNeeded = normalisedRecord.needsInterpreter,
       updatedBy = updatedBy,
       updatedAt = OffsetDateTime.now(),
     )
-    println("updateNeedsInterpreter - copyRecord = $copyRecord")
     return personAdditionalSupportNeedsRepository.save(copyRecord)
   }
 
@@ -380,7 +365,11 @@ class DraftReferralService(
   }
 
   @Transactional
-  fun upsertOffenceSentenceDetails(referralId: UUID, userId: UUID, request: UpdateOffenceSentenceRequest): OffenceSentenceInfoBffResponseDto {
+  fun upsertOffenceSentenceDetails(
+    referralId: UUID,
+    userId: UUID,
+    request: UpdateOffenceSentenceRequest,
+  ): OffenceSentenceInfoBffResponseDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
 
@@ -530,7 +519,8 @@ class DraftReferralService(
       pduRepository.findNameById(pduId)?.let { pduName -> Pdu(id = pduId, name = pduName) }
     }
     val probationOffice = entity.probationOffice?.let { officeId ->
-      referenceDataService.getProbationOfficeNameById(officeId)?.let { officeName -> ProbationOfficeSummary(id = officeId, name = officeName) }
+      referenceDataService.getProbationOfficeNameById(officeId)
+        ?.let { officeName -> ProbationOfficeSummary(id = officeId, name = officeName) }
     }
 
     return ProbationPractitionerDetailsBffResponseDto.from(entity, pdu, probationOffice)
@@ -548,41 +538,26 @@ class DraftReferralService(
   } else {
     offenceSentenceInfo
   }
+
   fun getCheckDraftReferralDetailsPage(referralId: UUID): CheckDraftReferralDetailsBffResponseDto {
     val referral = referralRepository.findById(referralId)
       .orElseThrow { NotFoundException("Referral not found for id $referralId") }
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralId") }
     val identifier = identifierValidator.validate(person.identifier)
-    val personalDetailsAndCircumstances = personDetailsAndCircumstances(identifier)
+    val cprPerson = cprProbationService.getPersonDetails(identifier)
+    val personalDetailsAndCircumstances = nDeliusService.getPersonalDetailsAndCircumstances(cprPerson)
     val communitySupportRiskDto: CommunitySupportRiskDto = riskInformationService.getRoshRisksByReferralId(referralId)
-    val nationalities = nationalities(identifier)
-    return CheckDraftReferralDetailsBffResponseDto.from(referral, person, identifier, personalDetailsAndCircumstances, communitySupportRiskDto, nationalities)
-  }
-
-  private fun nationalities(identifier: PersonIdentifier): List<String> = when (identifier) {
-    is PersonIdentifier.Crn -> {
-      val cprPerson = cprProbationService.getPersonDetailsByCrn(identifier.value)
-      cprPerson.additionalDetails?.nationalities ?: emptyList()
-    }
-    is PersonIdentifier.PrisonerNumber -> {
-      val cprPerson = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
-      cprPerson.additionalDetails?.nationalities ?: emptyList()
-    }
-  }
-
-  private fun personDetailsAndCircumstances(identifier: PersonIdentifier): PersonDetailsAndCircumstances = when (identifier) {
-    is PersonIdentifier.Crn -> nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(identifier.value)
-    is PersonIdentifier.PrisonerNumber -> {
-      val cprPerson = cprProbationService.getPersonDetailsByPrisonNumber(identifier.value)
-      if (cprPerson.person.knownCrns.isNotEmpty()) {
-        val crn = cprPerson.person.knownCrns.first()
-        nDeliusService.getPersonalDetailsAndCircumstancesByIdentifier(crn)
-      } else {
-        logger.warn("No known CRN found for person with prison identifier {}", identifier.value)
-        PersonDetailsAndCircumstances()
-      }
-    }
+    val nationalities = cprPerson.additionalDetails?.nationalities ?: emptyList()
+    return CheckDraftReferralDetailsBffResponseDto.from(
+      referral,
+      person,
+      cprPerson,
+      identifier,
+      personalDetailsAndCircumstances,
+      communitySupportRiskDto,
+      nationalities,
+    )
   }
 
   fun getServiceEndDatePage(referralId: UUID): ServiceEndDatePageDto = ServiceEndDatePageDto.from(

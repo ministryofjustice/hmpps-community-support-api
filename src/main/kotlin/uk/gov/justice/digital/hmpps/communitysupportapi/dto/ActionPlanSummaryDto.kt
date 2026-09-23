@@ -7,7 +7,8 @@ data class ActionPlanSummaryDto(
   val needs: List<ActionPlanSummaryNeed>,
 ) {
   data class ActionPlanSummaryPersonDetails(
-    val fullName: String,
+    val firstName: String,
+    val lastName: String,
   )
 
   data class ActionPlanSummaryNeed(

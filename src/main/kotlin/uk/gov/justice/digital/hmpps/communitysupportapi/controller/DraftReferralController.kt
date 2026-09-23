@@ -280,7 +280,6 @@ class DraftReferralController(
     @RequestBody request: NeedsInterpreterRequest,
   ): ResponseEntity<NeedsInterpreterBffResponseDto> {
     val user = userMapper.fromToken(authenticationHolder)
-    println("updateNeedsInterpreter - request = $request")
     return ResponseEntity.ok(draftReferralService.upsertNeedsInterpreter(referralId, user.id, request))
   }
 
