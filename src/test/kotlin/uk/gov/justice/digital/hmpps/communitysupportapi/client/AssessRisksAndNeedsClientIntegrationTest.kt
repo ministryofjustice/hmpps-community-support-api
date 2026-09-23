@@ -22,13 +22,9 @@ class AssessRisksAndNeedsClientIntegrationTest : IntegrationTestBase() {
   @Test
   fun `should return ROSH risks when ARNS API returns 200`() {
     stubFor(
-      get(urlEqualTo("/risks/crn/$CRN"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(arnsRoshRiskJson()),
-        ),
+      get(urlEqualTo("/risks/crn/$CRN")).willReturn(
+        aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody(arnsRoshRiskJson()),
+      ),
     )
 
     val result = assessRisksAndNeedsClient.getRoshRisksByCrn(CRN)
@@ -43,13 +39,10 @@ class AssessRisksAndNeedsClientIntegrationTest : IntegrationTestBase() {
   @Test
   fun `should throw NotFoundException when ARNS API returns 404`() {
     stubFor(
-      get(urlEqualTo("/risks/crn/UNKNOWN"))
-        .willReturn(
-          aResponse()
-            .withStatus(404)
-            .withHeader("Content-Type", "application/json")
-            .withBody(arnsRoshRiskNotFoundJson()),
-        ),
+      get(urlEqualTo("/risks/crn/UNKNOWN")).willReturn(
+        aResponse().withStatus(404).withHeader("Content-Type", "application/json")
+          .withBody(arnsRoshRiskNotFoundJson()),
+      ),
     )
 
     assertThrows(NotFoundException::class.java) {
@@ -60,11 +53,9 @@ class AssessRisksAndNeedsClientIntegrationTest : IntegrationTestBase() {
   @Test
   fun `should throw RuntimeException when ARNS API returns 500`() {
     stubFor(
-      get(urlEqualTo("/risks/crn/$CRN"))
-        .willReturn(
-          aResponse()
-            .withStatus(500),
-        ),
+      get(urlEqualTo("/risks/crn/$CRN")).willReturn(
+        aResponse().withStatus(500),
+      ),
     )
 
     assertThrows(RuntimeException::class.java) {
