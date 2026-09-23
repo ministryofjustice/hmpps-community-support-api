@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import java.time.OffsetDateTime
 import java.util.UUID
 
