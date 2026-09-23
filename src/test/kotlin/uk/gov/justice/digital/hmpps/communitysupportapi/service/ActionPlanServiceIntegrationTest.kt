@@ -610,13 +610,7 @@ class ActionPlanServiceIntegrationTest :
 
     @Test
     fun `should support date answers`() {
-      val referral = createReferral()
-      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
-      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
-      val sessionDeliveryStep = createSessionDeliveryStep(actionPlanTemplate.id)
-
       val dateQuestion = createSessionDeliveryQuestion(
-        sessionDeliveryStep.id,
         1,
         "What is the new service end date?",
         ActionPlanQuestionAnswerType.DATE,
@@ -634,10 +628,18 @@ class ActionPlanServiceIntegrationTest :
         ),
       )
 
-      val saveResult = actionPlanService.updateSessionDeliveryDetailsForActionPlan(referral.referenceNumber!!, saveRequest, user.id.toString())
-      assertEquals(listOf("2026-10-01"), saveResult.questions.single { it.id == dateQuestion.id }.savedResponses.map { it.value })
+      val saveResult = actionPlanService.updateSessionDeliveryDetailsForActionPlan(
+        referral.referenceNumber!!,
+        saveRequest,
+        user.id.toString(),
+      )
+      assertEquals(
+        listOf("2026-10-01"),
+        saveResult.questions.single { it.id == dateQuestion.id }.savedResponses.map { it.value },
+      )
 
-      val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+      val activeHeaders =
+        actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
       assertEquals(1, activeHeaders.count { it.actionPlanStepQuestionId == dateQuestion.id })
     }
 
