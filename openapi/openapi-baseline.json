@@ -2041,7 +2041,10 @@
             ]
           },
           "inCustody": {
-            "type": "boolean"
+            "type": [
+              "boolean",
+              "null"
+            ]
           },
           "mobileNumber": {
             "type": [
@@ -2062,9 +2065,6 @@
             ]
           }
         },
-        "required": [
-          "inCustody"
-        ],
         "type": "object"
       },
       "DraftEqualityDetailsTableDataDto": {
