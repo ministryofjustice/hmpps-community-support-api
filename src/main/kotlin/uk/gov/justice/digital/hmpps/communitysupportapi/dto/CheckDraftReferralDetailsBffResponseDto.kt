@@ -5,6 +5,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.CommunitySuppor
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Disability
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonalCircumstance
@@ -41,6 +42,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     fun from(
       referral: Referral,
       person: Person,
+      cprPerson: PersonAggregate,
       personIdentifier: PersonIdentifier,
       personalDetailsAndCircumstances: PersonDetailsAndCircumstances,
       communitySupportRiskDto: CommunitySupportRiskDto,
@@ -49,10 +51,16 @@ data class CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
       createdDate = referral.createdAt,
-      personDetailsTableData = DraftPersonDetailsTableDataDto.from(person, personIdentifier, personalDetailsAndCircumstances),
+      personDetailsTableData = DraftPersonDetailsTableDataDto.from(
+        person,
+        personIdentifier,
+        personalDetailsAndCircumstances,
+      ),
       equalityDetailsTableData = DraftEqualityDetailsTableDataDto.from(person, nationalities),
-      contactDetailsTableData = DraftContactDetailsTableDataDto.from(person),
-      additionalInformationDetailsTableData = DraftAdditionalInformationDetailsTableDataDto.from(personalDetailsAndCircumstances),
+      contactDetailsTableData = DraftContactDetailsTableDataDto.from(cprPerson),
+      additionalInformationDetailsTableData = DraftAdditionalInformationDetailsTableDataDto.from(
+        personalDetailsAndCircumstances,
+      ),
       riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(communitySupportRiskDto),
       additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(),
       personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(),
@@ -124,23 +132,23 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val address: String?,
     val addressUpdatedAt: OffsetDateTime?,
     val noFixedAddress: Boolean?,
-    val inCustody: Boolean,
+    val inCustody: Boolean?, // nullable to represent a yes (true), no (false), don't know (null) state. This information isn't currently available
     val addressType: String?,
     val addressStartDate: LocalDate?,
     val addressNotes: String?,
   ) {
     companion object {
-      fun from(person: Person): DraftContactDetailsTableDataDto = DraftContactDetailsTableDataDto(
-        phoneNumber = person.additionalDetails?.phoneNumber,
-        mobileNumber = null,
-        email = person.additionalDetails?.emailAddress,
-        address = person.additionalDetails?.address,
+      fun from(cprPerson: PersonAggregate): DraftContactDetailsTableDataDto = DraftContactDetailsTableDataDto(
+        phoneNumber = cprPerson.additionalDetails?.phoneNumber,
+        mobileNumber = cprPerson.additionalDetails?.mobileNumber,
+        email = cprPerson.additionalDetails?.emailAddress,
+        address = cprPerson.additionalDetails?.address,
+        noFixedAddress = cprPerson.additionalDetails?.noFixedAbode,
+        addressType = cprPerson.additionalDetails?.addressType,
+        addressStartDate = cprPerson.additionalDetails?.addressStartDate,
+        addressNotes = cprPerson.additionalDetails?.addressNotes,
         addressUpdatedAt = null,
-        noFixedAddress = null,
-        inCustody = false,
-        addressType = null,
-        addressStartDate = null,
-        addressNotes = null,
+        inCustody = null,
       )
     }
   }

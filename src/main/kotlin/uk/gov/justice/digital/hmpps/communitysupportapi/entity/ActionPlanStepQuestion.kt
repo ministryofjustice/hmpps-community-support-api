@@ -21,6 +21,7 @@ enum class ActionPlanQuestionAnswerType {
   TEXTAREA,
   RADIO,
   CHECKBOX,
+  DATE,
 }
 
 /**
