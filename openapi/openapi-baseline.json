@@ -3673,7 +3673,8 @@
             "enum": [
               "TEXTAREA",
               "RADIO",
-              "CHECKBOX"
+              "CHECKBOX",
+              "DATE"
             ],
             "type": "string"
           },
