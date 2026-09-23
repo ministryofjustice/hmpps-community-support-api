@@ -154,7 +154,7 @@ class ActionPlanServiceIntegrationTest :
     val globalTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate() ?: throw NotFoundException("Cannot find Global ActionPlan")
 
     @Test
-    fun `should return person details and needs for a referral`() {
+    fun `should return person details for a referral`() {
       // Given
       val person = referralHelper.createPerson(firstName = "Adam", lastName = "Smith")
       val referral = referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
@@ -165,8 +165,7 @@ class ActionPlanServiceIntegrationTest :
       // Then
       assertEquals("Adam", result.personDetails.firstName)
       assertEquals("Smith", result.personDetails.lastName)
-      assertEquals(needRepository.findAllByOrderByOrderNumberAsc().map { it.label }, result.needs.map { it.label })
-      assertTrue(result.needs.all { it.outcomes.isEmpty() })
+      assertEquals(0, result.needs.size)
     }
 
     @Test
@@ -177,46 +176,18 @@ class ActionPlanServiceIntegrationTest :
       val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = globalTemplate.id)
       val need = needRepository.findAllByOrderByOrderNumberAsc().first()
       val outcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, need.id)
-      val answerId = UUID.randomUUID()
 
-      actionPlanStepQuestionAnswerHeaderRepository.save(
-        ActionPlanStepQuestionAnswerHeader(
-          id = answerId,
-          actionPlanId = actionPlan.id,
-          actionPlanStepQuestionId = outcomeQuestion.id,
-          orderNumber = 1,
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-        ),
-      )
-
-      actionPlanStepQuestionAnswerDetailsRepository.save(
-        ActionPlanStepQuestionAnswerDetails(
-          id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerHeaderId = answerId,
-          revisionNumber = 1,
-          content = "Initial wording",
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-        ),
-      )
-      actionPlanStepQuestionAnswerDetailsRepository.save(
-        ActionPlanStepQuestionAnswerDetails(
-          id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerHeaderId = answerId,
-          revisionNumber = 2,
-          content = "Final wording",
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-        ),
-      )
+      val answer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, outcomeQuestion.id, createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(answer.id, revisionNumber = 1, content = "Initial wording", createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(answer.id, revisionNumber = 2, content = "Final wording", createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanActivity(answer.id)
 
       // When
       val result = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
 
       // Then
       val needSummary = result.needs.first { it.id == need.id }
-      assertEquals(listOf("Final wording"), needSummary.outcomes)
+      assertEquals(listOf("Final wording"), needSummary.outcomes.map { it.label })
     }
 
     @Test
@@ -228,56 +199,19 @@ class ActionPlanServiceIntegrationTest :
       val need = needRepository.findAllByOrderByOrderNumberAsc().first()
       val outcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, need.id)
 
-      val firstAnswerId = UUID.randomUUID()
-      val secondAnswerId = UUID.randomUUID()
-      actionPlanStepQuestionAnswerHeaderRepository.save(
-        ActionPlanStepQuestionAnswerHeader(
-          id = firstAnswerId,
-          actionPlanId = actionPlan.id,
-          actionPlanStepQuestionId = outcomeQuestion.id,
-          orderNumber = 1,
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-        ),
-      )
-      actionPlanStepQuestionAnswerHeaderRepository.save(
-        ActionPlanStepQuestionAnswerHeader(
-          id = secondAnswerId,
-          actionPlanId = actionPlan.id,
-          actionPlanStepQuestionId = outcomeQuestion.id,
-          orderNumber = 2,
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-        ),
-      )
-
-      actionPlanStepQuestionAnswerDetailsRepository.save(
-        ActionPlanStepQuestionAnswerDetails(
-          id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerHeaderId = firstAnswerId,
-          revisionNumber = 1,
-          content = "First outcome",
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-        ),
-      )
-      actionPlanStepQuestionAnswerDetailsRepository.save(
-        ActionPlanStepQuestionAnswerDetails(
-          id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerHeaderId = secondAnswerId,
-          revisionNumber = 1,
-          content = "Second outcome",
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-        ),
-      )
+      val firstAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, outcomeQuestion.id, orderNumber = 1, createdBy = user.id.toString())
+      val secondAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, outcomeQuestion.id, orderNumber = 2, createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(firstAnswer.id, content = "First outcome", createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(secondAnswer.id, content = "Second outcome", createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanActivity(firstAnswer.id)
+      actionPlanHelper.createActionPlanActivity(secondAnswer.id)
 
       // When
       val result = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
 
       // Then
       val needSummary = result.needs.first { it.id == need.id }
-      assertEquals(listOf("First outcome", "Second outcome"), needSummary.outcomes)
+      assertEquals(listOf("First outcome", "Second outcome"), needSummary.outcomes.map { it.label })
     }
 
     @Test
@@ -289,58 +223,26 @@ class ActionPlanServiceIntegrationTest :
       val need = needRepository.findAllByOrderByOrderNumberAsc().first()
       val outcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, need.id)
 
-      val activeAnswerId = UUID.randomUUID()
-      val deletedAnswerId = UUID.randomUUID()
-      actionPlanStepQuestionAnswerHeaderRepository.save(
-        ActionPlanStepQuestionAnswerHeader(
-          id = activeAnswerId,
-          actionPlanId = actionPlan.id,
-          actionPlanStepQuestionId = outcomeQuestion.id,
-          orderNumber = 1,
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-        ),
+      val activeAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, outcomeQuestion.id, createdBy = user.id.toString())
+      val deletedAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(
+        actionPlan.id,
+        outcomeQuestion.id,
+        orderNumber = 2,
+        createdBy = user.id.toString(),
+        deletedAt = OffsetDateTime.now(),
+        deletedBy = user.id.toString(),
       )
-      actionPlanStepQuestionAnswerHeaderRepository.save(
-        ActionPlanStepQuestionAnswerHeader(
-          id = deletedAnswerId,
-          actionPlanId = actionPlan.id,
-          actionPlanStepQuestionId = outcomeQuestion.id,
-          orderNumber = 2,
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-          deletedAt = OffsetDateTime.now(),
-          deletedBy = user.id.toString(),
-        ),
-      )
-
-      actionPlanStepQuestionAnswerDetailsRepository.save(
-        ActionPlanStepQuestionAnswerDetails(
-          id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerHeaderId = activeAnswerId,
-          revisionNumber = 1,
-          content = "Visible outcome",
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-        ),
-      )
-      actionPlanStepQuestionAnswerDetailsRepository.save(
-        ActionPlanStepQuestionAnswerDetails(
-          id = UUID.randomUUID(),
-          actionPlanStepQuestionAnswerHeaderId = deletedAnswerId,
-          revisionNumber = 1,
-          content = "Hidden outcome",
-          createdAt = OffsetDateTime.now(),
-          createdBy = user.id.toString(),
-        ),
-      )
+      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(activeAnswer.id, content = "Visible outcome", createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(deletedAnswer.id, content = "Hidden outcome", createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanActivity(activeAnswer.id)
+      actionPlanHelper.createActionPlanActivity(deletedAnswer.id)
 
       // When
       val result = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
 
       // Then
       val needSummary = result.needs.first { it.id == need.id }
-      assertEquals(listOf("Visible outcome"), needSummary.outcomes)
+      assertEquals(listOf("Visible outcome"), needSummary.outcomes.map { it.label })
     }
 
     private fun findOutcomeQuestionForNeed(templateId: UUID, needId: UUID): ActionPlanStepQuestion {

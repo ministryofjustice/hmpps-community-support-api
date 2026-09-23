@@ -26,7 +26,7 @@ data class ActionPlanSummaryDto(
   ) {
     companion object {
       fun from(actionPlanStepQuestionAnswerDetails: ActionPlanStepQuestionAnswerDetails, actionPlanActivities: Collection<ActionPlanActivity>): ActionPlanSummaryOutcome = ActionPlanSummaryOutcome(
-        actionPlanStepQuestionAnswerDetails.id,
+        actionPlanStepQuestionAnswerDetails.actionPlanStepQuestionAnswerHeaderId,
         label = actionPlanStepQuestionAnswerDetails.content.orEmpty(),
         activities = actionPlanActivities.map { activity -> ActionPlanSummaryOutcomeActivity.from(activity) },
       )
