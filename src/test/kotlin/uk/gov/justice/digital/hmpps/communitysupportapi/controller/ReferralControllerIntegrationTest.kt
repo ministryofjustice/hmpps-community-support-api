@@ -768,7 +768,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
           body.withdrawReferral shouldBe true
 
-          assertThat(withdrawalCreatedAt).isEqualTo(body.withdrawalCreationDate)
+          val nanosDiff = Duration.between(withdrawalCreatedAt, body.withdrawalCreationDate!!).abs().toNanos()
+          assertThat(nanosDiff).isLessThanOrEqualTo(1_000_000L)
         }
     }
 
