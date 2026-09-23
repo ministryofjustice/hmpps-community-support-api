@@ -34,8 +34,11 @@ class ServiceProviderAccessScopeMapper(
       throw AccessError(user, errorMessage, listOf("user is not a service provider"))
     }
 
-    val groups = manageUsersClient.getUserGroups(user.hmppsAuthId)
-      ?: throw AccessError(user, errorMessage, listOf("cannot find user in hmpps auth"))
+    val groups = manageUsersClient.getUserGroups(user.hmppsAuthId) ?: throw AccessError(
+      user,
+      errorMessage,
+      listOf("cannot find user in hmpps auth"),
+    )
 
     val workingScope = WorkingScope(authGroups = groups)
 
@@ -82,8 +85,7 @@ class ServiceProviderAccessScopeMapper(
   }
 
   private fun resolveProviders(scope: WorkingScope) {
-    val serviceProviderGroups = scope.authGroups
-      .filter { it.startsWith(serviceProviderGroupPrefix) }
+    val serviceProviderGroups = scope.authGroups.filter { it.startsWith(serviceProviderGroupPrefix) }
       .map { it.removePrefix(serviceProviderGroupPrefix) }
 
     val providers = getProviders(serviceProviderGroups, scope.warnings)
