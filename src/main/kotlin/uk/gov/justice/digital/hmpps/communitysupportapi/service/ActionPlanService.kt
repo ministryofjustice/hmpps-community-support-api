@@ -336,6 +336,12 @@ class ActionPlanService(
         }
       }
 
+      ActionPlanQuestionAnswerType.DATE -> {
+        if (!response.additionalDetails.isNullOrBlank()) {
+          throw ValidationException("Question ${question.id} does not accept additionalDetails")
+        }
+      }
+
       ActionPlanQuestionAnswerType.RADIO,
       ActionPlanQuestionAnswerType.CHECKBOX,
       -> {
