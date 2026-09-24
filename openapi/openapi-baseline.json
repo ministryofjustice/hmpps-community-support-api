@@ -210,7 +210,7 @@
           },
           "outcomes": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/ActionPlanSummaryOutcome"
             },
             "type": "array"
           }
@@ -219,6 +219,49 @@
           "id",
           "label",
           "outcomes"
+        ],
+        "type": "object"
+      },
+      "ActionPlanSummaryOutcome": {
+        "properties": {
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/ActionPlanSummaryOutcomeActivity"
+            },
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "activities",
+          "id",
+          "label"
+        ],
+        "type": "object"
+      },
+      "ActionPlanSummaryOutcomeActivity": {
+        "properties": {
+          "details": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "who": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "details",
+          "id",
+          "who"
         ],
         "type": "object"
       },
@@ -3444,6 +3487,13 @@
           },
           "withdrawReferral": {
             "type": "boolean"
+          },
+          "withdrawalCreationDate": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
