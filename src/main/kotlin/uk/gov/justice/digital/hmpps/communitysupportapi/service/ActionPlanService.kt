@@ -79,7 +79,7 @@ class ActionPlanService(
     val outcomesByNeedId =
       actionPlan?.let { getOutcomesByNeedIdForActionPlan(it.id, it.actionPlanTemplateId) }.orEmpty()
 
-    val needs = needRepository.findAllByOrderByOrderNumberAsc().map {
+    val needs = needRepository.findAllByIdInOrderByOrderNumberAsc(outcomesByNeedId.keys).map {
       ActionPlanSummaryDto.ActionPlanSummaryNeed(
         id = it.id,
         label = it.label,
@@ -440,7 +440,7 @@ class ActionPlanService(
   private fun getOutcomesByNeedIdForActionPlan(
     actionPlanId: UUID,
     actionPlanTemplateId: UUID,
-  ): Map<UUID, List<String>> {
+  ): Map<UUID, List<ActionPlanSummaryDto.ActionPlanSummaryOutcome>> {
     val needSteps = actionPlanStepRepository
       .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
       .filter { it.stepType == ActionPlanStepType.NEED }
@@ -464,18 +464,21 @@ class ActionPlanService(
       return emptyMap()
     }
 
-    val details =
-      actionPlanStepQuestionAnswerDetailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(answers.map { it.id })
-    val latestDetailsByHeaderId = details
+    val latestDetailsByHeaderId = answers
+      .flatMap { it.details }
       .groupBy { it.actionPlanStepQuestionAnswerHeaderId }
       .mapValues { (_, detailItems) -> detailItems.maxByOrNull { it.revisionNumber } }
+
+    val activitiesByHeaderId = actionPlanActivityRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(answers.map { it.id })
+      .groupBy { it.actionPlanStepQuestionAnswerHeaderId }
 
     return answers
       .mapNotNull { answer ->
         val question = questionById[answer.actionPlanStepQuestionId] ?: return@mapNotNull null
         val needId = question.needId ?: return@mapNotNull null
         val latestDetails = latestDetailsByHeaderId[answer.id] ?: return@mapNotNull null
-        val content = latestDetails.content?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        val activities = activitiesByHeaderId[answer.id] ?: return@mapNotNull null
+        val content = ActionPlanSummaryDto.ActionPlanSummaryOutcome.from(latestDetails, activities)
         needId to content
       }
       .groupBy(keySelector = { it.first }, valueTransform = { it.second })
