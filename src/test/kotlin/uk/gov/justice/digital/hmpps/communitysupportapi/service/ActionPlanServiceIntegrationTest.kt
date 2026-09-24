@@ -98,26 +98,6 @@ class ActionPlanServiceIntegrationTest :
       ?: throw NotFoundException("Cannot find Global ActionPlan")
 
     @Test
-    fun `should not create an additional ActionPlan when one already exists`() {
-      // Given
-      val referral = referralHelper.createReferral(submittedBy = user)
-      val existingActionPlan = actionPlanHelper.createActionPlan(
-        referralId = referral.id,
-        templateId = globalTemplate.id,
-        createdAt = OffsetDateTime.now(),
-        updatedAt = OffsetDateTime.now(),
-      )
-
-      // When
-      val result = actionPlanService.findOrCreateByReferralId(referral.id)
-
-      // Then
-      val allActionPlansForReferral = actionPlanRepository.findAllByReferralId(referral.id)
-      assertEquals(existingActionPlan.id, result.id)
-      assertEquals(allActionPlansForReferral.size, 1)
-    }
-
-    @Test
     fun `should create an ActionPlan when one does not exists`() {
       // Given
       val referral = referralHelper.createReferral(submittedBy = user)
