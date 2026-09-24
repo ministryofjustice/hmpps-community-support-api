@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.CommunitySupportRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Disability
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
@@ -47,6 +48,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       personalDetailsAndCircumstances: PersonDetailsAndCircumstances,
       communitySupportRiskDto: CommunitySupportRiskDto,
       nationalities: List<String>,
+      personAdditionalSupportNeeds: PersonAdditionalSupportNeeds,
     ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
@@ -62,7 +64,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
         personalDetailsAndCircumstances,
       ),
       riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(communitySupportRiskDto),
-      additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(),
+      additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(personAdditionalSupportNeeds),
       personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(),
       referralAreaTableData = DraftReferralAreaTableDataDto.from(),
       mainPocDetailsTableData = DraftMainPOCDetailsTableDataDto.from(),
@@ -190,11 +192,20 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val employmentResponsibilities: String? = null,
     val diversity: String? = null,
     val anyOtherNeeds: String? = null,
-    val needsInterpreter: Boolean? = null,
     val interpreterLanguage: String? = null,
   ) {
     companion object {
-      fun from(): DraftAdditionalSupportNeedsDetailsTableDataDto = DraftAdditionalSupportNeedsDetailsTableDataDto()
+      fun from(personAdditionalSupportNeeds: PersonAdditionalSupportNeeds): DraftAdditionalSupportNeedsDetailsTableDataDto = DraftAdditionalSupportNeedsDetailsTableDataDto(
+        physicalHealth = personAdditionalSupportNeeds.physicalHealthDetails,
+        mentalOrEmotionalHealth = personAdditionalSupportNeeds.mentalEmotionalHealthDetails,
+        neurodiversity = personAdditionalSupportNeeds.neurodiversityDetails,
+        locationAndTravel = personAdditionalSupportNeeds.locationTravelDetails,
+        caringResponsibilities = personAdditionalSupportNeeds.caringResponsibilitiesDetails,
+        employmentResponsibilities = personAdditionalSupportNeeds.employmentResponsibilitiesDetails,
+        diversity = personAdditionalSupportNeeds.diversityDetails,
+        anyOtherNeeds = personAdditionalSupportNeeds.anythingElseDetails,
+        interpreterLanguage = personAdditionalSupportNeeds.interpreterLanguage,
+      )
     }
   }
 

@@ -196,6 +196,13 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
       stubNDeliusPersonalDetails()
 
+      val supportNeeds = PersonAdditionalSupportNeedsFactory()
+        .withReferral(referral)
+        .withPerson(person)
+        .withCreatedBy(testUser.id)
+        .create()
+      personAdditionalSupportNeedsRepository.save(supportNeeds)
+
       val riskInfo = RiskInformationFactory()
         .withReferral(referral)
         .withUpdatedBy(testUser.id)
@@ -262,6 +269,13 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       stubCprPrisonPerson(person.identifier)
       stubNDeliusPersonalDetails()
 
+      val supportNeeds = PersonAdditionalSupportNeedsFactory()
+        .withReferral(referral)
+        .withPerson(person)
+        .withCreatedBy(testUser.id)
+        .create()
+      personAdditionalSupportNeedsRepository.save(supportNeeds)
+
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
         .headers(setAuthorisation())
@@ -303,6 +317,13 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
               .withBody(cprPrisonPersonJson),
           ),
       )
+
+      val supportNeeds = PersonAdditionalSupportNeedsFactory()
+        .withReferral(referral)
+        .withPerson(person)
+        .withCreatedBy(testUser.id)
+        .create()
+      personAdditionalSupportNeedsRepository.save(supportNeeds)
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
