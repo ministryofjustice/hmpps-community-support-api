@@ -3577,23 +3577,6 @@
         ],
         "type": "object"
       },
-      "SavedResponse": {
-        "properties": {
-          "additionalDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "value"
-        ],
-        "type": "object"
-      },
       "SelectionDto": {
         "discriminator": {
           "propertyName": "selected"
@@ -3710,7 +3693,7 @@
           },
           "savedResponses": {
             "items": {
-              "$ref": "#/components/schemas/SavedResponse"
+              "$ref": "#/components/schemas/SessionDeliveryQuestionSavedResponse"
             },
             "type": "array"
           }
@@ -3722,6 +3705,23 @@
           "label",
           "maximumNumberOfResponses",
           "savedResponses"
+        ],
+        "type": "object"
+      },
+      "SessionDeliveryQuestionSavedResponse": {
+        "properties": {
+          "additionalDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
         ],
         "type": "object"
       },
