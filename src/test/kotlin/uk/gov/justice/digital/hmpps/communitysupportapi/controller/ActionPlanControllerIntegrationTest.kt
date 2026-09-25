@@ -104,7 +104,17 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
       val person = referralHelper.createPerson(firstName = "Adam", lastName = "Smith")
       val referral =
         referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
-      val expectedNeeds = needRepository.findAllByOrderByOrderNumberAsc()
+
+      // Setup action plan
+      val expectedNeed = needRepository.findAllByOrderByOrderNumberAsc().first()
+
+      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+      val actionPlan = actionPlanHelper.createActionPlan(referral.id, actionPlanTemplate.id)
+      val actionPlanStep = actionPlanHelper.createActionPlanStep(actionPlanTemplate.id)
+      val actionPlanStepQuestion = actionPlanHelper.createActionPlanStepQuestion(actionPlanStep.id, needId = expectedNeed.id)
+      val actionPlanStepQuestionAnswerHeader = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, actionPlanStepQuestion.id)
+      val actionPlanStepQuestionAnswerDetails = actionPlanHelper.createActionPlanStepQuestionAnswerDetails(actionPlanStepQuestionAnswerHeader.id)
+      val actionPlanActivity = actionPlanHelper.createActionPlanActivity(actionPlanStepQuestionAnswerHeader.id)
 
       webTestClient.get()
         .uri("/bff/referral/${referral.referenceNumber}/action-plan")
@@ -116,9 +126,19 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
           body.personDetails.firstName shouldBe "Adam"
           body.personDetails.lastName shouldBe "Smith"
-          body.needs.size shouldBe expectedNeeds.size
-          body.needs.map { it.label } shouldBe expectedNeeds.map { it.label }
-          body.needs.map { it.id } shouldBe expectedNeeds.map { it.id }
+          body.needs.size shouldBe 1
+          val need = body.needs.first()
+          need.label shouldBe expectedNeed.label
+          need.id shouldBe expectedNeed.id
+          need.outcomes.size shouldBe 1
+          val outcome = need.outcomes.first()
+          outcome.label shouldBe actionPlanStepQuestionAnswerDetails.content
+          outcome.id shouldBe actionPlanStepQuestionAnswerHeader.id
+          outcome.activities.size shouldBe 1
+          val activity = outcome.activities.first()
+          activity.who shouldBe actionPlanActivity.who
+          activity.details shouldBe actionPlanActivity.activityDetails
+          activity.id shouldBe actionPlanActivity.id
         }
     }
 
@@ -329,6 +349,43 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             body.questions[2].maximumNumberOfResponses shouldBe 2
             body.questions[2].displayOrder shouldBe 3
             body.questions[2].choices?.map { it.label } shouldBe listOf("One-to-one session", "Group session")
+          }
+      }
+
+      @Test
+      fun `should return date answer types`() {
+        val referral = createReferral("Jane", "Doe")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+        val sessionDeliveryStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(2)
+            .withName("Service Delivery Details")
+            .withStepType(ActionPlanStepType.SESSION_DELIVERY)
+            .create(),
+        )
+
+        actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(sessionDeliveryStep.id)
+            .withOrderNumber(1)
+            .withTitle("What is the new service end date?")
+            .withAnswerType(ActionPlanQuestionAnswerType.DATE)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+
+        webTestClient.get()
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.questions.single().answerType shouldBe ActionPlanQuestionAnswerType.DATE
           }
       }
 
