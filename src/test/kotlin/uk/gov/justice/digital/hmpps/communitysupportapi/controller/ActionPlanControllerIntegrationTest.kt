@@ -194,21 +194,21 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Nested
-    @DisplayName("GET /bff/referral/{referralReference}/action-plan/session-delivery-details")
+    @DisplayName("GET /bff/referral/{referralReference}/action-plan/session-delivery-details/session-delivery")
     inner class GetSessionDeliveryDetailsEndpoint {
       @Test
       fun `should return unauthorized if no token`() {
-        assertUnauthorized(GET, "/bff/referral/AB1234CD/action-plan/session-delivery-details")
+        assertUnauthorized(GET, "/bff/referral/AB1234CD/action-plan/session-delivery-details/session-delivery")
       }
 
       @Test
       fun `should return forbidden if no role`() {
-        assertForbiddenNoRole(GET, "/bff/referral/AB1234CD/action-plan/session-delivery-details")
+        assertForbiddenNoRole(GET, "/bff/referral/AB1234CD/action-plan/session-delivery-details/session-delivery")
       }
 
       @Test
       fun `should return forbidden if wrong role`() {
-        assertForbiddenWrongRole(GET, "/bff/referral/AB1234CD/action-plan/session-delivery-details")
+        assertForbiddenWrongRole(GET, "/bff/referral/AB1234CD/action-plan/session-delivery-details/session-delivery")
       }
 
       @Test
@@ -216,6 +216,9 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         val referral = createReferral("Jane", "Doe")
         val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
         actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+        val question1Key = "SESSION_FREQUENCY"
+        val question2Key = "SESSION_DELIVERY_METHOD"
+        val question3Key = "SESSION_FORMAT"
 
         val sessionDeliveryStep = actionPlanStepRepository.save(
           ActionPlanStepFactory()
@@ -231,6 +234,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             .withActionPlanStepId(sessionDeliveryStep.id)
             .withOrderNumber(1)
             .withTitle("How often will sessions take place?")
+            .withQuestionKey(question1Key)
             .withHint("For example, every week, every 2 weeks, every month.")
             .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
             .withMaxNumberResponses(1)
@@ -242,6 +246,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             .withActionPlanStepId(sessionDeliveryStep.id)
             .withOrderNumber(2)
             .withTitle("How will the sessions take place?")
+            .withQuestionKey(question2Key)
             .withHint("Select one option.")
             .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
             .withMaxNumberResponses(1)
@@ -287,6 +292,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             .withActionPlanStepId(sessionDeliveryStep.id)
             .withOrderNumber(3)
             .withTitle("What format will you use for the sessions?")
+            .withQuestionKey(question3Key)
             .withHint("Select all that apply.")
             .withAnswerType(ActionPlanQuestionAnswerType.CHECKBOX)
             .withMaxNumberResponses(2)
@@ -311,7 +317,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         )
 
         webTestClient.get()
-          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details/session-delivery")
           .headers(setAuthorisation())
           .exchange()
           .expectStatus().isOk
@@ -323,6 +329,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             body.questions[0].id shouldBe question1.id
             body.questions[0].label shouldBe "How often will sessions take place?"
             body.questions[0].hint shouldBe "For example, every week, every 2 weeks, every month."
+            body.questions[0].key shouldBe question1Key
             body.questions[0].answerType shouldBe ActionPlanQuestionAnswerType.TEXTAREA
             body.questions[0].maximumNumberOfResponses shouldBe 1
             body.questions[0].displayOrder shouldBe 1
@@ -332,6 +339,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             body.questions[1].id shouldBe question2.id
             body.questions[1].label shouldBe "How will the sessions take place?"
             body.questions[1].hint shouldBe "Select one option."
+            body.questions[1].key shouldBe question2Key
             body.questions[1].answerType shouldBe ActionPlanQuestionAnswerType.RADIO
             body.questions[1].maximumNumberOfResponses shouldBe 1
             body.questions[1].displayOrder shouldBe 2
@@ -345,47 +353,11 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             body.questions[2].id shouldBe question3.id
             body.questions[2].label shouldBe "What format will you use for the sessions?"
             body.questions[2].hint shouldBe "Select all that apply."
+            body.questions[2].key shouldBe question3Key
             body.questions[2].answerType shouldBe ActionPlanQuestionAnswerType.CHECKBOX
             body.questions[2].maximumNumberOfResponses shouldBe 2
             body.questions[2].displayOrder shouldBe 3
             body.questions[2].choices?.map { it.label } shouldBe listOf("One-to-one session", "Group session")
-          }
-      }
-
-      @Test
-      fun `should return date answer types`() {
-        val referral = createReferral("Jane", "Doe")
-        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
-        actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
-
-        val sessionDeliveryStep = actionPlanStepRepository.save(
-          ActionPlanStepFactory()
-            .withActionPlanTemplateId(actionPlanTemplate.id)
-            .withOrderNumber(2)
-            .withName("Service Delivery Details")
-            .withStepType(ActionPlanStepType.SESSION_DELIVERY)
-            .create(),
-        )
-
-        actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(sessionDeliveryStep.id)
-            .withOrderNumber(1)
-            .withTitle("What is the new service end date?")
-            .withAnswerType(ActionPlanQuestionAnswerType.DATE)
-            .withMaxNumberResponses(1)
-            .create(),
-        )
-
-        webTestClient.get()
-          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
-          .headers(setAuthorisation())
-          .exchange()
-          .expectStatus().isOk
-          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
-          .consumeWith { response ->
-            val body = response.responseBody!!
-            body.questions.single().answerType shouldBe ActionPlanQuestionAnswerType.DATE
           }
       }
 
@@ -396,7 +368,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
 
         webTestClient.get()
-          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details/session-delivery")
           .headers(setAuthorisation())
           .exchange()
           .expectStatus().isNotFound
@@ -455,7 +427,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             actionPlanStepQuestionId = question.id,
             orderNumber = 1,
             createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
+            createdBy = user.hmppsAuthUsername,
           ),
         )
 
@@ -467,12 +439,12 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             content = "IN_A_GROUP",
             freeTextValue = "3 people",
             createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
+            createdBy = user.hmppsAuthUsername,
           ),
         )
 
         webTestClient.get()
-          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details/session-delivery")
           .headers(setAuthorisation())
           .exchange()
           .expectStatus().isOk
@@ -548,7 +520,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             actionPlanStepQuestionId = question.id,
             orderNumber = 1,
             createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
+            createdBy = user.hmppsAuthUsername,
           ),
         )
         actionPlanStepQuestionAnswerHeaderRepository.save(
@@ -558,7 +530,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             actionPlanStepQuestionId = question.id,
             orderNumber = 2,
             createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
+            createdBy = user.hmppsAuthUsername,
           ),
         )
         actionPlanStepQuestionAnswerHeaderRepository.save(
@@ -568,7 +540,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             actionPlanStepQuestionId = question.id,
             orderNumber = 3,
             createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
+            createdBy = user.hmppsAuthUsername,
           ),
         )
 
@@ -579,7 +551,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             revisionNumber = 1,
             content = "BY_PHONE",
             createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
+            createdBy = user.hmppsAuthUsername,
           ),
         )
         actionPlanStepQuestionAnswerDetailsRepository.save(
@@ -589,7 +561,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             revisionNumber = 1,
             content = "BY_MESSAGE",
             createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
+            createdBy = user.hmppsAuthUsername,
           ),
         )
         actionPlanStepQuestionAnswerDetailsRepository.save(
@@ -599,12 +571,12 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             revisionNumber = 1,
             content = "BY_EMAIL",
             createdAt = OffsetDateTime.now(),
-            createdBy = user.id.toString(),
+            createdBy = user.hmppsAuthUsername,
           ),
         )
 
         webTestClient.get()
-          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details")
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details/session-delivery")
           .headers(setAuthorisation())
           .exchange()
           .expectStatus().isOk
@@ -620,7 +592,254 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
       @Test
       fun `should return not found for unknown referral reference`() {
-        assertNotFound(GET, "/bff/referral/ZZ9999ZZ/action-plan/session-delivery-details")
+        assertNotFound(GET, "/bff/referral/ZZ9999ZZ/action-plan/session-delivery-details/session-delivery")
+      }
+    }
+
+    @Nested
+    @DisplayName("GET /bff/referral/{referralReference}/action-plan/service-delivery-details/risks-and-adjustments")
+    inner class GetRiskAndAdjustmentsEndpoint {
+      @Test
+      fun `should return unauthorized if no token`() {
+        assertUnauthorized(GET, "/bff/referral/AB1234CD/action-plan/service-delivery-details/risks-and-adjustments")
+      }
+
+      @Test
+      fun `should return forbidden if no role`() {
+        assertForbiddenNoRole(GET, "/bff/referral/AB1234CD/action-plan/service-delivery-details/risks-and-adjustments")
+      }
+
+      @Test
+      fun `should return forbidden if wrong role`() {
+        assertForbiddenWrongRole(GET, "/bff/referral/AB1234CD/action-plan/service-delivery-details/risks-and-adjustments")
+      }
+
+      @Test
+      fun `should return the stored risk and adjustments questions with saved answers`() {
+        val referral = createReferral("Alice", "Turner")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+        val questionKey = "RISK_DETAILS"
+
+        val riskStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(3)
+            .withName("Risks and adjustments")
+            .withStepType(ActionPlanStepType.RISK_AND_ADJUSTMENTS)
+            .create(),
+        )
+
+        val question = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(riskStep.id)
+            .withOrderNumber(1)
+            .withTitle("What risks or adjustments are needed?")
+            .withQuestionKey(questionKey)
+            .withHint("Describe any risks and adjustments.")
+            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+
+        val header = actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
+            id = UUID.randomUUID(),
+            actionPlanId = actionPlan.id,
+            actionPlanStepQuestionId = question.id,
+            orderNumber = 1,
+            createdAt = OffsetDateTime.now(),
+            createdBy = "test-user",
+          ),
+        )
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
+            id = UUID.randomUUID(),
+            actionPlanStepQuestionAnswerHeaderId = header.id,
+            revisionNumber = 1,
+            content = "Wheelchair access required",
+            createdAt = OffsetDateTime.now(),
+            createdBy = "test-user",
+          ),
+        )
+
+        webTestClient.get()
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/service-delivery-details/risks-and-adjustments")
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.questions.size shouldBe 1
+            body.questions[0].label shouldBe "What risks or adjustments are needed?"
+            body.questions[0].key shouldBe questionKey
+            body.questions[0].savedResponses.map { it.value } shouldBe listOf("Wheelchair access required")
+          }
+      }
+
+      @Test
+      fun `should return seeded risk and adjustments questions with saved answers and configured choices`() {
+        val referral = createReferral("Alice", "Turner")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+        val riskQuestionKey = "RISK_ASSOCIATED_WITH_PLANNED_ACTIVITIES_${UUID.randomUUID()}"
+        val adjustmentsQuestionKey = "ADJUSTMENTS_${UUID.randomUUID()}"
+
+        val riskAndAdjustmentsStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(11)
+            .withName("Risks and adjustments")
+            .withStepType(ActionPlanStepType.RISK_AND_ADJUSTMENTS)
+            .create(),
+        )
+        val riskQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(riskAndAdjustmentsStep.id)
+            .withOrderNumber(1)
+            .withTitle("Are there any risks associated with the planned activities?")
+            .withQuestionKey(riskQuestionKey)
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(riskQuestion.id)
+            .withOrderNumber(1)
+            .withLabel("Yes")
+            .withValue("YES")
+            .withHasFreeText(true)
+            .withFreeTextLabel("Give details about the risks and what you will put in place to reduce them")
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(riskQuestion.id)
+            .withOrderNumber(2)
+            .withLabel("No")
+            .withValue("NO")
+            .create(),
+        )
+
+        val adjustmentsQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(riskAndAdjustmentsStep.id)
+            .withOrderNumber(2)
+            .withTitle("Will you put any reasonable adjustments in place to help {{ firstName }} take part in the planned activities?")
+            .withQuestionKey(adjustmentsQuestionKey)
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(adjustmentsQuestion.id)
+            .withOrderNumber(1)
+            .withLabel("Yes")
+            .withValue("YES")
+            .withHasFreeText(true)
+            .withFreeTextLabel("Give details about what reasonable adjustments you will make and how this will support {{ firstName }}")
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(adjustmentsQuestion.id)
+            .withOrderNumber(2)
+            .withLabel("No")
+            .withValue("NO")
+            .create(),
+        )
+
+        val riskHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
+            id = UUID.randomUUID(),
+            actionPlanId = actionPlan.id,
+            actionPlanStepQuestionId = riskQuestion.id,
+            orderNumber = 1,
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
+            id = UUID.randomUUID(),
+            actionPlanStepQuestionAnswerHeaderId = riskHeader.id,
+            revisionNumber = 1,
+            content = "YES",
+            freeTextValue = "Potential conflict with another attendee; staff will supervise throughout.",
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+
+        val adjustmentsHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
+            id = UUID.randomUUID(),
+            actionPlanId = actionPlan.id,
+            actionPlanStepQuestionId = adjustmentsQuestion.id,
+            orderNumber = 2,
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
+            id = UUID.randomUUID(),
+            actionPlanStepQuestionAnswerHeaderId = adjustmentsHeader.id,
+            revisionNumber = 1,
+            content = "YES",
+            freeTextValue = "Provide large-print materials and allow extra time for reading.",
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+
+        webTestClient.get()
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/service-delivery-details/risks-and-adjustments")
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+
+            body.questions.size shouldBe 2
+
+            body.questions[0].id shouldBe riskQuestion.id
+            body.questions[0].key shouldBe riskQuestionKey
+            body.questions[0].label shouldBe "Are there any risks associated with the planned activities?"
+            body.questions[0].answerType shouldBe ActionPlanQuestionAnswerType.RADIO
+            body.questions[0].maximumNumberOfResponses shouldBe 1
+            body.questions[0].choices?.map { it.label } shouldBe listOf("Yes", "No")
+            body.questions[0].choices?.map { it.value } shouldBe listOf("YES", "NO")
+            body.questions[0].choices?.map { it.additionalDetailsLabel } shouldBe listOf(
+              "Give details about the risks and what you will put in place to reduce them",
+              null,
+            )
+            body.questions[0].savedResponses.map { it.value } shouldBe listOf("YES")
+            body.questions[0].savedResponses.map { it.additionalDetails } shouldBe listOf(
+              "Potential conflict with another attendee; staff will supervise throughout.",
+            )
+
+            body.questions[1].id shouldBe adjustmentsQuestion.id
+            body.questions[1].key shouldBe adjustmentsQuestionKey
+            body.questions[1].label shouldBe
+              "Will you put any reasonable adjustments in place to help Alice take part in the planned activities?"
+            body.questions[1].answerType shouldBe ActionPlanQuestionAnswerType.RADIO
+            body.questions[1].maximumNumberOfResponses shouldBe 1
+            body.questions[1].choices?.map { it.label } shouldBe listOf("Yes", "No")
+            body.questions[1].choices?.map { it.value } shouldBe listOf("YES", "NO")
+            body.questions[1].choices?.map { it.additionalDetailsLabel } shouldBe listOf(
+              "Give details about what reasonable adjustments you will make and how this will support Alice",
+              null,
+            )
+            body.questions[1].savedResponses.map { it.value } shouldBe listOf("YES")
+            body.questions[1].savedResponses.map { it.additionalDetails } shouldBe listOf(
+              "Provide large-print materials and allow extra time for reading.",
+            )
+          }
       }
     }
 
