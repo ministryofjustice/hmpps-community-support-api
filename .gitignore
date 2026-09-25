@@ -7,7 +7,6 @@
 .gradle/
 .kotlin/
 build/
-bin/
 
 # CMake
 cmake-build-debug/
