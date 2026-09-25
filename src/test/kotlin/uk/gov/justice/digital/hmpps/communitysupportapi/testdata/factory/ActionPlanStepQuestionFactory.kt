@@ -11,6 +11,7 @@ class ActionPlanStepQuestionFactory : TestEntityFactory<ActionPlanStepQuestion>(
   private var actionPlanStepId: UUID = UUID.randomUUID()
   private var orderNumber: Int = 1
   private var title: String = "What is the outcome?"
+  private var questionKey: String = UUID.randomUUID().toString()
   private var hint: String? = null
   private var answerType: ActionPlanQuestionAnswerType = ActionPlanQuestionAnswerType.TEXTAREA
   private var questionType: ActionPlanQuestionType = ActionPlanQuestionType.OUTCOME
@@ -21,6 +22,7 @@ class ActionPlanStepQuestionFactory : TestEntityFactory<ActionPlanStepQuestion>(
   fun withActionPlanStepId(actionPlanStepId: UUID) = apply { this.actionPlanStepId = actionPlanStepId }
   fun withOrderNumber(orderNumber: Int) = apply { this.orderNumber = orderNumber }
   fun withTitle(title: String) = apply { this.title = title }
+  fun withQuestionKey(questionKey: String) = apply { this.questionKey = questionKey }
   fun withHint(hint: String?) = apply { this.hint = hint }
   fun withAnswerType(answerType: ActionPlanQuestionAnswerType) = apply { this.answerType = answerType }
   fun withQuestionType(questionType: ActionPlanQuestionType) = apply { this.questionType = questionType }
@@ -32,6 +34,7 @@ class ActionPlanStepQuestionFactory : TestEntityFactory<ActionPlanStepQuestion>(
     actionPlanStepId = actionPlanStepId,
     orderNumber = orderNumber,
     title = title,
+    questionKey = questionKey,
     hint = hint,
     answerType = answerType,
     questionType = questionType,
