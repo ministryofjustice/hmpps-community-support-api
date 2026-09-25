@@ -103,7 +103,7 @@ class ActionPlanController(
       ),
     ],
   )
-  @GetMapping("/bff/referral/{referralReference}/action-plan/session-delivery-details")
+  @GetMapping("/bff/referral/{referralReference}/action-plan/session-delivery-details/session-delivery")
   fun getSessionDeliveryDetails(@PathVariable referralReference: String): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
     log.info("Fetching session delivery details for referral={}", referralReference)
     return ResponseEntity.ok(actionPlanService.getSessionDeliveryDetailsForReferral(referralReference))
@@ -143,6 +143,32 @@ class ActionPlanController(
     val changedBy = user.hmppsAuthUsername
     log.info("Saving session delivery details for referral={}", referralReference)
     return ResponseEntity.ok(actionPlanService.updateSessionDeliveryDetailsForActionPlan(referralReference, request, changedBy))
+  }
+
+  @Operation(summary = "Get the risk and adjustments questions and saved answers of the service delivery details")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Risk and adjustments questions and saved answers returned",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanSessionDeliveryDetailsResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{referralReference}/action-plan/service-delivery-details/risks-and-adjustments")
+  fun getRiskAndAdjustments(@PathVariable referralReference: String): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
+    log.info("Fetching service delivery risks and adjustments for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.getRiskAndAdjustmentsForReferral(referralReference))
   }
 
   @Operation(summary = "Submit a need, outcome, and activities for an action plan")

@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStepQuestionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionChoice
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestion
@@ -27,6 +28,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
@@ -41,6 +43,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepositor
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.OutcomeRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.service.placeholder.PlaceholderFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.PlaceholderUtils
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -59,6 +63,7 @@ class ActionPlanService(
   private val personRepository: PersonRepository,
   private val needRepository: NeedRepository,
   private val outcomeRepository: OutcomeRepository,
+  private val placeholderFactory: PlaceholderFactory,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ActionPlanService::class.java)
@@ -114,17 +119,43 @@ class ActionPlanService(
     val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
       ?: throw NotFoundException("Referral not found for reference $referralReference")
 
-    val sessionDeliveryStep = actionPlanStepRepository.findSessionDeliveryStepsByReferralId(referral.id)
-    if (sessionDeliveryStep == null) {
-      logger.warn("No SESSION_DELIVERY step found for referral {}", referralReference)
-      throw NotFoundException("No SESSION_DELIVERY step found for referral $referralReference")
-    }
-
-    val questions = actionPlanStepQuestionRepository
-      .findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliveryStep.id)
     val actionPlan = actionPlanRepository.findByReferralId(referral.id)
+      ?: throw NotFoundException("No action plan found for referral $referralReference")
+
+    val sessionDeliveryStep = actionPlanStepRepository.findStepByReferralIdAndStepType(
+      referralId = referral.id,
+      stepType = ActionPlanStepType.SESSION_DELIVERY,
+    ) ?: throw NotFoundException("No session delivery details step found for referral $referralReference")
+
+    return getSessionDeliveryDetailsForStep(sessionDeliveryStep, actionPlan, referral)
+  }
+
+  @Transactional(readOnly = true)
+  fun getRiskAndAdjustmentsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
+    val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
+      ?: throw NotFoundException("Referral not found for reference $referralReference")
+
+    val actionPlan = actionPlanRepository.findByReferralId(referral.id)
+      ?: throw NotFoundException("No action plan found for referral $referralReference")
+
+    val riskAndAdjustmentsStep = actionPlanStepRepository.findStepByReferralIdAndStepType(
+      referralId = referral.id,
+      stepType = ActionPlanStepType.RISK_AND_ADJUSTMENTS,
+    ) ?: throw NotFoundException("No risk and adjustments step found for referral $referralReference")
+
+    return getSessionDeliveryDetailsForStep(riskAndAdjustmentsStep, actionPlan, referral)
+  }
+
+  private fun getSessionDeliveryDetailsForStep(
+    step: uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep,
+    actionPlan: ActionPlan?,
+    referral: Referral,
+  ): ActionPlanSessionDeliveryDetailsResponse {
+    val questions = actionPlanStepQuestionRepository
+      .findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
+
     if (actionPlan == null || questions.isEmpty()) {
-      return ActionPlanSessionDeliveryDetailsResponse(
+      val response = ActionPlanSessionDeliveryDetailsResponse(
         questions = questions.map { question ->
           val questionDto = ActionPlanStepQuestionDto.fromEntity(question)
           SessionDeliveryQuestion.fromQuestionAndResponses(
@@ -134,6 +165,7 @@ class ActionPlanService(
           )
         },
       )
+      return renderQuestionPlaceholders(response, referral)
     }
 
     val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository
@@ -148,7 +180,7 @@ class ActionPlanService(
         .findAllByActionPlanStepQuestionAnswerHeaderIdIn(activeHeaders.map { it.id })
     }
 
-    return ActionPlanSessionDeliveryDetailsResponse(
+    val response = ActionPlanSessionDeliveryDetailsResponse(
       questions = questions.map { question ->
         val questionDto = ActionPlanStepQuestionDto.fromEntity(question)
         val responses = activeHeaders
@@ -166,6 +198,52 @@ class ActionPlanService(
         SessionDeliveryQuestion.fromQuestionAndResponses(questionDto, responses, choices)
       },
     )
+    return renderQuestionPlaceholders(response, referral)
+  }
+
+  private fun renderQuestionPlaceholders(
+    response: ActionPlanSessionDeliveryDetailsResponse,
+    referral: Referral,
+  ): ActionPlanSessionDeliveryDetailsResponse {
+    val tokens = PlaceholderUtils.extractTokens(collectQuestionTemplates(response))
+    if (tokens.isEmpty()) return response
+
+    val placeholders = placeholderFactory.forReferral(tokens, referral)
+    if (placeholders.isEmpty()) return response
+
+    return ActionPlanSessionDeliveryDetailsResponse(
+      questions = response.questions.map { question ->
+        SessionDeliveryQuestion(
+          id = question.id,
+          displayOrder = question.displayOrder,
+          label = PlaceholderUtils.render(question.label, *placeholders) ?: question.label,
+          key = question.key,
+          hint = PlaceholderUtils.render(question.hint, *placeholders),
+          answerType = question.answerType,
+          maximumNumberOfResponses = question.maximumNumberOfResponses,
+          choices = question.choices?.map { choice ->
+            QuestionChoice(
+              value = choice.value,
+              label = PlaceholderUtils.render(choice.label, *placeholders) ?: choice.label,
+              displayOrder = choice.displayOrder,
+              displayAdditionalDetailsOnSelect = choice.displayAdditionalDetailsOnSelect,
+              additionalDetailsLabel = PlaceholderUtils.render(choice.additionalDetailsLabel, *placeholders),
+              additionalDetailsHint = PlaceholderUtils.render(choice.additionalDetailsHint, *placeholders),
+            )
+          },
+          savedResponses = question.savedResponses,
+        )
+      },
+    )
+  }
+
+  private fun collectQuestionTemplates(
+    response: ActionPlanSessionDeliveryDetailsResponse,
+  ): List<String?> = response.questions.flatMap { question ->
+    listOf(question.label, question.hint) +
+      question.choices.orEmpty().flatMap { choice ->
+        listOf(choice.label, choice.additionalDetailsLabel, choice.additionalDetailsHint)
+      }
   }
 
   @Transactional
@@ -180,9 +258,10 @@ class ActionPlanService(
 
     val actionPlan = findOrCreateByReferralId(referral.id)
 
-    val sessionDeliveryStep = actionPlanStepRepository
-      .findSessionDeliveryStepsByReferralId(referral.id)
-      ?: throw NotFoundException("No SESSION_DELIVERY step found for referral $referralReference")
+    val sessionDeliveryStep = actionPlanStepRepository.findStepByReferralIdAndStepType(
+      referralId = referral.id,
+      stepType = ActionPlanStepType.SESSION_DELIVERY,
+    ) ?: throw NotFoundException("No session delivery details step found for referral $referralReference")
 
     val questions = actionPlanStepQuestionRepository
       .findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliveryStep.id)
