@@ -609,7 +609,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   @DisplayName("GET /bff/referral-details-page/{referralId}")
   inner class ReferralViewPageEndPoint {
 
-    fun createReferralDetailsBffResponseDto(person: Person, testUser: ReferralUser, withdrawReferral: Boolean = false): ReferralDetailsBffResponseDto {
+    fun createReferralDetailsBffResponseDto(person: Person, testUser: ReferralUser, withdrawReferral: Boolean = false, withdrawalCreationDate: OffsetDateTime? = null): ReferralDetailsBffResponseDto {
       val savedReferral = referralHelper.createReferral(
         person = person,
         submittedBy = testUser,
@@ -655,6 +655,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         contactDetailsTableData = contactDetailsTable,
         referralDetailsTableData = referralDetailsTable,
         withdrawReferral = withdrawReferral,
+        withdrawalCreationDate = withdrawalCreationDate,
       )
     }
 
@@ -716,6 +717,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.equalityDetailsTableData shouldBe referralDetailsDto.equalityDetailsTableData
           body.contactDetailsTableData shouldBe referralDetailsDto.contactDetailsTableData
           body.withdrawReferral shouldBe false
+          body.withdrawalCreationDate shouldBe null
 
           val nanosDiff =
             Duration.between(referralDetailsDto.createdDate, body.createdDate).abs().toNanos()
@@ -741,7 +743,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
       personRepository.save(person)
 
-      val referralDetailsDto = createReferralDetailsBffResponseDto(person, testUser, withdrawReferral = true)
+      val withdrawalCreatedAt = OffsetDateTime.now()
+      val referralDetailsDto = createReferralDetailsBffResponseDto(person, testUser, withdrawReferral = true, withdrawalCreationDate = withdrawalCreatedAt)
 
       referralWithdrawalDetailsRepository.save(
         ReferralWithdrawalDetails(
@@ -749,7 +752,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           referralId = referralDetailsDto.id,
           reasonId = withdrawalReasonRepository.findByName("Sentence expired")!!.id,
           reasonDetails = null,
-          createdAt = OffsetDateTime.now(),
+          createdAt = withdrawalCreatedAt,
           createdBy = testUser.id,
         ),
       )
@@ -764,6 +767,9 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
           body.withdrawReferral shouldBe true
+
+          val nanosDiff = Duration.between(withdrawalCreatedAt, body.withdrawalCreationDate!!).abs().toNanos()
+          assertThat(nanosDiff).isLessThanOrEqualTo(1_000_000L)
         }
     }
 
