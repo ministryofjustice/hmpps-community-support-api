@@ -682,7 +682,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         referralDetailsTableData = referralDetailsTable,
         withdrawReferral = withdrawReferral,
         withdrawalCreationDate = withdrawalCreationDate,
-        withdrawnBySameUser = false,
+        withdrawnBySameUser = null,
       )
     }
 
@@ -745,7 +745,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.contactDetailsTableData shouldBe referralDetailsDto.contactDetailsTableData
           body.withdrawReferral shouldBe false
           body.withdrawalCreationDate shouldBe null
-          body.withdrawnBySameUser shouldBe false
+          body.withdrawnBySameUser shouldBe null
 
           val nanosDiff =
             Duration.between(referralDetailsDto.createdDate, body.createdDate).abs().toNanos()

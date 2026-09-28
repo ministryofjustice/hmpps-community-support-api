@@ -78,7 +78,7 @@ class ReferralService(
     val person = upsertPerson(personDetails)
     val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(foundReferral.id)
     val withdrawalDetails = referralWithdrawalDetailsRepository.findByReferralId(foundReferral.id)
-    val withdrawnBySameUser = withdrawalDetails != null && withdrawalDetails.createdBy == currentUserId
+    val withdrawnBySameUser = withdrawalDetails?.let { it.createdBy == currentUserId }
 
     return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments, withdrawalDetails != null, withdrawalDetails?.createdAt, withdrawnBySameUser)
   }
