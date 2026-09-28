@@ -200,6 +200,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withReferral(referral)
         .withPerson(person)
         .withCreatedBy(testUser.id)
+        .withAdditionalSupportNeeded(true)
+        .withCaringResponsibilitiesDetails("Lorem ipsum dolor sit amet")
         .create()
       personAdditionalSupportNeedsRepository.save(supportNeeds)
 
@@ -243,7 +245,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
             riskToSelfHostelSetting = "Don't know",
             riskToSelfVulnerability = "Vulnerability concerns noted",
           )
-          body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftAdditionalSupportNeedsDetailsTableDataDto()
+          body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftAdditionalSupportNeedsDetailsTableDataDto(
+            caringResponsibilities = "Lorem ipsum dolor sit amet"
+          )
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
           body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
