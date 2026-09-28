@@ -510,7 +510,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.ALREADY_REPORTED)
+        .isEqualTo(HttpStatus.CONFLICT)
     }
 
     @Test
