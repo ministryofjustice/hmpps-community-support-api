@@ -611,7 +611,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     referralHelper.assignCaseWorkers(referral, listOf(referralUser))
     stubCprProbationPerson(person.identifier, createCprProbationPersonDto(person.identifier))
 
-    val result = referralService.getReferralDetailsPage(referral.id.toString())
+    val result = referralService.getReferralDetailsPage(referral.id.toString(), referralUser.id)
 
     assertEquals(referral.id, result.id)
     assertEquals(referral.personIdentifier, result.personDetailsTableData.crn)
@@ -637,7 +637,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
       ),
     )
 
-    val result = referralService.getReferralDetailsPage(referral.id.toString())
+    val result = referralService.getReferralDetailsPage(referral.id.toString(), referralUser.id)
 
     assertThat(result.withdrawReferral).isTrue()
   }
@@ -652,7 +652,7 @@ class ReferralServiceIntegrationTest : IntegrationTestBase() {
     stubCprProbationPerson(person.identifier, createCprProbationPersonDto(person.identifier))
     setupNDeliusStubs(person.identifier)
 
-    val result = referralService.getReferralDetailsPage(referral.referenceNumber)
+    val result = referralService.getReferralDetailsPage(referral.referenceNumber, referralUser.id)
 
     assertEquals(referral.id, result.id)
     assertEquals(referral.personIdentifier, result.personDetailsTableData.crn)
