@@ -50,6 +50,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       communitySupportRiskDto: CommunitySupportRiskDto,
       nationalities: List<String>,
       personAdditionalSupportNeeds: PersonAdditionalSupportNeeds,
+      personNeeds: ReferralCriminogenicNeedsDto,
     ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
@@ -66,7 +67,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       ),
       riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(communitySupportRiskDto),
       additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(personAdditionalSupportNeeds),
-      personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(),
+      personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(personNeeds),
       referralAreaTableData = DraftReferralAreaTableDataDto.from(),
       additionalReferralInformationTableData = DraftAdditionalReferralInformationTableDataDto.from(referral),
       mainPocDetailsTableData = DraftMainPOCDetailsTableDataDto.from(),
@@ -223,7 +224,16 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val thinkingBehavioursAttitudeDetails: String? = null,
   ) {
     companion object {
-      fun from(): DraftPersonNeedsDetailsTableDataDto = DraftPersonNeedsDetailsTableDataDto()
+      fun from(personNeeds: ReferralCriminogenicNeedsDto): DraftPersonNeedsDetailsTableDataDto = DraftPersonNeedsDetailsTableDataDto(
+        personNeeds.hasAccommodationNeeds, personNeeds.accommodationDetails,
+        personNeeds.employmentEducationDetails,
+        personNeeds.financialDetails,
+        personNeeds.personalRelationshipsCommunityDetails,
+        personNeeds.drugUseDetails,
+        personNeeds.alcoholUseDetails,
+        personNeeds.healthWellbeingDetails,
+        personNeeds.personalRelationshipsCommunityDetails,
+      )
     }
   }
 
