@@ -37,6 +37,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
   val additionalSupportNeedsDetailsTableData: DraftAdditionalSupportNeedsDetailsTableDataDto,
   val personNeedsDetailsTableData: DraftPersonNeedsDetailsTableDataDto,
   val referralAreaTableData: DraftReferralAreaTableDataDto,
+  val additionalReferralInformationTableData: DraftAdditionalReferralInformationTableDataDto,
   val mainPocDetailsTableData: DraftMainPOCDetailsTableDataDto,
 ) {
   companion object {
@@ -67,6 +68,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(personAdditionalSupportNeeds),
       personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(),
       referralAreaTableData = DraftReferralAreaTableDataDto.from(),
+      additionalReferralInformationTableData = DraftAdditionalReferralInformationTableDataDto.from(referral),
       mainPocDetailsTableData = DraftMainPOCDetailsTableDataDto.from(),
     )
   }
@@ -76,7 +78,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val crn: String?,
     val prisonNumber: String?,
     val dateOfBirth: LocalDate,
-    val preferredLanguage: String,
+    val preferredLanguage: String?,
     val personalCircumstances: List<PersonalCircumstance> = emptyList(),
     val disabilities: List<Disability> = emptyList(),
   ) {
@@ -90,7 +92,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
         crn = if (personIdentifier is PersonIdentifier.Crn) personIdentifier.value else null,
         prisonNumber = if (personIdentifier is PersonIdentifier.PrisonerNumber) personIdentifier.value else null,
         dateOfBirth = person.dateOfBirth,
-        preferredLanguage = person.additionalDetails?.preferredLanguage ?: "",
+        preferredLanguage = personalDetailsAndCircumstances.preferredLanguage,
         personalCircumstances = personalDetailsAndCircumstances.personalCircumstances,
         disabilities = personalDetailsAndCircumstances.disabilities,
       )
@@ -241,6 +243,8 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val offenceSubCategory: String? = null,
     val outcome: String? = null,
     val sentenceEndDate: LocalDate? = null,
+    val licenceConditions: String? = null,
+    val anythingElse: String? = null,
   ) {
     companion object {
       fun from(referral: Referral): DraftAdditionalReferralInformationTableDataDto = DraftAdditionalReferralInformationTableDataDto(
@@ -251,6 +255,8 @@ data class CheckDraftReferralDetailsBffResponseDto(
         offenceSubCategory = null,
         outcome = null,
         sentenceEndDate = null,
+        licenceConditions = null,
+        anythingElse = null,
       )
     }
   }

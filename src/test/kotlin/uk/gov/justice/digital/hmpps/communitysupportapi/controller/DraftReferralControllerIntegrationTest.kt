@@ -225,7 +225,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personDetailsTableData.crn shouldBe CRN
           body.personDetailsTableData.prisonNumber shouldBe null
           body.personDetailsTableData.dateOfBirth shouldBe person.dateOfBirth
-          body.personDetailsTableData.preferredLanguage shouldBe ""
+          body.personDetailsTableData.preferredLanguage shouldBe "English"
           body.personDetailsTableData.disabilities.map { it.description } shouldBe listOf("Blind")
           body.personDetailsTableData.personalCircumstances.map { it.description } shouldBe listOf("Relationships", "Employment", "Dependants")
           body.equalityDetailsTableData.ethnicity shouldBe person.additionalDetails?.ethnicity
