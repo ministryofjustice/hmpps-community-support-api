@@ -193,6 +193,117 @@ class ActionPlanService(
     ).let { response -> renderQuestionPlaceholders(response, referral) }
   }
 
+  @Transactional(readOnly = true)
+  fun getConfirmServiceEndDateForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
+    val data = actionPlanDataFetcher.getConfirmServiceEndDateForReferral(referralReference)
+    val actionPlan = data.actionPlan
+    val referral = data.referral
+    val questions = data.steps.flatMap { step ->
+      actionPlanStepQuestionRepository.findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
+    }
+
+    val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository
+      .findActiveByPlanAndQuestionIds(actionPlan.id, questions.map { it.id })
+
+    val answerDetails = actionPlanStepQuestionAnswerDetailsRepository
+      .findAllByActionPlanStepQuestionAnswerHeaderIdIn(activeHeaders.map { it.id })
+
+    return ActionPlanSessionDeliveryDetailsResponse(
+      questions = questions.map { question ->
+        val responses = activeHeaders
+          .filter { it.actionPlanStepQuestionId == question.id }
+          .mapNotNull { header ->
+            answerDetails
+              .filter { it.actionPlanStepQuestionAnswerHeaderId == header.id }
+              .maxWithOrNull(
+                compareBy<ActionPlanStepQuestionAnswerDetails> { it.revisionNumber }
+                  .thenBy { it.createdAt }
+                  .thenBy { it.id },
+              )
+          }
+        SessionDeliveryQuestion.fromQuestionAndResponses(
+          ActionPlanStepQuestionDto.fromEntity(question),
+          responses,
+          question.choices.sortedBy { choice -> choice.orderNumber },
+        )
+      },
+    ).let { response -> renderQuestionPlaceholders(response, referral) }
+  }
+
+  @Transactional(readOnly = true)
+  fun getUpdateServiceEndDateForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
+    val data = actionPlanDataFetcher.getUpdateServiceEndDateForReferral(referralReference)
+    val actionPlan = data.actionPlan
+    val referral = data.referral
+    val questions = data.steps.flatMap { step ->
+      actionPlanStepQuestionRepository.findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
+    }
+
+    val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository
+      .findActiveByPlanAndQuestionIds(actionPlan.id, questions.map { it.id })
+
+    val answerDetails = actionPlanStepQuestionAnswerDetailsRepository
+      .findAllByActionPlanStepQuestionAnswerHeaderIdIn(activeHeaders.map { it.id })
+
+    return ActionPlanSessionDeliveryDetailsResponse(
+      questions = questions.map { question ->
+        val responses = activeHeaders
+          .filter { it.actionPlanStepQuestionId == question.id }
+          .mapNotNull { header ->
+            answerDetails
+              .filter { it.actionPlanStepQuestionAnswerHeaderId == header.id }
+              .maxWithOrNull(
+                compareBy<ActionPlanStepQuestionAnswerDetails> { it.revisionNumber }
+                  .thenBy { it.createdAt }
+                  .thenBy { it.id },
+              )
+          }
+        SessionDeliveryQuestion.fromQuestionAndResponses(
+          ActionPlanStepQuestionDto.fromEntity(question),
+          responses,
+          question.choices.sortedBy { choice -> choice.orderNumber },
+        )
+      },
+    ).let { response -> renderQuestionPlaceholders(response, referral) }
+  }
+
+  @Transactional(readOnly = true)
+  fun getPersonInvolvementForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
+    val data = actionPlanDataFetcher.getPersonInvolvementForReferral(referralReference)
+    val actionPlan = data.actionPlan
+    val referral = data.referral
+    val questions = data.steps.flatMap { step ->
+      actionPlanStepQuestionRepository.findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
+    }
+
+    val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository
+      .findActiveByPlanAndQuestionIds(actionPlan.id, questions.map { it.id })
+
+    val answerDetails = actionPlanStepQuestionAnswerDetailsRepository
+      .findAllByActionPlanStepQuestionAnswerHeaderIdIn(activeHeaders.map { it.id })
+
+    return ActionPlanSessionDeliveryDetailsResponse(
+      questions = questions.map { question ->
+        val responses = activeHeaders
+          .filter { it.actionPlanStepQuestionId == question.id }
+          .mapNotNull { header ->
+            answerDetails
+              .filter { it.actionPlanStepQuestionAnswerHeaderId == header.id }
+              .maxWithOrNull(
+                compareBy<ActionPlanStepQuestionAnswerDetails> { it.revisionNumber }
+                  .thenBy { it.createdAt }
+                  .thenBy { it.id },
+              )
+          }
+        SessionDeliveryQuestion.fromQuestionAndResponses(
+          ActionPlanStepQuestionDto.fromEntity(question),
+          responses,
+          question.choices.sortedBy { choice -> choice.orderNumber },
+        )
+      },
+    ).let { response -> renderQuestionPlaceholders(response, referral) }
+  }
+
   private fun renderQuestionPlaceholders(
     response: ActionPlanSessionDeliveryDetailsResponse,
     referral: Referral,

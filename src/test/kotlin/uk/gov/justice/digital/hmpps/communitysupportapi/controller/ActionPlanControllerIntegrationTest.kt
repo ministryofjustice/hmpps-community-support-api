@@ -48,6 +48,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionP
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTestUtil.randomReferralReference
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
@@ -89,6 +90,12 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
   private lateinit var userMapper: UserMapper
 
   private lateinit var testUser: ReferralUser
+
+  companion object {
+    private val UNKNOWN_REFERRAL_REFERENCE = "ZZ9999ZZ"
+    private val SERVICE_END_DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM yyyy")
+    private val INPUT_SERVICE_END_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+  }
 
   @Nested
   @DisplayName("GET /bff/referral/{referralReference}/action-plan")
@@ -592,7 +599,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
       @Test
       fun `should return not found for unknown referral reference`() {
-        assertNotFound(GET, "/bff/referral/ZZ9999ZZ/action-plan/session-delivery-details/session-delivery")
+        assertNotFound(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/session-delivery-details/session-delivery")
       }
     }
 
@@ -844,6 +851,389 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Nested
+    @DisplayName("GET /bff/referral/{referralReference}/action-plan/service-delivery-details/confirm-service-end-date")
+    inner class GetConfirmServiceEndDateEndpoint {
+      @Test
+      fun `should return unauthorized if no token`() {
+        assertUnauthorized(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/confirm-service-end-date")
+      }
+
+      @Test
+      fun `should return forbidden if no role`() {
+        assertForbiddenNoRole(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/confirm-service-end-date")
+      }
+
+      @Test
+      fun `should return forbidden if wrong role`() {
+        assertForbiddenWrongRole(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/confirm-service-end-date")
+      }
+
+      @Test
+      fun `should return not found for unknown referral reference`() {
+        assertNotFound(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/confirm-service-end-date")
+      }
+
+      @Test
+      fun `should return confirm service end date question with formatted placeholder and saved answer`() {
+        val submittedBy = referralHelper.ensureReferralUser()
+        val person = referralHelper.createPerson(firstName = "Jane", lastName = "Doe")
+        val serviceEndDate = OffsetDateTime.now().plusDays(10)
+        val referral = referralHelper.createReferral(
+          person = person,
+          referenceNumber = randomReferralReference(),
+          submittedBy = submittedBy,
+          targetServiceCompletionDate = serviceEndDate,
+        )
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+        val questionKey = "SERVICE_END_DATE_CHECK"
+
+        val confirmServiceEndDateStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(12)
+            .withName("Service end date")
+            .withStepType(ActionPlanStepType.SERVICE_END_DATE_CHECK)
+            .create(),
+        )
+        val question = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(confirmServiceEndDateStep.id)
+            .withOrderNumber(1)
+            .withTitle("Is the service end date still {{ serviceEndDate }}?")
+            .withQuestionKey(questionKey)
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(question.id)
+            .withOrderNumber(1)
+            .withLabel("Yes")
+            .withValue("YES")
+            .create(),
+        )
+        actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(question.id)
+            .withOrderNumber(2)
+            .withLabel("No, I need to change the date")
+            .withValue("NO")
+            .create(),
+        )
+
+        val header = actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
+            id = UUID.randomUUID(),
+            actionPlanId = actionPlan.id,
+            actionPlanStepQuestionId = question.id,
+            orderNumber = 1,
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
+            id = UUID.randomUUID(),
+            actionPlanStepQuestionAnswerHeaderId = header.id,
+            revisionNumber = 1,
+            content = "NO",
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+
+        webTestClient.get()
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/service-delivery-details/confirm-service-end-date")
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+
+            body.questions.size shouldBe 1
+            body.questions[0].id shouldBe question.id
+            body.questions[0].key shouldBe questionKey
+            body.questions[0].label shouldBe "Is the service end date still ${serviceEndDate.format(SERVICE_END_DATE_FORMATTER)}?"
+            body.questions[0].answerType shouldBe ActionPlanQuestionAnswerType.RADIO
+            body.questions[0].maximumNumberOfResponses shouldBe 1
+            body.questions[0].choices?.map { it.label } shouldBe listOf("Yes", "No, I need to change the date")
+            body.questions[0].choices?.map { it.value } shouldBe listOf("YES", "NO")
+            body.questions[0].savedResponses.map { it.value } shouldBe listOf("NO")
+          }
+      }
+    }
+
+    @Nested
+    @DisplayName("GET /bff/referral/{referralReference}/action-plan/service-delivery-details/update-service-end-date")
+    inner class GetUpdateServiceEndDateEndpoint {
+      @Test
+      fun `should return unauthorized if no token`() {
+        assertUnauthorized(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/update-service-end-date")
+      }
+
+      @Test
+      fun `should return forbidden if no role`() {
+        assertForbiddenNoRole(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/update-service-end-date")
+      }
+
+      @Test
+      fun `should return forbidden if wrong role`() {
+        assertForbiddenWrongRole(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/update-service-end-date")
+      }
+
+      @Test
+      fun `should return not found for unknown referral reference`() {
+        assertNotFound(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/update-service-end-date")
+      }
+
+      @Test
+      fun `should return update service end date questions with saved answers`() {
+        val submittedBy = referralHelper.ensureReferralUser()
+        val person = referralHelper.createPerson(firstName = "Jane", lastName = "Doe")
+        val serviceEndDate = OffsetDateTime.now().plusDays(10)
+        val referral = referralHelper.createReferral(
+          person = person,
+          referenceNumber = randomReferralReference(),
+          submittedBy = submittedBy,
+          targetServiceCompletionDate = serviceEndDate,
+        )
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+        val serviceEndDateQuestionKey = "NEW_SERVICE_END_DATE"
+        val reasonQuestionKey = "SERVICE_END_DATE_CHANGE_REASON"
+
+        val updateServiceEndDateStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(13)
+            .withName("Change the service end date")
+            .withStepType(ActionPlanStepType.CHANGE_SERVICE_END_DATE)
+            .create(),
+        )
+        val serviceEndDateQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(updateServiceEndDateStep.id)
+            .withOrderNumber(1)
+            .withTitle("What is the new service end date?")
+            .withQuestionKey(serviceEndDateQuestionKey)
+            .withAnswerType(ActionPlanQuestionAnswerType.DATE)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+        val reasonQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(updateServiceEndDateStep.id)
+            .withOrderNumber(2)
+            .withTitle("Why are you changing the service end date?")
+            .withQuestionKey(reasonQuestionKey)
+            .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+
+        val dateHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
+            id = UUID.randomUUID(),
+            actionPlanId = actionPlan.id,
+            actionPlanStepQuestionId = serviceEndDateQuestion.id,
+            orderNumber = 1,
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+        val newServiceEndDate = OffsetDateTime.now().plusDays(12)
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
+            id = UUID.randomUUID(),
+            actionPlanStepQuestionAnswerHeaderId = dateHeader.id,
+            revisionNumber = 1,
+            content = newServiceEndDate.format(INPUT_SERVICE_END_DATE_FORMAT),
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+
+        val reasonHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
+            id = UUID.randomUUID(),
+            actionPlanId = actionPlan.id,
+            actionPlanStepQuestionId = reasonQuestion.id,
+            orderNumber = 2,
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
+            id = UUID.randomUUID(),
+            actionPlanStepQuestionAnswerHeaderId = reasonHeader.id,
+            revisionNumber = 1,
+            content = "The participant needs longer support to complete the activities.",
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+
+        webTestClient.get()
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/service-delivery-details/update-service-end-date")
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+
+            body.questions.size shouldBe 2
+
+            body.questions[0].id shouldBe serviceEndDateQuestion.id
+            body.questions[0].key shouldBe serviceEndDateQuestionKey
+            body.questions[0].label shouldBe "What is the new service end date?"
+            body.questions[0].answerType shouldBe ActionPlanQuestionAnswerType.DATE
+            body.questions[0].maximumNumberOfResponses shouldBe 1
+            body.questions[0].savedResponses.map { it.value } shouldBe listOf(newServiceEndDate.format(INPUT_SERVICE_END_DATE_FORMAT))
+
+            body.questions[1].id shouldBe reasonQuestion.id
+            body.questions[1].key shouldBe reasonQuestionKey
+            body.questions[1].label shouldBe "Why are you changing the service end date?"
+            body.questions[1].answerType shouldBe ActionPlanQuestionAnswerType.TEXTAREA
+            body.questions[1].maximumNumberOfResponses shouldBe 1
+            body.questions[1].savedResponses.map { it.value } shouldBe
+              listOf("The participant needs longer support to complete the activities.")
+          }
+      }
+    }
+
+    @Nested
+    @DisplayName("GET /bff/referral/{referralReference}/action-plan/service-delivery-details/person-involvement")
+    inner class GetPersonInvolvementEndpoint {
+      @Test
+      fun `should return unauthorized if no token`() {
+        assertUnauthorized(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/person-involvement")
+      }
+
+      @Test
+      fun `should return forbidden if no role`() {
+        assertForbiddenNoRole(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/person-involvement")
+      }
+
+      @Test
+      fun `should return forbidden if wrong role`() {
+        assertForbiddenWrongRole(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/person-involvement")
+      }
+
+      @Test
+      fun `should return not found for unknown referral reference`() {
+        assertNotFound(GET, "/bff/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/service-delivery-details/person-involvement")
+      }
+
+      @Test
+      fun `should return person involvement questions with saved answers`() {
+        val submittedBy = referralHelper.ensureReferralUser()
+        val person = referralHelper.createPerson(firstName = "Jane", lastName = "Doe")
+        val referral = referralHelper.createReferral(
+          person = person,
+          referenceNumber = randomReferralReference(),
+          submittedBy = submittedBy,
+        )
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+        val personInvolvementQuestionKey = "USER_INVOLVEMENT_IN_ACTION_PLAN"
+
+        val personInvolvementStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(14)
+            .withName("User involvement")
+            .withStepType(ActionPlanStepType.USER_INVOLVEMENT)
+            .create(),
+        )
+        val personInvolvementQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(personInvolvementStep.id)
+            .withOrderNumber(1)
+            .withTitle("Was {{ firstName }} involved in creating the action plan?")
+            .withQuestionKey(personInvolvementQuestionKey)
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withMaxNumberResponses(1)
+            .create(),
+        )
+
+        val personInvolvementChoiceYes = actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(personInvolvementQuestion.id)
+            .withOrderNumber(1)
+            .withLabel("Yes")
+            .withValue("YES")
+            .withHasFreeText(false)
+            .create(),
+        )
+        val personInvolvementChoiceNo = actionPlanStepQuestionChoiceRepository.save(
+          ActionPlanStepQuestionChoiceFactory()
+            .withActionPlanStepQuestionId(personInvolvementQuestion.id)
+            .withOrderNumber(2)
+            .withLabel("No")
+            .withValue("NO")
+            .withHasFreeText(true)
+            .withFreeTextLabel("Give details about why {{ firstName }} was not involved in creating the action plan")
+            .create(),
+        )
+
+        val header = actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
+            id = UUID.randomUUID(),
+            actionPlanId = actionPlan.id,
+            actionPlanStepQuestionId = personInvolvementQuestion.id,
+            orderNumber = 1,
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
+            id = UUID.randomUUID(),
+            actionPlanStepQuestionAnswerHeaderId = header.id,
+            revisionNumber = 1,
+            content = "NO",
+            freeTextValue = "Jane was unavailable because she was working away from home for several days.",
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+
+        webTestClient.get()
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/service-delivery-details/person-involvement")
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+
+            body.questions.size shouldBe 1
+
+            body.questions[0].id shouldBe personInvolvementQuestion.id
+            body.questions[0].key shouldBe personInvolvementQuestionKey
+            body.questions[0].label shouldBe "Was Jane involved in creating the action plan?"
+            body.questions[0].answerType shouldBe ActionPlanQuestionAnswerType.RADIO
+            body.questions[0].maximumNumberOfResponses shouldBe 1
+            body.questions[0].choices?.map { it.label } shouldBe listOf("Yes", "No")
+            body.questions[0].choices?.map { it.value } shouldBe listOf("YES", "NO")
+            body.questions[0].choices?.map { it.additionalDetailsLabel } shouldBe listOf(
+              null,
+              "Give details about why Jane was not involved in creating the action plan",
+            )
+            body.questions[0].savedResponses.map { it.value } shouldBe listOf("NO")
+            body.questions[0].savedResponses.map { it.additionalDetails } shouldBe listOf(
+              "Jane was unavailable because she was working away from home for several days.",
+            )
+          }
+      }
+    }
+
+    @Nested
     @DisplayName("PATCH /referral/{referralReference}/action-plan/session-delivery-details")
     inner class PatchSessionDeliveryDetailsEndpoint {
       @Test
@@ -1017,7 +1407,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
         assertNotFound(
           PATCH,
-          "/referral/ZZ9999ZZ/action-plan/session-delivery-details",
+          "/referral/${UNKNOWN_REFERRAL_REFERENCE}/action-plan/session-delivery-details",
           ActionPlanSessionDeliveryDetailsRequest(answers = emptyList()),
         )
       }

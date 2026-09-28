@@ -1,6 +1,7 @@
-package uk.gov.justice.digital.hmpps.communitysupportapi.util
+package uk.gov.justice.digital.hmpps.communitysupportapi.util.placeholder
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.Placeholders
 
 class PersonPlaceholder(
   private val person: Person,
