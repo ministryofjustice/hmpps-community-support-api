@@ -246,7 +246,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
             riskToSelfVulnerability = "Vulnerability concerns noted",
           )
           body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftAdditionalSupportNeedsDetailsTableDataDto(
-            caringResponsibilities = "Lorem ipsum dolor sit amet"
+            caringResponsibilities = "Lorem ipsum dolor sit amet",
           )
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
