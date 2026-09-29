@@ -97,7 +97,10 @@ class ReferralController(
     ],
   )
   @GetMapping("/bff/referral-details-page/{caseIdentifier}")
-  fun getReferralDetailsPage(@PathVariable caseIdentifier: String): ResponseEntity<ReferralDetailsBffResponseDto> = ResponseEntity.ok(referralService.getReferralDetailsPage(caseIdentifier))
+  fun getReferralDetailsPage(@PathVariable caseIdentifier: String): ResponseEntity<ReferralDetailsBffResponseDto> {
+    val user = userMapper.fromToken(authenticationHolder)
+    return ResponseEntity.ok(referralService.getReferralDetailsPage(caseIdentifier, user.id))
+  }
 
   @Operation(summary = "Create a referral")
   @ApiResponses(
@@ -181,13 +184,13 @@ class ReferralController(
         content = [Content(mediaType = "application/json")],
       ),
       ApiResponse(
-        responseCode = "208",
-        description = "Referral already withdrawn",
+        responseCode = "404",
+        description = "Referral not found",
         content = [Content(mediaType = "application/json")],
       ),
       ApiResponse(
-        responseCode = "404",
-        description = "Referral not found",
+        responseCode = "409",
+        description = "Referral already withdrawn",
         content = [Content(mediaType = "application/json")],
       ),
     ],
@@ -256,8 +259,8 @@ class ReferralController(
     @PathVariable caseReference: String,
   ): ResponseEntity<AppointmentIcsResponse> {
     log.info("GET ICS details for caseReference={}", caseReference)
-
-    val referral = referralService.getReferralDetailsPage(caseReference)
+    val user = userMapper.fromToken(authenticationHolder)
+    val referral = referralService.getReferralDetailsPage(caseReference, user.id)
     val icsAppointmentDetails = appointmentService.getIcsAppointmentsByReferral(referral.id)
     val appointmentIcsResponse = icsAppointmentDetails
       .maxByOrNull(AppointmentIcsResponse::createdAt)

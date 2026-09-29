@@ -14,8 +14,9 @@ class ActionPlanStepDetailsDtoTest {
       id = UUID.randomUUID(),
       actionPlanStepId = UUID.randomUUID(),
       orderNumber = 1,
-      title = "How are you feeling?",
-      hint = "Choose the answer that best matches today.",
+      title = "What method the session was conducted?",
+      questionKey = "SESSION_METHOD",
+      hint = "Choose the answer that best matches.",
       answerType = ActionPlanQuestionAnswerType.RADIO,
       questionType = ActionPlanQuestionType.GENERAL,
       maxNumberResponses = 1,
@@ -26,6 +27,7 @@ class ActionPlanStepDetailsDtoTest {
     assertEquals(question.id, dto.id)
     assertEquals(question.orderNumber, dto.displayOrder)
     assertEquals(question.title, dto.label)
+    assertEquals(question.questionKey, dto.key)
     assertEquals(question.hint, dto.hint)
     assertEquals(question.answerType, dto.answerType)
     assertEquals(question.maxNumberResponses, dto.maximumNumberOfResponses)

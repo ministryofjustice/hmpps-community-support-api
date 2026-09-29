@@ -72,14 +72,15 @@ class ReferralService(
 
   fun getReferral(referralId: UUID) = referralRepository.findById(referralId)
 
-  fun getReferralDetailsPage(caseIdentifier: String?): ReferralDetailsBffResponseDto {
+  fun getReferralDetailsPage(caseIdentifier: String?, currentUserId: UUID): ReferralDetailsBffResponseDto {
     val foundReferral = referralLookupService.findByCaseIdentifier(caseIdentifier)
     val personDetails = personService.getPerson(foundReferral.personIdentifier)
     val person = upsertPerson(personDetails)
     val referralAssignments = referralUserAssignmentRepository.findAllByReferralIdAndNotDeleted(foundReferral.id)
-    val withdrawReferral = referralWithdrawalDetailsRepository.findByReferralId(foundReferral.id) != null
+    val withdrawalDetails = referralWithdrawalDetailsRepository.findByReferralId(foundReferral.id)
+    val withdrawnBySameUser = withdrawalDetails?.let { it.createdBy == currentUserId }
 
-    return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments, withdrawReferral)
+    return ReferralDetailsBffResponseDto.from(foundReferral, person, referralAssignments, withdrawalDetails != null, withdrawalDetails?.createdAt, withdrawnBySameUser)
   }
 
   @Transactional

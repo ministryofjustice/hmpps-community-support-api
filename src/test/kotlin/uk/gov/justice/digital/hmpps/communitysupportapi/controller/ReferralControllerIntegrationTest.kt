@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.assertj.core.api.Assertions.assertThat
@@ -59,6 +60,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.cprProbationPersonNoFixAbodeJson
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createCprProbationPersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralProviderAssignmentFactory
@@ -116,6 +119,29 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   private lateinit var userMapper: UserMapper
 
   private lateinit var testUser: ReferralUser
+
+  @BeforeEach
+  fun stubNDeliusPersonalDetails() {
+    val identifierRegex = "[A-Z]\\d{6}"
+    stubFor(
+      get(urlPathMatching("/case/$identifierRegex"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(createPersonDetailsAndCircumstances()),
+        ),
+    )
+    stubFor(
+      get(urlPathMatching("/case/$identifierRegex/home-office-interest"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(createHomeOfficeInterest()),
+        ),
+    )
+  }
 
   @Nested
   @DisplayName("GET /bff/referral-details/{referralId}")
@@ -510,7 +536,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.ALREADY_REPORTED)
+        .isEqualTo(HttpStatus.CONFLICT)
     }
 
     @Test
@@ -609,7 +635,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
   @DisplayName("GET /bff/referral-details-page/{referralId}")
   inner class ReferralViewPageEndPoint {
 
-    fun createReferralDetailsBffResponseDto(person: Person, testUser: ReferralUser, withdrawReferral: Boolean = false): ReferralDetailsBffResponseDto {
+    fun createReferralDetailsBffResponseDto(person: Person, testUser: ReferralUser, withdrawReferral: Boolean = false, withdrawalCreationDate: OffsetDateTime? = null): ReferralDetailsBffResponseDto {
       val savedReferral = referralHelper.createReferral(
         person = person,
         submittedBy = testUser,
@@ -655,6 +681,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         contactDetailsTableData = contactDetailsTable,
         referralDetailsTableData = referralDetailsTable,
         withdrawReferral = withdrawReferral,
+        withdrawalCreationDate = withdrawalCreationDate,
+        withdrawnBySameUser = null,
       )
     }
 
@@ -716,6 +744,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.equalityDetailsTableData shouldBe referralDetailsDto.equalityDetailsTableData
           body.contactDetailsTableData shouldBe referralDetailsDto.contactDetailsTableData
           body.withdrawReferral shouldBe false
+          body.withdrawalCreationDate shouldBe null
+          body.withdrawnBySameUser shouldBe null
 
           val nanosDiff =
             Duration.between(referralDetailsDto.createdDate, body.createdDate).abs().toNanos()
@@ -741,7 +771,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
       val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
       personRepository.save(person)
 
-      val referralDetailsDto = createReferralDetailsBffResponseDto(person, testUser, withdrawReferral = true)
+      val withdrawalCreatedAt = OffsetDateTime.now()
+      val referralDetailsDto = createReferralDetailsBffResponseDto(person, testUser, withdrawReferral = true, withdrawalCreationDate = withdrawalCreatedAt)
 
       referralWithdrawalDetailsRepository.save(
         ReferralWithdrawalDetails(
@@ -749,7 +780,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           referralId = referralDetailsDto.id,
           reasonId = withdrawalReasonRepository.findByName("Sentence expired")!!.id,
           reasonDetails = null,
-          createdAt = OffsetDateTime.now(),
+          createdAt = withdrawalCreatedAt,
           createdBy = testUser.id,
         ),
       )
@@ -764,6 +795,56 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
           body.withdrawReferral shouldBe true
+          body.withdrawnBySameUser shouldBe true
+
+          val nanosDiff = Duration.between(withdrawalCreatedAt, body.withdrawalCreationDate!!).abs().toNanos()
+          assertThat(nanosDiff).isLessThanOrEqualTo(1_000_000L)
+        }
+    }
+
+    @Test
+    fun `should return withdrawnBySameUser false when referral was withdrawn by a different user`() {
+      val cprPersonDTO = createCprProbationPersonDto(CRN)
+      stubFor(
+        get(urlEqualTo("/person/probation/$CRN"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(cprPersonDTO.toJson()),
+          ),
+      )
+
+      val withdrawingUser = referralHelper.createTestUser(username = "withdrawing-user", setAsActiveUser = false)
+      referralHelper.createTestUser(username = "viewing-user")
+      val person = referralHelper.createPersonFromCprPersonDTO(cprPersonDTO)
+      personRepository.save(person)
+
+      val withdrawalCreatedAt = OffsetDateTime.now()
+      val referralDetailsDto = createReferralDetailsBffResponseDto(person, withdrawingUser, withdrawReferral = true, withdrawalCreationDate = withdrawalCreatedAt)
+
+      referralWithdrawalDetailsRepository.save(
+        ReferralWithdrawalDetails(
+          id = UUID.randomUUID(),
+          referralId = referralDetailsDto.id,
+          reasonId = withdrawalReasonRepository.findByName("Sentence expired")!!.id,
+          reasonDetails = null,
+          createdAt = withdrawalCreatedAt,
+          createdBy = withdrawingUser.id,
+        ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/referral-details-page/${referralDetailsDto.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ReferralDetailsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.withdrawReferral shouldBe true
+          body.withdrawnBySameUser shouldBe false
         }
     }
 
@@ -866,6 +947,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return Not Found with invalid referral identifier`() {
+      referralHelper.createTestUser()
       assertNotFound(GET, "/bff/referral-details-page/${referralHelper.communityServiceProviderId}")
     }
   }
@@ -1420,6 +1502,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
     fun setup() {
       testDataCleaner.cleanAllTables()
       testUser = referralHelper.ensureReferralUser()
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
     }
 
     @Test
