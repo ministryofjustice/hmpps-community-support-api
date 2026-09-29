@@ -1,17 +1,11 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
-import jakarta.persistence.Column
-import jakarta.persistence.FetchType
-import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.h
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class ReferralCriminogenicNeedsFactory: TestEntityFactory<ReferralCriminogenicNeeds>() {
+class ReferralCriminogenicNeedsFactory : TestEntityFactory<ReferralCriminogenicNeeds>() {
   private var id: UUID = UUID.randomUUID()
   private lateinit var referral: Referral
   private var hasAccommodationNeeds: Boolean? = null
@@ -30,7 +24,7 @@ class ReferralCriminogenicNeedsFactory: TestEntityFactory<ReferralCriminogenicNe
   private var healthWellbeingDetails: String? = null
   private var hasThinkingBehavioursAttitudeNeeds: Boolean? = null
   private var thinkingBehavioursAttitudeDetails: String? = null
-  private var updatedAt: OffsetDateTime  = OffsetDateTime.now()
+  private var updatedAt: OffsetDateTime = OffsetDateTime.now()
   private var updatedBy: UUID = UUID.randomUUID()
 
   fun withId(id: UUID) = apply { this.id = id }
@@ -39,7 +33,8 @@ class ReferralCriminogenicNeedsFactory: TestEntityFactory<ReferralCriminogenicNe
   fun withUpdatedAt(updatedAt: OffsetDateTime) = apply { this.updatedAt = updatedAt }
   fun withUpdatedBy(userId: UUID) = apply { this.updatedBy = userId }
 
-  override fun create(): ReferralCriminogenicNeeds = ReferralCriminogenicNeeds(id, referral,
+  override fun create(): ReferralCriminogenicNeeds = ReferralCriminogenicNeeds(
+    id, referral,
     hasAccommodationNeeds,
     accommodationDetails,
     hasEmploymentEducationNeeds,
@@ -57,5 +52,6 @@ class ReferralCriminogenicNeedsFactory: TestEntityFactory<ReferralCriminogenicNe
     hasThinkingBehavioursAttitudeNeeds,
     thinkingBehavioursAttitudeDetails,
     updatedAt,
-    updatedBy)
+    updatedBy,
+  )
 }
