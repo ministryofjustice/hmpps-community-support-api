@@ -3,9 +3,9 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.util.placeholder
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.FULL_MONTH_DATE_FORMAT
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.PlaceholderUtils
 import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 class ServiceEndDatePlaceholderTest {
@@ -25,11 +25,11 @@ class ServiceEndDatePlaceholderTest {
     val placeholder = ServiceEndDatePlaceholder(referral)
 
     Assertions.assertEquals(
-      "Is the service end date still ${serviceEndDate.format(DateTimeFormatter.ofPattern("d MMM yyyy"))}?",
+      "Is the service end date still ${serviceEndDate.format(FULL_MONTH_DATE_FORMAT)}?",
       PlaceholderUtils.render("Is the service end date still {{ service_end_date }}?", placeholder),
     )
     Assertions.assertEquals(
-      "Is the service end date still ${serviceEndDate.format(DateTimeFormatter.ofPattern("d MMM yyyy"))}?",
+      "Is the service end date still ${serviceEndDate.format(FULL_MONTH_DATE_FORMAT)}?",
       PlaceholderUtils.render("Is the service end date still {{ serviceEndDate }}?", placeholder),
     )
   }

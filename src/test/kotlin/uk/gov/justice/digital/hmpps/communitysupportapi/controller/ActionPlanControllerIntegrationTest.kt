@@ -45,6 +45,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepositor
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.FULL_MONTH_DATE_FORMAT
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTestUtil.randomReferralReference
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
@@ -93,7 +94,6 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
   companion object {
     private val UNKNOWN_REFERRAL_REFERENCE = "ZZ9999ZZ"
-    private val SERVICE_END_DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM yyyy")
     private val INPUT_SERVICE_END_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd")
   }
 
@@ -956,7 +956,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             body.questions.size shouldBe 1
             body.questions[0].id shouldBe question.id
             body.questions[0].key shouldBe questionKey
-            body.questions[0].label shouldBe "Is the service end date still ${serviceEndDate.format(SERVICE_END_DATE_FORMATTER)}?"
+            body.questions[0].label shouldBe "Is the service end date still ${serviceEndDate.format(FULL_MONTH_DATE_FORMAT)}?"
             body.questions[0].answerType shouldBe ActionPlanQuestionAnswerType.RADIO
             body.questions[0].maximumNumberOfResponses shouldBe 1
             body.questions[0].choices?.map { it.label } shouldBe listOf("Yes", "No, I need to change the date")
