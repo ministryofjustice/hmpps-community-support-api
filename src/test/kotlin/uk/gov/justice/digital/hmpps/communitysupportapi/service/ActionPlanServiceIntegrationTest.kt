@@ -37,6 +37,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionAnswerDetailsFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionAnswerHeaderFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTestUtil.randomReferralReference
@@ -410,6 +412,7 @@ class ActionPlanServiceIntegrationTest :
       val returnedQuestion = result.questions.single()
 
       assertEquals(question.id, returnedQuestion.id)
+      assertEquals(question.questionKey, returnedQuestion.key)
       val choices = returnedQuestion.choices ?: error("Expected choices for session delivery question")
       assertEquals(listOf("FACE_TO_FACE", "OTHER"), choices.map { it.value })
       assertEquals(listOf("Face-to-face", "Other"), choices.map { it.label })
@@ -438,6 +441,10 @@ class ActionPlanServiceIntegrationTest :
         saveResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value },
       )
       assertEquals(
+        radioQuestion.questionKey,
+        saveResult.questions.first { it.id == radioQuestion.id }.key,
+      )
+      assertEquals(
         listOf("Poor weather"),
         saveResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.additionalDetails },
       )
@@ -455,6 +462,10 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(
         listOf("FACE_TO_FACE"),
         updateResult.questions.first { it.id == radioQuestion.id }.savedResponses.map { it.value },
+      )
+      assertEquals(
+        radioQuestion.questionKey,
+        updateResult.questions.first { it.id == radioQuestion.id }.key,
       )
       assertEquals(
         listOf(null),
@@ -578,6 +589,10 @@ class ActionPlanServiceIntegrationTest :
         listOf("IN_PERSON", "VIDEO"),
         updateResult.questions.single { it.id == checkboxQuestion.id }.savedResponses.map { it.value },
       )
+      assertEquals(
+        checkboxQuestion.questionKey,
+        updateResult.questions.single { it.id == checkboxQuestion.id }.key,
+      )
 
       val activeHeaders =
         actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
@@ -652,6 +667,148 @@ class ActionPlanServiceIntegrationTest :
       )
     }
 
+    @Test
+    fun `should return risk and adjustments questions with saved responses and keys`() {
+      val referral = createReferral("Jane", "Doe")
+      val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+      val riskQuestionKey = "RISK_ASSOCIATED_WITH_PLANNED_ACTIVITIES_${UUID.randomUUID()}"
+      val adjustmentsQuestionKey = "ADJUSTMENTS_${UUID.randomUUID()}"
+
+      val riskAndAdjustmentsStep = actionPlanStepRepository.save(
+        ActionPlanStepFactory()
+          .withActionPlanTemplateId(actionPlanTemplate.id)
+          .withOrderNumber(11)
+          .withName("Risks and adjustments")
+          .withStepType(ActionPlanStepType.RISK_AND_ADJUSTMENTS)
+          .create(),
+      )
+      val riskQuestion = actionPlanStepQuestionRepository.save(
+        ActionPlanStepQuestionFactory()
+          .withActionPlanStepId(riskAndAdjustmentsStep.id)
+          .withOrderNumber(1)
+          .withTitle("Are there any risks associated with the planned activities?")
+          .withQuestionKey(riskQuestionKey)
+          .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+          .withMaxNumberResponses(1)
+          .create(),
+      )
+      actionPlanStepQuestionChoiceRepository.save(
+        ActionPlanStepQuestionChoiceFactory()
+          .withActionPlanStepQuestionId(riskQuestion.id)
+          .withOrderNumber(1)
+          .withLabel("Yes")
+          .withValue("YES")
+          .withHasFreeText(true)
+          .withFreeTextLabel("Give details about the risks and what you will put in place to reduce them")
+          .create(),
+      )
+      actionPlanStepQuestionChoiceRepository.save(
+        ActionPlanStepQuestionChoiceFactory()
+          .withActionPlanStepQuestionId(riskQuestion.id)
+          .withOrderNumber(2)
+          .withLabel("No")
+          .withValue("NO")
+          .create(),
+      )
+
+      val adjustmentsQuestion = actionPlanStepQuestionRepository.save(
+        ActionPlanStepQuestionFactory()
+          .withActionPlanStepId(riskAndAdjustmentsStep.id)
+          .withOrderNumber(2)
+          .withTitle("Will you put any reasonable adjustments in place to help Jane take part in the planned activities?")
+          .withQuestionKey(adjustmentsQuestionKey)
+          .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+          .withMaxNumberResponses(1)
+          .create(),
+      )
+      actionPlanStepQuestionChoiceRepository.save(
+        ActionPlanStepQuestionChoiceFactory()
+          .withActionPlanStepQuestionId(adjustmentsQuestion.id)
+          .withOrderNumber(1)
+          .withLabel("Yes")
+          .withValue("YES")
+          .withHasFreeText(true)
+          .withFreeTextLabel("Give details about what reasonable adjustments you will make and how this will support Alice")
+          .create(),
+      )
+      actionPlanStepQuestionChoiceRepository.save(
+        ActionPlanStepQuestionChoiceFactory()
+          .withActionPlanStepQuestionId(adjustmentsQuestion.id)
+          .withOrderNumber(2)
+          .withLabel("No")
+          .withValue("NO")
+          .create(),
+      )
+
+      val riskHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeaderFactory()
+          .withId(UUID.randomUUID())
+          .withActionPlanId(actionPlan.id)
+          .withActionPlanStepQuestionId(riskQuestion.id)
+          .withOrderNumber(1)
+          .withCreatedAt(OffsetDateTime.now())
+          .withCreatedBy(user.hmppsAuthUsername)
+          .create(),
+      )
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetailsFactory()
+          .withId(UUID.randomUUID())
+          .withActionPlanStepQuestionAnswerHeaderId(riskHeader.id)
+          .withRevisionNumber(1)
+          .withContent("YES")
+          .withFreeTextValue("Potential conflict with another attendee; staff will supervise throughout.")
+          .withCreatedAt(OffsetDateTime.now())
+          .withCreatedBy(user.hmppsAuthUsername)
+          .create(),
+      )
+
+      val adjustmentsHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+        ActionPlanStepQuestionAnswerHeaderFactory()
+          .withId(UUID.randomUUID())
+          .withActionPlanId(actionPlan.id)
+          .withActionPlanStepQuestionId(adjustmentsQuestion.id)
+          .withOrderNumber(2)
+          .withCreatedAt(OffsetDateTime.now())
+          .withCreatedBy(user.hmppsAuthUsername)
+          .create(),
+      )
+      actionPlanStepQuestionAnswerDetailsRepository.save(
+        ActionPlanStepQuestionAnswerDetailsFactory()
+          .withId(UUID.randomUUID())
+          .withActionPlanStepQuestionAnswerHeaderId(adjustmentsHeader.id)
+          .withRevisionNumber(1)
+          .withContent("YES")
+          .withFreeTextValue("Provide large-print materials and allow extra time for reading.")
+          .withCreatedAt(OffsetDateTime.now())
+          .withCreatedBy(user.hmppsAuthUsername)
+          .create(),
+      )
+
+      val result = actionPlanService.getRiskAndAdjustmentsForReferral(referral.referenceNumber!!)
+      assertEquals(2, result.questions.size)
+
+      assertEquals(riskQuestionKey, result.questions[0].key)
+      assertEquals(
+        listOf("YES"),
+        result.questions[0].savedResponses.map { it.value },
+      )
+      assertEquals(
+        listOf("Potential conflict with another attendee; staff will supervise throughout."),
+        result.questions[0].savedResponses.map { it.additionalDetails },
+      )
+
+      assertEquals(adjustmentsQuestionKey, result.questions[1].key)
+      assertEquals(
+        listOf("YES"),
+        result.questions[1].savedResponses.map { it.value },
+      )
+      assertEquals(
+        listOf("Provide large-print materials and allow extra time for reading."),
+        result.questions[1].savedResponses.map { it.additionalDetails },
+      )
+    }
+
     private fun createSessionDeliveryStep(actionPlanTemplateId: UUID) = actionPlanStepRepository.save(
       ActionPlanStepFactory()
         .withActionPlanTemplateId(actionPlanTemplateId)
@@ -712,6 +869,15 @@ class ActionPlanServiceIntegrationTest :
       value = value,
       additionalDetails = additionalDetails,
     )
+
+    private fun createReferral(firstName: String, lastName: String): Referral {
+      val person = referralHelper.createPerson(
+        firstName = firstName,
+        lastName = lastName,
+        identifier = "X${UUID.randomUUID().toString().take(6).uppercase()}",
+      )
+      return referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
+    }
 
     private fun updateSessionDeliveryDetails(request: ActionPlanSessionDeliveryDetailsRequest) = actionPlanService.updateSessionDeliveryDetailsForActionPlan(
       referral.referenceNumber!!,

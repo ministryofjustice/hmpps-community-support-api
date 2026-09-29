@@ -30,7 +30,7 @@ interface ActionPlanStepRepository : JpaRepository<ActionPlanStep, UUID> {
   @Query(
     """
     SELECT s FROM ActionPlanStep s
-    WHERE s.stepType = ActionPlanStepType.SESSION_DELIVERY
+    WHERE s.stepType = :stepType
     AND s.actionPlanTemplateId = (
       SELECT ap.actionPlanTemplateId FROM ActionPlan ap WHERE ap.referralId = :referralId
     )
@@ -38,7 +38,8 @@ interface ActionPlanStepRepository : JpaRepository<ActionPlanStep, UUID> {
     LIMIT 1
     """,
   )
-  fun findSessionDeliveryStepsByReferralId(
+  fun findStepByReferralIdAndStepType(
     @Param("referralId") referralId: UUID,
+    @Param("stepType") stepType: ActionPlanStepType,
   ): ActionPlanStep?
 }

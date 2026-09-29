@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.util.UUID
 
 enum class ActionPlanQuestionType {
@@ -41,7 +42,10 @@ enum class ActionPlanQuestionAnswerType {
  * @see ActionPlanStepQuestionAnswerHeader
  */
 @Entity
-@Table(name = "action_plan_step_question")
+@Table(
+  name = "action_plan_step_question",
+  uniqueConstraints = [UniqueConstraint(columnNames = ["action_plan_step_id", "question_key"])],
+)
 data class ActionPlanStepQuestion(
   @Id
   @Column(name = "id")
@@ -59,6 +63,9 @@ data class ActionPlanStepQuestion(
 
   @Column(name = "title", nullable = false)
   val title: String,
+
+  @Column(name = "question_key", nullable = false)
+  val questionKey: String,
 
   @Column(name = "hint")
   val hint: String? = null,
