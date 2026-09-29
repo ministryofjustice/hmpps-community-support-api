@@ -64,6 +64,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralCriminogenicNeedsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.RiskInformationFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.toFormattedDateOfBirthLong
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -200,6 +201,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withReferral(referral)
         .withPerson(person)
         .withCreatedBy(testUser.id)
+        .withAdditionalSupportNeeded(true)
+        .withCaringResponsibilitiesDetails("Lorem ipsum dolor sit amet")
         .create()
       personAdditionalSupportNeedsRepository.save(supportNeeds)
 
@@ -208,6 +211,12 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withUpdatedBy(testUser.id)
         .create()
       riskInformationRepository.save(riskInfo)
+
+      val needs = ReferralCriminogenicNeedsFactory()
+        .withReferral(referral)
+        .withUpdatedBy(testUser.id)
+        .create()
+      referralCriminogenicNeedsRepository.save(needs)
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -243,7 +252,9 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
             riskToSelfHostelSetting = "Don't know",
             riskToSelfVulnerability = "Vulnerability concerns noted",
           )
-          body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftAdditionalSupportNeedsDetailsTableDataDto()
+          body.additionalSupportNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftAdditionalSupportNeedsDetailsTableDataDto(
+            caringResponsibilities = "Lorem ipsum dolor sit amet",
+          )
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
           body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
@@ -275,6 +286,12 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withCreatedBy(testUser.id)
         .create()
       personAdditionalSupportNeedsRepository.save(supportNeeds)
+
+      val needs = ReferralCriminogenicNeedsFactory()
+        .withReferral(referral)
+        .withUpdatedBy(testUser.id)
+        .create()
+      referralCriminogenicNeedsRepository.save(needs)
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -324,6 +341,12 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withCreatedBy(testUser.id)
         .create()
       personAdditionalSupportNeedsRepository.save(supportNeeds)
+
+      val needs = ReferralCriminogenicNeedsFactory()
+        .withReferral(referral)
+        .withUpdatedBy(testUser.id)
+        .create()
+      referralCriminogenicNeedsRepository.save(needs)
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")

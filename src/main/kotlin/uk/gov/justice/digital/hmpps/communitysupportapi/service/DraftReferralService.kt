@@ -551,6 +551,10 @@ class DraftReferralService(
     val nationalities = cprPerson.additionalDetails?.nationalities ?: emptyList()
     val personAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
       ?: throw NotFoundException("Additional support needs not found for referral $referralId")
+
+    val criminogenicNeeds = referralCriminogenicNeedsRepository.findByReferralId(referralId)
+      ?: throw NotFoundException("Criminogenic needs not found for referral $referralId")
+
     return CheckDraftReferralDetailsBffResponseDto.from(
       referral,
       person,
@@ -560,6 +564,7 @@ class DraftReferralService(
       communitySupportRiskDto,
       nationalities,
       personAdditionalSupportNeeds,
+      criminogenicNeeds,
     )
   }
 
