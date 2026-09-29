@@ -57,8 +57,23 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'Update OpenAPI baseline'
           git push origin "HEAD:refs/heads/${BASELINE_BRANCH}"
-          gh pr create \
+          source_pr="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq '.[0] // empty')"
+          source_pr_number="$(jq -r '.number // empty' <<< "${source_pr:-null}")"
+          source_pr_author="$(jq -r '.user.login // empty' <<< "${source_pr:-null}")"
+
+          body='Automated update of the committed OpenAPI baseline.'
+          if [[ -n "$source_pr_number" ]]; then
+            body="${body}"$'\n\n'"Triggered by #${source_pr_number}."
+          fi
+
+          pr_url="$(gh pr create \
             --base main \
             --head "$BASELINE_BRANCH" \
             --title 'Update OpenAPI baseline' \
-            --body 'Automated update of the committed OpenAPI baseline.'
+            --body "$body")"
+
+          # Bots (e.g. renovate[bot]) can't be assigned; don't fail the run if assignment is rejected
+          if [[ -n "$source_pr_author" && "$source_pr_author" != *'[bot]' ]]; then
+            gh pr edit "$pr_url" --add-assignee "$source_pr_author" \
+              || echo "::warning::Could not assign ${source_pr_author} to ${pr_url}"
+          fi
