@@ -3487,6 +3487,13 @@
           },
           "withdrawReferral": {
             "type": "boolean"
+          },
+          "withdrawalCreationDate": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
