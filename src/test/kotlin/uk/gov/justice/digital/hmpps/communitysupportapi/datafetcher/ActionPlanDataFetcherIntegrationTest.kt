@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.datafetcher
 
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

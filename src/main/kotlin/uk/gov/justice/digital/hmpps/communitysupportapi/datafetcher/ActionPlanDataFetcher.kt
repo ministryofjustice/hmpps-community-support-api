@@ -29,41 +29,52 @@ class ActionPlanDataFetcher(
 
   fun getActionPlanDataForReferral(referralReference: String): ActionPlanData {
     logger.info("Retrieving action plan data for referral: {}", referralReference)
-    val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
-
-    if (referral == null) {
-      logger.warn("Referral not found for reference $referralReference")
-      throw NotFoundException("Referral not found for reference $referralReference")
-    }
+    val referral = findReferralByReference(referralReference)
 
     val actionPlan = findOrCreateActionPlanForReferral(referral.id)
 
     val allSteps = actionPlanStepRepository.findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
-
-    val sessionDeliveryStep = allSteps.firstOrNull { it.stepType == ActionPlanStepType.SESSION_DELIVERY }
-
-    if (sessionDeliveryStep == null) {
-      logger.warn("No Session Delivery Step found for referral $referralReference, action plan ID: ${actionPlan.id}")
-      throw NotFoundException("No SESSION_DELIVERY step found for referral $referralReference")
-    }
-
     val needSteps = allSteps.filter { it.stepType == ActionPlanStepType.NEED }
-
-    if (needSteps.isEmpty()) {
-      logger.warn("No Needs Steps found for action plan template ID: ${actionPlan.actionPlanTemplateId}")
-      throw NotFoundException("No NEEDS steps found for action plan template ID: ${actionPlan.actionPlanTemplateId}")
-    }
 
     return ActionPlanData(
       actionPlan,
       referral,
-      sessionDeliveryStep,
       needSteps,
     )
   }
 
-  private fun findOrCreateActionPlanForReferral(referralId: UUID): ActionPlan = actionPlanRepository.findByReferralId(referralId)
+  fun getSessionDeliveryDataForReferral(referralReference: String): SessionDeliveryData {
+    val referral = findReferralByReference(referralReference)
+    val actionPlan = findOrCreateActionPlanForReferral(referral.id)
+    val step = actionPlanStepRepository
+      .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
+      .firstOrNull { it.stepType == ActionPlanStepType.SESSION_DELIVERY }
+      ?: throw NotFoundException("No SESSION_DELIVERY step found for referral $referralReference")
+
+    return SessionDeliveryData(actionPlan, referral, step)
+  }
+
+  fun getRiskAndAdjustmentsDataForReferral(referralReference: String): RiskAndAdjustmentsData {
+    val referral = findReferralByReference(referralReference)
+    val actionPlan = findOrCreateActionPlanForReferral(referral.id)
+    val steps = actionPlanStepRepository
+      .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
+      .filter { it.stepType == ActionPlanStepType.RISK_AND_ADJUSTMENTS }
+
+    if (steps.isEmpty()) {
+      throw NotFoundException("No risk and adjustments step found for referral $referralReference")
+    }
+
+    return RiskAndAdjustmentsData(actionPlan, referral, steps)
+  }
+
+  fun findOrCreateActionPlanForReferral(referralId: UUID): ActionPlan = actionPlanRepository.findByReferralId(referralId)
     ?: createActionPlanForReferral(referralId)
+
+  private fun findReferralByReference(referralReference: String): Referral = referralRepository
+    .findByReferenceNumber(referralReference)
+    .firstOrNull()
+    ?: throw NotFoundException("Referral not found for reference $referralReference")
 
   private fun createActionPlanForReferral(referralId: UUID): ActionPlan {
     val actionPlanTemplate = actionPlanTemplateRepository.findFirstByActiveGlobalTrueOrderByIdAsc()
@@ -87,6 +98,17 @@ class ActionPlanDataFetcher(
 data class ActionPlanData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val sessionDeliveryStep: ActionPlanStep,
   val needSteps: List<ActionPlanStep>,
+)
+
+data class SessionDeliveryData(
+  val actionPlan: ActionPlan,
+  val referral: Referral,
+  val step: ActionPlanStep,
+)
+
+data class RiskAndAdjustmentsData(
+  val actionPlan: ActionPlan,
+  val referral: Referral,
+  val steps: List<ActionPlanStep>,
 )

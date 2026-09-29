@@ -28,7 +28,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
@@ -39,7 +38,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.OutcomeRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.placeholder.PlaceholderFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.PlaceholderUtils
 import java.time.OffsetDateTime
@@ -103,12 +101,14 @@ class ActionPlanService(
 
   @Transactional(readOnly = true)
   fun getSessionDeliveryDetailsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
-    val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
+    val actionPlanData = actionPlanDataFetcher.getSessionDeliveryDataForReferral(referralReference)
+    val referral = actionPlanData.referral
     val actionPlan = actionPlanData.actionPlan
-    val sessionDeliveryStep = actionPlanData.sessionDeliveryStep
+    val sessionDeliveryStep = actionPlanData.step
 
     val questions = actionPlanStepQuestionRepository
-      .findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
+      .findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliveryStep.id)
+
     if (questions.isEmpty()) {
       val response = ActionPlanSessionDeliveryDetailsResponse(
         questions = questions.map { question ->
@@ -158,25 +158,40 @@ class ActionPlanService(
 
   @Transactional(readOnly = true)
   fun getRiskAndAdjustmentsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
-    val referral = referralRepository.findByReferenceNumber(referralReference).firstOrNull()
-      ?: throw NotFoundException("Referral not found for reference $referralReference")
+    val data = actionPlanDataFetcher.getRiskAndAdjustmentsDataForReferral(referralReference)
+    val actionPlan = data.actionPlan
+    val referral = data.referral
+    val questions = data.steps.flatMap { step ->
+      actionPlanStepQuestionRepository.findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
+    }
 
-    val actionPlan = actionPlanRepository.findByReferralId(referral.id)
-      ?: throw NotFoundException("No action plan found for referral $referralReference")
+    val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository
+      .findActiveByPlanAndQuestionIds(actionPlan.id, questions.map { it.id })
 
-    val riskAndAdjustmentsStep = actionPlanStepRepository.findStepByReferralIdAndStepType(
-      referralId = referral.id,
-      stepType = ActionPlanStepType.RISK_AND_ADJUSTMENTS,
-    ) ?: throw NotFoundException("No risk and adjustments step found for referral $referralReference")
+    val answerDetails = actionPlanStepQuestionAnswerDetailsRepository
+      .findAllByActionPlanStepQuestionAnswerHeaderIdIn(activeHeaders.map { it.id })
 
-    return getSessionDeliveryDetailsForStep(riskAndAdjustmentsStep, actionPlan, referral)
+    return ActionPlanSessionDeliveryDetailsResponse(
+      questions = questions.map { question ->
+        val responses = activeHeaders
+          .filter { it.actionPlanStepQuestionId == question.id }
+          .mapNotNull { header ->
+            answerDetails
+              .filter { it.actionPlanStepQuestionAnswerHeaderId == header.id }
+              .maxWithOrNull(
+                compareBy<ActionPlanStepQuestionAnswerDetails> { it.revisionNumber }
+                  .thenBy { it.createdAt }
+                  .thenBy { it.id },
+              )
+          }
+        SessionDeliveryQuestion.fromQuestionAndResponses(
+          ActionPlanStepQuestionDto.fromEntity(question),
+          responses,
+          question.choices.sortedBy { choice -> choice.orderNumber },
+        )
+      },
+    ).let { response -> renderQuestionPlaceholders(response, referral) }
   }
-
-  private fun getSessionDeliveryDetailsForStep(
-    step: uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep,
-    actionPlan: ActionPlan?,
-    referral: Referral,
-  ): ActionPlanSessionDeliveryDetailsResponse {
 
   private fun renderQuestionPlaceholders(
     response: ActionPlanSessionDeliveryDetailsResponse,
@@ -230,9 +245,9 @@ class ActionPlanService(
     changedBy: String,
     changedAt: OffsetDateTime = OffsetDateTime.now(),
   ): ActionPlanSessionDeliveryDetailsResponse {
-    val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
+    val actionPlanData = actionPlanDataFetcher.getSessionDeliveryDataForReferral(referralReference)
     val actionPlan = actionPlanData.actionPlan
-    val sessionDeliveryStep = actionPlanData.sessionDeliveryStep
+    val sessionDeliveryStep = actionPlanData.step
 
     val questions = actionPlanStepQuestionRepository
       .findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliveryStep.id)
@@ -609,8 +624,5 @@ class ActionPlanService(
     )
   }
 
-  fun findOrCreateByReferralId(referralId: UUID): ActionPlan {
-    val data = actionPlanDataFetcher.getActionPlanDataForReferral(referralId.toString())
-    return data.actionPlan
-  }
+  fun findOrCreateByReferralId(referralId: UUID): ActionPlan = actionPlanDataFetcher.findOrCreateActionPlanForReferral(referralId)
 }
