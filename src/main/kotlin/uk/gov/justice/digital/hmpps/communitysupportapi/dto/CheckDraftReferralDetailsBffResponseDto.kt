@@ -5,6 +5,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.CommunitySuppor
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.Disability
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonAggregate
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonDetailsAndCircumstances
@@ -50,7 +51,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       communitySupportRiskDto: CommunitySupportRiskDto,
       nationalities: List<String>,
       personAdditionalSupportNeeds: PersonAdditionalSupportNeeds,
-      personNeeds: ReferralCriminogenicNeedsDto,
+      personNeeds: ReferralCriminogenicNeeds,
     ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
@@ -224,15 +225,16 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val thinkingBehavioursAttitudeDetails: String? = null,
   ) {
     companion object {
-      fun from(personNeeds: ReferralCriminogenicNeedsDto): DraftPersonNeedsDetailsTableDataDto = DraftPersonNeedsDetailsTableDataDto(
-        personNeeds.hasAccommodationNeeds, personNeeds.accommodationDetails,
+      fun from(personNeeds: ReferralCriminogenicNeeds): DraftPersonNeedsDetailsTableDataDto = DraftPersonNeedsDetailsTableDataDto(
+        personNeeds.hasAccommodationNeeds,
+        personNeeds.accommodationDetails,
         personNeeds.employmentEducationDetails,
         personNeeds.financialDetails,
         personNeeds.personalRelationshipsCommunityDetails,
         personNeeds.drugUseDetails,
         personNeeds.alcoholUseDetails,
         personNeeds.healthWellbeingDetails,
-        personNeeds.personalRelationshipsCommunityDetails,
+        personNeeds.thinkingBehavioursAttitudeDetails,
       )
     }
   }
