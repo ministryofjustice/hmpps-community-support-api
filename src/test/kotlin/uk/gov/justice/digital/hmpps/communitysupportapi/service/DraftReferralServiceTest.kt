@@ -83,9 +83,6 @@ class DraftReferralServiceTest {
   @Mock
   lateinit var referenceDataService: ReferenceDataService
 
-  @Mock
-  lateinit var criminogenicNeedsService: CriminogenicNeedsService
-
   @InjectMocks
   lateinit var draftReferralService: DraftReferralService
 

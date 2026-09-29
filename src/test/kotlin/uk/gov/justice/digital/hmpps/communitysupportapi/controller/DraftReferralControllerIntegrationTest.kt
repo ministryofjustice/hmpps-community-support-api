@@ -54,7 +54,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralOffen
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.RiskInformationRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.service.CriminogenicNeedsService
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.PRISONER_NUMBER
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.arnsRoshRiskJson
@@ -112,9 +111,6 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository
-
-  @Autowired
-  private lateinit var criminogenicNeedsService: CriminogenicNeedsService
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
