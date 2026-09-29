@@ -1204,6 +1204,9 @@
           "additionalInformationDetailsTableData": {
             "$ref": "#/components/schemas/DraftAdditionalInformationDetailsTableDataDto"
           },
+          "additionalReferralInformationTableData": {
+            "$ref": "#/components/schemas/DraftAdditionalReferralInformationTableDataDto"
+          },
           "additionalSupportNeedsDetailsTableData": {
             "$ref": "#/components/schemas/DraftAdditionalSupportNeedsDetailsTableDataDto"
           },
@@ -1245,6 +1248,7 @@
         },
         "required": [
           "additionalInformationDetailsTableData",
+          "additionalReferralInformationTableData",
           "additionalSupportNeedsDetailsTableData",
           "contactDetailsTableData",
           "createdDate",
@@ -1978,6 +1982,68 @@
         },
         "type": "object"
       },
+      "DraftAdditionalReferralInformationTableDataDto": {
+        "properties": {
+          "anythingElse": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "licenceConditions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "offence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "offenceSubCategory": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sentenceEndDate": {
+            "format": "date",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serviceCompletionDate": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serviceCompletionDateReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serviceDays": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "DraftAdditionalSupportNeedsDetailsTableDataDto": {
         "properties": {
           "anyOtherNeeds": {
@@ -2214,7 +2280,10 @@
             "type": "array"
           },
           "preferredLanguage": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "prisonNumber": {
             "type": [
@@ -2227,8 +2296,7 @@
           "dateOfBirth",
           "disabilities",
           "name",
-          "personalCircumstances",
-          "preferredLanguage"
+          "personalCircumstances"
         ],
         "type": "object"
       },
