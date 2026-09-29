@@ -2022,12 +2022,6 @@
               "null"
             ]
           },
-          "needsInterpreter": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
           "neurodiversity": {
             "type": [
               "string",
