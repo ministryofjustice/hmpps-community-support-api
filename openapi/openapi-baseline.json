@@ -2022,12 +2022,6 @@
               "null"
             ]
           },
-          "needsInterpreter": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
           "neurodiversity": {
             "type": [
               "string",
@@ -3487,6 +3481,19 @@
           },
           "withdrawReferral": {
             "type": "boolean"
+          },
+          "withdrawalCreationDate": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "withdrawnBySameUser": {
+            "type": [
+              "boolean",
+              "null"
+            ]
           }
         },
         "required": [
@@ -3727,6 +3734,9 @@
             "format": "uuid",
             "type": "string"
           },
+          "key": {
+            "type": "string"
+          },
           "label": {
             "type": "string"
           },
@@ -3745,6 +3755,7 @@
           "answerType",
           "displayOrder",
           "id",
+          "key",
           "label",
           "maximumNumberOfResponses",
           "savedResponses"
@@ -5480,7 +5491,44 @@
         ]
       }
     },
-    "/bff/referral/{referralReference}/action-plan/session-delivery-details": {
+    "/bff/referral/{referralReference}/action-plan/service-delivery-details/risks-and-adjustments": {
+      "get": {
+        "operationId": "getRiskAndAdjustments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSessionDeliveryDetailsResponse"
+                }
+              }
+            },
+            "description": "Risk and adjustments questions and saved answers returned"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get the risk and adjustments questions and saved answers of the service delivery details",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/bff/referral/{referralReference}/action-plan/session-delivery-details/session-delivery": {
       "get": {
         "operationId": "getSessionDeliveryDetails",
         "parameters": [
@@ -6567,17 +6615,17 @@
             },
             "description": "Referral withdrawn"
           },
-          "208": {
-            "content": {
-              "application/json": {}
-            },
-            "description": "Referral already withdrawn"
-          },
           "404": {
             "content": {
               "application/json": {}
             },
             "description": "Referral not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral already withdrawn"
           }
         },
         "summary": "Withdraw a referral",
