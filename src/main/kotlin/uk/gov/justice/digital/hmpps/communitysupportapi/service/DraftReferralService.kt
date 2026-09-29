@@ -549,6 +549,8 @@ class DraftReferralService(
     val personalDetailsAndCircumstances = nDeliusService.getPersonalDetailsAndCircumstances(cprPerson)
     val communitySupportRiskDto: CommunitySupportRiskDto = riskInformationService.getRoshRisksByReferralId(referralId)
     val nationalities = cprPerson.additionalDetails?.nationalities ?: emptyList()
+    val personAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
+      ?: throw NotFoundException("Additional support needs not found for referral $referralId")
     return CheckDraftReferralDetailsBffResponseDto.from(
       referral,
       person,
@@ -557,6 +559,7 @@ class DraftReferralService(
       personalDetailsAndCircumstances,
       communitySupportRiskDto,
       nationalities,
+      personAdditionalSupportNeeds,
     )
   }
 

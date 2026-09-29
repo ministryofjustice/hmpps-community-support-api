@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.config
 
 import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus.ALREADY_REPORTED
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.FORBIDDEN
@@ -123,10 +122,10 @@ class CommunitySupportApiExceptionHandler {
   fun handleReferralAlreadyWithdrawnException(exception: AlreadyReportedException): ResponseEntity<ErrorResponse> {
     log.warn("Already reported", exception)
     return ResponseEntity
-      .status(ALREADY_REPORTED)
+      .status(CONFLICT)
       .body(
         ErrorResponse(
-          status = ALREADY_REPORTED.value(),
+          status = CONFLICT.value(),
           userMessage = "Already reported: ${exception.message}",
           developerMessage = exception.message,
         ),
