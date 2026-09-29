@@ -3734,6 +3734,9 @@
             "format": "uuid",
             "type": "string"
           },
+          "key": {
+            "type": "string"
+          },
           "label": {
             "type": "string"
           },
@@ -3752,6 +3755,7 @@
           "answerType",
           "displayOrder",
           "id",
+          "key",
           "label",
           "maximumNumberOfResponses",
           "savedResponses"
@@ -5487,7 +5491,44 @@
         ]
       }
     },
-    "/bff/referral/{referralReference}/action-plan/session-delivery-details": {
+    "/bff/referral/{referralReference}/action-plan/service-delivery-details/risks-and-adjustments": {
+      "get": {
+        "operationId": "getRiskAndAdjustments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSessionDeliveryDetailsResponse"
+                }
+              }
+            },
+            "description": "Risk and adjustments questions and saved answers returned"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get the risk and adjustments questions and saved answers of the service delivery details",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/bff/referral/{referralReference}/action-plan/session-delivery-details/session-delivery": {
       "get": {
         "operationId": "getSessionDeliveryDetails",
         "parameters": [
