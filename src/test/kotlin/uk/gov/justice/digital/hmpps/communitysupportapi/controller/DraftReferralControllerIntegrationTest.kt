@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
@@ -218,6 +219,15 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .create()
       referralCriminogenicNeedsRepository.save(needs)
 
+      val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
+        .orElseThrow()
+      val referralAssignment = ReferralProviderAssignment(
+        UUID.randomUUID(),
+        referral,
+        communityServiceProvider,
+      )
+      referralProviderAssignmentRepository.save(referralAssignment)
+
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
         .headers(setAuthorisation())
@@ -256,7 +266,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
             caringResponsibilities = "Lorem ipsum dolor sit amet",
           )
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
-          body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
+          body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto("Cleveland")
           body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
           body.additionalInformationDetailsTableData.ofHomeOfficeInterest shouldBe true
           body.additionalInformationDetailsTableData.homeOfficeInterestNotes shouldBe "Is of interest"
@@ -292,6 +302,15 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withUpdatedBy(testUser.id)
         .create()
       referralCriminogenicNeedsRepository.save(needs)
+
+      val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
+        .orElseThrow()
+      val referralAssignment = ReferralProviderAssignment(
+        UUID.randomUUID(),
+        referral,
+        communityServiceProvider,
+      )
+      referralProviderAssignmentRepository.save(referralAssignment)
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -347,6 +366,15 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withUpdatedBy(testUser.id)
         .create()
       referralCriminogenicNeedsRepository.save(needs)
+
+      val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
+        .orElseThrow()
+      val referralAssignment = ReferralProviderAssignment(
+        UUID.randomUUID(),
+        referral,
+        communityServiceProvider,
+      )
+      referralProviderAssignmentRepository.save(referralAssignment)
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
