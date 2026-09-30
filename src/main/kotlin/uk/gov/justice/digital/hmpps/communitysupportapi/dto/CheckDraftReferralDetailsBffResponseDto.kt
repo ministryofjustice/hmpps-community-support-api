@@ -52,6 +52,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       nationalities: List<String>,
       personAdditionalSupportNeeds: PersonAdditionalSupportNeeds,
       personNeeds: ReferralCriminogenicNeeds,
+      area: String,
     ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
@@ -69,7 +70,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(communitySupportRiskDto),
       additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(personAdditionalSupportNeeds),
       personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(personNeeds),
-      referralAreaTableData = DraftReferralAreaTableDataDto.from(),
+      referralAreaTableData = DraftReferralAreaTableDataDto.from(area),
       additionalReferralInformationTableData = DraftAdditionalReferralInformationTableDataDto.from(referral),
       mainPocDetailsTableData = DraftMainPOCDetailsTableDataDto.from(),
     )
@@ -243,7 +244,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val area: String? = null,
   ) {
     companion object {
-      fun from(): DraftReferralAreaTableDataDto = DraftReferralAreaTableDataDto()
+      fun from(area: String): DraftReferralAreaTableDataDto = DraftReferralAreaTableDataDto(area)
     }
   }
 
