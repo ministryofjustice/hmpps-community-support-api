@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
@@ -75,6 +76,33 @@ class ReferralController(
   fun getReferral(@PathVariable referralId: UUID): ResponseEntity<ReferralDto> = referralService.getReferral(referralId)
     .map { ResponseEntity.ok(it.toDto()) }
     .orElseThrow { NotFoundException("Referral not found for id $referralId") }
+
+  @Operation(summary = "Get referral appointments for the appointments tab")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral appointments found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ReferralAppointmentsBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{caseReference}/appointments")
+  fun getReferralAppointments(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<ReferralAppointmentsBffResponseDto> = ResponseEntity.ok(
+    appointmentService.getAppointmentsForReferral(caseReference),
+  )
 
   @Operation(summary = "Get referral details page data")
   @ApiResponses(

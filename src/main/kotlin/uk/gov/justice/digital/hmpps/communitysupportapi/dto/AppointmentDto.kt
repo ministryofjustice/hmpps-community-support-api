@@ -199,6 +199,45 @@ data class AppointmentIcsResponse(
   }
 }
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class ReferralAppointmentsBffResponseDto(
+  val personDetails: ReferralAppointmentsPersonDetailsDto,
+  val appointments: List<ReferralAppointmentSummaryDto>,
+)
+
+data class ReferralAppointmentsPersonDetailsDto(
+  val firstName: String,
+  val lastName: String,
+  val dateOfBirth: String,
+  val crn: String,
+)
+
+data class ReferralAppointmentSummaryDto(
+  val id: UUID,
+  val label: String,
+  val time: String,
+) {
+  companion object {
+    fun from(appointment: AppointmentIcs): ReferralAppointmentSummaryDto {
+      val appointmentDateTime = appointment.appointmentDateTime
+      val formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm EEEE d MMMM yyyy", java.util.Locale.ENGLISH)
+      return ReferralAppointmentSummaryDto(
+        id = appointment.id,
+        label = appointment.appointment.type.toDisplayLabel(),
+        time = appointmentDateTime.format(formatter),
+      )
+    }
+  }
+}
+
+fun AppointmentType.toDisplayLabel(): String = when (this) {
+  AppointmentType.ICS -> "ICS Appointment"
+  AppointmentType.CONTACT_SESSION -> "Contact Session"
+  AppointmentType.POST_RELEASE_SESSION -> "Post-Release Appointment"
+  AppointmentType.PRE_RELEASE_SESSION -> "Pre-Release Appointment"
+  AppointmentType.HANDOVER_SESSION -> "Handover Session"
+}
+
 data class AppointmentTimeResponse(
   val hour: Int,
   val minute: Int,

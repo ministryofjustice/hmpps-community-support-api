@@ -414,6 +414,56 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("getAppointmentsForReferral")
+  inner class GetAppointmentsForReferral {
+
+    @Test
+    fun `should return person details and all appointments for the referral`() {
+      val laterAppointment = appointmentHelper.createAppointment(referral, type = AppointmentType.PRE_RELEASE_SESSION)
+      appointmentHelper.createAppointmentIcs(
+        laterAppointment,
+        appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL, "Teams link"),
+        testUser,
+        LocalDateTime.of(2026, 9, 22, 15, 0),
+        LocalDateTime.of(2026, 9, 21, 10, 0),
+        listOf("Email"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(laterAppointment)
+
+      val earlierAppointment = appointmentHelper.createAppointment(referral, type = AppointmentType.CONTACT_SESSION)
+      appointmentHelper.createAppointmentIcs(
+        earlierAppointment,
+        appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL, "Call on mobile"),
+        testUser,
+        LocalDateTime.of(2026, 9, 20, 9, 15),
+        LocalDateTime.of(2026, 9, 19, 9, 0),
+        listOf("Phone call"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(earlierAppointment)
+
+      val result = appointmentService.getAppointmentsForReferral(caseReference)
+
+      assertThat(result.personDetails.firstName).isEqualTo("Alex")
+      assertThat(result.personDetails.lastName).isEqualTo("Jones")
+      assertThat(result.personDetails.crn).isEqualTo(referral.personIdentifier)
+      assertThat(result.personDetails.dateOfBirth).isEqualTo(person.dateOfBirth.toString())
+
+      assertThat(result.appointments).hasSize(2)
+      assertThat(result.appointments.first().label).isEqualTo("Pre-Release Appointment")
+      assertThat(result.appointments.first().time).isEqualTo("15:00 Tuesday 22 September 2026")
+      assertThat(result.appointments[1].label).isEqualTo("Contact Session")
+      assertThat(result.appointments[1].time).isEqualTo("09:15 Sunday 20 September 2026")
+    }
+
+    @Test
+    fun `should throw NotFoundException for unknown referral id`() {
+      assertThrows<NotFoundException> {
+        appointmentService.getAppointmentsForReferral(UUID.randomUUID().toString())
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("getIcsAppointment")
   inner class GetIcsAppointment {
 
