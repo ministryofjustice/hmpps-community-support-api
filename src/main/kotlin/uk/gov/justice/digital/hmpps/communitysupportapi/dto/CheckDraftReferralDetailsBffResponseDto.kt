@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.CommunitySupportRiskDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSentenceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
@@ -53,6 +54,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       personAdditionalSupportNeeds: PersonAdditionalSupportNeeds,
       personNeeds: ReferralCriminogenicNeeds,
       area: String,
+      offenceSentenceInfo: OffenceSentenceDto,
     ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
@@ -71,7 +73,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(personAdditionalSupportNeeds),
       personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(personNeeds),
       referralAreaTableData = DraftReferralAreaTableDataDto.from(area),
-      additionalReferralInformationTableData = DraftAdditionalReferralInformationTableDataDto.from(referral),
+      additionalReferralInformationTableData = DraftAdditionalReferralInformationTableDataDto.from(referral, offenceSentenceInfo),
       mainPocDetailsTableData = DraftMainPOCDetailsTableDataDto.from(),
     )
   }
@@ -260,15 +262,15 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val anythingElse: String? = null,
   ) {
     companion object {
-      fun from(referral: Referral): DraftAdditionalReferralInformationTableDataDto = DraftAdditionalReferralInformationTableDataDto(
+      fun from(referral: Referral, offenceSentenceInfo: OffenceSentenceDto): DraftAdditionalReferralInformationTableDataDto = DraftAdditionalReferralInformationTableDataDto(
         serviceCompletionDate = referral.targetServiceCompletionDate,
         serviceCompletionDateReason = referral.targetServiceCompletionDateReason,
         serviceDays = referral.serviceDays,
-        offence = null,
-        offenceSubCategory = null,
-        outcome = null,
-        sentenceEndDate = null,
-        licenceConditions = null,
+        offence = offenceSentenceInfo.offence,
+        offenceSubCategory = offenceSentenceInfo.offenceSubCategory,
+        outcome = offenceSentenceInfo.outcome,
+        sentenceEndDate = offenceSentenceInfo.sentenceEndDate,
+        licenceConditions = offenceSentenceInfo.licenceConditionsOrZonesDetails,
         anythingElse = null,
       )
     }
