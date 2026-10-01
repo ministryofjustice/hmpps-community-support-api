@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsOrderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
@@ -60,6 +61,40 @@ class ActionPlanController(
   fun getActionPlanSummary(@PathVariable referralReference: String): ResponseEntity<ActionPlanSummaryDto> {
     log.info("Fetching action plan summary for referral={}", referralReference)
     return ResponseEntity.ok(actionPlanService.getActionPlanSummaryForReferral(referralReference))
+  }
+
+  @Operation(summary = "Update the Action Plan needs order")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Action Plan needs order updated",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanSummaryDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "500",
+        description = "Unrecoverable error occurred",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PatchMapping("/referral/{referralReference}/action-plan/update-needs-order")
+  fun patchActionPlanNeedsOrder(
+    @PathVariable referralReference: String,
+    @Valid @RequestBody request: ActionPlanNeedsOrderRequest,
+  ): ResponseEntity<ActionPlanSummaryDto> {
+    log.info("Updating action plan needs order")
+    return ResponseEntity.ok(actionPlanService.updateNeedsOrder(referralReference, request))
   }
 
   @Operation(summary = "Get the needs and outcomes for select a need")

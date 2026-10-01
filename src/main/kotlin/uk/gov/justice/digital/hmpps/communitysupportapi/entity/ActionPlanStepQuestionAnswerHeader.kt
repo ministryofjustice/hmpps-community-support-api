@@ -67,6 +67,8 @@ data class ActionPlanStepQuestionAnswerHeader(
   @Column(name = "deleted_by")
   val deletedBy: String? = null,
 ) {
+  fun updateOrderNumber(orderNumber: Int) = copy(orderNumber = orderNumber)
+
   fun delete(
     deletedAt: OffsetDateTime,
     deletedBy: String,

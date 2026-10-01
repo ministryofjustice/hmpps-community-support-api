@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.datafetcher.ActionPlanDataFetcher
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsOrderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedNeed
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedOutcome
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
@@ -67,20 +68,57 @@ class ActionPlanService(
     val person = personRepository.findById(actionPlanData.referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralReference") }
 
+    // TODO How to do this without using a Pair
     val outcomesByNeedId = getOutcomesByNeedIdForActionPlan(actionPlan.id, actionPlanData.needSteps)
 
     val needs = needRepository.findAllByIdInOrderByOrderNumberAsc(outcomesByNeedId.keys).map {
       ActionPlanSummaryDto.ActionPlanSummaryNeed(
         id = it.id,
         label = it.label,
-        outcomes = outcomesByNeedId[it.id].orEmpty(),
+        orderNumber = outcomesByNeedId[it.id]?.first()!!.first, // i dont like this
+        outcomes = outcomesByNeedId[it.id]!!.map { it.second },
       )
     }
 
     return ActionPlanSummaryDto(
       personDetails = ActionPlanSummaryDto.ActionPlanSummaryPersonDetails(person.firstName, person.lastName),
       needs = needs,
+      lastUpdatedAt = actionPlan.updatedAt,
     )
+  }
+
+  @Transactional
+  fun updateNeedsOrder(referralReference: String, request: ActionPlanNeedsOrderRequest): ActionPlanSummaryDto {
+    fun swapOrderOfNeeds(firstNeed: ActionPlanStepQuestionAnswerHeader, secondNeed: ActionPlanStepQuestionAnswerHeader) {
+      val firstNeedOrderNumber = firstNeed.orderNumber
+      actionPlanStepQuestionAnswerHeaderRepository.save(firstNeed.updateOrderNumber(secondNeed.orderNumber))
+      actionPlanStepQuestionAnswerHeaderRepository.save(secondNeed.updateOrderNumber(firstNeedOrderNumber))
+    }
+
+    val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
+
+    val answers = getAnswerHeadersByActionPlan(actionPlanData.actionPlan.id, actionPlanData.needSteps)
+    if (answers.none { it.actionPlanStepQuestionId == request.stepQuestionAnswerHeaderId }) {
+      throw Exception("needId (${request.stepQuestionAnswerHeaderId}) in request does not match any needs in the action plan")
+    }
+    val requestAnswer = answers.find { it.actionPlanStepQuestionId == request.stepQuestionAnswerHeaderId }
+
+    when (request.action) {
+      ActionPlanNeedsOrderRequest.ActionPlanNeedsOrderAction.UP -> {
+        // Only swap if requested need not already at the top of the list
+        if (requestAnswer != null && requestAnswer.orderNumber > 1) {
+          swapOrderOfNeeds(requestAnswer, answers[(requestAnswer.orderNumber - 1) - 1])
+        }
+      }
+
+      ActionPlanNeedsOrderRequest.ActionPlanNeedsOrderAction.DOWN -> {
+        // Only swap if requested need not already at the bottom of the list
+        if (requestAnswer != null && requestAnswer.orderNumber <= answers.size - 1) {
+          swapOrderOfNeeds(requestAnswer, answers[(requestAnswer.orderNumber - 1) + 1])
+        }
+      }
+    }
+    return getActionPlanSummaryForReferral(referralReference)
   }
 
   @Transactional(readOnly = true)
@@ -483,14 +521,26 @@ class ActionPlanService(
     }
   }
 
+  private fun getQuestionsMapByQuestionId(needSteps: List<ActionPlanStep>): Map<UUID, ActionPlanStepQuestion> = actionPlanStepQuestionRepository
+    .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
+    .filter { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId != null }
+    .associateBy { it.id }
+
+  private fun getAnswerHeadersByActionPlan(actionPlanId: UUID, needSteps: List<ActionPlanStep>): List<ActionPlanStepQuestionAnswerHeader> {
+    val questionById = getQuestionsMapByQuestionId(needSteps)
+
+    val answers = actionPlanStepQuestionAnswerHeaderRepository
+      .findAllByActionPlanIdAndDeletedAtIsNull(actionPlanId)
+      .filter { questionById.containsKey(it.actionPlanStepQuestionId) }
+      .sortedBy { it.orderNumber }
+    return answers
+  }
+
   private fun getOutcomesByNeedIdForActionPlan(
     actionPlanId: UUID,
     needSteps: List<ActionPlanStep>,
-  ): Map<UUID, List<ActionPlanSummaryDto.ActionPlanSummaryOutcome>> {
-    val questionById = actionPlanStepQuestionRepository
-      .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
-      .filter { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId != null }
-      .associateBy { it.id }
+  ): Map<UUID, List<Pair<Int, ActionPlanSummaryDto.ActionPlanSummaryOutcome>>> {
+    val questionById = getQuestionsMapByQuestionId(needSteps)
     if (questionById.isEmpty()) {
       return emptyMap()
     }
@@ -518,7 +568,7 @@ class ActionPlanService(
         val latestDetails = latestDetailsByHeaderId[answer.id] ?: return@mapNotNull null
         val activities = activitiesByHeaderId[answer.id] ?: return@mapNotNull null
         val content = ActionPlanSummaryDto.ActionPlanSummaryOutcome.from(latestDetails, activities)
-        needId to content
+        needId to Pair(answer.orderNumber, content)
       }
       .groupBy(keySelector = { it.first }, valueTransform = { it.second })
   }
