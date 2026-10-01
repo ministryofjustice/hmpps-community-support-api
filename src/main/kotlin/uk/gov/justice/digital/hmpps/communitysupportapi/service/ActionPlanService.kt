@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionChoice
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestion
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestionSavedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanActivity
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
@@ -28,7 +29,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanQuestionResponseEventRepository
@@ -106,6 +107,9 @@ class ActionPlanService(
     val actionPlan = actionPlanData.actionPlan
     val sessionDeliveryStep = actionPlanData.step
 
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral ${referral.id}") }
+
     val questions = actionPlanStepQuestionRepository
       .findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliveryStep.id)
 
@@ -120,7 +124,7 @@ class ActionPlanService(
           )
         },
       )
-      return renderQuestionPlaceholders(response, referral)
+      return replacePlaceholdersInSessionDeliveryDetailsResponse(response, person)
     }
 
     val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository
@@ -128,6 +132,7 @@ class ActionPlanService(
         actionPlan.id,
         questions.map { it.id },
       )
+
     val answerDetails = if (activeHeaders.isEmpty()) {
       emptyList()
     } else {
@@ -138,22 +143,12 @@ class ActionPlanService(
     val response = ActionPlanSessionDeliveryDetailsResponse(
       questions = questions.map { question ->
         val questionDto = ActionPlanStepQuestionDto.fromEntity(question)
-        val responses = activeHeaders
-          .filter { it.actionPlanStepQuestionId == question.id }
-          .mapNotNull { header ->
-            answerDetails
-              .filter { it.actionPlanStepQuestionAnswerHeaderId == header.id }
-              .maxWithOrNull(
-                compareBy<ActionPlanStepQuestionAnswerDetails> { it.revisionNumber }
-                  .thenBy { it.createdAt }
-                  .thenBy { it.id },
-              )
-          }
+        val responses = getRelevantSessionDeliveryQuestionSavedResponses(question.id, activeHeaders, answerDetails)
         val choices = question.choices.sortedBy { choice -> choice.orderNumber }
         SessionDeliveryQuestion.fromQuestionAndResponses(questionDto, responses, choices)
       },
     )
-    return renderQuestionPlaceholders(response, referral)
+    return replacePlaceholdersInSessionDeliveryDetailsResponse(response, person)
   }
 
   @Transactional(readOnly = true)
@@ -165,6 +160,9 @@ class ActionPlanService(
       actionPlanStepQuestionRepository.findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
     }
 
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral ${referral.id}") }
+
     val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository
       .findActiveByPlanAndQuestionIds(actionPlan.id, questions.map { it.id })
 
@@ -173,69 +171,13 @@ class ActionPlanService(
 
     return ActionPlanSessionDeliveryDetailsResponse(
       questions = questions.map { question ->
-        val responses = activeHeaders
-          .filter { it.actionPlanStepQuestionId == question.id }
-          .mapNotNull { header ->
-            answerDetails
-              .filter { it.actionPlanStepQuestionAnswerHeaderId == header.id }
-              .maxWithOrNull(
-                compareBy<ActionPlanStepQuestionAnswerDetails> { it.revisionNumber }
-                  .thenBy { it.createdAt }
-                  .thenBy { it.id },
-              )
-          }
         SessionDeliveryQuestion.fromQuestionAndResponses(
           ActionPlanStepQuestionDto.fromEntity(question),
-          responses,
+          getRelevantSessionDeliveryQuestionSavedResponses(question.id, activeHeaders, answerDetails),
           question.choices.sortedBy { choice -> choice.orderNumber },
         )
       },
-    ).let { response -> renderQuestionPlaceholders(response, referral) }
-  }
-
-  private fun renderQuestionPlaceholders(
-    response: ActionPlanSessionDeliveryDetailsResponse,
-    referral: Referral,
-  ): ActionPlanSessionDeliveryDetailsResponse {
-    val tokens = PlaceholderUtils.extractTokens(collectQuestionTemplates(response))
-    if (tokens.isEmpty()) return response
-
-    val placeholders = placeholderFactory.forReferral(tokens, referral)
-    if (placeholders.isEmpty()) return response
-
-    return ActionPlanSessionDeliveryDetailsResponse(
-      questions = response.questions.map { question ->
-        SessionDeliveryQuestion(
-          id = question.id,
-          displayOrder = question.displayOrder,
-          label = PlaceholderUtils.render(question.label, *placeholders) ?: question.label,
-          key = question.key,
-          hint = PlaceholderUtils.render(question.hint, *placeholders),
-          answerType = question.answerType,
-          maximumNumberOfResponses = question.maximumNumberOfResponses,
-          choices = question.choices?.map { choice ->
-            QuestionChoice(
-              value = choice.value,
-              label = PlaceholderUtils.render(choice.label, *placeholders) ?: choice.label,
-              displayOrder = choice.displayOrder,
-              displayAdditionalDetailsOnSelect = choice.displayAdditionalDetailsOnSelect,
-              additionalDetailsLabel = PlaceholderUtils.render(choice.additionalDetailsLabel, *placeholders),
-              additionalDetailsHint = PlaceholderUtils.render(choice.additionalDetailsHint, *placeholders),
-            )
-          },
-          savedResponses = question.savedResponses,
-        )
-      },
-    )
-  }
-
-  private fun collectQuestionTemplates(
-    response: ActionPlanSessionDeliveryDetailsResponse,
-  ): List<String?> = response.questions.flatMap { question ->
-    listOf(question.label, question.hint) +
-      question.choices.orEmpty().flatMap { choice ->
-        listOf(choice.label, choice.additionalDetailsLabel, choice.additionalDetailsHint)
-      }
+    ).let { response -> replacePlaceholdersInSessionDeliveryDetailsResponse(response, person) }
   }
 
   @Transactional
@@ -415,6 +357,73 @@ class ActionPlanService(
     return getSessionDeliveryDetailsForReferral(referralReference)
   }
 
+  private fun getRelevantSessionDeliveryQuestionSavedResponses(
+    questionId: UUID,
+    headers: List<ActionPlanStepQuestionAnswerHeader>,
+    answerDetails: List<ActionPlanStepQuestionAnswerDetails>,
+  ): List<SessionDeliveryQuestionSavedResponse> = headers
+    .filter { it.actionPlanStepQuestionId == questionId }
+    .mapNotNull { header ->
+      answerDetails
+        .filter { it.actionPlanStepQuestionAnswerHeaderId == header.id }
+        .maxWithOrNull(
+          compareBy<ActionPlanStepQuestionAnswerDetails> { it.revisionNumber }
+            .thenBy { it.createdAt }
+            .thenBy { it.id },
+        )
+    }.map { SessionDeliveryQuestionSavedResponse(it.content ?: "", it.freeTextValue) }
+
+  private fun replacePlaceholdersInSessionDeliveryDetailsResponse(
+    response: ActionPlanSessionDeliveryDetailsResponse,
+    person: Person,
+  ): ActionPlanSessionDeliveryDetailsResponse {
+    val tokens = PlaceholderUtils.extractTokens(collectQuestionTemplates(response))
+    if (tokens.isEmpty()) return response
+
+    val placeholders = placeholderFactory.getForPerson(tokens, person)
+    if (placeholders.isEmpty()) return response
+
+    return ActionPlanSessionDeliveryDetailsResponse(
+      questions = response.questions.map { question ->
+        SessionDeliveryQuestion(
+          id = question.id,
+          displayOrder = question.displayOrder,
+          label = PlaceholderUtils.replacePlaceholdersInTemplate(question.label, *placeholders) ?: question.label,
+          key = question.key,
+          hint = PlaceholderUtils.replacePlaceholdersInTemplate(question.hint, *placeholders),
+          answerType = question.answerType,
+          maximumNumberOfResponses = question.maximumNumberOfResponses,
+          choices = question.choices?.map { choice ->
+            QuestionChoice(
+              value = choice.value,
+              label = PlaceholderUtils.replacePlaceholdersInTemplate(choice.label, *placeholders) ?: choice.label,
+              displayOrder = choice.displayOrder,
+              displayAdditionalDetailsOnSelect = choice.displayAdditionalDetailsOnSelect,
+              additionalDetailsLabel = PlaceholderUtils.replacePlaceholdersInTemplate(
+                choice.additionalDetailsLabel,
+                *placeholders,
+              ),
+              additionalDetailsHint = PlaceholderUtils.replacePlaceholdersInTemplate(
+                choice.additionalDetailsHint,
+                *placeholders,
+              ),
+            )
+          },
+          savedResponses = question.savedResponses,
+        )
+      },
+    )
+  }
+
+  private fun collectQuestionTemplates(
+    response: ActionPlanSessionDeliveryDetailsResponse,
+  ): List<String?> = response.questions.flatMap { question ->
+    listOf(question.label, question.hint) +
+      question.choices.orEmpty().flatMap { choice ->
+        listOf(choice.label, choice.additionalDetailsLabel, choice.additionalDetailsHint)
+      }
+  }
+
   private fun validateQuestionAndAnswerCounts(
     questions: List<ActionPlanStepQuestion>,
     answers: List<SessionDeliveryDetailsQuestionAnswers>,
@@ -508,8 +517,9 @@ class ActionPlanService(
       .groupBy { it.actionPlanStepQuestionAnswerHeaderId }
       .mapValues { (_, detailItems) -> detailItems.maxByOrNull { it.revisionNumber } }
 
-    val activitiesByHeaderId = actionPlanActivityRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(answers.map { it.id })
-      .groupBy { it.actionPlanStepQuestionAnswerHeaderId }
+    val activitiesByHeaderId =
+      actionPlanActivityRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(answers.map { it.id })
+        .groupBy { it.actionPlanStepQuestionAnswerHeaderId }
 
     return answers
       .mapNotNull { answer ->
