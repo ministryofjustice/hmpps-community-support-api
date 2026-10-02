@@ -4,8 +4,9 @@ import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
-import uk.gov.justice.digital.hmpps.communitysupportapi.util.PersonPlaceholder
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.Placeholders
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.placeholder.PersonPlaceholder
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.placeholder.ServiceEndDatePlaceholder
 
 @Component
 class PlaceholderFactory(
@@ -19,6 +20,9 @@ class PlaceholderFactory(
         val person = personRepository.findById(referral.personId)
           .orElseThrow { NotFoundException("Person not found for referral ${referral.id}") }
         add(PersonPlaceholder(person))
+      }
+      if (ServiceEndDatePlaceholder.neededFor(tokens)) {
+        add(ServiceEndDatePlaceholder(referral))
       }
     }.toTypedArray()
   }

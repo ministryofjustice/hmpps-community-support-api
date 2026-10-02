@@ -102,38 +102,67 @@ class ActionPlanService(
   @Transactional(readOnly = true)
   fun getSessionDeliveryDetailsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
     val actionPlanData = actionPlanDataFetcher.getSessionDeliveryDataForReferral(referralReference)
-    val referral = actionPlanData.referral
-    val actionPlan = actionPlanData.actionPlan
-    val sessionDeliveryStep = actionPlanData.step
+    return buildQuestionResponse(
+      actionPlanId = actionPlanData.actionPlan.id,
+      referral = actionPlanData.referral,
+      steps = listOf(actionPlanData.step),
+    )
+  }
 
-    val questions = actionPlanStepQuestionRepository
-      .findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliveryStep.id)
+  @Transactional(readOnly = true)
+  fun getRiskAndAdjustmentsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
+    val data = actionPlanDataFetcher.getRiskAndAdjustmentsDataForReferral(referralReference)
+    return buildQuestionResponse(
+      actionPlanId = data.actionPlan.id,
+      referral = data.referral,
+      steps = listOf(data.step),
+    )
+  }
 
-    if (questions.isEmpty()) {
-      val response = ActionPlanSessionDeliveryDetailsResponse(
-        questions = questions.map { question ->
-          val questionDto = ActionPlanStepQuestionDto.fromEntity(question)
-          SessionDeliveryQuestion.fromQuestionAndResponses(
-            questionDto,
-            emptyList(),
-            question.choices.sortedBy { choice -> choice.orderNumber },
-          )
-        },
-      )
-      return renderQuestionPlaceholders(response, referral)
+  @Transactional(readOnly = true)
+  fun getConfirmServiceEndDateForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
+    val data = actionPlanDataFetcher.getConfirmServiceEndDateForReferral(referralReference)
+    return buildQuestionResponse(
+      actionPlanId = data.actionPlan.id,
+      referral = data.referral,
+      steps = listOf(data.step),
+    )
+  }
+
+  @Transactional(readOnly = true)
+  fun getUpdateServiceEndDateForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
+    val data = actionPlanDataFetcher.getUpdateServiceEndDateForReferral(referralReference)
+    return buildQuestionResponse(
+      actionPlanId = data.actionPlan.id,
+      referral = data.referral,
+      steps = listOf(data.step),
+    )
+  }
+
+  @Transactional(readOnly = true)
+  fun getPersonInvolvementForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
+    val data = actionPlanDataFetcher.getPersonInvolvementForReferral(referralReference)
+    return buildQuestionResponse(
+      actionPlanId = data.actionPlan.id,
+      referral = data.referral,
+      steps = listOf(data.step),
+    )
+  }
+
+  private fun buildQuestionResponse(
+    actionPlanId: UUID,
+    referral: Referral,
+    steps: List<ActionPlanStep>,
+  ): ActionPlanSessionDeliveryDetailsResponse {
+    val questions = steps.flatMap { step ->
+      actionPlanStepQuestionRepository.findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
     }
 
     val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository
-      .findActiveByPlanAndQuestionIds(
-        actionPlan.id,
-        questions.map { it.id },
-      )
-    val answerDetails = if (activeHeaders.isEmpty()) {
-      emptyList()
-    } else {
-      actionPlanStepQuestionAnswerDetailsRepository
-        .findAllByActionPlanStepQuestionAnswerHeaderIdIn(activeHeaders.map { it.id })
-    }
+      .findActiveByPlanAndQuestionIds(actionPlanId, questions.map { it.id })
+
+    val answerDetails = actionPlanStepQuestionAnswerDetailsRepository
+      .findAllByActionPlanStepQuestionAnswerHeaderIdIn(activeHeaders.map { it.id })
 
     val response = ActionPlanSessionDeliveryDetailsResponse(
       questions = questions.map { question ->
@@ -153,44 +182,8 @@ class ActionPlanService(
         SessionDeliveryQuestion.fromQuestionAndResponses(questionDto, responses, choices)
       },
     )
+
     return renderQuestionPlaceholders(response, referral)
-  }
-
-  @Transactional(readOnly = true)
-  fun getRiskAndAdjustmentsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
-    val data = actionPlanDataFetcher.getRiskAndAdjustmentsDataForReferral(referralReference)
-    val actionPlan = data.actionPlan
-    val referral = data.referral
-    val questions = data.steps.flatMap { step ->
-      actionPlanStepQuestionRepository.findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
-    }
-
-    val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository
-      .findActiveByPlanAndQuestionIds(actionPlan.id, questions.map { it.id })
-
-    val answerDetails = actionPlanStepQuestionAnswerDetailsRepository
-      .findAllByActionPlanStepQuestionAnswerHeaderIdIn(activeHeaders.map { it.id })
-
-    return ActionPlanSessionDeliveryDetailsResponse(
-      questions = questions.map { question ->
-        val responses = activeHeaders
-          .filter { it.actionPlanStepQuestionId == question.id }
-          .mapNotNull { header ->
-            answerDetails
-              .filter { it.actionPlanStepQuestionAnswerHeaderId == header.id }
-              .maxWithOrNull(
-                compareBy<ActionPlanStepQuestionAnswerDetails> { it.revisionNumber }
-                  .thenBy { it.createdAt }
-                  .thenBy { it.id },
-              )
-          }
-        SessionDeliveryQuestion.fromQuestionAndResponses(
-          ActionPlanStepQuestionDto.fromEntity(question),
-          responses,
-          question.choices.sortedBy { choice -> choice.orderNumber },
-        )
-      },
-    ).let { response -> renderQuestionPlaceholders(response, referral) }
   }
 
   private fun renderQuestionPlaceholders(
