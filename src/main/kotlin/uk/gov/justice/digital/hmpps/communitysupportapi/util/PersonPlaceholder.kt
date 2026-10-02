@@ -6,6 +6,9 @@ class PersonPlaceholder(
   private val person: Person,
 ) : Placeholders {
 
+  /**
+   * @return A map of token names to their resolved values.
+   */
   override fun resolve(tokens: Set<String>): Map<String, String> = buildMap {
     if (FIRST_NAME in tokens) put(FIRST_NAME, person.firstName)
     if (LAST_NAME in tokens) put(LAST_NAME, person.lastName)
@@ -13,8 +16,7 @@ class PersonPlaceholder(
       put(
         FULL_NAME,
         listOf(person.firstName, person.lastName)
-          .filter { it.isNotBlank() }
-          .joinToString(" "),
+          .filter { it.isNotBlank() }.joinToString(" ") { it.trim() },
       )
     }
   }
