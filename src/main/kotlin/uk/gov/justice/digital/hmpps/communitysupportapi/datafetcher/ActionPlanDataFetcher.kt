@@ -29,10 +29,7 @@ class ActionPlanDataFetcher(
 
   fun getActionPlanDataForReferral(referralReference: String): ActionPlanData {
     logger.info("Retrieving action plan data for referral: {}", referralReference)
-    val referral = findReferralByReference(referralReference)
-
-    val actionPlan = findOrCreateActionPlanForReferral(referral.id)
-
+    val (referral, actionPlan) = getReferralAndActionPlanForReferral(referralReference)
     val allSteps = actionPlanStepRepository.findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
     val needSteps = allSteps.filter { it.stepType == ActionPlanStepType.NEED }
 
@@ -43,71 +40,49 @@ class ActionPlanDataFetcher(
     )
   }
 
-  fun getSessionDeliveryDataForReferral(referralReference: String): SessionDeliveryData {
-    val referral = findReferralByReference(referralReference)
-    val actionPlan = findOrCreateActionPlanForReferral(referral.id)
+  private fun getActionPlanStepData(
+    referralReference: String,
+    stepType: ActionPlanStepType,
+    stepDescription: String,
+  ): ActionPlanStepData {
+    val (referral, actionPlan) = getReferralAndActionPlanForReferral(referralReference)
     val step = actionPlanStepRepository
       .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
-      .firstOrNull { it.stepType == ActionPlanStepType.SESSION_DELIVERY }
-      ?: throw NotFoundException("No SESSION_DELIVERY step found for referral $referralReference")
+      .firstOrNull { it.stepType == stepType }
+      ?: throw NotFoundException("No $stepDescription step found for referral $referralReference")
 
-    return SessionDeliveryData(actionPlan, referral, step)
+    return ActionPlanStepData(actionPlan, referral, step)
+  }
+
+  fun getSessionDeliveryDataForReferral(referralReference: String): SessionDeliveryData {
+    val data = getActionPlanStepData(referralReference, ActionPlanStepType.SESSION_DELIVERY, "SESSION_DELIVERY")
+    return SessionDeliveryData(data.actionPlan, data.referral, data.step)
   }
 
   fun getRiskAndAdjustmentsDataForReferral(referralReference: String): RiskAndAdjustmentsData {
-    val referral = findReferralByReference(referralReference)
-    val actionPlan = findOrCreateActionPlanForReferral(referral.id)
-    val steps = actionPlanStepRepository
-      .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
-      .filter { it.stepType == ActionPlanStepType.RISK_AND_ADJUSTMENTS }
-
-    if (steps.isEmpty()) {
-      throw NotFoundException("No risk and adjustments step found for referral $referralReference")
-    }
-
-    return RiskAndAdjustmentsData(actionPlan, referral, steps)
+    val data = getActionPlanStepData(referralReference, ActionPlanStepType.RISK_AND_ADJUSTMENTS, "risk and adjustments")
+    return RiskAndAdjustmentsData(data.actionPlan, data.referral, data.step)
   }
 
   fun getConfirmServiceEndDateForReferral(referralReference: String): ConfirmServiceEndDateData {
-    val referral = findReferralByReference(referralReference)
-    val actionPlan = findOrCreateActionPlanForReferral(referral.id)
-    val steps = actionPlanStepRepository
-      .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
-      .filter { it.stepType == ActionPlanStepType.SERVICE_END_DATE_CHECK }
-
-    if (steps.isEmpty()) {
-      throw NotFoundException("No service end date check step found for referral $referralReference")
-    }
-
-    return ConfirmServiceEndDateData(actionPlan, referral, steps)
+    val data = getActionPlanStepData(referralReference, ActionPlanStepType.SERVICE_END_DATE_CHECK, "service end date check")
+    return ConfirmServiceEndDateData(data.actionPlan, data.referral, data.step)
   }
 
   fun getUpdateServiceEndDateForReferral(referralReference: String): UpdateServiceEndDateData {
-    val referral = findReferralByReference(referralReference)
-    val actionPlan = findOrCreateActionPlanForReferral(referral.id)
-    val steps = actionPlanStepRepository
-      .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
-      .filter { it.stepType == ActionPlanStepType.CHANGE_SERVICE_END_DATE }
-
-    if (steps.isEmpty()) {
-      throw NotFoundException("No change service end date step found for referral $referralReference")
-    }
-
-    return UpdateServiceEndDateData(actionPlan, referral, steps)
+    val data = getActionPlanStepData(referralReference, ActionPlanStepType.CHANGE_SERVICE_END_DATE, "change service end date")
+    return UpdateServiceEndDateData(data.actionPlan, data.referral, data.step)
   }
 
   fun getPersonInvolvementForReferral(referralReference: String): UpdateServiceEndDateData {
+    val data = getActionPlanStepData(referralReference, ActionPlanStepType.USER_INVOLVEMENT, "person involvement")
+    return UpdateServiceEndDateData(data.actionPlan, data.referral, data.step)
+  }
+
+  private fun getReferralAndActionPlanForReferral(referralReference: String): Pair<Referral, ActionPlan> {
     val referral = findReferralByReference(referralReference)
     val actionPlan = findOrCreateActionPlanForReferral(referral.id)
-    val steps = actionPlanStepRepository
-      .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
-      .filter { it.stepType == ActionPlanStepType.USER_INVOLVEMENT }
-
-    if (steps.isEmpty()) {
-      throw NotFoundException("No person involvement step found for referral $referralReference")
-    }
-
-    return UpdateServiceEndDateData(actionPlan, referral, steps)
+    return referral to actionPlan
   }
 
   fun findOrCreateActionPlanForReferral(referralId: UUID): ActionPlan = actionPlanRepository.findByReferralId(referralId)
@@ -137,6 +112,12 @@ class ActionPlanDataFetcher(
   }
 }
 
+private data class ActionPlanStepData(
+  val actionPlan: ActionPlan,
+  val referral: Referral,
+  val step: ActionPlanStep,
+)
+
 data class ActionPlanData(
   val actionPlan: ActionPlan,
   val referral: Referral,
@@ -152,17 +133,17 @@ data class SessionDeliveryData(
 data class RiskAndAdjustmentsData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val steps: List<ActionPlanStep>,
+  val step: ActionPlanStep,
 )
 
 data class ConfirmServiceEndDateData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val steps: List<ActionPlanStep>,
+  val step: ActionPlanStep,
 )
 
 data class UpdateServiceEndDateData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val steps: List<ActionPlanStep>,
+  val step: ActionPlanStep,
 )
