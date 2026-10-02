@@ -14,7 +14,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionChoice
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanTemplate
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
@@ -33,7 +32,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionP
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanTemplateFactory
-import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTestUtil.randomReferralReference
 import java.time.OffsetDateTime
 import java.util.UUID
 

@@ -62,8 +62,18 @@ class ActionPlanQuestionWriterIntegrationTest :
       3,
     )
 
+    val multipleChoiceQuestionWithMultipleAnswersSelected = testSupport.createCheckboxQuestionAndAnswers(
+      step.id,
+      actionPlan.id,
+      listOf("Option 1", "Option 2"),
+      listOf("Option 1", "Option 2", "Option 3"),
+      2,
+      4,
+    )
+
     val answersForTextareaQuestionWithAnswer = writer.answersForActionPlanAndQuestions(actionPlan.id, listOf(questionWithAnswer.question)).single()
     val answersForMultipleChoiceQuestionWithAnswers = writer.answersForActionPlanAndQuestions(actionPlan.id, listOf(multipleChoiceQuestionWithAnswers.question)).single()
+    val answersForMultipleChoiceQuestionWithMultipleAnswersSelected = writer.answersForActionPlanAndQuestions(actionPlan.id, listOf(multipleChoiceQuestionWithMultipleAnswersSelected.question)).single()
 
     val changedBy = "TEST_USER"
     val changedAt: OffsetDateTime = OffsetDateTime.now()
@@ -122,5 +132,29 @@ class ActionPlanQuestionWriterIntegrationTest :
     assertThat(detailsByHeader.getValue(existingHeaderId).content).isEqualTo("Option 1")
     assertThat(detailsByHeader.getValue(newHeaderId).content).isEqualTo("Option 2")
     assertThat(detailsByHeader.getValue(newHeaderId).revisionNumber).isEqualTo(1)
+  }
+
+  @Test
+  fun `should persist a checkbox answer moving from 2 to 1 selected options`() {
+    // Given
+    val testData = TestData()
+    val delete = ActionPlanQuestionAnswers.Change.Delete(
+      current = testData.answersForMultipleChoiceQuestionWithMultipleAnswersSelected.currentAnswers.single { it.answer.value == "Option 2" },
+    )
+
+    // When
+    val headerIds = writer.write(testData.answersForMultipleChoiceQuestionWithMultipleAnswersSelected, listOf(delete), testData.changedBy, testData.changedAt, testData.batchId)
+
+    // Then
+    val deletedHeaderId = headerIds.single()
+    assertThat(deletedHeaderId).isEqualTo(testData.multipleChoiceQuestionWithMultipleAnswersSelected.answers.single { it.details.content == "Option 2" }.header.id)
+
+    val activeHeaders = headerRepository.findActiveByPlanAndQuestionIds(
+      testData.actionPlan.id,
+      listOf(testData.multipleChoiceQuestionWithMultipleAnswersSelected.question.id),
+    )
+    assertThat(activeHeaders.map { it.id }).containsExactlyInAnyOrder(
+      testData.multipleChoiceQuestionWithMultipleAnswersSelected.answers.single { it.details.content == "Option 1" }.header.id,
+    )
   }
 }
