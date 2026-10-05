@@ -1516,6 +1516,32 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `should default to main point of contact when probation practitioner in nDelius is unallocated`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "X123456")
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      referralRepository.save(savedReferral)
+
+      referralHelper.stubCommunityManagerForReferral(
+        person,
+        communityManager = createCommunityManagerDto(crn = person.identifier, forename = "Unallocated", surname = "Staff"),
+      )
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.checkProbationPractitionerDetailsCompleted shouldBe null
+          body.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
+        }
+    }
+
+    @Test
     fun `should return notStarted for probation practitioner check when found in nDelius but not saved`() {
       val testUser = referralHelper.createTestUser()
       val person = referralHelper.createPerson(identifier = "X123456")
