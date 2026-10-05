@@ -449,9 +449,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(result.personDetails.dateOfBirth).isEqualTo(person.dateOfBirth.toString())
 
       assertThat(result.appointments).hasSize(2)
-      assertThat(result.appointments.first().label).isEqualTo("Pre-Release Appointment")
+      assertThat(result.appointments.first().label).isEqualTo("Pre release appointment")
       assertThat(result.appointments.first().time).isEqualTo("15:00 Tuesday 22 September 2026")
-      assertThat(result.appointments[1].label).isEqualTo("Contact Session")
+      assertThat(result.appointments[1].label).isEqualTo("Contact session")
       assertThat(result.appointments[1].time).isEqualTo("09:15 Sunday 20 September 2026")
     }
 

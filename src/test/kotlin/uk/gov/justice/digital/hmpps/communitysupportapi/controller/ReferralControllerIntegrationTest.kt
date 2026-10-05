@@ -1650,7 +1650,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
           body.personDetails.dateOfBirth shouldBe person.dateOfBirth.toString()
 
           body.appointments.size shouldBe 1
-          body.appointments.first().label shouldBe "Pre-Release Appointment"
+          body.appointments.first().label shouldBe "Pre release appointment"
           body.appointments.first().time shouldBe "15:00 Tuesday 22 September 2026"
         }
     }

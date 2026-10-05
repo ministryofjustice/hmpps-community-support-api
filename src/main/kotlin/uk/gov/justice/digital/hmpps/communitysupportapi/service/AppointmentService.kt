@@ -479,10 +479,10 @@ class AppointmentService(
         ReferralAppointmentSummaryDto(
           id = appointment.id,
           label = when (appointment.appointment.type) {
-            AppointmentType.CONTACT_SESSION -> "Contact Session"
-            AppointmentType.POST_RELEASE_SESSION -> "Post-Release Appointment"
-            AppointmentType.PRE_RELEASE_SESSION -> "Pre-Release Appointment"
-            AppointmentType.HANDOVER_SESSION -> "Handover Session"
+            AppointmentType.CONTACT_SESSION -> "Contact session"
+            AppointmentType.POST_RELEASE_SESSION -> "Post release appointment"
+            AppointmentType.PRE_RELEASE_SESSION -> "Pre release appointment"
+            AppointmentType.HANDOVER_SESSION -> "Handover session"
             else -> throw IllegalStateException("Unexpected appointment type for referral appointments tab data")
           },
           time = appointment.appointmentDateTime.format(

@@ -232,10 +232,10 @@ data class ReferralAppointmentSummaryDto(
 
 fun AppointmentType.toDisplayLabel(): String = when (this) {
   AppointmentType.ICS -> "ICS Appointment"
-  AppointmentType.CONTACT_SESSION -> "Contact Session"
-  AppointmentType.POST_RELEASE_SESSION -> "Post-Release Appointment"
-  AppointmentType.PRE_RELEASE_SESSION -> "Pre-Release Appointment"
-  AppointmentType.HANDOVER_SESSION -> "Handover Session"
+  AppointmentType.CONTACT_SESSION -> "Contact session"
+  AppointmentType.POST_RELEASE_SESSION -> "Post release appointment"
+  AppointmentType.PRE_RELEASE_SESSION -> "Pre release appointment"
+  AppointmentType.HANDOVER_SESSION -> "Handover session"
 }
 
 data class AppointmentTimeResponse(
