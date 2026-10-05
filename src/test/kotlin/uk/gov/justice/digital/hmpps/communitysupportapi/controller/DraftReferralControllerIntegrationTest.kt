@@ -228,6 +228,23 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       )
       referralProviderAssignmentRepository.save(referralAssignment)
 
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          UUID.randomUUID(),
+          referral.id,
+          "pp name",
+          "role",
+          "pp@email.com",
+          COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+          42,
+          "01234567890",
+          "01234567890",
+          true,
+          OffsetDateTime.now(),
+          testUser.id,
+        ),
+      )
+
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
         .headers(setAuthorisation())
@@ -267,7 +284,16 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           )
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
           body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto("Cleveland")
-          body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
+          body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto(
+            true,
+            "pp name",
+            "role",
+            "pp@email.com",
+            "01234567890",
+            "County Durham and Darlington",
+            true,
+            "01234567890",
+          )
           body.additionalInformationDetailsTableData.ofHomeOfficeInterest shouldBe true
           body.additionalInformationDetailsTableData.homeOfficeInterestNotes shouldBe "Is of interest"
           body.additionalInformationDetailsTableData.offenderPersonalityDisorderPathway shouldBe "N/A"
@@ -311,6 +337,23 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         communityServiceProvider,
       )
       referralProviderAssignmentRepository.save(referralAssignment)
+
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          UUID.randomUUID(),
+          referral.id,
+          "pp name",
+          "role",
+          "pp@email.com",
+          COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+          42,
+          "01234567890",
+          "01234567890",
+          true,
+          updatedAt = OffsetDateTime.now(),
+          testUser.id,
+        ),
+      )
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -375,6 +418,23 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         communityServiceProvider,
       )
       referralProviderAssignmentRepository.save(referralAssignment)
+
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          UUID.randomUUID(),
+          referral.id,
+          "pp name",
+          "role",
+          "pp@email.com",
+          COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+          42,
+          "01234567890",
+          "01234567890",
+          true,
+          updatedAt = OffsetDateTime.now(),
+          testUser.id,
+        ),
+      )
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")

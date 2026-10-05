@@ -55,6 +55,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       personNeeds: ReferralCriminogenicNeeds,
       area: String,
       offenceSentenceInfo: OffenceSentenceDto,
+      ppDetails: ProbationPractitionerDetailsBffResponseDto?,
     ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
@@ -74,7 +75,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
       personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(personNeeds),
       referralAreaTableData = DraftReferralAreaTableDataDto.from(area),
       additionalReferralInformationTableData = DraftAdditionalReferralInformationTableDataDto.from(referral, offenceSentenceInfo),
-      mainPocDetailsTableData = DraftMainPOCDetailsTableDataDto.from(),
+      mainPocDetailsTableData = DraftMainPOCDetailsTableDataDto.from(ppDetails),
     )
   }
 
@@ -287,7 +288,16 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val teamPhoneNumber: String? = null,
   ) {
     companion object {
-      fun from(): DraftMainPOCDetailsTableDataDto = DraftMainPOCDetailsTableDataDto()
+      fun from(ppDetails: ProbationPractitionerDetailsBffResponseDto?): DraftMainPOCDetailsTableDataDto = DraftMainPOCDetailsTableDataDto(
+        ppDetails?.ppDetailsFoundAndCorrect,
+        ppDetails?.name,
+        ppDetails?.jobRole,
+        ppDetails?.emailAddress,
+        ppDetails?.phoneNumber,
+        ppDetails?.pdu?.name,
+        ppDetails?.probationOffice != null,
+        ppDetails?.teamPhoneNumber,
+      )
     }
   }
 }
