@@ -416,6 +416,40 @@ class TaskListStatusResponseDtoTest {
       result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
       result.addMainPointOfContactCompleted shouldBe null
     }
+
+    @Test
+    fun `returns checkProbationPractitionerDetailsCompleted as null and addMainPointOfContactCompleted as notStarted when community manager is unallocated and no details saved`() {
+      val result = TaskListStatusResponseDto.from(
+        referral,
+        person,
+        null,
+        null,
+        null,
+        null,
+        communityManager = buildCommunityManager(forename = "Unallocated", surname = "Staff"),
+        probationPractitionerDetails = null,
+      )
+
+      result.checkProbationPractitionerDetailsCompleted shouldBe null
+      result.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
+    }
+
+    @Test
+    fun `returns checkProbationPractitionerDetailsCompleted as null and addMainPointOfContactCompleted as completed when community manager is unallocated and details saved`() {
+      val result = TaskListStatusResponseDto.from(
+        referral,
+        person,
+        null,
+        null,
+        null,
+        null,
+        communityManager = buildCommunityManager(forename = "Staff", surname = "UNALLOCATED"),
+        probationPractitionerDetails = buildSavedProbationPractitionerDetails(),
+      )
+
+      result.checkProbationPractitionerDetailsCompleted shouldBe null
+      result.addMainPointOfContactCompleted shouldBe TaskListStatusItem.completed()
+    }
   }
 
   @Nested
@@ -524,13 +558,13 @@ class TaskListStatusResponseDtoTest {
     updatedBy = userId,
   )
 
-  private fun buildCommunityManager() = CommunityManagerDto(
+  private fun buildCommunityManager(forename: String = "Jane", surname: String = "Doe") = CommunityManagerDto(
     "CRN123",
     CommunityManagerDetailsDto(
       name = CommunityManagerNameDto(
-        "Jane",
+        forename,
         null,
-        "Doe",
+        surname,
       ),
       jobRole = "Probation practitioner",
       emailAddress = "jane.doe@example.com",

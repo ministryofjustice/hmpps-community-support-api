@@ -81,7 +81,7 @@ data class TaskListStatusResponseDto(
       communityManagerDto: CommunityManagerDto?,
       savedProbationPractitionerDetails: ProbationPractitionerDetails?,
     ): TaskListStatusItem? {
-      if (communityManagerDto == null) return null
+      if (communityManagerDto == null || isUnallocated(communityManagerDto)) return null
       if (savedProbationPractitionerDetails == null) return TaskListStatusItem.notStarted()
       if (savedProbationPractitionerDetails.ppDetailsFoundAndCorrect == false) return null
       return TaskListStatusItem.completed()
@@ -91,8 +91,14 @@ data class TaskListStatusResponseDto(
       communityManagerDto: CommunityManagerDto?,
       savedProbationPractitionerDetails: ProbationPractitionerDetails?,
     ): TaskListStatusItem? {
-      if (communityManagerDto != null && savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect != false) return null
+      if (communityManagerDto != null && !isUnallocated(communityManagerDto) && savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect != false) return null
       return savedProbationPractitionerDetails?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
+    }
+
+    private fun isUnallocated(communityManagerDto: CommunityManagerDto): Boolean {
+      val name = communityManagerDto.communityManager?.name ?: return false
+      return listOfNotNull(name.forename, name.middleName, name.surname)
+        .any { it.contains("unallocated", ignoreCase = true) }
     }
   }
 }

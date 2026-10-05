@@ -129,6 +129,35 @@
       }
     },
     {
+      "name": "nDelius get unallocated community manager by CRN",
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/case/X999999/community-manager"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "crn": "X999999",
+          "communityManager": {
+            "jobRole": null,
+            "emailAddress": null,
+            "pdu": "Northumberland",
+            "officeName": null,
+            "name": {
+              "forename": "Unallocated",
+              "middleName": null,
+              "surname": "Staff"
+            },
+            "teamPhoneNumber": null
+          }
+        }
+      }
+    },
+    {
       "name": "nDelius community manager not found by CRN",
       "request": {
         "method": "GET",
