@@ -5559,6 +5559,80 @@
         ]
       }
     },
+    "/bff/referral/{referralReference}/action-plan/service-delivery-details/confirm-service-end-date": {
+      "get": {
+        "operationId": "getConfirmServiceEndDate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSessionDeliveryDetailsResponse"
+                }
+              }
+            },
+            "description": "Confirm service end date questions and saved answers returned"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get the confirm service end date questions and saved answers of the service delivery details",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/bff/referral/{referralReference}/action-plan/service-delivery-details/person-involvement": {
+      "get": {
+        "operationId": "getPersonInvolvement",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSessionDeliveryDetailsResponse"
+                }
+              }
+            },
+            "description": "Person involvement questions and saved answers returned"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get the person involvement questions and saved answers of the service delivery details",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
     "/bff/referral/{referralReference}/action-plan/service-delivery-details/risks-and-adjustments": {
       "get": {
         "operationId": "getRiskAndAdjustments",
@@ -5591,6 +5665,43 @@
           }
         },
         "summary": "Get the risk and adjustments questions and saved answers of the service delivery details",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/bff/referral/{referralReference}/action-plan/service-delivery-details/update-service-end-date": {
+      "get": {
+        "operationId": "getUpdateServiceEndDate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSessionDeliveryDetailsResponse"
+                }
+              }
+            },
+            "description": "Update service end date questions and saved answers returned"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get the update service end date questions and saved answers of the service delivery details",
         "tags": [
           "action-plan-controller"
         ]
