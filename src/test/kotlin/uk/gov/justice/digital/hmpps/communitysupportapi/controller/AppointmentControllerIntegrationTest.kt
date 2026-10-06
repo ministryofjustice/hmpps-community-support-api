@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDet
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.InPersonAppointment
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.VirtualAppointment
@@ -688,6 +689,80 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           body.appointmentDetails?.date shouldBe "27/03/2026"
           body.appointmentDetails?.time shouldBe "15:00"
           body.otherAppointmentMethods shouldBe listOf("Email", "Phone call")
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/referral/{caseReference}/appointments")
+  inner class ReferralAppointmentsEndPoint {
+    val caseReference = "AA1234DD"
+
+    @BeforeEach
+    fun setup() {
+      testDataCleaner.cleanAllTables()
+      testUser = referralHelper.ensureReferralUser()
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+    }
+
+    @Test
+    fun `should return unauthorized if no token`() {
+      assertUnauthorized(HttpMethod.GET, "/bff/referral/$caseReference/appointments")
+    }
+
+    @Test
+    fun `should return forbidden if no role`() {
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/$caseReference/appointments")
+    }
+
+    @Test
+    fun `should return forbidden if wrong role`() {
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/$caseReference/appointments")
+    }
+
+    @Test
+    fun `should return 404 when referral is not found`() {
+      assertNotFound(HttpMethod.GET, "/bff/referral/$caseReference/appointments")
+    }
+
+    @Test
+    fun `should return person details and appointment list for a referral`() {
+      val referralUser = referralHelper.ensureReferralUser()
+      val person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "W123456G")
+      val referral = referralHelper.createReferral(person, submittedBy = referralUser, referenceNumber = caseReference)
+      val appointment = appointmentHelper.createAppointment(referral, type = AppointmentType.PRE_RELEASE_SESSION)
+      val appointmentDateTime = LocalDateTime.of(2026, 9, 22, 15, 0)
+      val createdAt = appointmentDateTime.minusDays(1)
+      val delivery = appointmentHelper.createAppointmentDelivery(
+        AppointmentDeliveryMethod.VIDEO_CALL,
+        "Teams link",
+      )
+      appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        referralUser,
+        appointmentDateTime,
+        createdAt,
+        listOf("Email"),
+      )
+
+      webTestClient.get()
+        .uri("/bff/referral/$caseReference/appointments")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<ReferralAppointmentsBffResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.personDetails.firstName shouldBe "Alex"
+          body.personDetails.lastName shouldBe "Jones"
+          body.personDetails.crn shouldBe referral.personIdentifier
+          body.personDetails.dateOfBirth shouldBe person.dateOfBirth.toString()
+
+          body.appointments.size shouldBe 1
+          body.appointments.first().label shouldBe "Pre release appointment"
+          body.appointments.first().time shouldBe "15:00 Tuesday 22 September 2026"
         }
     }
   }

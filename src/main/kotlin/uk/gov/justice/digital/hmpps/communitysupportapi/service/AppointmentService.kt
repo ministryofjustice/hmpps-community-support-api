@@ -11,6 +11,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentSummaryDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsPersonDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
@@ -450,5 +453,39 @@ class AppointmentService(
     feedback.recordSessionDidSessionHappen -> AppointmentStatusHistoryType.COMPLETED
     feedback.recordSessionDidPersonAttend == false -> AppointmentStatusHistoryType.DID_NOT_ATTEND
     else -> AppointmentStatusHistoryType.DID_NOT_HAPPEN
+  }
+
+  /**
+   * Returns appointment tab data for a referral, including person details and all appointment summaries.
+   */
+  @Transactional(readOnly = true)
+  fun getAppointmentsForReferral(caseReference: String): ReferralAppointmentsBffResponseDto {
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }
+
+    val appointments = appointmentIcsRepository.findByReferralIdAndTypesOrderByCreatedAtDesc(
+      referral.id,
+      listOf(
+        AppointmentType.CONTACT_SESSION,
+        AppointmentType.POST_RELEASE_SESSION,
+        AppointmentType.PRE_RELEASE_SESSION,
+        AppointmentType.HANDOVER_SESSION,
+      ),
+    )
+      .map { appointment ->
+        ReferralAppointmentSummaryDto.from(appointment)
+      }
+
+    return ReferralAppointmentsBffResponseDto(
+      personDetails = ReferralAppointmentsPersonDetailsDto(
+        firstName = person.firstName,
+        lastName = person.lastName,
+        dateOfBirth = person.dateOfBirth.toString(),
+        crn = referral.personIdentifier,
+      ),
+      appointments = appointments,
+    )
   }
 }
