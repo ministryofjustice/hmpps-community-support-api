@@ -17,6 +17,7 @@ class ActionPlanStepFactory : TestEntityFactory<ActionPlanStep>() {
   fun withOrderNumber(orderNumber: Int) = apply { this.orderNumber = orderNumber }
   fun withName(name: String) = apply { this.name = name }
   fun withStepType(stepType: ActionPlanStepType) = apply { this.stepType = stepType }
+  fun ofSessionDeliveryType() = apply { this.stepType = ActionPlanStepType.SESSION_DELIVERY }
 
   override fun create(): ActionPlanStep = ActionPlanStep(
     id = id,
