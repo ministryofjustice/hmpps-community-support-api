@@ -1071,7 +1071,7 @@ class ActionPlanServiceIntegrationTest :
     )
 
     private fun createServiceDeliveryQuestion(
-      step: ActionPlanStep,
+      step: ReferenceDataActionPlanStep,
       orderNumber: Int,
       title: String,
       answerType: ActionPlanQuestionAnswerType = ActionPlanQuestionAnswerType.RADIO,

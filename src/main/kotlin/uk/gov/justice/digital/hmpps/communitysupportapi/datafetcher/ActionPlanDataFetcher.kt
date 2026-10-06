@@ -206,5 +206,5 @@ data class UpdateServiceEndDateData(
 data class ServiceDeliveryDetailsData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val steps: List<ActionPlanStep>,
+  val steps: List<ReferenceDataActionPlanStep>,
 )
