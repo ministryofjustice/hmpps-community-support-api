@@ -41,6 +41,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionP
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionAnswerHeaderFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.FULL_MONTH_DATE_FORMAT
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTestUtil.randomReferralReference
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -337,6 +338,7 @@ class ActionPlanServiceIntegrationTest :
   @DisplayName("session delivery details")
   inner class SessionDeliveryDetails {
     val user = referralHelper.ensureReferralUser()
+    private lateinit var actionPlanTemplateId: UUID
     private lateinit var referral: Referral
     private lateinit var actionPlan: ActionPlan
     private lateinit var sessionDeliveryStep: ActionPlanStep
@@ -347,8 +349,10 @@ class ActionPlanServiceIntegrationTest :
       referral =
         referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
       val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+      actionPlanTemplateId = actionPlanTemplate.id
       actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
       sessionDeliveryStep = createSessionDeliveryStep(actionPlanTemplate.id)
+      createMandatoryServiceDeliverySteps()
     }
 
     @Test
@@ -789,6 +793,238 @@ class ActionPlanServiceIntegrationTest :
       )
     }
 
+    @Test
+    fun `should update delete and retain answers across service delivery pages in one request`() {
+      val sessionDeliveryStep = actionPlanStepRepository
+        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
+        .first { it.stepType == ActionPlanStepType.SESSION_DELIVERY }
+      val sessionRadioQuestion = createServiceDeliveryQuestion(sessionDeliveryStep, 1, "How will the session be delivered?")
+      createChoice(sessionRadioQuestion, 1, "Face-to-face", "FACE_TO_FACE")
+      createChoice(sessionRadioQuestion, 2, "Other", "OTHER", hasFreeText = true, freeTextLabel = "Reason")
+
+      val sessionCheckboxQuestion = createServiceDeliveryQuestion(
+        sessionDeliveryStep,
+        orderNumber = 2,
+        title = "Which formats are available?",
+        answerType = ActionPlanQuestionAnswerType.CHECKBOX,
+        maxNumberResponses = 3,
+      )
+      createChoice(sessionCheckboxQuestion, 1, "In person", "IN_PERSON")
+      createChoice(sessionCheckboxQuestion, 2, "By phone", "PHONE")
+      createChoice(sessionCheckboxQuestion, 3, "By video", "VIDEO")
+
+      val riskStep = actionPlanStepRepository
+        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
+        .first { it.stepType == ActionPlanStepType.RISK_AND_ADJUSTMENTS }
+      val riskQuestion = createServiceDeliveryQuestion(riskStep, 1, "Are there any risks?")
+      createChoice(riskQuestion, 1, "Yes", "YES", hasFreeText = true, freeTextLabel = "Risk details")
+      createChoice(riskQuestion, 2, "No", "NO")
+
+      val confirmStep = actionPlanStepRepository
+        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
+        .first { it.stepType == ActionPlanStepType.SERVICE_END_DATE_CHECK }
+      val confirmQuestion = createServiceDeliveryQuestion(confirmStep, 1, "Is the service end date still correct?")
+      createChoice(confirmQuestion, 1, "Yes", "YES")
+      createChoice(confirmQuestion, 2, "No", "NO")
+
+      val updateStep = actionPlanStepRepository
+        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
+        .first { it.stepType == ActionPlanStepType.CHANGE_SERVICE_END_DATE }
+      val updateDateQuestion = createServiceDeliveryQuestion(
+        updateStep,
+        1,
+        "What is the new service end date?",
+        ActionPlanQuestionAnswerType.DATE,
+      )
+      val updateReasonQuestion = createServiceDeliveryQuestion(
+        updateStep,
+        2,
+        "Why are you changing the service end date?",
+        ActionPlanQuestionAnswerType.TEXTAREA,
+      )
+
+      val personStep = actionPlanStepRepository
+        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
+        .first { it.stepType == ActionPlanStepType.USER_INVOLVEMENT }
+      val personQuestion = createServiceDeliveryQuestion(personStep, 1, "Was the person involved?")
+      createChoice(personQuestion, 1, "Yes", "YES")
+      createChoice(personQuestion, 2, "No", "NO", hasFreeText = true, freeTextLabel = "Why not")
+
+      updateSessionDeliveryDetails(
+        sessionDeliveryDetailsRequest(
+          sessionRadioQuestion to listOf(sessionDeliveryDetailsAnswer("OTHER", "Travel disruption")),
+          sessionCheckboxQuestion to listOf(
+            sessionDeliveryDetailsAnswer("IN_PERSON"),
+            sessionDeliveryDetailsAnswer("PHONE"),
+          ),
+          riskQuestion to listOf(sessionDeliveryDetailsAnswer("YES", "Potential conflict with another attendee")),
+          confirmQuestion to listOf(sessionDeliveryDetailsAnswer("NO")),
+          updateDateQuestion to listOf(sessionDeliveryDetailsAnswer("2026-11-01")),
+          updateReasonQuestion to listOf(sessionDeliveryDetailsAnswer("Need longer support to complete activities")),
+          personQuestion to listOf(sessionDeliveryDetailsAnswer("YES")),
+        ),
+      )
+
+      val result = updateSessionDeliveryDetails(
+        sessionDeliveryDetailsRequest(
+          sessionRadioQuestion to listOf(sessionDeliveryDetailsAnswer("FACE_TO_FACE")),
+          sessionCheckboxQuestion to listOf(
+            sessionDeliveryDetailsAnswer("IN_PERSON"),
+            sessionDeliveryDetailsAnswer("VIDEO"),
+          ),
+          updateDateQuestion to listOf(sessionDeliveryDetailsAnswer("2026-12-15")),
+          personQuestion to listOf(sessionDeliveryDetailsAnswer("NO", "The person chose not to attend")),
+        ),
+      )
+
+      assertEquals(listOf("FACE_TO_FACE"), result.questions.first { it.id == sessionRadioQuestion.id }.savedResponses.map { it.value })
+      assertEquals(
+        listOf("IN_PERSON", "VIDEO"),
+        result.questions.first { it.id == sessionCheckboxQuestion.id }.savedResponses.map { it.value },
+      )
+
+      val riskResponses = actionPlanService.getRiskAndAdjustmentsForReferral(referral.referenceNumber!!)
+      assertEquals(
+        listOf("YES"),
+        riskResponses.questions.first { it.id == riskQuestion.id }.savedResponses.map { it.value },
+      )
+      assertEquals(
+        listOf("Potential conflict with another attendee"),
+        riskResponses.questions.first { it.id == riskQuestion.id }.savedResponses.map { it.additionalDetails },
+      )
+
+      val confirmResponses = actionPlanService.getConfirmServiceEndDateForReferral(referral.referenceNumber!!)
+      assertEquals(listOf("NO"), confirmResponses.questions.single().savedResponses.map { it.value })
+
+      val updateResponses = actionPlanService.getUpdateServiceEndDateForReferral(referral.referenceNumber!!)
+      assertEquals(
+        listOf("2026-12-15"),
+        updateResponses.questions.first { it.id == updateDateQuestion.id }.savedResponses.map { it.value },
+      )
+      assertEquals(
+        listOf("Need longer support to complete activities"),
+        updateResponses.questions.first { it.id == updateReasonQuestion.id }.savedResponses.map { it.value },
+      )
+
+      val personResponses = actionPlanService.getPersonInvolvementForReferral(referral.referenceNumber!!)
+      assertEquals(listOf("NO"), personResponses.questions.single().savedResponses.map { it.value })
+      assertEquals(
+        listOf("The person chose not to attend"),
+        personResponses.questions.single().savedResponses.map { it.additionalDetails },
+      )
+
+      val activeAnswers = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+      assertEquals(1, activeAnswers.count { it.actionPlanStepQuestionId == riskQuestion.id })
+      assertEquals(1, activeAnswers.count { it.actionPlanStepQuestionId == confirmQuestion.id })
+      assertEquals(2, activeAnswers.count { it.actionPlanStepQuestionId == sessionCheckboxQuestion.id })
+
+      val deletedCheckboxHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAll().filter {
+        it.actionPlanId == actionPlan.id &&
+          it.actionPlanStepQuestionId == sessionCheckboxQuestion.id &&
+          it.deletedAt != null
+      }
+      assertEquals(1, deletedCheckboxHeaders.size)
+      val deletedCheckboxDetails = actionPlanStepQuestionAnswerDetailsRepository
+        .findAllByActionPlanStepQuestionAnswerHeaderIdIn(deletedCheckboxHeaders.map { it.id })
+      assertEquals(listOf("PHONE"), deletedCheckboxDetails.map { it.content }.distinct())
+    }
+
+    @Test
+    fun `should skip change service end date step when the single confirm question answer is yes`() {
+      val targetServiceCompletionDate = OffsetDateTime.now().plusDays(10)
+      val combinedReferral = createReferral("Mia", "Evans", targetServiceCompletionDate)
+      val templateId = actionPlanHelper.createActionPlanTemplate().id
+      actionPlanHelper.createActionPlan(referralId = combinedReferral.id, templateId = templateId)
+
+      createServiceDeliveryStep(
+        1,
+        "Risks and adjustments",
+        ActionPlanStepType.RISK_AND_ADJUSTMENTS,
+        templateId,
+      )
+      val combinedSessionStep = createServiceDeliveryStep(
+        2,
+        "Service delivery details",
+        ActionPlanStepType.SESSION_DELIVERY,
+        templateId,
+      )
+      val combinedSessionQuestion = createServiceDeliveryQuestion(
+        combinedSessionStep,
+        1,
+        "How will the session be delivered?",
+      )
+      createChoice(combinedSessionQuestion, 1, "Face-to-face", "FACE_TO_FACE")
+
+      val confirmStep = createServiceDeliveryStep(
+        3,
+        "Confirm service end date",
+        ActionPlanStepType.SERVICE_END_DATE_CHECK,
+        templateId,
+      )
+      val confirmQuestion = createServiceDeliveryQuestion(
+        confirmStep,
+        1,
+        "Is the service end date still {{ serviceEndDate }}?",
+      )
+      createChoice(confirmQuestion, 1, "Yes", "YES")
+      createChoice(confirmQuestion, 2, "No", "NO")
+
+      val personStep = createServiceDeliveryStep(
+        4,
+        "Person involvement",
+        ActionPlanStepType.USER_INVOLVEMENT,
+        templateId,
+      )
+      val personQuestion = createServiceDeliveryQuestion(
+        personStep,
+        1,
+        "Was {{ firstName }} involved in creating the action plan?",
+      )
+      createChoice(personQuestion, 1, "Yes", "YES")
+      createChoice(
+        personQuestion,
+        2,
+        "No",
+        "NO",
+        hasFreeText = true,
+        freeTextLabel = "Give details about why {{ firstName }} was not involved",
+      )
+
+      updateSessionDeliveryDetails(
+        combinedReferral.referenceNumber!!,
+        sessionDeliveryDetailsRequest(
+          combinedSessionQuestion to listOf(sessionDeliveryDetailsAnswer("FACE_TO_FACE")),
+          confirmQuestion to listOf(sessionDeliveryDetailsAnswer("YES")),
+          personQuestion to listOf(sessionDeliveryDetailsAnswer("NO", "Mia was away for work")),
+        ),
+      )
+
+      val confirmResponses = actionPlanService.getConfirmServiceEndDateForReferral(combinedReferral.referenceNumber!!)
+      assertEquals(
+        "Is the service end date still ${targetServiceCompletionDate.format(FULL_MONTH_DATE_FORMAT)}?",
+        confirmResponses.questions.single { it.id == confirmQuestion.id }.label,
+      )
+      assertEquals(
+        listOf("YES"),
+        confirmResponses.questions.single { it.id == confirmQuestion.id }.savedResponses.map { it.value },
+      )
+
+      val personResponses = actionPlanService.getPersonInvolvementForReferral(combinedReferral.referenceNumber!!)
+      assertEquals(
+        "Was Mia involved in creating the action plan?",
+        personResponses.questions.single { it.id == personQuestion.id }.label,
+      )
+      assertEquals(
+        listOf("Give details about why Mia was not involved"),
+        personResponses.questions.single { it.id == personQuestion.id }.choices
+          ?.mapNotNull { it.additionalDetailsLabel },
+      )
+      assertEquals(
+        listOf("Mia was away for work"),
+        personResponses.questions.single { it.id == personQuestion.id }.savedResponses.map { it.additionalDetails },
+      )
+    }
+
     private fun createSessionDeliveryStep(actionPlanTemplateId: UUID) = actionPlanStepRepository.save(
       ActionPlanStepFactory()
         .withActionPlanTemplateId(actionPlanTemplateId)
@@ -797,6 +1033,27 @@ class ActionPlanServiceIntegrationTest :
         .withStepType(ActionPlanStepType.SESSION_DELIVERY)
         .create(),
     )
+
+    private fun createServiceDeliveryStep(
+      orderNumber: Int,
+      name: String,
+      stepType: ActionPlanStepType,
+      actionPlanTemplateId: UUID? = null,
+    ) = actionPlanStepRepository.save(
+      ActionPlanStepFactory()
+        .withActionPlanTemplateId(actionPlanTemplateId ?: this.actionPlanTemplateId)
+        .withOrderNumber(orderNumber)
+        .withName(name)
+        .withStepType(stepType)
+        .create(),
+    )
+
+    private fun createMandatoryServiceDeliverySteps() {
+      createServiceDeliveryStep(3, "Risks and adjustments", ActionPlanStepType.RISK_AND_ADJUSTMENTS)
+      createServiceDeliveryStep(4, "Confirm service end date", ActionPlanStepType.SERVICE_END_DATE_CHECK)
+      createServiceDeliveryStep(5, "Change service end date", ActionPlanStepType.CHANGE_SERVICE_END_DATE)
+      createServiceDeliveryStep(6, "Person involvement", ActionPlanStepType.USER_INVOLVEMENT)
+    }
 
     private fun createSessionDeliveryQuestion(
       orderNumber: Int,
@@ -808,6 +1065,24 @@ class ActionPlanServiceIntegrationTest :
         .withActionPlanStepId(sessionDeliveryStep.id)
         .withOrderNumber(orderNumber)
         .withTitle(title)
+        .withAnswerType(answerType)
+        .withMaxNumberResponses(maxNumberResponses)
+        .create(),
+    )
+
+    private fun createServiceDeliveryQuestion(
+      step: ActionPlanStep,
+      orderNumber: Int,
+      title: String,
+      answerType: ActionPlanQuestionAnswerType = ActionPlanQuestionAnswerType.RADIO,
+      maxNumberResponses: Int = 1,
+      questionKey: String = "${step.stepType}_$orderNumber",
+    ) = actionPlanStepQuestionRepository.save(
+      ActionPlanStepQuestionFactory()
+        .withActionPlanStepId(step.id)
+        .withOrderNumber(orderNumber)
+        .withTitle(title)
+        .withQuestionKey(questionKey)
         .withAnswerType(answerType)
         .withMaxNumberResponses(maxNumberResponses)
         .create(),
@@ -850,17 +1125,35 @@ class ActionPlanServiceIntegrationTest :
       additionalDetails = additionalDetails,
     )
 
-    private fun createReferral(firstName: String, lastName: String): Referral {
+    private fun createReferral(
+      firstName: String,
+      lastName: String,
+      targetServiceCompletionDate: OffsetDateTime? = null,
+    ): Referral {
       val person = referralHelper.createPerson(
         firstName = firstName,
         lastName = lastName,
         identifier = "X${UUID.randomUUID().toString().take(6).uppercase()}",
       )
-      return referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
+      return referralHelper.createReferral(
+        person = person,
+        referenceNumber = randomReferralReference(),
+        submittedBy = user,
+        targetServiceCompletionDate = targetServiceCompletionDate,
+      )
     }
 
     private fun updateSessionDeliveryDetails(request: ActionPlanSessionDeliveryDetailsRequest) = actionPlanService.updateSessionDeliveryDetailsForActionPlan(
       referral.referenceNumber!!,
+      request,
+      user.id.toString(),
+    )
+
+    private fun updateSessionDeliveryDetails(
+      referralReference: String,
+      request: ActionPlanSessionDeliveryDetailsRequest,
+    ) = actionPlanService.updateSessionDeliveryDetailsForActionPlan(
+      referralReference,
       request,
       user.id.toString(),
     )

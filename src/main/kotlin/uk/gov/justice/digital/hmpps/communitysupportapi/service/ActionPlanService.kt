@@ -15,12 +15,16 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStepQuestionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionChoice
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanActivity
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ActionPlanQuestionAnswers
@@ -232,12 +236,41 @@ class ActionPlanService(
     changedBy: String,
     changedAt: OffsetDateTime = OffsetDateTime.now(),
   ): ActionPlanSessionDeliveryDetailsResponse {
-    val actionPlanData = actionPlanDataFetcher.getSessionDeliveryDataForReferral(referralReference)
+    val actionPlanData = actionPlanDataFetcher.getServiceDeliveryDetailsDataForReferral(referralReference)
     val actionPlan = actionPlanData.actionPlan
-    val sessionDeliveryStep = actionPlanData.step
-
+    val baseSteps = actionPlanData.steps
+      .filter { it.stepType != ActionPlanStepType.CHANGE_SERVICE_END_DATE }
+    val confirmServiceEndDateStep = baseSteps
+      .single { it.stepType == ActionPlanStepType.SERVICE_END_DATE_CHECK }
+    val baseQuestions = actionPlanStepQuestionRepository
+      .findAllByActionPlanStepIdInOrderByOrderNumberAsc(baseSteps.map { it.id })
+    val baseExistingHeaders = actionPlanStepQuestionAnswerHeaderRepository
+      .findActiveByPlanAndQuestionIds(
+        actionPlan.id,
+        baseQuestions.map { it.id },
+      )
+    val baseExistingAnswerDetails = if (baseExistingHeaders.isEmpty()) {
+      emptyList()
+    } else {
+      actionPlanStepQuestionAnswerDetailsRepository
+        .findAllByActionPlanStepQuestionAnswerHeaderIdIn(baseExistingHeaders.map { it.id })
+    }
+    val shouldHandleChangeServiceEndDateStep = isChangeServiceEndDateRequired(
+      confirmServiceEndDateStep.id,
+      baseQuestions,
+      request.answers,
+      baseExistingHeaders,
+      baseExistingAnswerDetails,
+    )
+    val changeServiceEndDateStep = if (shouldHandleChangeServiceEndDateStep) {
+      actionPlanData.steps.firstOrNull { it.stepType == ActionPlanStepType.CHANGE_SERVICE_END_DATE }
+        ?: actionPlanDataFetcher.getUpdateServiceEndDateForReferral(referralReference).step
+    } else {
+      null
+    }
+    val steps = baseSteps + listOfNotNull(changeServiceEndDateStep)
     val questions = actionPlanStepQuestionRepository
-      .findAllByActionPlanStepIdOrderByOrderNumberAsc(sessionDeliveryStep.id)
+      .findAllByActionPlanStepIdInOrderByOrderNumberAsc(steps.map { it.id })
 
     request.answers.forEach { answer ->
       val question = questions.find { it.id == answer.questionId }
@@ -263,6 +296,47 @@ class ActionPlanService(
 
     return getSessionDeliveryDetailsForReferral(referralReference)
   }
+
+  private fun isChangeServiceEndDateRequired(
+    confirmServiceEndDateStepId: UUID,
+    questions: List<ActionPlanStepQuestion>,
+    incomingAnswers: List<SessionDeliveryDetailsQuestionAnswers>,
+    existingHeaders: List<ActionPlanStepQuestionAnswerHeader>,
+    existingAnswerDetails: List<ActionPlanStepQuestionAnswerDetails>,
+  ): Boolean {
+    val confirmQuestionId = questions
+      .singleOrNull { it.actionPlanStepId == confirmServiceEndDateStepId }
+      ?.id
+      ?: return false
+
+    val confirmAnswer = incomingAnswers
+      .firstOrNull { it.questionId == confirmQuestionId }
+      ?.incomingAnswerDetails
+      ?.singleOrNull()
+      ?.value
+      ?.trim()
+      ?: getLatestAnswerContent(confirmQuestionId, existingHeaders, existingAnswerDetails)
+
+    return confirmAnswer.equals("NO", ignoreCase = true)
+  }
+
+  private fun getLatestAnswerContent(
+    questionId: UUID,
+    existingHeaders: List<ActionPlanStepQuestionAnswerHeader>,
+    existingAnswerDetails: List<ActionPlanStepQuestionAnswerDetails>,
+  ): String? = existingHeaders
+    .firstOrNull { it.actionPlanStepQuestionId == questionId }
+    ?.let { header ->
+      existingAnswerDetails
+        .filter { it.actionPlanStepQuestionAnswerHeaderId == header.id }
+        .maxWithOrNull(
+          compareBy<ActionPlanStepQuestionAnswerDetails> { it.revisionNumber }
+            .thenBy { it.createdAt }
+            .thenBy { it.id },
+        )
+        ?.content
+        ?.trim()
+    }
 
   private fun getOutcomesByNeedIdForActionPlan(
     actionPlanId: UUID,
