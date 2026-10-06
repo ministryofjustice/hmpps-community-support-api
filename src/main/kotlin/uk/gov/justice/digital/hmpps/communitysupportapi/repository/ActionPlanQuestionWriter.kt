@@ -11,7 +11,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
- * A multi-repository utility class for finding current Answers and  recording incoming Answers to import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestions.
+ * A multi-repository utility class for finding current Answers and  recording incoming Answers to ReferenceDataActionPlanStepQuestion.
  * This encapsulates the complex Header -> Details relationship, and the need to record events for each change.
  */
 @Component
