@@ -2,12 +2,12 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.repository
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.WithdrawalReason
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataWithdrawalReason
 import java.util.UUID
 
 @Repository
-interface WithdrawalReasonRepository : JpaRepository<WithdrawalReason, UUID> {
-  fun findAllByOrderByGroupAscNameAsc(): List<WithdrawalReason>
+interface WithdrawalReasonRepository : JpaRepository<ReferenceDataWithdrawalReason, UUID> {
+  fun findAllByOrderByGroupAscNameAsc(): List<ReferenceDataWithdrawalReason>
 
-  fun findByName(name: String): WithdrawalReason?
+  fun findByName(name: String): ReferenceDataWithdrawalReason?
 }

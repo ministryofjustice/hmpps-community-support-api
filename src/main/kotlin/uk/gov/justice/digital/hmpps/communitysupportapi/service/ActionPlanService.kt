@@ -19,8 +19,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuest
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanActivity
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStep
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ActionPlanQuestionAnswers
@@ -83,7 +83,7 @@ class ActionPlanService(
       ActionPlanSelectANeedNeed(
         id = need.id,
         label = need.label,
-        outcomes = need.outcomes.map { outcome ->
+        outcomes = need.referenceDataOutcomes.map { outcome ->
           ActionPlanSelectANeedOutcome(
             id = outcome.id,
             text = outcome.text,
@@ -146,7 +146,7 @@ class ActionPlanService(
   private fun buildQuestionResponse(
     actionPlanId: UUID,
     referral: Referral,
-    steps: List<ActionPlanStep>,
+    steps: List<ReferenceDataActionPlanStep>,
   ): ActionPlanSessionDeliveryDetailsResponse {
     val questions = steps.flatMap { step ->
       actionPlanStepQuestionRepository.findAllByActionPlanStepIdOrderByOrderNumberAsc(step.id)
@@ -266,7 +266,7 @@ class ActionPlanService(
 
   private fun getOutcomesByNeedIdForActionPlan(
     actionPlanId: UUID,
-    needSteps: List<ActionPlanStep>,
+    needSteps: List<ReferenceDataActionPlanStep>,
   ): Map<UUID, List<ActionPlanSummaryDto.ActionPlanSummaryOutcome>> {
     val questionById = actionPlanStepQuestionRepository
       .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })

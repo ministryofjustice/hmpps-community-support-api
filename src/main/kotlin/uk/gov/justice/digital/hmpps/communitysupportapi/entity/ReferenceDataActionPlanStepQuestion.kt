@@ -43,10 +43,10 @@ enum class ActionPlanQuestionAnswerType {
  */
 @Entity
 @Table(
-  name = "action_plan_step_question",
+  name = "reference_data_action_plan_step_question",
   uniqueConstraints = [UniqueConstraint(columnNames = ["action_plan_step_id", "question_key"])],
 )
-data class ActionPlanStepQuestion(
+data class ReferenceDataActionPlanStepQuestion(
   @Id
   @Column(name = "id")
   val id: UUID,
@@ -56,7 +56,7 @@ data class ActionPlanStepQuestion(
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "action_plan_step_id", insertable = false, updatable = false)
-  val actionPlanStep: ActionPlanStep? = null,
+  val referenceDataActionPlanStep: ReferenceDataActionPlanStep? = null,
 
   @Column(name = "order_number", nullable = false)
   val orderNumber: Int,
@@ -86,11 +86,11 @@ data class ActionPlanStepQuestion(
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "need_id", insertable = false, updatable = false)
-  val need: Need? = null,
+  val referenceDataNeed: ReferenceDataNeed? = null,
 
   @OneToMany(fetch = FetchType.LAZY)
   @JoinColumn(name = "action_plan_step_question_id", insertable = false, updatable = false)
-  val choices: MutableList<ActionPlanStepQuestionChoice> = mutableListOf(),
+  val choices: MutableList<ReferenceDataActionPlanStepQuestionChoice> = mutableListOf(),
 ) {
   val supportsMultipleResponses: Boolean
     get() = answerType == ActionPlanQuestionAnswerType.CHECKBOX || maxNumberResponses > 1

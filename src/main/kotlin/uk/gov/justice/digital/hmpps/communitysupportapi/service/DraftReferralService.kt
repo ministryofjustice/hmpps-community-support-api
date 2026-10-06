@@ -107,7 +107,7 @@ class DraftReferralService(
     val communityServiceProvider = communityServiceProviderRepository.findById(providerId)
       .orElseThrow { NotFoundException("Community Service Provider not found for id $providerId") }
 
-    val associatedPdus = pduRepository.findByContractAreaId(communityServiceProvider.contractArea.id)
+    val associatedPdus = pduRepository.findByReferenceDataContractAreaId(communityServiceProvider.referenceDataContractArea.id)
       .map { it.name }
       .sorted()
 
@@ -172,7 +172,7 @@ class DraftReferralService(
     val providerAssignment = ReferralProviderAssignment(
       id = UUID.randomUUID(),
       referral = referral,
-      communityServiceProvider = communityServiceProvider,
+      referenceDataCommunityServiceProvider = communityServiceProvider,
       createdAt = LocalDateTime.now(),
     )
     referralProviderAssignmentRepository.save(providerAssignment)
@@ -571,7 +571,7 @@ class DraftReferralService(
       nationalities,
       personAdditionalSupportNeeds,
       criminogenicNeeds,
-      communityServiceProvider.contractArea.area,
+      communityServiceProvider.referenceDataContractArea.area,
       offenceSentenceInfo,
       ppDetails,
     )

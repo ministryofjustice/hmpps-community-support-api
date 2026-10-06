@@ -3,21 +3,20 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.entity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.util.UUID
 
+typealias AuthGroupID = String
+
 @Entity
-@Table(name = "pdu")
-class Pdu(
+@Table(name = "reference_data_service_provider")
+class ReferenceDataServiceProvider(
   @Id
   val id: UUID,
 
-  @ManyToOne
-  @JoinColumn(name = "contract_area_id", nullable = false)
-  val contractArea: ContractArea,
+  @Column(name = "auth_group_id", nullable = false, unique = true)
+  val authGroupId: AuthGroupID,
 
-  @Column(nullable = false)
+  @Column(nullable = false, unique = true)
   val name: String,
 )

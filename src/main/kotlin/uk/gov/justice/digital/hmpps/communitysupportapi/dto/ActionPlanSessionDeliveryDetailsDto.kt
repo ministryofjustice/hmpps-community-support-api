@@ -2,7 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionChoice
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestionChoice
 import java.util.UUID
 
 data class ActionPlanSessionDeliveryDetailsResponse(
@@ -24,7 +24,7 @@ class SessionDeliveryQuestion(
     fun fromQuestionAndResponses(
       question: ActionPlanStepQuestionDto,
       responses: List<ActionPlanStepQuestionAnswerDetails>,
-      choices: List<ActionPlanStepQuestionChoice>,
+      choices: List<ReferenceDataActionPlanStepQuestionChoice>,
     ): SessionDeliveryQuestion = SessionDeliveryQuestion(
       id = question.id,
       displayOrder = question.displayOrder,

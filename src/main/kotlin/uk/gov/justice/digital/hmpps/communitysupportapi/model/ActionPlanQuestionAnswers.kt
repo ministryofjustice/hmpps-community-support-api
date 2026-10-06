@@ -4,17 +4,17 @@ import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestion
 import java.util.UUID
 
 /**
- * A container class encapsulating current and incoming answers for ActionPlanStepQuestions
+ * A container class encapsulating current and incoming answers for ReferenceDataActionPlanStepQuestions
  */
 class ActionPlanQuestionAnswers(
   val actionPlanId: UUID,
-  val question: ActionPlanStepQuestion,
+  val question: ReferenceDataActionPlanStepQuestion,
   val currentAnswers: List<CurrentAnswer>,
 ) {
   companion object {
@@ -22,7 +22,7 @@ class ActionPlanQuestionAnswers(
 
     fun from(
       actionPlanId: UUID,
-      question: ActionPlanStepQuestion,
+      question: ReferenceDataActionPlanStepQuestion,
       activeHeaders: List<ActionPlanStepQuestionAnswerHeader>,
       latestDetails: Map<UUID, ActionPlanStepQuestionAnswerDetails?>,
     ): ActionPlanQuestionAnswers = ActionPlanQuestionAnswers(

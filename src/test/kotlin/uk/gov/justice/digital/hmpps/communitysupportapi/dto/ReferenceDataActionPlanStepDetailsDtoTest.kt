@@ -4,13 +4,13 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestion
 import java.util.UUID
 
-class ActionPlanStepDetailsDtoTest {
+class ReferenceDataActionPlanStepDetailsDtoTest {
   @Test
   fun `should map ActionPlanStepQuestion entity to DTO`() {
-    val question = ActionPlanStepQuestion(
+    val question = ReferenceDataActionPlanStepQuestion(
       id = UUID.randomUUID(),
       actionPlanStepId = UUID.randomUUID(),
       orderNumber = 1,

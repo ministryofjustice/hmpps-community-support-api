@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataCommunityServiceProvider
 
 data class AreaConfirmationBffResponseDto(
   val contractArea: String,
@@ -11,13 +11,13 @@ data class AreaConfirmationBffResponseDto(
 ) {
   companion object {
     fun from(
-      communityServiceProvider: CommunityServiceProvider,
+      referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider,
       associatedPdus: List<String>,
       crn: String,
       dateOfBirth: String,
     ) = AreaConfirmationBffResponseDto(
-      contractArea = communityServiceProvider.contractArea.area,
-      deliveryPartner = communityServiceProvider.serviceProvider.name,
+      contractArea = referenceDataCommunityServiceProvider.referenceDataContractArea.area,
+      deliveryPartner = referenceDataCommunityServiceProvider.referenceDataServiceProvider.name,
       associatedPdus = associatedPdus,
       crn = crn,
       dateOfBirth = dateOfBirth,

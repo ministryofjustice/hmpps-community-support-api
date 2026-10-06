@@ -23,7 +23,7 @@ import java.util.UUID
  * specific questions in an ActionPlan.
  *
  * @see ActionPlanStepQuestionAnswerHeader
- * @see ActionPlanStepQuestion
+ * @see ReferenceDataActionPlanStepQuestion
  */
 @Entity
 @Table(name = "action_plan_step_question_answer_details")

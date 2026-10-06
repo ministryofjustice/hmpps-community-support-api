@@ -22,7 +22,7 @@ class ReferralProviderAssignment(
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "community_service_provider_id", nullable = false)
-  val communityServiceProvider: CommunityServiceProvider,
+  val referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider,
 
   @Column(name = "created_at", nullable = false)
   val createdAt: LocalDateTime = LocalDateTime.now(),

@@ -11,8 +11,8 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
-@Table(name = "action_plan_step_question_choice")
-data class ActionPlanStepQuestionChoice(
+@Table(name = "reference_data_action_plan_step_question_choice")
+data class ReferenceDataActionPlanStepQuestionChoice(
   @Id
   @Column(name = "id")
   val id: UUID,
@@ -22,7 +22,7 @@ data class ActionPlanStepQuestionChoice(
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "action_plan_step_question_id", insertable = false, updatable = false)
-  val actionPlanStepQuestion: ActionPlanStepQuestion? = null,
+  val referenceDataActionPlanStepQuestion: ReferenceDataActionPlanStepQuestion? = null,
 
   @Column(name = "order_number", nullable = false)
   val orderNumber: Int,

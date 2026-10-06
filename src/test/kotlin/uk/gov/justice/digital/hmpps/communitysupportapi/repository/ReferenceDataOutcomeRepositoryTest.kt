@@ -10,7 +10,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationT
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.NeedFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.OutcomeFactory
 
-class OutcomeRepositoryTest : IntegrationTestBase() {
+class ReferenceDataOutcomeRepositoryTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var needRepository: NeedRepository
@@ -51,7 +51,7 @@ class OutcomeRepositoryTest : IntegrationTestBase() {
     entityManager.clear()
 
     val loadedNeed = needRepository.findById(need.id).orElseThrow()
-    val outcomes = loadedNeed.outcomes
+    val outcomes = loadedNeed.referenceDataOutcomes
 
     assertEquals(2, outcomes.size)
     assertEquals("First outcome", outcomes[0].text)

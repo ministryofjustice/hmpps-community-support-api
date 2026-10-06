@@ -564,7 +564,7 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Nested
   @DisplayName("GET /bff/referral/withdrawal-reasons")
-  inner class GroupedWithdrawalReasonEndPoint {
+  inner class GroupedReferenceDataWithdrawalReasonEndPoint {
 
     private val url = "/bff/referral/withdrawal-reasons"
 
@@ -1807,8 +1807,8 @@ class ReferralControllerIntegrationTest : IntegrationTestBase() {
 
           body.referralId shouldBe referral.id
           body.communityServiceProviderName shouldBe communityServiceProvider.name
-          body.region shouldBe communityServiceProvider.contractArea.region.name
-          body.deliveryPartner shouldBe communityServiceProvider.serviceProvider.name
+          body.region shouldBe communityServiceProvider.referenceDataContractArea.referenceDataRegion.name
+          body.deliveryPartner shouldBe communityServiceProvider.referenceDataServiceProvider.name
           body.personIdentifier shouldBe referral.personIdentifier
           body.prisonNumbers shouldBe if (person.prisonNumbers != null) person.prisonNumbers.toString().split(", ") else emptyList<String>()
           body.fullName shouldBe "${person.firstName} ${person.lastName}"

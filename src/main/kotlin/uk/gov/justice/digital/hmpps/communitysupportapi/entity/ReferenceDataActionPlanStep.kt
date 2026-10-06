@@ -37,12 +37,12 @@ enum class ActionPlanStepType {
  * in the same way that a user would, and therefore to feed data for specific screens in a structured
  * way.
  *
- * @see ActionPlanStepQuestion
+ * @see ReferenceDataActionPlanStepQuestion
  * @see ActionPlan
  */
 @Entity
-@Table(name = "action_plan_step")
-data class ActionPlanStep(
+@Table(name = "reference_data_action_plan_step")
+data class ReferenceDataActionPlanStep(
   @Id
   @Column(name = "id")
   val id: UUID,
@@ -52,7 +52,7 @@ data class ActionPlanStep(
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "action_plan_template_id", insertable = false, updatable = false)
-  val actionPlanTemplate: ActionPlanTemplate? = null,
+  val referenceDataActionPlanTemplate: ReferenceDataActionPlanTemplate? = null,
 
   @Column(name = "order_number", nullable = false)
   val orderNumber: Int,

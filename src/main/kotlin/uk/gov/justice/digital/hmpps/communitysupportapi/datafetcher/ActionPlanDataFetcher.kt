@@ -4,8 +4,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStep
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
@@ -115,35 +115,35 @@ class ActionPlanDataFetcher(
 private data class ActionPlanStepData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val step: ActionPlanStep,
+  val step: ReferenceDataActionPlanStep,
 )
 
 data class ActionPlanData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val needSteps: List<ActionPlanStep>,
+  val needSteps: List<ReferenceDataActionPlanStep>,
 )
 
 data class SessionDeliveryData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val step: ActionPlanStep,
+  val step: ReferenceDataActionPlanStep,
 )
 
 data class RiskAndAdjustmentsData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val step: ActionPlanStep,
+  val step: ReferenceDataActionPlanStep,
 )
 
 data class ConfirmServiceEndDateData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val step: ActionPlanStep,
+  val step: ReferenceDataActionPlanStep,
 )
 
 data class UpdateServiceEndDateData(
   val actionPlan: ActionPlan,
   val referral: Referral,
-  val step: ActionPlanStep,
+  val step: ReferenceDataActionPlanStep,
 )

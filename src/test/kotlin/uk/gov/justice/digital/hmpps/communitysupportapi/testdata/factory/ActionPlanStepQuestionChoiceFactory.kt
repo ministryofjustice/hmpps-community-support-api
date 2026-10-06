@@ -1,10 +1,10 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionChoice
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestionChoice
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class ActionPlanStepQuestionChoiceFactory : TestEntityFactory<ActionPlanStepQuestionChoice>() {
+class ActionPlanStepQuestionChoiceFactory : TestEntityFactory<ReferenceDataActionPlanStepQuestionChoice>() {
 
   private var id: UUID = UUID.randomUUID()
   private var actionPlanStepQuestionId: UUID = UUID.randomUUID()
@@ -37,7 +37,7 @@ class ActionPlanStepQuestionChoiceFactory : TestEntityFactory<ActionPlanStepQues
 
   fun withCreatedBy(createdBy: String) = apply { this.createdBy = createdBy }
 
-  override fun create(): ActionPlanStepQuestionChoice = ActionPlanStepQuestionChoice(
+  override fun create(): ReferenceDataActionPlanStepQuestionChoice = ReferenceDataActionPlanStepQuestionChoice(
     id = id,
     actionPlanStepQuestionId = actionPlanStepQuestionId,
     orderNumber = orderNumber,

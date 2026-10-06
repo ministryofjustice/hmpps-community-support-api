@@ -16,11 +16,11 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionResponseEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStep
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
@@ -236,7 +236,7 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(listOf("Visible outcome"), needSummary.outcomes.map { it.label })
     }
 
-    private fun findOutcomeQuestionForNeed(templateId: UUID, needId: UUID): ActionPlanStepQuestion {
+    private fun findOutcomeQuestionForNeed(templateId: UUID, needId: UUID): ReferenceDataActionPlanStepQuestion {
       val needSteps = actionPlanStepRepository
         .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(templateId)
         .filter { it.stepType == ActionPlanStepType.NEED }
@@ -339,7 +339,7 @@ class ActionPlanServiceIntegrationTest :
     val user = referralHelper.ensureReferralUser()
     private lateinit var referral: Referral
     private lateinit var actionPlan: ActionPlan
-    private lateinit var sessionDeliveryStep: ActionPlanStep
+    private lateinit var sessionDeliveryStep: ReferenceDataActionPlanStep
 
     @BeforeEach
     fun setUpSessionDeliveryDetails() {
@@ -814,7 +814,7 @@ class ActionPlanServiceIntegrationTest :
     )
 
     private fun createChoice(
-      question: ActionPlanStepQuestion,
+      question: ReferenceDataActionPlanStepQuestion,
       orderNumber: Int,
       label: String,
       value: String,
@@ -832,7 +832,7 @@ class ActionPlanServiceIntegrationTest :
     )
 
     private fun sessionDeliveryDetailsRequest(
-      vararg answers: Pair<ActionPlanStepQuestion, List<SessionDeliveryDetailsQuestionAnswer>>,
+      vararg answers: Pair<ReferenceDataActionPlanStepQuestion, List<SessionDeliveryDetailsQuestionAnswer>>,
     ) = ActionPlanSessionDeliveryDetailsRequest(
       answers = answers.map { (question, incomingAnswerDetails) ->
         SessionDeliveryDetailsQuestionAnswers(

@@ -46,7 +46,7 @@ data class ActionPlanStepQuestionAnswerHeader(
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "action_plan_step_question_id", insertable = false, updatable = false)
-  val actionPlanStepQuestion: ActionPlanStepQuestion? = null,
+  val referenceDataActionPlanStepQuestion: ReferenceDataActionPlanStepQuestion? = null,
 
   @Column(name = "order_number", nullable = false)
   val orderNumber: Int,
