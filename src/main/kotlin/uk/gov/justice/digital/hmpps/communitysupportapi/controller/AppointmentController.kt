@@ -22,6 +22,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsRespon
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralLookupService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -105,6 +106,33 @@ class AppointmentController(
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
     return ResponseEntity.ok(appointmentService.getIcsAppointmentsByReferral(referral.id))
   }
+
+  @Operation(summary = "Get referral appointments for the appointments tab")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral appointments found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ReferralAppointmentsBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{caseReference}/appointments")
+  fun getReferralAppointments(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<ReferralAppointmentsBffResponseDto> = ResponseEntity.ok(
+    appointmentService.getAppointmentsForReferral(caseReference),
+  )
 
   @Operation(summary = "Get a single ICS appointment by ID")
   @ApiResponses(

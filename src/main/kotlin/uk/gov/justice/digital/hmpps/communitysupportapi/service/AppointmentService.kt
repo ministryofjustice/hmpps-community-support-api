@@ -47,7 +47,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepos
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import java.util.UUID
 
 @Service
@@ -476,19 +475,7 @@ class AppointmentService(
       ),
     )
       .map { appointment ->
-        ReferralAppointmentSummaryDto(
-          id = appointment.id,
-          label = when (appointment.appointment.type) {
-            AppointmentType.CONTACT_SESSION -> "Contact session"
-            AppointmentType.POST_RELEASE_SESSION -> "Post release appointment"
-            AppointmentType.PRE_RELEASE_SESSION -> "Pre release appointment"
-            AppointmentType.HANDOVER_SESSION -> "Handover session"
-            else -> throw IllegalStateException("Unexpected appointment type for referral appointments tab data")
-          },
-          time = appointment.appointmentDateTime.format(
-            DateTimeFormatter.ofPattern("HH:mm EEEE d MMMM yyyy", Locale.ENGLISH),
-          ),
-        )
+        ReferralAppointmentSummaryDto.from(appointment)
       }
 
     return ReferralAppointmentsBffResponseDto(
