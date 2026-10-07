@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.DiscriminatorMapping
 import io.swagger.v3.oas.annotations.media.Schema
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
@@ -136,7 +136,7 @@ data class AppointmentIcsResponse(
 ) {
 
   companion object {
-    fun from(ics: AppointmentIcs, status: AppointmentStatusHistoryType, referralName: ReferralNameDto): AppointmentIcsResponse {
+    fun from(ics: AppointmentHistory, status: AppointmentStatusHistoryType, referralName: ReferralNameDto): AppointmentIcsResponse {
       val appointmentDateTime = ics.appointmentDateTime
       val hour24 = appointmentDateTime.hour
       val amPm = if (hour24 < 12) "am" else "pm"
@@ -219,7 +219,7 @@ data class ReferralAppointmentSummaryDto(
   val time: String,
 ) {
   companion object {
-    fun from(appointment: AppointmentIcs): ReferralAppointmentSummaryDto {
+    fun from(appointment: AppointmentHistory): ReferralAppointmentSummaryDto {
       val appointmentDateTime = appointment.appointmentDateTime
       return ReferralAppointmentSummaryDto(
         id = appointment.id,

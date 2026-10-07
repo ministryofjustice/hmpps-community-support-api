@@ -13,7 +13,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReas
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
@@ -71,7 +71,7 @@ class AppointmentDeliveryFactory : TestEntityFactory<AppointmentDelivery>() {
   )
 }
 
-class AppointmentIcsFactory : TestEntityFactory<AppointmentIcs>() {
+class AppointmentIcsFactory : TestEntityFactory<AppointmentHistory>() {
 
   private var id: UUID = UUID.randomUUID()
   private var appointment: Appointment? = null
@@ -89,7 +89,7 @@ class AppointmentIcsFactory : TestEntityFactory<AppointmentIcs>() {
   fun withCreatedBy(createdBy: ReferralUser) = apply { this.createdBy = createdBy }
   fun withSessionCommunication(sessionCommunication: List<String>) = apply { this.sessionCommunication = sessionCommunication }
 
-  override fun create(): AppointmentIcs = AppointmentIcs(
+  override fun create(): AppointmentHistory = AppointmentHistory(
     id = id,
     appointment = appointment ?: error("Appointment must be provided"),
     appointmentDelivery = appointmentDelivery,

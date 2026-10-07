@@ -3,25 +3,25 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.repository
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import java.util.UUID
 
-interface AppointmentIcsRepository : JpaRepository<AppointmentIcs, UUID> {
-  fun findByAppointmentReferralId(referralId: UUID): List<AppointmentIcs>
-  fun findByAppointmentReferralIdOrderByCreatedAtDesc(referralId: UUID): List<AppointmentIcs>
-  fun findAllByAppointmentIdIn(appointmentIds: List<UUID>): List<AppointmentIcs>
-  fun findAllByAppointmentIdInOrderByCreatedAtDesc(appointmentIs: List<UUID>): List<AppointmentIcs>
+interface AppointmentIcsRepository : JpaRepository<AppointmentHistory, UUID> {
+  fun findByAppointmentReferralId(referralId: UUID): List<AppointmentHistory>
+  fun findByAppointmentReferralIdOrderByCreatedAtDesc(referralId: UUID): List<AppointmentHistory>
+  fun findAllByAppointmentIdIn(appointmentIds: List<UUID>): List<AppointmentHistory>
+  fun findAllByAppointmentIdInOrderByCreatedAtDesc(appointmentIs: List<UUID>): List<AppointmentHistory>
 
-  fun findTopByAppointmentIdOrderByCreatedAtDesc(appointmentId: UUID): AppointmentIcs?
+  fun findTopByAppointmentIdOrderByCreatedAtDesc(appointmentId: UUID): AppointmentHistory?
   fun findTopByAppointmentIdAndAppointmentTypeOrderByCreatedAtDesc(
     appointmentId: UUID,
     appointmentType: AppointmentType,
-  ): AppointmentIcs?
+  ): AppointmentHistory?
 
   @Query(
 """
-          SELECT a FROM AppointmentIcs a
+          SELECT a FROM AppointmentHistory a
               WHERE a.appointment.referral.id = :referralId
                 AND a.appointment.type = :appointmentType
               ORDER BY a.createdAt DESC
@@ -31,11 +31,11 @@ interface AppointmentIcsRepository : JpaRepository<AppointmentIcs, UUID> {
   fun findLatestIcsByReferralId(
     referralId: UUID,
     @Param("appointmentType") appointmentType: AppointmentType,
-  ): AppointmentIcs?
+  ): AppointmentHistory?
 
   @Query(
     """
-      SELECT a FROM AppointmentIcs a
+      SELECT a FROM AppointmentHistory a
         WHERE a.appointment.referral.id = :referralId
           AND a.appointment.type IN :appointmentTypes
         ORDER BY a.createdAt DESC
@@ -44,5 +44,5 @@ interface AppointmentIcsRepository : JpaRepository<AppointmentIcs, UUID> {
   fun findByReferralIdAndTypesOrderByCreatedAtDesc(
     @Param("referralId") referralId: UUID,
     @Param("appointmentTypes") appointmentTypes: List<AppointmentType>,
-  ): List<AppointmentIcs>
+  ): List<AppointmentHistory>
 }

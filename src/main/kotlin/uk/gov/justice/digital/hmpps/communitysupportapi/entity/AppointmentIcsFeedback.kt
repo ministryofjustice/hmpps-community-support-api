@@ -20,7 +20,7 @@ class AppointmentIcsFeedback(
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "appointment_ics_id", nullable = false, unique = true)
-  val appointmentIcs: AppointmentIcs,
+  val appointmentIcs: AppointmentHistory,
 
   @Column(name = "record_session_did_session_happen", nullable = false)
   val recordSessionDidSessionHappen: Boolean,

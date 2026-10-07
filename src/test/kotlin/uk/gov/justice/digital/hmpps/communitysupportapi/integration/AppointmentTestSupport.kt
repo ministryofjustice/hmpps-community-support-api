@@ -10,7 +10,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReas
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcsFeedback
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
@@ -77,7 +77,7 @@ class AppointmentTestSupport(
     appointmentDateTime: LocalDateTime = LocalDateTime.now(),
     createdAt: LocalDateTime = LocalDateTime.now().minusDays(1),
     communications: List<String>,
-  ): AppointmentIcs = appointmentIcsRepository.save(
+  ): AppointmentHistory = appointmentIcsRepository.save(
     AppointmentIcsFactory()
       .withAppointment(appointment)
       .withAppointmentDelivery(delivery)
@@ -147,7 +147,7 @@ class AppointmentTestSupport(
     .create()
 
   fun createIcsFeedback(
-    ics: AppointmentIcs,
+    ics: AppointmentHistory,
     createdBy: ReferralUser,
     didSessionHappen: Boolean = true,
     sessionMethod: String? = "Phone",

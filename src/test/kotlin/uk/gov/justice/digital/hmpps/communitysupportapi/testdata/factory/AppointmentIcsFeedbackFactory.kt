@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcsFeedback
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import java.util.UUID
@@ -8,7 +8,7 @@ import java.util.UUID
 class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>() {
 
   private var id: UUID = UUID.randomUUID()
-  private var appointmentIcs: AppointmentIcs? = null
+  private var appointmentIcs: AppointmentHistory? = null
   private var createdBy: ReferralUser = ReferralUserFactory().create()
 
   private var recordSessionDidSessionHappen: Boolean = true
@@ -33,7 +33,7 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
   private var nextStepsActionsBeforeNextSession: String? = "Complete CV template"
 
   fun withId(id: UUID) = apply { this.id = id }
-  fun withAppointmentIcs(appointmentIcs: AppointmentIcs) = apply { this.appointmentIcs = appointmentIcs }
+  fun withAppointmentIcs(appointmentIcs: AppointmentHistory) = apply { this.appointmentIcs = appointmentIcs }
   fun withCreatedBy(createdBy: ReferralUser) = apply { this.createdBy = createdBy }
 
   fun withDidSessionHappen(didSessionHappen: Boolean) = apply {
@@ -78,7 +78,7 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
 
   override fun create(): AppointmentIcsFeedback = AppointmentIcsFeedback(
     id = id,
-    appointmentIcs = appointmentIcs ?: error("AppointmentIcs must be provided"),
+    appointmentIcs = appointmentIcs ?: error("AppointmentHistory must be provided"),
     recordSessionDidSessionHappen = recordSessionDidSessionHappen,
     recordSessionHowSessionTookPlace = recordSessionHowSessionTookPlace,
     recordSessionDidPersonAttend = recordSessionDidPersonAttend,
