@@ -786,7 +786,11 @@
           },
           "appointmentType": {
             "enum": [
-              "ICS"
+              "ICS",
+              "CONTACT_SESSION",
+              "POST_RELEASE_SESSION",
+              "PRE_RELEASE_SESSION",
+              "HANDOVER_SESSION"
             ],
             "type": "string"
           },
@@ -3324,7 +3328,11 @@
           },
           "type": {
             "enum": [
-              "ICS"
+              "ICS",
+              "CONTACT_SESSION",
+              "POST_RELEASE_SESSION",
+              "PRE_RELEASE_SESSION",
+              "HANDOVER_SESSION"
             ],
             "type": "string"
           }
@@ -3334,6 +3342,67 @@
           "dateTime",
           "status",
           "type"
+        ],
+        "type": "object"
+      },
+      "ReferralAppointmentSummaryDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "time"
+        ],
+        "type": "object"
+      },
+      "ReferralAppointmentsBffResponseDto": {
+        "properties": {
+          "appointments": {
+            "items": {
+              "$ref": "#/components/schemas/ReferralAppointmentSummaryDto"
+            },
+            "type": "array"
+          },
+          "personDetails": {
+            "$ref": "#/components/schemas/ReferralAppointmentsPersonDetailsDto"
+          }
+        },
+        "required": [
+          "appointments",
+          "personDetails"
+        ],
+        "type": "object"
+      },
+      "ReferralAppointmentsPersonDetailsDto": {
+        "properties": {
+          "crn": {
+            "type": "string"
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "crn",
+          "dateOfBirth",
+          "firstName",
+          "lastName"
         ],
         "type": "object"
       },
@@ -5396,6 +5465,43 @@
         "summary": "Get withdrawal reasons grouped by heading",
         "tags": [
           "referral-controller"
+        ]
+      }
+    },
+    "/bff/referral/{caseReference}/appointments": {
+      "get": {
+        "operationId": "getReferralAppointments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralAppointmentsBffResponseDto"
+                }
+              }
+            },
+            "description": "Referral appointments found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral appointments for the appointments tab",
+        "tags": [
+          "appointment-controller"
         ]
       }
     },
