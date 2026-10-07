@@ -218,7 +218,7 @@ class DraftReferralServiceIntegrationTest : IntegrationTestBase() {
 
     val assignments = referralProviderAssignmentRepository.findByReferralId(savedReferral.id)
     assertThat(assignments).hasSize(1)
-    assertThat(assignments.first().communityServiceProvider.id).isEqualTo(newCommunityServiceProvider.id)
+    assertThat(assignments.first().referenceDataCommunityServiceProvider.id).isEqualTo(newCommunityServiceProvider.id)
   }
 
   @Test

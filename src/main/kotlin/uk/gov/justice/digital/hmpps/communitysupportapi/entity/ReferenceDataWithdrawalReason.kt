@@ -6,17 +6,15 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.util.UUID
 
-typealias AuthGroupID = String
-
 @Entity
-@Table(name = "service_provider")
-class ServiceProvider(
+@Table(name = "reference_data_withdrawal_reason")
+data class ReferenceDataWithdrawalReason(
   @Id
   val id: UUID,
 
-  @Column(name = "auth_group_id", nullable = false, unique = true)
-  val authGroupId: AuthGroupID,
-
-  @Column(nullable = false, unique = true)
+  @Column(name = "name", nullable = false)
   val name: String,
+
+  @Column(name = "group_name", nullable = false)
+  val group: String,
 )

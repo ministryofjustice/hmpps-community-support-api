@@ -17,8 +17,8 @@ import java.util.UUID
  * a Service User might need.
  */
 @Entity
-@Table(name = "need")
-class Need(
+@Table(name = "reference_data_need")
+class ReferenceDataNeed(
   @Id
   val id: UUID,
 
@@ -31,5 +31,5 @@ class Need(
   @OneToMany(fetch = FetchType.LAZY)
   @JoinColumn(name = "need_id")
   @OrderBy("orderNumber ASC")
-  val outcomes: MutableList<Outcome> = mutableListOf()
+  val referenceDataOutcomes: MutableList<ReferenceDataOutcome> = mutableListOf()
 }

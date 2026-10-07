@@ -7,13 +7,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionChoice
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanTemplate
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStep
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestion
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestionChoice
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanTemplate
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
@@ -50,7 +50,7 @@ class ActionPlanTestSupport(
   fun createActionPlanTemplate(
     id: UUID = UUID.randomUUID(),
     activeGlobal: Boolean = false,
-  ): ActionPlanTemplate = actionPlanTemplateRepository.save(
+  ): ReferenceDataActionPlanTemplate = actionPlanTemplateRepository.save(
     ActionPlanTemplateFactory()
       .withId(id)
       .withActiveGlobal(activeGlobal)
@@ -107,7 +107,7 @@ class ActionPlanTestSupport(
     orderNumber: Int = 1,
     name: String = "Step 1",
     stepType: ActionPlanStepType = ActionPlanStepType.NEED,
-  ): ActionPlanStep = actionPlanStepRepository.save(
+  ): ReferenceDataActionPlanStep = actionPlanStepRepository.save(
     ActionPlanStepFactory()
       .withActionPlanTemplateId(actionPlanTemplateId)
       .withOrderNumber(orderNumber)
@@ -124,7 +124,7 @@ class ActionPlanTestSupport(
     questionType: ActionPlanQuestionType = ActionPlanQuestionType.OUTCOME,
     maxNumberResponses: Int = 1,
     needId: UUID? = null,
-  ): ActionPlanStepQuestion = actionPlanStepQuestionRepository.save(
+  ): ReferenceDataActionPlanStepQuestion = actionPlanStepQuestionRepository.save(
     ActionPlanStepQuestionFactory()
       .withActionPlanStepId(actionPlanStepId)
       .withOrderNumber(orderNumber)
@@ -210,7 +210,7 @@ class ActionPlanTestSupport(
     orderNumber: Int = 1,
     label: String = value,
     hasFreeText: Boolean = false,
-  ): ActionPlanStepQuestionChoice = actionPlanStepQuestionChoiceRepository.save(
+  ): ReferenceDataActionPlanStepQuestionChoice = actionPlanStepQuestionChoiceRepository.save(
     ActionPlanStepQuestionChoiceFactory()
       .withActionPlanStepQuestionId(actionPlanStepQuestionId)
       .withOrderNumber(orderNumber)
@@ -282,7 +282,7 @@ class ActionPlanTestSupport(
 }
 
 data class QuestionAndAnswer(
-  val question: ActionPlanStepQuestion,
+  val question: ReferenceDataActionPlanStepQuestion,
   val answerHeader: ActionPlanStepQuestionAnswerHeader,
   val answerDetails: ActionPlanStepQuestionAnswerDetails,
 )
@@ -293,7 +293,7 @@ data class HeaderAndDetails(
 )
 
 data class CheckboxQuestionAndAnswers(
-  val question: ActionPlanStepQuestion,
-  val choices: List<ActionPlanStepQuestionChoice>,
+  val question: ReferenceDataActionPlanStepQuestion,
+  val choices: List<ReferenceDataActionPlanStepQuestionChoice>,
   val answers: List<HeaderAndDetails>,
 )

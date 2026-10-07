@@ -13,9 +13,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCaseListDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataCommunityServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
@@ -55,9 +55,9 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
   private lateinit var referralHelper: ReferralTestSupport
 
-  private lateinit var serviceProvider: ServiceProvider
+  private lateinit var referenceDataServiceProvider: ReferenceDataServiceProvider
 
-  private lateinit var communityServiceProvider: CommunityServiceProvider
+  private lateinit var referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider
 
   @BeforeEach
   override fun setup() {
@@ -73,8 +73,8 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
     )
 
     val providers = referralHelper.getProviders()
-    serviceProvider = providers.first
-    communityServiceProvider = providers.second
+    referenceDataServiceProvider = providers.first
+    referenceDataCommunityServiceProvider = providers.second
 
     testDataCleaner.cleanAllTables()
     testDataCleaner.refreshMaterializedView()
@@ -119,7 +119,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${referenceDataServiceProvider.authGroupId}" to "Test Provider Group"),
       )
 
       val response = getUnassignedCases(testUser)
@@ -135,10 +135,10 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${referenceDataServiceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      referralHelper.assignToCommunityServiceProvider(referral, communityServiceProvider)
+      referralHelper.assignToCommunityServiceProvider(referral, referenceDataCommunityServiceProvider)
 
       testDataCleaner.refreshMaterializedView()
 
@@ -158,7 +158,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${referenceDataServiceProvider.authGroupId}" to "Test Provider Group"),
       )
 
       persons.forEachIndexed { index, person ->
@@ -169,7 +169,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
           createdAt = OffsetDateTime.now().minusDays(index.toLong()),
         )
 
-        referralHelper.assignToCommunityServiceProvider(referral, communityServiceProvider)
+        referralHelper.assignToCommunityServiceProvider(referral, referenceDataCommunityServiceProvider)
       }
 
       testDataCleaner.refreshMaterializedView()
@@ -208,11 +208,11 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${referenceDataServiceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      referralHelper.assignToCommunityServiceProvider(olderReferral, communityServiceProvider)
-      referralHelper.assignToCommunityServiceProvider(newerReferral, communityServiceProvider)
+      referralHelper.assignToCommunityServiceProvider(olderReferral, referenceDataCommunityServiceProvider)
+      referralHelper.assignToCommunityServiceProvider(newerReferral, referenceDataCommunityServiceProvider)
 
       testDataCleaner.refreshMaterializedView()
 
@@ -268,7 +268,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${referenceDataServiceProvider.authGroupId}" to "Test Provider Group"),
       )
 
       testDataCleaner.refreshMaterializedView()
@@ -287,10 +287,10 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${referenceDataServiceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      referralHelper.assignToCommunityServiceProvider(referral, communityServiceProvider)
+      referralHelper.assignToCommunityServiceProvider(referral, referenceDataCommunityServiceProvider)
       referralHelper.assignCaseWorkers(referral, caseWorkers)
 
       testDataCleaner.refreshMaterializedView()
@@ -316,12 +316,12 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${referenceDataServiceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      referralHelper.assignToCommunityServiceProvider(usersReferral, communityServiceProvider)
+      referralHelper.assignToCommunityServiceProvider(usersReferral, referenceDataCommunityServiceProvider)
       referralHelper.assignCaseWorkers(usersReferral, caseWorkers)
-      referralHelper.assignToCommunityServiceProvider(otherUsersReferral, communityServiceProvider)
+      referralHelper.assignToCommunityServiceProvider(otherUsersReferral, referenceDataCommunityServiceProvider)
       referralHelper.assignCaseWorkers(otherUsersReferral, caseWorkers)
 
       testDataCleaner.refreshMaterializedView()
@@ -344,7 +344,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${referenceDataServiceProvider.authGroupId}" to "Test Provider Group"),
       )
 
       persons.forEachIndexed { index, person ->
@@ -355,7 +355,7 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
           referenceNumber = "AB123${index + 1}CD",
           submittedBy = testUser,
           caseWorkers = caseWorkers,
-          communityServiceProvider = communityServiceProvider,
+          referenceDataCommunityServiceProvider = referenceDataCommunityServiceProvider,
           createdAt = createdAt,
         )
       }
@@ -402,11 +402,11 @@ class CaseListControllerIntegrationTest : IntegrationTestBase() {
 
       stubManageUsersGetUserGroups(
         testUser.hmppsAuthId,
-        listOf("INT_SP_${serviceProvider.authGroupId}" to "Test Provider Group"),
+        listOf("INT_SP_${referenceDataServiceProvider.authGroupId}" to "Test Provider Group"),
       )
 
-      referralHelper.assignToCommunityServiceProvider(olderReferral, communityServiceProvider)
-      referralHelper.assignToCommunityServiceProvider(newerReferral, communityServiceProvider)
+      referralHelper.assignToCommunityServiceProvider(olderReferral, referenceDataCommunityServiceProvider)
+      referralHelper.assignToCommunityServiceProvider(newerReferral, referenceDataCommunityServiceProvider)
 
       referralHelper.assignCaseWorkers(olderReferral, caseWorkers)
       referralHelper.assignCaseWorkers(newerReferral, caseWorkers)

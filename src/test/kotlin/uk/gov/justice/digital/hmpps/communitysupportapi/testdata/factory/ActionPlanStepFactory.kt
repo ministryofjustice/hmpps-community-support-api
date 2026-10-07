@@ -1,10 +1,10 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStep
 import java.util.UUID
 
-class ActionPlanStepFactory : TestEntityFactory<ActionPlanStep>() {
+class ActionPlanStepFactory : TestEntityFactory<ReferenceDataActionPlanStep>() {
 
   private var id: UUID = UUID.randomUUID()
   private var actionPlanTemplateId: UUID = UUID.randomUUID()
@@ -19,7 +19,7 @@ class ActionPlanStepFactory : TestEntityFactory<ActionPlanStep>() {
   fun withStepType(stepType: ActionPlanStepType) = apply { this.stepType = stepType }
   fun ofSessionDeliveryType() = apply { this.stepType = ActionPlanStepType.SESSION_DELIVERY }
 
-  override fun create(): ActionPlanStep = ActionPlanStep(
+  override fun create(): ReferenceDataActionPlanStep = ReferenceDataActionPlanStep(
     id = id,
     actionPlanTemplateId = actionPlanTemplateId,
     orderNumber = orderNumber,

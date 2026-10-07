@@ -852,7 +852,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val communityServiceProvider = referralHelper.getCommunityServiceProvider()
       val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
 
-      val expectedAssociatedPdus = pduRepository.findByContractAreaId(communityServiceProvider.contractArea.id)
+      val expectedAssociatedPdus = pduRepository.findByReferenceDataContractAreaId(communityServiceProvider.referenceDataContractArea.id)
         .map { it.name }
         .sorted()
 
@@ -864,8 +864,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<AreaConfirmationBffResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-          body.contractArea shouldBe communityServiceProvider.contractArea.area
-          body.deliveryPartner shouldBe communityServiceProvider.serviceProvider.name
+          body.contractArea shouldBe communityServiceProvider.referenceDataContractArea.area
+          body.deliveryPartner shouldBe communityServiceProvider.referenceDataServiceProvider.name
           body.associatedPdus shouldBe expectedAssociatedPdus
           body.crn shouldBe person.identifier
           body.dateOfBirth shouldBe person.dateOfBirth.toFormattedDateOfBirthLong()
@@ -1180,7 +1180,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Nested
   @DisplayName("PATCH /draft-referral/community-service-provider/:referralId")
-  inner class CommunityServiceProviderTest {
+  inner class CommunityReferenceDataServiceProviderTest {
 
     @BeforeEach
     fun setup() {
@@ -1228,7 +1228,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val assignments = referralProviderAssignmentRepository.findByReferralId(referral.id)
       assignments.size shouldBe 1
-      assignments.first().communityServiceProvider.id shouldBe newCommunityServiceProvider.id
+      assignments.first().referenceDataCommunityServiceProvider.id shouldBe newCommunityServiceProvider.id
     }
 
     @Test

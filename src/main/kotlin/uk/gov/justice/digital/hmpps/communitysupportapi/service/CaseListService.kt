@@ -45,7 +45,7 @@ class CaseListService(
     }
 
     val serviceProviders =
-      serviceProviderAccessScopeMapper.fromUser(referralUser).serviceProviders
+      serviceProviderAccessScopeMapper.fromUser(referralUser).referenceDataServiceProviders
 
     val specification = CaseListViewSpecifications
       .hasServiceProviderIn(serviceProviders)

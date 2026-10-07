@@ -9,14 +9,14 @@ import jakarta.persistence.Table
 import java.util.UUID
 
 @Entity
-@Table(name = "contract_area")
-class ContractArea(
+@Table(name = "reference_data_contract_area")
+class ReferenceDataContractArea(
   @Id
   val id: UUID,
 
   @ManyToOne
   @JoinColumn(name = "region_id", nullable = false)
-  val region: Region,
+  val referenceDataRegion: ReferenceDataRegion,
 
   @Column(name = "area", nullable = false)
   val area: String,

@@ -1,7 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataCommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import java.time.OffsetDateTime
@@ -102,7 +102,7 @@ object TestEntityFactories {
    * @return Triple of (Person, Referral, ReferralProviderAssignment)
    */
   fun createCompleteCase(
-    communityServiceProvider: CommunityServiceProvider,
+    referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider,
     firstName: String = "John",
     lastName: String = "Doe",
     identifier: String = "CRN${(100000..999999).random()}",
@@ -124,7 +124,7 @@ object TestEntityFactories {
 
     val assignment = referralProviderAssignment()
       .withReferral(referral)
-      .withCommunityServiceProvider(communityServiceProvider)
+      .withCommunityServiceProvider(referenceDataCommunityServiceProvider)
       .create()
 
     return Triple(person, referral, assignment)
@@ -136,11 +136,11 @@ object TestEntityFactories {
    */
   fun createMultipleCases(
     count: Int,
-    communityServiceProvider: CommunityServiceProvider,
+    referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider,
     actorId: UUID = UUID.randomUUID(),
   ): List<Triple<Person, Referral, ReferralProviderAssignment>> = (1..count).map { index ->
     createCompleteCase(
-      communityServiceProvider = communityServiceProvider,
+      referenceDataCommunityServiceProvider = referenceDataCommunityServiceProvider,
       firstName = "FirstName$index",
       lastName = "LastName$index",
       identifier = "CRN${100000 + index}",

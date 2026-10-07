@@ -151,7 +151,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
     @Nested
     @DisplayName("GET /bff/referral/action-plan/select-a-need")
-    inner class GetSelectANeedEndpoint {
+    inner class GetSelectAReferenceDataNeedEndpoint {
       @Test
       fun `should return unauthorized if no token`() {
         assertUnauthorized(GET, "/bff/referral/action-plan/select-a-need")
@@ -1693,7 +1693,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
       fun `should return 404 when referral not found`() {
         whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
         val needId = needRepository.findAllByOrderByOrderNumberAsc().first().id
-        val outcomeId = needRepository.findAllByOrderByOrderNumberAsc().first().outcomes.first().id
+        val outcomeId = needRepository.findAllByOrderByOrderNumberAsc().first().referenceDataOutcomes.first().id
 
         webTestClient.post()
           .uri("/referral/INVALID-REF/action-plan/action")
@@ -1734,7 +1734,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         )
 
         val need = needRepository.findAllByOrderByOrderNumberAsc().first()
-        val outcome = need.outcomes.first()
+        val outcome = need.referenceDataOutcomes.first()
 
         val question = actionPlanStepQuestionRepository.save(
           ActionPlanStepQuestionFactory()
@@ -1821,7 +1821,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         )
 
         val need = needRepository.findAllByOrderByOrderNumberAsc().first()
-        val outcomes = need.outcomes
+        val outcomes = need.referenceDataOutcomes
         val firstOutcome = outcomes[0]
         val secondOutcome = outcomes[1]
 
@@ -1913,7 +1913,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         val needs = needRepository.findAllByOrderByOrderNumberAsc()
         val firstNeed = needs[0]
         val secondNeed = needs[1]
-        val wrongOutcome = secondNeed.outcomes.first()
+        val wrongOutcome = secondNeed.referenceDataOutcomes.first()
 
         webTestClient.post()
           .uri("/referral/${referral.referenceNumber}/action-plan/action")
@@ -1945,7 +1945,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
 
         val need = needRepository.findAllByOrderByOrderNumberAsc().first()
-        val outcome = need.outcomes.first()
+        val outcome = need.referenceDataOutcomes.first()
 
         webTestClient.post()
           .uri("/referral/${referral.referenceNumber}/action-plan/action")
@@ -1971,7 +1971,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
 
         val need = needRepository.findAllByOrderByOrderNumberAsc().first()
-        val outcome = need.outcomes.first()
+        val outcome = need.referenceDataOutcomes.first()
 
         webTestClient.post()
           .uri("/referral/${referral.referenceNumber}/action-plan/action")
@@ -2005,7 +2005,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         // Note: NOT creating an action plan - it should be auto-created
 
         val need = needRepository.findAllByOrderByOrderNumberAsc().first()
-        val outcome = need.outcomes.first()
+        val outcome = need.referenceDataOutcomes.first()
 
         // Find the NEED step in the template, or create it if it doesn't exist
         val needSteps = actionPlanStepRepository

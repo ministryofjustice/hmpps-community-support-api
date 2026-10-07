@@ -3,15 +3,15 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.repository
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionResponseEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionResponseEventType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ActionPlanQuestionAnswers
 import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
- * A multi-repository utility class for finding current Answers and  recording incoming Answers to ActionPlanStepQuestions.
+ * A multi-repository utility class for finding current Answers and  recording incoming Answers to ReferenceDataActionPlanStepQuestion.
  * This encapsulates the complex Header -> Details relationship, and the need to record events for each change.
  */
 @Component
@@ -22,7 +22,7 @@ class ActionPlanQuestionWriter(
 ) {
   fun answersForActionPlanAndQuestions(
     actionPlanId: UUID,
-    questions: List<ActionPlanStepQuestion>,
+    questions: List<ReferenceDataActionPlanStepQuestion>,
   ): List<ActionPlanQuestionAnswers> {
     if (questions.isEmpty()) return emptyList()
     val activeHeaders = headers.findActiveByPlanAndQuestionIds(actionPlanId, questions.map { it.id })
