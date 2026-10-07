@@ -13,6 +13,10 @@ import java.util.UUID
 
 enum class AppointmentType {
   ICS,
+  CONTACT_SESSION,
+  POST_RELEASE_SESSION,
+  PRE_RELEASE_SESSION,
+  HANDOVER_SESSION,
 }
 
 @Entity

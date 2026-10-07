@@ -32,4 +32,17 @@ interface AppointmentIcsRepository : JpaRepository<AppointmentIcs, UUID> {
     referralId: UUID,
     @Param("appointmentType") appointmentType: AppointmentType,
   ): AppointmentIcs?
+
+  @Query(
+    """
+      SELECT a FROM AppointmentIcs a
+        WHERE a.appointment.referral.id = :referralId
+          AND a.appointment.type IN :appointmentTypes
+        ORDER BY a.createdAt DESC
+    """,
+  )
+  fun findByReferralIdAndTypesOrderByCreatedAtDesc(
+    @Param("referralId") referralId: UUID,
+    @Param("appointmentTypes") appointmentTypes: List<AppointmentType>,
+  ): List<AppointmentIcs>
 }
