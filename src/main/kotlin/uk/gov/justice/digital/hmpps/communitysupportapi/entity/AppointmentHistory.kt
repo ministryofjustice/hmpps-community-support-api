@@ -8,7 +8,6 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
-import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
@@ -16,8 +15,8 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 @Entity
-@Table(name = "appointment_ics_history")
-class AppointmentIcs(
+@Table(name = "appointment_history")
+class AppointmentHistory(
   @Id
   val id: UUID = UUID.randomUUID(),
 
@@ -25,7 +24,7 @@ class AppointmentIcs(
   @JoinColumn(name = "appointment_id", nullable = false)
   val appointment: Appointment,
 
-  @OneToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "appointment_delivery_id")
   val appointmentDelivery: AppointmentDelivery? = null,
 

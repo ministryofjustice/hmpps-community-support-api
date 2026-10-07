@@ -25,7 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Appointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcsFeedback
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
@@ -111,10 +111,10 @@ class AppointmentService(
     request: CreateAppointmentRequest,
     createdBy: ReferralUser,
     createdAt: LocalDateTime = LocalDateTime.now(),
-  ): AppointmentIcs {
+  ): AppointmentHistory {
     val startDateTime = LocalDateTime.of(request.date, request.time.toLocalTime())
 
-    val ics = AppointmentIcs(
+    val ics = AppointmentHistory(
       id = UUID.randomUUID(),
       appointment = appointment,
       appointmentDelivery = appointmentDelivery,
@@ -130,10 +130,10 @@ class AppointmentService(
   }
 
   private fun updateAppointmentIcsRecord(
-    ics: AppointmentIcs,
+    ics: AppointmentHistory,
     changeRequestedBy: ChangeRequesterType?,
     changeReason: String?,
-  ): AppointmentIcs {
+  ): AppointmentHistory {
     ics.changeRequestedBy = changeRequestedBy
     ics.changeReason = changeReason
 
@@ -282,25 +282,30 @@ class AppointmentService(
       .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }
       .let { "${it.firstName} ${it.lastName}" }
 
-    val latestIcsAppointment = appointmentIcsRepository
-      .findByAppointmentReferralId(referral.id)
-      .filter { it.appointment.type == AppointmentType.ICS }
+    val appointments = appointmentRepository
+      .findAllByReferralId(referral.id)
+      .orEmpty()
+      .filter { it.type == AppointmentType.ICS }
+      .ifEmpty { throw NotFoundException("No ICS appointments found for referral reference number: ${referral.referenceNumber}") }
+
+    val appointmentHistory = appointments
+      .flatMap { it.appointmentHistory }
       .maxWithOrNull(
-        compareBy<AppointmentIcs> { it.appointmentDateTime }
+        compareBy<AppointmentHistory> { it.appointmentDateTime }
           .thenBy { it.createdAt },
       )
       ?: throw NotFoundException("ICS appointment not found for referral reference number: ${referral.referenceNumber}")
 
     val appointmentDetails = AppointmentDetailsDto(
-      method = latestIcsAppointment.appointmentDelivery?.method,
-      date = latestIcsAppointment.appointmentDateTime.toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-      time = latestIcsAppointment.appointmentDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+      method = appointmentHistory.appointmentDelivery?.method,
+      date = appointmentHistory.appointmentDateTime.toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+      time = appointmentHistory.appointmentDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
     )
 
     return IcsFeedbackSessionDto(
       fullName = personName,
       appointmentDetails = appointmentDetails,
-      otherAppointmentMethods = latestIcsAppointment.sessionCommunication,
+      otherAppointmentMethods = appointmentHistory.sessionCommunication,
     )
   }
 

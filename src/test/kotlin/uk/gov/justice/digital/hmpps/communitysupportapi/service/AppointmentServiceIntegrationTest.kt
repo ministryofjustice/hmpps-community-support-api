@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -7,7 +8,10 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDetails
@@ -58,6 +62,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   private lateinit var appointmentService: AppointmentService
 
   @Autowired
+  private lateinit var entityManager: EntityManager
+
+  @Autowired
   private lateinit var appointmentRepository: AppointmentRepository
 
   @Autowired
@@ -104,6 +111,38 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
     referral = referralHelper.createReferral(person, submittedBy = testUser)
     caseReference = referral.referenceNumber!!
+  }
+
+  @ParameterizedTest
+  @EnumSource(AppointmentType::class)
+  @Transactional
+  fun `should reload multiple history records for every appointment type`(type: AppointmentType) {
+    val appointment = appointmentHelper.createAppointment(referral, type)
+    val delivery = appointmentHelper.createAppointmentDelivery()
+    val firstHistory = appointmentHelper.createAppointmentIcs(
+      appointment = appointment,
+      delivery = delivery,
+      user = testUser,
+      communications = listOf("Email"),
+    )
+    val secondHistory = appointmentHelper.createAppointmentIcs(
+      appointment = appointment,
+      delivery = delivery,
+      user = testUser,
+      communications = listOf("SMS"),
+    )
+    entityManager.flush()
+    entityManager.clear()
+
+    val reloadedAppointment = appointmentRepository.findById(appointment.id).orElseThrow()
+    assertThat(reloadedAppointment.type).isEqualTo(type)
+    assertThat(reloadedAppointment.appointmentHistory.map { it.id })
+      .containsExactlyInAnyOrder(firstHistory.id, secondHistory.id)
+    reloadedAppointment.appointmentHistory.forEach { history ->
+      assertThat(history.appointment).isSameAs(reloadedAppointment)
+      assertThat(history.appointmentDelivery?.id).isEqualTo(delivery.id)
+      assertThat(history.createdBy.id).isEqualTo(testUser.id)
+    }
   }
 
   @Nested
