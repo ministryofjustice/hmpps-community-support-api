@@ -9,15 +9,18 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalD
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import java.security.SecureRandom
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
-import java.util.UUID
+import java.util.*
 
 @Service
 @Profile("local")
@@ -27,6 +30,8 @@ class LocalAppointmentFixtureService(
   private val referralUserRepository: ReferralUserRepository,
   private val localWireMockFixtureClient: LocalWireMockFixtureClient,
   private val referralReferenceGenerator: ReferralReferenceGenerator,
+  private val serviceProviderRepository: CommunityServiceProviderRepository,
+  private val referralProviderAssignmentRepository: ReferralProviderAssignmentRepository,
 ) {
   companion object {
     private const val FIXTURE_USERNAME = "local-appointment-fixtures"
@@ -34,8 +39,18 @@ class LocalAppointmentFixtureService(
   }
 
   @Transactional
-  fun createFixtures(count: Int): List<LocalAppointmentFixture> {
-    val fixtureUser = findOrCreateFixtureUser()
+  fun createFixtures(count: Int, user: ReferralUser): List<LocalAppointmentFixture> {
+    val fixtureUser = findOrCreateFixtureUser(user)
+
+    /**
+     * `SEETEC_BUS_TECH_CTR_LTD` is the name of the service provider in the database,
+     * (UUID=`a1b2c3d4-e5f6-4a7b-8c9d-1a2b3c4d5e6f`)
+     *
+     * `bc852b9d-1997-4ce4-ba7f-cd1759e15d2b` is the UUID of `Community Support Service in Cleveland`
+     * Users assigned to this service provider will be able to see the appointments created by this fixture service.
+     *
+     */
+    val serviceProvider = serviceProviderRepository.getReferenceById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")) ?: throw IllegalStateException("Service provider not found")
 
     return (1..count).map { index ->
       val now = OffsetDateTime.now()
@@ -102,6 +117,14 @@ class LocalAppointmentFixtureService(
 
       localWireMockFixtureClient.registerPersonalDetailsFixture(crn)
 
+      referralProviderAssignmentRepository.saveAndFlush(
+        ReferralProviderAssignment(
+          UUID.randomUUID(),
+          referral,
+          serviceProvider,
+        ),
+      )
+
       LocalAppointmentFixture(
         caseReference = caseReference,
         referralId = referral.id,
@@ -110,11 +133,13 @@ class LocalAppointmentFixtureService(
     }
   }
 
-  private fun findOrCreateFixtureUser(): ReferralUser = referralUserRepository.findByHmppsAuthUsernameIgnoreCase(FIXTURE_USERNAME)
+  private fun findOrCreateFixtureUser(
+    user: ReferralUser,
+  ): ReferralUser = referralUserRepository.findByHmppsAuthUsernameIgnoreCase(FIXTURE_USERNAME)
     ?: referralUserRepository.save(
       ReferralUser(
-        hmppsAuthId = FIXTURE_USERNAME,
-        hmppsAuthUsername = FIXTURE_USERNAME,
+        hmppsAuthId = user.hmppsAuthId,
+        hmppsAuthUsername = user.hmppsAuthUsername,
         authSource = "AUTH",
         fullName = "Local Appointment Fixtures",
         lastSyncedAt = LocalDateTime.now(),

@@ -13,6 +13,7 @@
 #   username: local.tester@digital.justice.gov.uk
 #   password: password123456 (fixed, for local dev/e2e convenience)
 #   roles:    COMMUNITY_SUPPORT_REFERRER,COMMUNITY_SUPPORT_PROVIDER
+#   provider group: INT_SP_SEETEC_BUS_TECH_CTR_LTD
 #
 # What it does:
 #   1. Signs in as the seeded admin user (AUTH_ADM/password123456) via the real
@@ -24,7 +25,9 @@
 #      created successfully beforehand, so this is expected and safe to ignore).
 #   4. Directly patches the user's password/verified/password_expiry in auth-db so
 #      it's immediately usable without an email link (mirrors how AUTH_ADM is seeded).
-#   5. Assigns the requested roles to the user (also may 500 for the same Notify
+#   5. Adds the user to the Seetec provider group in hmpps-auth, matching the
+#      service provider seeded in the local Community Support database.
+#   6. Assigns the requested roles to the user (also may 500 for the same Notify
 #      reason on the *first* role assigned - ignored; roles are verified afterwards).
 #
 # After running, sign in at http://localhost:8090/auth/sign-in (or via the UI) with
@@ -59,6 +62,8 @@ fi
 
 USERNAME="${1:-local.tester@digital.justice.gov.uk}"
 ROLES_CSV="${2:-COMMUNITY_SUPPORT_REFERRER,COMMUNITY_SUPPORT_PROVIDER}"
+readonly PROVIDER_GROUP_CODE="INT_SP_SEETEC_BUS_TECH_CTR_LTD"
+readonly PROVIDER_GROUP_NAME="Seetec Business Technology Centre Limited"
 PASSWORD="password123456"
 # bcrypt hash of "password123456" - same one used by the seeded AUTH_ADM/AUTH_USER accounts.
 PASSWORD_HASH='{bcrypt}$2a$10$Fmcp2KUKRW53US3EJfsxkOh.ekZhqz5.Baheb9E98QLwEFLb9csxy'
@@ -152,7 +157,35 @@ if [[ -z "$USER_ID" ]]; then
 fi
 log "User $USERNAME has user_id=$USER_ID"
 
-# --- 5. Assign roles ---
+# --- 5. Add a valid service provider group ---
+log "Adding $USERNAME to provider group $PROVIDER_GROUP_CODE..."
+docker compose exec -T auth-db psql -U admin -d auth-db -v ON_ERROR_STOP=1 \
+  -v provider_group_code="$PROVIDER_GROUP_CODE" \
+  -v provider_group_name="$PROVIDER_GROUP_NAME" \
+  -v user_id="$USER_ID" <<'SQL' > /dev/null
+INSERT INTO groups (group_code, group_name)
+VALUES (:'provider_group_code', :'provider_group_name')
+ON CONFLICT (group_code) DO UPDATE
+SET group_name = EXCLUDED.group_name;
+
+INSERT INTO user_group (user_id, group_id)
+SELECT :'user_id'::uuid, groups.group_id
+FROM groups
+WHERE groups.group_code = :'provider_group_code'
+ON CONFLICT (user_id, group_id) DO NOTHING;
+SQL
+
+ASSIGNED_GROUPS=$(docker compose exec -T auth-db psql -U admin -d auth-db -t -A -F ', ' \
+  -c "
+    SELECT groups.group_code
+    FROM user_group
+    JOIN groups ON groups.group_id = user_group.group_id
+    WHERE user_group.user_id = '$USER_ID'::uuid
+    ORDER BY groups.group_code;
+  " | tr -d '\r')
+log "Groups now assigned to $USERNAME: $ASSIGNED_GROUPS"
+
+# --- 6. Assign roles ---
 for ROLE in "${ROLES[@]}"; do
   curl -s -o /dev/null -X PUT "$MANAGE_USERS_URL/externalusers/$USER_ID/roles/$ROLE" \
     -H "Authorization: Bearer $TOKEN" || true

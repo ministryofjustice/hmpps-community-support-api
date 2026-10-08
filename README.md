@@ -82,6 +82,9 @@ user (password set, no email step required) with whichever roles you need, entir
 ```
 
 It's safe to re-run this script (i.e. it won't re-create identical users). 
+Every user it creates is assigned to the local Seetec provider group
+(`INT_SP_SEETEC_BUS_TECH_CTR_LTD`), which maps to the seeded service provider
+and enables provider-scoped journeys.
 
 ## Creating local appointment endpoint fixtures
 
@@ -95,7 +98,7 @@ With the API running using the `local` profile, create between one and ten submi
 ./scripts/create-local-appointment-fixtures.sh 10
 ```
 
-The script creates or updates `appointment.fixtures@digital.justice.gov.uk` with the HMPPS Auth role `IPB_FRONTEND_RW` (emitted in tokens as `ROLE_IPB_FRONTEND_RW`), obtains a local HMPPS Auth token through the authorization-code flow, and invokes the endpoint. It provisions this fixed local user directly in the local Auth database, so Docker and `auth-db` must be running. Set `ACCESS_TOKEN` to skip local user setup and token generation, or `API_BASE_URL` to target a different local API address. The endpoint uses the JPA entities and repositories to create a `person`, persisted `person_additional_details`, a submitted `referral`, and its `CREATED`/`SUBMITTED` events. It also registers a high-priority exact-CRN nDelius stub with the local WireMock Admin API.
+The script first checks that every service in `docker-compose.yml` is running and that the local API responds on its health endpoint. It creates or updates `appointment.fixtures@digital.justice.gov.uk` with the HMPPS Auth role `IPB_FRONTEND_RW` (emitted in tokens as `ROLE_IPB_FRONTEND_RW`), its matching Seetec provider group, obtains a local HMPPS Auth token through the authorization-code flow, and invokes the endpoint. It provisions this fixed local user directly in the local Auth database. Set `ACCESS_TOKEN` to skip local user setup and token generation, or `API_BASE_URL` to target a different local API address. The endpoint uses the JPA entities and repositories to create a `person`, persisted `person_additional_details`, a submitted `referral`, and its `CREATED`/`SUBMITTED` events. It also registers a high-priority exact-CRN nDelius stub with the local WireMock Admin API.
 
 The response contains the case reference, referral UUID, and CRN for every fixture. Use either the case reference or referral UUID in the endpoint path; for example:
 

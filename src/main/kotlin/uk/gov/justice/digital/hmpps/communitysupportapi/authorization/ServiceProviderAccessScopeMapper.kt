@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.authorization
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.client.ManageUsersClient
@@ -26,19 +27,29 @@ class ServiceProviderAccessScopeMapper(
   private val serviceProviderRepository: ServiceProviderRepository,
   private val telemetryClient: TelemetryClient,
 ) {
+  companion object {
+    private var logger = LoggerFactory.getLogger(this::class.java)
+  }
+
   private val serviceProviderGroupPrefix = "INT_SP_"
   private val errorMessage = "could not map service provider user to access scope"
 
   fun fromUser(user: ReferralUser): ServiceProviderAccessScope {
     if (!isServiceProviderUser(user)) {
+      logger.error("User ${user.hmppsAuthId} is not a service provider")
       throw AccessError(user, errorMessage, listOf("user is not a service provider"))
     }
 
-    val groups = manageUsersClient.getUserGroups(user.hmppsAuthId) ?: throw AccessError(
-      user,
-      errorMessage,
-      listOf("cannot find user in hmpps auth"),
-    )
+    val groups = manageUsersClient.getUserGroups(user.hmppsAuthId)
+
+    if (groups == null) {
+      logger.error("User ${user.hmppsAuthId} could not be found in hmpps auth")
+      throw AccessError(
+        user,
+        errorMessage,
+        listOf("cannot find user in hmpps auth"),
+      )
+    }
 
     val workingScope = WorkingScope(authGroups = groups)
 
@@ -50,6 +61,7 @@ class ServiceProviderAccessScopeMapper(
       trackWarnings(user, workingScope.warnings)
     }
     if (workingScope.errors.isNotEmpty()) {
+      logger.error("User ${user.hmppsAuthId} has errors: ${workingScope.errors.joinToString(", ")}")
       throw AccessError(user, errorMessage, workingScope.errors)
     }
 
@@ -98,7 +110,10 @@ class ServiceProviderAccessScopeMapper(
     }
   }
 
-  private fun getProviders(providerGroups: List<String>, warnings: MutableList<String>): List<ReferenceDataServiceProvider> {
+  private fun getProviders(
+    providerGroups: List<String>,
+    warnings: MutableList<String>,
+  ): List<ReferenceDataServiceProvider> {
     val providers = serviceProviderRepository.findAllByAuthGroupIdIn(providerGroups)
     val unidentifiedProviders = providerGroups.subtract(providers.map { it.id }.toSet())
     unidentifiedProviders.forEach { undefinedProvider ->

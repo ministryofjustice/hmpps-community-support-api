@@ -19,6 +19,8 @@ readonly AUTH_CALLBACK_URL="${AUTH_CALLBACK_URL:-http://localhost:3000/sign-in/c
 readonly FIXTURE_USERNAME="APPOINTMENT.FIXTURES@DIGITAL.JUSTICE.GOV.UK"
 readonly FIXTURE_PASSWORD="password123456"
 readonly FIXTURE_PASSWORD_HASH='{bcrypt}$2a$10$Fmcp2KUKRW53US3EJfsxkOh.ekZhqz5.Baheb9E98QLwEFLb9csxy'
+readonly PROVIDER_GROUP_CODE="INT_SP_SEETEC_BUS_TECH_CTR_LTD"
+readonly PROVIDER_GROUP_NAME="Seetec Business Technology Centre Limited"
 
 count="${1:-1}"
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -53,7 +55,7 @@ urlencode() {
   python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$1"
 }
 
-ensure_fixture_user() {
+ensure_local_stack() {
   if ! docker compose version >/dev/null 2>&1; then
     echo "ERROR: Docker Compose v2 is required." >&2
     return 1
@@ -64,11 +66,24 @@ ensure_fixture_user() {
     return 1
   fi
 
-  if ! docker compose ps --status running --services | grep -qx "auth-db"; then
-    echo "ERROR: The local auth-db service is not running. Start it with 'docker compose up -d' first." >&2
+  local missing_services
+  missing_services="$(
+    comm -23 \
+      <(docker compose config --services | sort) \
+      <(docker compose ps --status running --services | sort)
+  )"
+  if [[ -n "$missing_services" ]]; then
+    printf 'ERROR: these Docker Compose services are not running:\n%s\nRun: docker compose up -d\n' "$missing_services" >&2
     return 1
   fi
 
+  if ! curl --fail --silent --show-error "$API_BASE_URL/health" >/dev/null; then
+    echo "ERROR: The local API is not responding at $API_BASE_URL/health. Start it with the local Spring profile first." >&2
+    return 1
+  fi
+}
+
+ensure_fixture_user() {
   if ! docker compose exec -T auth-db psql -U admin -d auth-db --quiet -v ON_ERROR_STOP=1 >&2 <<SQL
 INSERT INTO roles (role_code, role_name, role_description, admin_type)
 VALUES ('IPB_FRONTEND_RW', 'IPB Frontend RW', 'Local appointment fixture role', 'EXT_ADM')
@@ -142,6 +157,18 @@ FROM users
 JOIN roles ON roles.role_code = 'IPB_FRONTEND_RW'
 WHERE users.username = '$FIXTURE_USERNAME'
 ON CONFLICT (user_id, role_id) DO NOTHING;
+
+INSERT INTO groups (group_code, group_name)
+VALUES ('$PROVIDER_GROUP_CODE', '$PROVIDER_GROUP_NAME')
+ON CONFLICT (group_code) DO UPDATE
+SET group_name = EXCLUDED.group_name;
+
+INSERT INTO user_group (user_id, group_id)
+SELECT users.user_id, groups.group_id
+FROM users
+JOIN groups ON groups.group_code = '$PROVIDER_GROUP_CODE'
+WHERE users.username = '$FIXTURE_USERNAME'
+ON CONFLICT (user_id, group_id) DO NOTHING;
 SQL
   then
     echo "ERROR: could not create or update the local appointment fixture user." >&2
@@ -219,6 +246,7 @@ obtain_access_token() {
 }
 
 cd "$repository_root"
+ensure_local_stack
 access_token="${ACCESS_TOKEN:-}"
 if [[ -z "$access_token" ]]; then
   access_token="$(obtain_access_token)"

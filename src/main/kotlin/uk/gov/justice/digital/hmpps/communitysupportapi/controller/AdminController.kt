@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.LocalAppointmentFixtureService
-import java.util.UUID
+import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.util.*
 
 @RestController
 @Profile("local")
@@ -21,13 +23,18 @@ import java.util.UUID
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
 class AdminController(
   private val localAppointmentFixtureService: LocalAppointmentFixtureService,
+  private val userMapper: UserMapper,
+  private val authenticationHolder: HmppsAuthenticationHolder,
 ) {
 
   @PostMapping("/appointment-fixtures")
   @ResponseStatus(HttpStatus.CREATED)
   fun createAppointmentFixtures(
     @RequestParam(defaultValue = "1") @Min(1) @Max(10) count: Int,
-  ): List<LocalAppointmentFixtureResponse> = localAppointmentFixtureService.createFixtures(count)
+  ): List<LocalAppointmentFixtureResponse> = localAppointmentFixtureService.createFixtures(
+    count,
+    userMapper.fromToken(authenticationHolder),
+  )
     .map {
       LocalAppointmentFixtureResponse(
         caseReference = it.caseReference,
