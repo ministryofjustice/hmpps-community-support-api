@@ -7,14 +7,11 @@ import jakarta.persistence.Table
 import java.util.UUID
 
 @Entity
-@Table(name = "withdrawal_reason")
-data class WithdrawalReason(
+@Table(name = "reference_data_region")
+class ReferenceDataRegion(
   @Id
   val id: UUID,
 
-  @Column(name = "name", nullable = false)
+  @Column(nullable = false)
   val name: String,
-
-  @Column(name = "group_name", nullable = false)
-  val group: String,
 )

@@ -6,16 +6,16 @@ import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerNameDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ContractArea
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataCommunityServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataContractArea
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataRegion
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Region
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -416,6 +416,40 @@ class TaskListStatusResponseDtoTest {
       result.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
       result.addMainPointOfContactCompleted shouldBe null
     }
+
+    @Test
+    fun `returns checkProbationPractitionerDetailsCompleted as null and addMainPointOfContactCompleted as notStarted when community manager is unallocated and no details saved`() {
+      val result = TaskListStatusResponseDto.from(
+        referral,
+        person,
+        null,
+        null,
+        null,
+        null,
+        communityManager = buildCommunityManager(forename = "Unallocated", surname = "Staff"),
+        probationPractitionerDetails = null,
+      )
+
+      result.checkProbationPractitionerDetailsCompleted shouldBe null
+      result.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
+    }
+
+    @Test
+    fun `returns checkProbationPractitionerDetailsCompleted as null and addMainPointOfContactCompleted as completed when community manager is unallocated and details saved`() {
+      val result = TaskListStatusResponseDto.from(
+        referral,
+        person,
+        null,
+        null,
+        null,
+        null,
+        communityManager = buildCommunityManager(forename = "Staff", surname = "UNALLOCATED"),
+        probationPractitionerDetails = buildSavedProbationPractitionerDetails(),
+      )
+
+      result.checkProbationPractitionerDetailsCompleted shouldBe null
+      result.addMainPointOfContactCompleted shouldBe TaskListStatusItem.completed()
+    }
   }
 
   @Nested
@@ -524,13 +558,13 @@ class TaskListStatusResponseDtoTest {
     updatedBy = userId,
   )
 
-  private fun buildCommunityManager() = CommunityManagerDto(
+  private fun buildCommunityManager(forename: String = "Jane", surname: String = "Doe") = CommunityManagerDto(
     "CRN123",
     CommunityManagerDetailsDto(
       name = CommunityManagerNameDto(
-        "Jane",
+        forename,
         null,
-        "Doe",
+        surname,
       ),
       jobRole = "Probation practitioner",
       emailAddress = "jane.doe@example.com",
@@ -549,15 +583,15 @@ class TaskListStatusResponseDtoTest {
     updatedBy = userId,
   )
 
-  private fun buildCommunityServiceProvider() = CommunityServiceProvider(
+  private fun buildCommunityServiceProvider() = ReferenceDataCommunityServiceProvider(
     id = UUID.randomUUID(),
-    contractArea = ContractArea(
+    referenceDataContractArea = ReferenceDataContractArea(
       id = UUID.randomUUID(),
-      region = Region(id = UUID.randomUUID(), name = "Test Region"),
+      referenceDataRegion = ReferenceDataRegion(id = UUID.randomUUID(), name = "Test Region"),
       area = "Test Area",
     ),
     name = "Test Provider",
-    serviceProvider = ServiceProvider(
+    referenceDataServiceProvider = ReferenceDataServiceProvider(
       id = UUID.randomUUID(),
       authGroupId = "TEST_GROUP",
       name = "Test Service Provider",

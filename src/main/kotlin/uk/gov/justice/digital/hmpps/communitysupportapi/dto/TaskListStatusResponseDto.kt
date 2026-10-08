@@ -1,10 +1,10 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataCommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
@@ -28,7 +28,7 @@ data class TaskListStatusResponseDto(
       additionalSupportNeeds: PersonAdditionalSupportNeeds?,
       riskInfo: RiskInformation?,
       criminogenicNeeds: ReferralCriminogenicNeeds?,
-      communityServiceProvider: CommunityServiceProvider?,
+      referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider?,
       communityManager: CommunityManagerDto? = null,
       probationPractitionerDetails: ProbationPractitionerDetails? = null,
     ) = TaskListStatusResponseDto(
@@ -39,12 +39,12 @@ data class TaskListStatusResponseDto(
       getAdditionalSupportNeedsStatus(additionalSupportNeeds),
       getAdditionalInformationStatus(referral),
       TaskListStatusItem.notStarted(),
-      getCommunityServiceProviderStatus(communityServiceProvider),
+      getCommunityServiceProviderStatus(referenceDataCommunityServiceProvider),
       checkProbationPractitionerDetailsStatus(communityManager, probationPractitionerDetails),
       getAddMainPointOfContactStatusStatus(communityManager, probationPractitionerDetails),
     )
 
-    private fun getCommunityServiceProviderStatus(communityServiceProvider: CommunityServiceProvider?): TaskListStatusItem = communityServiceProvider?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
+    private fun getCommunityServiceProviderStatus(referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider?): TaskListStatusItem = referenceDataCommunityServiceProvider?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
     private fun getCriminogenicNeedsStatus(criminogenicNeeds: ReferralCriminogenicNeeds?): TaskListStatusItem = criminogenicNeeds?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
@@ -81,7 +81,7 @@ data class TaskListStatusResponseDto(
       communityManagerDto: CommunityManagerDto?,
       savedProbationPractitionerDetails: ProbationPractitionerDetails?,
     ): TaskListStatusItem? {
-      if (communityManagerDto == null) return null
+      if (communityManagerDto == null || isUnallocated(communityManagerDto)) return null
       if (savedProbationPractitionerDetails == null) return TaskListStatusItem.notStarted()
       if (savedProbationPractitionerDetails.ppDetailsFoundAndCorrect == false) return null
       return TaskListStatusItem.completed()
@@ -91,8 +91,14 @@ data class TaskListStatusResponseDto(
       communityManagerDto: CommunityManagerDto?,
       savedProbationPractitionerDetails: ProbationPractitionerDetails?,
     ): TaskListStatusItem? {
-      if (communityManagerDto != null && savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect != false) return null
+      if (communityManagerDto != null && !isUnallocated(communityManagerDto) && savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect != false) return null
       return savedProbationPractitionerDetails?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
+    }
+
+    private fun isUnallocated(communityManagerDto: CommunityManagerDto): Boolean {
+      val name = communityManagerDto.communityManager?.name ?: return false
+      return listOfNotNull(name.forename, name.middleName, name.surname)
+        .any { it.contains("unallocated", ignoreCase = true) }
     }
   }
 }

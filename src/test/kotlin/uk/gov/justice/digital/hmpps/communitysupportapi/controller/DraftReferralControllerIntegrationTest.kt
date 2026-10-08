@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
@@ -218,6 +219,32 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .create()
       referralCriminogenicNeedsRepository.save(needs)
 
+      val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
+        .orElseThrow()
+      val referralAssignment = ReferralProviderAssignment(
+        UUID.randomUUID(),
+        referral,
+        communityServiceProvider,
+      )
+      referralProviderAssignmentRepository.save(referralAssignment)
+
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          UUID.randomUUID(),
+          referral.id,
+          "pp name",
+          "role",
+          "pp@email.com",
+          COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+          42,
+          "01234567890",
+          "01234567890",
+          true,
+          OffsetDateTime.now(),
+          testUser.id,
+        ),
+      )
+
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
         .headers(setAuthorisation())
@@ -256,8 +283,17 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
             caringResponsibilities = "Lorem ipsum dolor sit amet",
           )
           body.personNeedsDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftPersonNeedsDetailsTableDataDto()
-          body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto()
-          body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto()
+          body.referralAreaTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftReferralAreaTableDataDto("Cleveland")
+          body.mainPocDetailsTableData shouldBe CheckDraftReferralDetailsBffResponseDto.DraftMainPOCDetailsTableDataDto(
+            true,
+            "pp name",
+            "role",
+            "pp@email.com",
+            "01234567890",
+            "County Durham and Darlington",
+            true,
+            "01234567890",
+          )
           body.additionalInformationDetailsTableData.ofHomeOfficeInterest shouldBe true
           body.additionalInformationDetailsTableData.homeOfficeInterestNotes shouldBe "Is of interest"
           body.additionalInformationDetailsTableData.offenderPersonalityDisorderPathway shouldBe "N/A"
@@ -292,6 +328,32 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withUpdatedBy(testUser.id)
         .create()
       referralCriminogenicNeedsRepository.save(needs)
+
+      val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
+        .orElseThrow()
+      val referralAssignment = ReferralProviderAssignment(
+        UUID.randomUUID(),
+        referral,
+        communityServiceProvider,
+      )
+      referralProviderAssignmentRepository.save(referralAssignment)
+
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          UUID.randomUUID(),
+          referral.id,
+          "pp name",
+          "role",
+          "pp@email.com",
+          COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+          42,
+          "01234567890",
+          "01234567890",
+          true,
+          updatedAt = OffsetDateTime.now(),
+          testUser.id,
+        ),
+      )
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -347,6 +409,32 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .withUpdatedBy(testUser.id)
         .create()
       referralCriminogenicNeedsRepository.save(needs)
+
+      val communityServiceProvider = communityServiceProviderRepository.findById(UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b"))
+        .orElseThrow()
+      val referralAssignment = ReferralProviderAssignment(
+        UUID.randomUUID(),
+        referral,
+        communityServiceProvider,
+      )
+      referralProviderAssignmentRepository.save(referralAssignment)
+
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          UUID.randomUUID(),
+          referral.id,
+          "pp name",
+          "role",
+          "pp@email.com",
+          COUNTY_DURHAM_AND_DARLINGTON_PDU_ID,
+          42,
+          "01234567890",
+          "01234567890",
+          true,
+          updatedAt = OffsetDateTime.now(),
+          testUser.id,
+        ),
+      )
 
       webTestClient.get()
         .uri("/bff/draft-referral/check-draft-referral-details/${referral.id}")
@@ -764,7 +852,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       val communityServiceProvider = referralHelper.getCommunityServiceProvider()
       val referral = referralHelper.createDraftReferral(person = person, createdBy = testUser.id)
 
-      val expectedAssociatedPdus = pduRepository.findByContractAreaId(communityServiceProvider.contractArea.id)
+      val expectedAssociatedPdus = pduRepository.findByReferenceDataContractAreaId(communityServiceProvider.referenceDataContractArea.id)
         .map { it.name }
         .sorted()
 
@@ -776,8 +864,8 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<AreaConfirmationBffResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-          body.contractArea shouldBe communityServiceProvider.contractArea.area
-          body.deliveryPartner shouldBe communityServiceProvider.serviceProvider.name
+          body.contractArea shouldBe communityServiceProvider.referenceDataContractArea.area
+          body.deliveryPartner shouldBe communityServiceProvider.referenceDataServiceProvider.name
           body.associatedPdus shouldBe expectedAssociatedPdus
           body.crn shouldBe person.identifier
           body.dateOfBirth shouldBe person.dateOfBirth.toFormattedDateOfBirthLong()
@@ -1092,7 +1180,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
   @Nested
   @DisplayName("PATCH /draft-referral/community-service-provider/:referralId")
-  inner class CommunityServiceProviderTest {
+  inner class CommunityReferenceDataServiceProviderTest {
 
     @BeforeEach
     fun setup() {
@@ -1140,7 +1228,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
 
       val assignments = referralProviderAssignmentRepository.findByReferralId(referral.id)
       assignments.size shouldBe 1
-      assignments.first().communityServiceProvider.id shouldBe newCommunityServiceProvider.id
+      assignments.first().referenceDataCommunityServiceProvider.id shouldBe newCommunityServiceProvider.id
     }
 
     @Test
@@ -1412,6 +1500,32 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
       referralRepository.save(savedReferral)
 
       referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
+
+      webTestClient.get()
+        .uri("/bff/task-list-status/${savedReferral.id}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<TaskListStatusResponseDto>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+
+          body.checkProbationPractitionerDetailsCompleted shouldBe null
+          body.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
+        }
+    }
+
+    @Test
+    fun `should default to main point of contact when probation practitioner in nDelius is unallocated`() {
+      val testUser = referralHelper.createTestUser()
+      val person = referralHelper.createPerson(identifier = "X123456")
+      val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
+      referralRepository.save(savedReferral)
+
+      referralHelper.stubCommunityManagerForReferral(
+        person,
+        communityManager = createCommunityManagerDto(crn = person.identifier, forename = "Unallocated", surname = "Staff"),
+      )
 
       webTestClient.get()
         .uri("/bff/task-list-status/${savedReferral.id}")

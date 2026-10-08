@@ -2,17 +2,17 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.repository.specificatio
 
 import org.springframework.data.jpa.domain.Specification
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CaseListView
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataServiceProvider
 import java.time.OffsetDateTime
 import java.util.UUID
 
 object CaseListViewSpecifications {
 
-  fun hasServiceProviderIn(serviceProviders: Set<ServiceProvider>): Specification<CaseListView> = Specification { root, _, criteriaBuilder ->
-    if (serviceProviders.isEmpty()) {
+  fun hasServiceProviderIn(referenceDataServiceProviders: Set<ReferenceDataServiceProvider>): Specification<CaseListView> = Specification { root, _, criteriaBuilder ->
+    if (referenceDataServiceProviders.isEmpty()) {
       criteriaBuilder.disjunction() // Returns false, no results
     } else {
-      val serviceProviderIds = serviceProviders.map { it.id }
+      val serviceProviderIds = referenceDataServiceProviders.map { it.id }
       root.get<UUID>("serviceProviderId").`in`(serviceProviderIds)
     }
   }

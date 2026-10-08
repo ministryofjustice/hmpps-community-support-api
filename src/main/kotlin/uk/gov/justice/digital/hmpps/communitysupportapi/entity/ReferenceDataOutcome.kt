@@ -15,8 +15,8 @@ enum class OutcomeSetting {
 }
 
 @Entity
-@Table(name = "outcome")
-class Outcome(
+@Table(name = "reference_data_outcome")
+class ReferenceDataOutcome(
   @Id
   @Column(name = "id")
   val id: UUID,

@@ -3,18 +3,18 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.repository
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStep
 import java.util.UUID
 
-interface ActionPlanStepRepository : JpaRepository<ActionPlanStep, UUID> {
-  fun findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId: UUID): List<ActionPlanStep>
+interface ActionPlanStepRepository : JpaRepository<ReferenceDataActionPlanStep, UUID> {
+  fun findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId: UUID): List<ReferenceDataActionPlanStep>
 
-  fun findAllByStepTypeOrderByOrderNumberAsc(stepType: ActionPlanStepType): List<ActionPlanStep>
+  fun findAllByStepTypeOrderByOrderNumberAsc(stepType: ActionPlanStepType): List<ReferenceDataActionPlanStep>
 
   @Query(
     """
-    SELECT s FROM ActionPlanStep s
+    SELECT s FROM ReferenceDataActionPlanStep s
     WHERE s.stepType = :stepType
     AND s.actionPlanTemplateId = (
       SELECT ap.actionPlanTemplateId FROM ActionPlan ap WHERE ap.referralId = :referralId
@@ -25,11 +25,11 @@ interface ActionPlanStepRepository : JpaRepository<ActionPlanStep, UUID> {
   fun findNeedStepsByReferralId(
     @Param("referralId") referralId: UUID,
     @Param("stepType") stepType: ActionPlanStepType = ActionPlanStepType.NEED,
-  ): List<ActionPlanStep>
+  ): List<ReferenceDataActionPlanStep>
 
   @Query(
     """
-    SELECT s FROM ActionPlanStep s
+    SELECT s FROM ReferenceDataActionPlanStep s
     WHERE s.stepType = :stepType
     AND s.actionPlanTemplateId = (
       SELECT ap.actionPlanTemplateId FROM ActionPlan ap WHERE ap.referralId = :referralId
@@ -41,5 +41,5 @@ interface ActionPlanStepRepository : JpaRepository<ActionPlanStep, UUID> {
   fun findStepByReferralIdAndStepType(
     @Param("referralId") referralId: UUID,
     @Param("stepType") stepType: ActionPlanStepType,
-  ): ActionPlanStep?
+  ): ReferenceDataActionPlanStep?
 }

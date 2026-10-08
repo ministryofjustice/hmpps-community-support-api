@@ -10,13 +10,13 @@ import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.cpr.CprPersonDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.CommunityManagerDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataCommunityServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
@@ -50,13 +50,13 @@ class ReferralTestSupport(
 ) {
   val communityServiceProviderId: UUID = UUID.fromString("bc852b9d-1997-4ce4-ba7f-cd1759e15d2b")
 
-  fun getCommunityServiceProvider(): CommunityServiceProvider = communityServiceProviderRepository.findById(communityServiceProviderId).get()
+  fun getCommunityServiceProvider(): ReferenceDataCommunityServiceProvider = communityServiceProviderRepository.findById(communityServiceProviderId).get()
 
-  fun getProviders(): Pair<ServiceProvider, CommunityServiceProvider> {
+  fun getProviders(): Pair<ReferenceDataServiceProvider, ReferenceDataCommunityServiceProvider> {
     val serviceProvider = serviceProviderRepository.findAll().first()
     val communityServiceProvider =
       communityServiceProviderRepository.findAll().first {
-        it.serviceProvider.id == serviceProvider.id
+        it.referenceDataServiceProvider.id == serviceProvider.id
       }
 
     return serviceProvider to communityServiceProvider
@@ -186,11 +186,11 @@ class ReferralTestSupport(
 
   fun createProviderAssignment(
     referral: Referral,
-    communityServiceProvider: CommunityServiceProvider,
+    referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider,
   ): ReferralProviderAssignment = referralProviderAssignmentRepository.save(
     ReferralProviderAssignmentFactory()
       .withReferral(referral)
-      .withCommunityServiceProvider(communityServiceProvider)
+      .withCommunityServiceProvider(referenceDataCommunityServiceProvider)
       .create(),
   )
 
@@ -236,11 +236,11 @@ class ReferralTestSupport(
     }
   }
 
-  fun assignToCommunityServiceProvider(referral: Referral, communityServiceProvider: CommunityServiceProvider) {
+  fun assignToCommunityServiceProvider(referral: Referral, referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider) {
     referralProviderAssignmentRepository.save(
       ReferralProviderAssignmentFactory()
         .withReferral(referral)
-        .withCommunityServiceProvider(communityServiceProvider)
+        .withCommunityServiceProvider(referenceDataCommunityServiceProvider)
         .create(),
     )
   }
@@ -250,11 +250,11 @@ class ReferralTestSupport(
     referenceNumber: String,
     submittedBy: ReferralUser,
     caseWorkers: List<ReferralUser>,
-    communityServiceProvider: CommunityServiceProvider,
+    referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider,
     createdAt: OffsetDateTime,
   ): Referral {
     val referral = createReferral(person, referenceNumber, submittedBy, createdAt)
-    assignToCommunityServiceProvider(referral, communityServiceProvider = communityServiceProvider)
+    assignToCommunityServiceProvider(referral, referenceDataCommunityServiceProvider = referenceDataCommunityServiceProvider)
     assignCaseWorkers(referral, caseWorkers)
 
     return referral

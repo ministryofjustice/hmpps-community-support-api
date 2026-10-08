@@ -7,17 +7,19 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStep
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanTemplate
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStep
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestion
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestionChoice
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanTemplate
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionChoiceRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
@@ -27,6 +29,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionP
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionAnswerDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionAnswerHeaderFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanTemplateFactory
 import java.time.OffsetDateTime
@@ -42,11 +45,12 @@ class ActionPlanTestSupport(
   private val actionPlanStepQuestionAnswerHeaderRepository: ActionPlanStepQuestionAnswerHeaderRepository,
   private val actionPlanStepQuestionAnswerDetailsRepository: ActionPlanStepQuestionAnswerDetailsRepository,
   private val actionPlanActivityRepository: ActionPlanActivityRepository,
+  private val actionPlanStepQuestionChoiceRepository: ActionPlanStepQuestionChoiceRepository,
 ) {
   fun createActionPlanTemplate(
     id: UUID = UUID.randomUUID(),
     activeGlobal: Boolean = false,
-  ): ActionPlanTemplate = actionPlanTemplateRepository.save(
+  ): ReferenceDataActionPlanTemplate = actionPlanTemplateRepository.save(
     ActionPlanTemplateFactory()
       .withId(id)
       .withActiveGlobal(activeGlobal)
@@ -103,7 +107,7 @@ class ActionPlanTestSupport(
     orderNumber: Int = 1,
     name: String = "Step 1",
     stepType: ActionPlanStepType = ActionPlanStepType.NEED,
-  ): ActionPlanStep = actionPlanStepRepository.save(
+  ): ReferenceDataActionPlanStep = actionPlanStepRepository.save(
     ActionPlanStepFactory()
       .withActionPlanTemplateId(actionPlanTemplateId)
       .withOrderNumber(orderNumber)
@@ -120,7 +124,7 @@ class ActionPlanTestSupport(
     questionType: ActionPlanQuestionType = ActionPlanQuestionType.OUTCOME,
     maxNumberResponses: Int = 1,
     needId: UUID? = null,
-  ): ActionPlanStepQuestion = actionPlanStepQuestionRepository.save(
+  ): ReferenceDataActionPlanStepQuestion = actionPlanStepQuestionRepository.save(
     ActionPlanStepQuestionFactory()
       .withActionPlanStepId(actionPlanStepId)
       .withOrderNumber(orderNumber)
@@ -170,6 +174,98 @@ class ActionPlanTestSupport(
       .create(),
   )
 
+  fun createTextAreaQuestionAndAnswer(
+    actionPlanStepId: UUID,
+    actionPlanId: UUID,
+    answer: String,
+    orderNumber: Int = 1,
+    questionType: ActionPlanQuestionType = ActionPlanQuestionType.GENERAL,
+    createdBy: String = "SYSTEM",
+    createdAt: OffsetDateTime = OffsetDateTime.now(),
+  ): QuestionAndAnswer {
+    val question = createActionPlanStepQuestion(
+      actionPlanStepId = actionPlanStepId,
+      orderNumber = orderNumber,
+      answerType = ActionPlanQuestionAnswerType.TEXTAREA,
+      questionType = questionType,
+    )
+    val header = createActionPlanStepQuestionAnswerHeader(
+      actionPlanId = actionPlanId,
+      actionPlanStepQuestionId = question.id,
+      createdAt = createdAt,
+      createdBy = createdBy,
+    )
+    val details = createActionPlanStepQuestionAnswerDetails(
+      actionPlanStepQuestionAnswerHeaderId = header.id,
+      content = answer,
+      createdAt = createdAt,
+      createdBy = createdBy,
+    )
+    return QuestionAndAnswer(question, header, details)
+  }
+
+  fun createActionPlanStepQuestionChoice(
+    actionPlanStepQuestionId: UUID,
+    value: String,
+    orderNumber: Int = 1,
+    label: String = value,
+    hasFreeText: Boolean = false,
+  ): ReferenceDataActionPlanStepQuestionChoice = actionPlanStepQuestionChoiceRepository.save(
+    ActionPlanStepQuestionChoiceFactory()
+      .withActionPlanStepQuestionId(actionPlanStepQuestionId)
+      .withOrderNumber(orderNumber)
+      .withLabel(label)
+      .withValue(value)
+      .withHasFreeText(hasFreeText)
+      .create(),
+  )
+
+  fun createCheckboxQuestionAndAnswers(
+    actionPlanStepId: UUID,
+    actionPlanId: UUID,
+    selectedValues: List<String>,
+    choiceValues: List<String> = listOf("option-1", "option-2", "option-3"),
+    maxNumberResponses: Int = choiceValues.size,
+    orderNumber: Int = 1,
+    questionType: ActionPlanQuestionType = ActionPlanQuestionType.GENERAL,
+    createdBy: String = "SYSTEM",
+    createdAt: OffsetDateTime = OffsetDateTime.now(),
+  ): CheckboxQuestionAndAnswers {
+    require(choiceValues.containsAll(selectedValues)) { "selectedValues $selectedValues must be a subset of choiceValues $choiceValues" }
+    require(selectedValues.size <= maxNumberResponses) { "Cannot select more than $maxNumberResponses values" }
+
+    val question = createActionPlanStepQuestion(
+      actionPlanStepId = actionPlanStepId,
+      orderNumber = orderNumber,
+      answerType = ActionPlanQuestionAnswerType.CHECKBOX,
+      questionType = questionType,
+      maxNumberResponses = maxNumberResponses,
+    )
+    val choices = choiceValues.mapIndexed { index, value ->
+      createActionPlanStepQuestionChoice(question.id, value, orderNumber = index + 1)
+    }
+    // choices is a lazy, non-owning relation, so populate it so validation works on the returned question
+    question.choices.addAll(choices)
+
+    val answers = selectedValues.mapIndexed { index, value ->
+      val header = createActionPlanStepQuestionAnswerHeader(
+        actionPlanId = actionPlanId,
+        actionPlanStepQuestionId = question.id,
+        orderNumber = index + 1,
+        createdAt = createdAt,
+        createdBy = createdBy,
+      )
+      val details = createActionPlanStepQuestionAnswerDetails(
+        actionPlanStepQuestionAnswerHeaderId = header.id,
+        content = value,
+        createdAt = createdAt,
+        createdBy = createdBy,
+      )
+      HeaderAndDetails(header, details)
+    }
+    return CheckboxQuestionAndAnswers(question, choices, answers)
+  }
+
   fun createActionPlanActivity(
     actionPlanStepQuestionAnswerHeaderId: UUID,
     who: String = "Service provider",
@@ -184,3 +280,20 @@ class ActionPlanTestSupport(
       .create(),
   )
 }
+
+data class QuestionAndAnswer(
+  val question: ReferenceDataActionPlanStepQuestion,
+  val answerHeader: ActionPlanStepQuestionAnswerHeader,
+  val answerDetails: ActionPlanStepQuestionAnswerDetails,
+)
+
+data class HeaderAndDetails(
+  val header: ActionPlanStepQuestionAnswerHeader,
+  val details: ActionPlanStepQuestionAnswerDetails,
+)
+
+data class CheckboxQuestionAndAnswers(
+  val question: ReferenceDataActionPlanStepQuestion,
+  val choices: List<ReferenceDataActionPlanStepQuestionChoice>,
+  val answers: List<HeaderAndDetails>,
+)

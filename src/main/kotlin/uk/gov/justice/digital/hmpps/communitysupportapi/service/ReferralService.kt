@@ -17,9 +17,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ServiceEndDatePageDt
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitReferralResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenderProfileDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataCommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
@@ -172,7 +172,7 @@ class ReferralService(
     val providerAssignment = referralProviderAssignmentRepository.findByReferralId(referralId)
       .firstOrNull() ?: throw NotFoundException("Provider assignment not found for referral id $referralId")
 
-    val communityServiceProvider = providerAssignment.communityServiceProvider
+    val communityServiceProvider = providerAssignment.referenceDataCommunityServiceProvider
 
     val referralEvent = ReferralEvent(
       id = UUID.randomUUID(),
@@ -310,11 +310,11 @@ class ReferralService(
       lastName = person.lastName,
       sex = person.gender,
       personIdentifier = foundReferral.personIdentifier,
-      communityServiceProviderId = providerAssignment.communityServiceProvider.id,
-      communityServiceProviderName = providerAssignment.communityServiceProvider.name,
-      region = providerAssignment.communityServiceProvider.contractArea.region.name,
+      communityServiceProviderId = providerAssignment.referenceDataCommunityServiceProvider.id,
+      communityServiceProviderName = providerAssignment.referenceDataCommunityServiceProvider.name,
+      region = providerAssignment.referenceDataCommunityServiceProvider.referenceDataContractArea.referenceDataRegion.name,
       referenceNumber = foundReferral.referenceNumber,
-      deliveryPartner = providerAssignment.communityServiceProvider.serviceProvider.name,
+      deliveryPartner = providerAssignment.referenceDataCommunityServiceProvider.referenceDataServiceProvider.name,
     )
   }
 
@@ -343,8 +343,8 @@ class ReferralService(
     return ConfirmPersonDetailsBffDto.from(person.id, personAggregate, offenderProfile)
   }
 
-  private fun generateReferenceNumber(communityServiceProvider: CommunityServiceProvider, referralId: UUID): String {
-    val type = communityServiceProvider.serviceProvider.name
+  private fun generateReferenceNumber(referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider, referralId: UUID): String {
+    val type = referenceDataCommunityServiceProvider.referenceDataServiceProvider.name
 
     for (i in 1..MAX_REFERENCE_NUMBER_TRIES) {
       val candidate = referenceGenerator.generate(type)

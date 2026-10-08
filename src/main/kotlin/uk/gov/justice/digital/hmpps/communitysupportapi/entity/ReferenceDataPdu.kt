@@ -9,22 +9,15 @@ import jakarta.persistence.Table
 import java.util.UUID
 
 @Entity
-@Table(name = "community_service_provider")
-class CommunityServiceProvider(
+@Table(name = "reference_data_pdu")
+class ReferenceDataPdu(
   @Id
   val id: UUID,
 
   @ManyToOne
   @JoinColumn(name = "contract_area_id", nullable = false)
-  val contractArea: ContractArea,
+  val referenceDataContractArea: ReferenceDataContractArea,
 
   @Column(nullable = false)
   val name: String,
-
-  @ManyToOne
-  @JoinColumn(name = "service_provider_id", nullable = false)
-  val serviceProvider: ServiceProvider,
-
-  @Column(nullable = false)
-  val description: String,
 )

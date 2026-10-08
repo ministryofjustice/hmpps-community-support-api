@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 
-class WithdrawalReasonRepositoryTest : IntegrationTestBase() {
+class ReferenceDataWithdrawalReasonRepositoryTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var withdrawalReasonRepository: WithdrawalReasonRepository

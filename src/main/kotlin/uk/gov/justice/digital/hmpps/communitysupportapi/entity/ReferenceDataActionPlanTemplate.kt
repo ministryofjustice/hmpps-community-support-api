@@ -14,11 +14,11 @@ import java.util.UUID
  * the `active_global` template should be the only ActionPlanTemplate instance
  *
  * @see ActionPlan
- * @see ActionPlanStep
+ * @see ReferenceDataActionPlanStep
  */
 @Entity
-@Table(name = "action_plan_template")
-data class ActionPlanTemplate(
+@Table(name = "reference_data_action_plan_template")
+data class ReferenceDataActionPlanTemplate(
   @Id
   @Column(name = "id")
   val id: UUID,

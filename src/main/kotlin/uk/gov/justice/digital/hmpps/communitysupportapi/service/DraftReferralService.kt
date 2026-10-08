@@ -107,7 +107,7 @@ class DraftReferralService(
     val communityServiceProvider = communityServiceProviderRepository.findById(providerId)
       .orElseThrow { NotFoundException("Community Service Provider not found for id $providerId") }
 
-    val associatedPdus = pduRepository.findByContractAreaId(communityServiceProvider.contractArea.id)
+    val associatedPdus = pduRepository.findByReferenceDataContractAreaId(communityServiceProvider.referenceDataContractArea.id)
       .map { it.name }
       .sorted()
 
@@ -172,7 +172,7 @@ class DraftReferralService(
     val providerAssignment = ReferralProviderAssignment(
       id = UUID.randomUUID(),
       referral = referral,
-      communityServiceProvider = communityServiceProvider,
+      referenceDataCommunityServiceProvider = communityServiceProvider,
       createdAt = LocalDateTime.now(),
     )
     referralProviderAssignmentRepository.save(providerAssignment)
@@ -555,6 +555,12 @@ class DraftReferralService(
     val criminogenicNeeds = referralCriminogenicNeedsRepository.findByReferralId(referralId)
       ?: throw NotFoundException("Criminogenic needs not found for referral $referralId")
 
+    val communityServiceProvider = communityServiceProviderRepository.findByReferralId(referralId)
+      ?: throw NotFoundException("Community service not found for referral $referralId")
+
+    val offenceSentenceInfo = buildOffenceSentenceInfo()
+    val ppDetails = getProbationPractitionerDetailsForReferral(referralId)
+
     return CheckDraftReferralDetailsBffResponseDto.from(
       referral,
       person,
@@ -565,6 +571,9 @@ class DraftReferralService(
       nationalities,
       personAdditionalSupportNeeds,
       criminogenicNeeds,
+      communityServiceProvider.referenceDataContractArea.area,
+      offenceSentenceInfo,
+      ppDetails,
     )
   }
 

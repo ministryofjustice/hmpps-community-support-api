@@ -206,6 +206,84 @@ class ActionPlanController(
     return ResponseEntity.ok(actionPlanService.getRiskAndAdjustmentsForReferral(referralReference))
   }
 
+  @Operation(summary = "Get the confirm service end date questions and saved answers of the service delivery details")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Confirm service end date questions and saved answers returned",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanSessionDeliveryDetailsResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{referralReference}/action-plan/service-delivery-details/confirm-service-end-date")
+  fun getConfirmServiceEndDate(@PathVariable referralReference: String): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
+    log.info("Fetching confirm service end date service delivery details for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.getConfirmServiceEndDateForReferral(referralReference))
+  }
+
+  @Operation(summary = "Get the update service end date questions and saved answers of the service delivery details")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Update service end date questions and saved answers returned",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanSessionDeliveryDetailsResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{referralReference}/action-plan/service-delivery-details/update-service-end-date")
+  fun getUpdateServiceEndDate(@PathVariable referralReference: String): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
+    log.info("Fetching update service end date service delivery details for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.getUpdateServiceEndDateForReferral(referralReference))
+  }
+
+  @Operation(summary = "Get the person involvement questions and saved answers of the service delivery details")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Person involvement questions and saved answers returned",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanSessionDeliveryDetailsResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{referralReference}/action-plan/service-delivery-details/person-involvement")
+  fun getPersonInvolvement(@PathVariable referralReference: String): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
+    log.info("Fetching person involvement service delivery details for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.getPersonInvolvementForReferral(referralReference))
+  }
+
   @Operation(summary = "Submit a need, outcome, and activities for an action plan")
   @ApiResponses(
     value = [

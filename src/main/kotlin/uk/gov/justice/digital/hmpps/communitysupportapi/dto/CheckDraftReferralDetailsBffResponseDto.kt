@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.ArnsRiskDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.arns.CommunitySupportRiskDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.delius.OffenceSentenceDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.PersonAdditionalSupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
@@ -52,6 +53,9 @@ data class CheckDraftReferralDetailsBffResponseDto(
       nationalities: List<String>,
       personAdditionalSupportNeeds: PersonAdditionalSupportNeeds,
       personNeeds: ReferralCriminogenicNeeds,
+      area: String,
+      offenceSentenceInfo: OffenceSentenceDto,
+      ppDetails: ProbationPractitionerDetailsBffResponseDto?,
     ): CheckDraftReferralDetailsBffResponseDto = CheckDraftReferralDetailsBffResponseDto(
       id = referral.id,
       referenceNumber = referral.referenceNumber,
@@ -69,9 +73,9 @@ data class CheckDraftReferralDetailsBffResponseDto(
       riskInformationDetailsTableData = DraftRiskInformationDetailsTableDataDto.from(communitySupportRiskDto),
       additionalSupportNeedsDetailsTableData = DraftAdditionalSupportNeedsDetailsTableDataDto.from(personAdditionalSupportNeeds),
       personNeedsDetailsTableData = DraftPersonNeedsDetailsTableDataDto.from(personNeeds),
-      referralAreaTableData = DraftReferralAreaTableDataDto.from(),
-      additionalReferralInformationTableData = DraftAdditionalReferralInformationTableDataDto.from(referral),
-      mainPocDetailsTableData = DraftMainPOCDetailsTableDataDto.from(),
+      referralAreaTableData = DraftReferralAreaTableDataDto.from(area),
+      additionalReferralInformationTableData = DraftAdditionalReferralInformationTableDataDto.from(referral, offenceSentenceInfo),
+      mainPocDetailsTableData = DraftMainPOCDetailsTableDataDto.from(ppDetails),
     )
   }
 
@@ -243,7 +247,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val area: String? = null,
   ) {
     companion object {
-      fun from(): DraftReferralAreaTableDataDto = DraftReferralAreaTableDataDto()
+      fun from(area: String): DraftReferralAreaTableDataDto = DraftReferralAreaTableDataDto(area)
     }
   }
 
@@ -259,15 +263,15 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val anythingElse: String? = null,
   ) {
     companion object {
-      fun from(referral: Referral): DraftAdditionalReferralInformationTableDataDto = DraftAdditionalReferralInformationTableDataDto(
+      fun from(referral: Referral, offenceSentenceInfo: OffenceSentenceDto): DraftAdditionalReferralInformationTableDataDto = DraftAdditionalReferralInformationTableDataDto(
         serviceCompletionDate = referral.targetServiceCompletionDate,
         serviceCompletionDateReason = referral.targetServiceCompletionDateReason,
         serviceDays = referral.serviceDays,
-        offence = null,
-        offenceSubCategory = null,
-        outcome = null,
-        sentenceEndDate = null,
-        licenceConditions = null,
+        offence = offenceSentenceInfo.offence,
+        offenceSubCategory = offenceSentenceInfo.offenceSubCategory,
+        outcome = offenceSentenceInfo.outcome,
+        sentenceEndDate = offenceSentenceInfo.sentenceEndDate,
+        licenceConditions = offenceSentenceInfo.licenceConditionsOrZonesDetails,
         anythingElse = null,
       )
     }
@@ -284,7 +288,16 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val teamPhoneNumber: String? = null,
   ) {
     companion object {
-      fun from(): DraftMainPOCDetailsTableDataDto = DraftMainPOCDetailsTableDataDto()
+      fun from(ppDetails: ProbationPractitionerDetailsBffResponseDto?): DraftMainPOCDetailsTableDataDto = DraftMainPOCDetailsTableDataDto(
+        ppDetails?.ppDetailsFoundAndCorrect,
+        ppDetails?.name,
+        ppDetails?.jobRole,
+        ppDetails?.emailAddress,
+        ppDetails?.phoneNumber,
+        ppDetails?.pdu?.name,
+        ppDetails?.probationOffice != null,
+        ppDetails?.teamPhoneNumber,
+      )
     }
   }
 }

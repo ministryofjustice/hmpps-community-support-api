@@ -14,7 +14,7 @@ class CommunityServiceProviderService(
   fun communityServiceProviders(): CommunitySupportServicesDto {
     val providers = communityServiceProviderRepository.findAll()
     val services = providers.map { provider ->
-      val pdus = pduRepository.findByContractAreaId(provider.contractArea.id)
+      val pdus = pduRepository.findByReferenceDataContractAreaId(provider.referenceDataContractArea.id)
         .map { it.name }
         .sorted()
       CommunitySupportServiceDto.from(provider, pdus)

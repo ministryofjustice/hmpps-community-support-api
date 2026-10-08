@@ -2,10 +2,10 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestion
 import java.util.UUID
 
-class ActionPlanStepQuestionFactory : TestEntityFactory<ActionPlanStepQuestion>() {
+class ActionPlanStepQuestionFactory : TestEntityFactory<ReferenceDataActionPlanStepQuestion>() {
 
   private var id: UUID = UUID.randomUUID()
   private var actionPlanStepId: UUID = UUID.randomUUID()
@@ -29,7 +29,7 @@ class ActionPlanStepQuestionFactory : TestEntityFactory<ActionPlanStepQuestion>(
   fun withMaxNumberResponses(maxNumberResponses: Int) = apply { this.maxNumberResponses = maxNumberResponses }
   fun withNeedId(needId: UUID?) = apply { this.needId = needId }
 
-  override fun create(): ActionPlanStepQuestion = ActionPlanStepQuestion(
+  override fun create(): ReferenceDataActionPlanStepQuestion = ReferenceDataActionPlanStepQuestion(
     id = id,
     actionPlanStepId = actionPlanStepId,
     orderNumber = orderNumber,

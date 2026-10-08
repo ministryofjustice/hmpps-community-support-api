@@ -2,7 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import jakarta.validation.Valid
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionAnswerType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestion
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.NullOrNotBlank
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.actionplan.NoDuplicateAnswerValues
 import java.util.UUID
@@ -33,7 +33,7 @@ data class ActionPlanStepQuestionDto(
   val savedResponses: List<SessionDeliveryDetailsQuestionAnswer> = emptyList(),
 ) {
   companion object {
-    fun fromEntity(question: ActionPlanStepQuestion): ActionPlanStepQuestionDto = ActionPlanStepQuestionDto(
+    fun fromEntity(question: ReferenceDataActionPlanStepQuestion): ActionPlanStepQuestionDto = ActionPlanStepQuestionDto(
       id = question.id,
       displayOrder = question.orderNumber,
       label = question.title,

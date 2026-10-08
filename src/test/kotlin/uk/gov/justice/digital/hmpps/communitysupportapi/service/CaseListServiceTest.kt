@@ -23,8 +23,8 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.ServicePro
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.ServiceProviderAccessScopeMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CaseListView
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CaseListViewRepository
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.OffsetDateTime
@@ -277,7 +277,7 @@ class CaseListServiceTest {
     id: UUID = UUID.randomUUID(),
     authGroupId: String = "INT_SP_TEST",
     name: String = "Test Provider",
-  ) = ServiceProvider(
+  ) = ReferenceDataServiceProvider(
     id = id,
     authGroupId = authGroupId,
     name = name,

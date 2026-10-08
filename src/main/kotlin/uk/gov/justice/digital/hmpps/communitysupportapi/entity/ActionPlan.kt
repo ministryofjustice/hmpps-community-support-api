@@ -38,7 +38,7 @@ class ActionPlan(
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "action_plan_template_id", insertable = false, updatable = false, unique = true)
-  val actionPlanTemplate: ActionPlanTemplate? = null,
+  val referenceDataActionPlanTemplate: ReferenceDataActionPlanTemplate? = null,
 
   @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
   @JoinColumn(name = "action_plan_id", insertable = false, updatable = false)

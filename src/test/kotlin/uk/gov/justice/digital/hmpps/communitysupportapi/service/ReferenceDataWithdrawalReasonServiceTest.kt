@@ -8,12 +8,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.WithdrawalReason
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataWithdrawalReason
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.WithdrawalReasonRepository
 import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
-class WithdrawalReasonServiceTest {
+class ReferenceDataWithdrawalReasonServiceTest {
 
   @Mock
   lateinit var withdrawalReasonRepository: WithdrawalReasonRepository
@@ -25,7 +25,7 @@ class WithdrawalReasonServiceTest {
     withdrawalReasonService = WithdrawalReasonService(withdrawalReasonRepository)
   }
 
-  private fun aWithdrawalReason(name: String, group: String) = WithdrawalReason(id = UUID.randomUUID(), name = name, group = group)
+  private fun aWithdrawalReason(name: String, group: String) = ReferenceDataWithdrawalReason(id = UUID.randomUUID(), name = name, group = group)
 
   @Test
   fun `getWithdrawalReasonsGroupedByGroupName should group reason names by group name preserving order`() {

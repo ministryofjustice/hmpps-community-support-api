@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
+import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -7,7 +8,10 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDetails
@@ -58,6 +62,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   private lateinit var appointmentService: AppointmentService
 
   @Autowired
+  private lateinit var entityManager: EntityManager
+
+  @Autowired
   private lateinit var appointmentRepository: AppointmentRepository
 
   @Autowired
@@ -104,6 +111,38 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     person = referralHelper.createPerson(firstName = "Alex", lastName = "Jones", identifier = "X654321")
     referral = referralHelper.createReferral(person, submittedBy = testUser)
     caseReference = referral.referenceNumber!!
+  }
+
+  @ParameterizedTest
+  @EnumSource(AppointmentType::class)
+  @Transactional
+  fun `should reload multiple history records for every appointment type`(type: AppointmentType) {
+    val appointment = appointmentHelper.createAppointment(referral, type)
+    val delivery = appointmentHelper.createAppointmentDelivery()
+    val firstHistory = appointmentHelper.createAppointmentIcs(
+      appointment = appointment,
+      delivery = delivery,
+      user = testUser,
+      communications = listOf("Email"),
+    )
+    val secondHistory = appointmentHelper.createAppointmentIcs(
+      appointment = appointment,
+      delivery = delivery,
+      user = testUser,
+      communications = listOf("SMS"),
+    )
+    entityManager.flush()
+    entityManager.clear()
+
+    val reloadedAppointment = appointmentRepository.findById(appointment.id).orElseThrow()
+    assertThat(reloadedAppointment.type).isEqualTo(type)
+    assertThat(reloadedAppointment.appointmentHistory.map { it.id })
+      .containsExactlyInAnyOrder(firstHistory.id, secondHistory.id)
+    reloadedAppointment.appointmentHistory.forEach { history ->
+      assertThat(history.appointment).isSameAs(reloadedAppointment)
+      assertThat(history.appointmentDelivery?.id).isEqualTo(delivery.id)
+      assertThat(history.createdBy.id).isEqualTo(testUser.id)
+    }
   }
 
   @Nested
@@ -410,6 +449,56 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(time.hour).isEqualTo(3)
       assertThat(time.minute).isEqualTo(15)
       assertThat(time.amPm).isEqualTo("pm")
+    }
+  }
+
+  @Nested
+  @DisplayName("getAppointmentsForReferral")
+  inner class GetAppointmentsForReferral {
+
+    @Test
+    fun `should return person details and all appointments for the referral`() {
+      val laterAppointment = appointmentHelper.createAppointment(referral, type = AppointmentType.PRE_RELEASE_SESSION)
+      appointmentHelper.createAppointmentIcs(
+        laterAppointment,
+        appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL, "Teams link"),
+        testUser,
+        LocalDateTime.of(2026, 9, 22, 15, 0),
+        LocalDateTime.of(2026, 9, 21, 10, 0),
+        listOf("Email"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(laterAppointment)
+
+      val earlierAppointment = appointmentHelper.createAppointment(referral, type = AppointmentType.CONTACT_SESSION)
+      appointmentHelper.createAppointmentIcs(
+        earlierAppointment,
+        appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL, "Call on mobile"),
+        testUser,
+        LocalDateTime.of(2026, 9, 20, 9, 15),
+        LocalDateTime.of(2026, 9, 19, 9, 0),
+        listOf("Phone call"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(earlierAppointment)
+
+      val result = appointmentService.getAppointmentsForReferral(caseReference)
+
+      assertThat(result.personDetails.firstName).isEqualTo("Alex")
+      assertThat(result.personDetails.lastName).isEqualTo("Jones")
+      assertThat(result.personDetails.crn).isEqualTo(referral.personIdentifier)
+      assertThat(result.personDetails.dateOfBirth).isEqualTo(person.dateOfBirth.toString())
+
+      assertThat(result.appointments).hasSize(2)
+      assertThat(result.appointments.first().label).isEqualTo("Pre release appointment")
+      assertThat(result.appointments.first().time).isEqualTo("15:00 Tuesday 22 September 2026")
+      assertThat(result.appointments[1].label).isEqualTo("Contact session")
+      assertThat(result.appointments[1].time).isEqualTo("09:15 Sunday 20 September 2026")
+    }
+
+    @Test
+    fun `should throw NotFoundException for unknown referral id`() {
+      assertThrows<NotFoundException> {
+        appointmentService.getAppointmentsForReferral(UUID.randomUUID().toString())
+      }
     }
   }
 

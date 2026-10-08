@@ -7,10 +7,11 @@ import io.swagger.v3.oas.annotations.media.DiscriminatorMapping
 import io.swagger.v3.oas.annotations.media.Schema
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcs
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
+import uk.gov.justice.digital.hmpps.communitysupportapi.util.APPOINTMENT_DATETIME_FORMATTER
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.OffsetDateTime
@@ -135,7 +136,7 @@ data class AppointmentIcsResponse(
 ) {
 
   companion object {
-    fun from(ics: AppointmentIcs, status: AppointmentStatusHistoryType, referralName: ReferralNameDto): AppointmentIcsResponse {
+    fun from(ics: AppointmentHistory, status: AppointmentStatusHistoryType, referralName: ReferralNameDto): AppointmentIcsResponse {
       val appointmentDateTime = ics.appointmentDateTime
       val hour24 = appointmentDateTime.hour
       val amPm = if (hour24 < 12) "am" else "pm"
@@ -197,6 +198,44 @@ data class AppointmentIcsResponse(
       }
     }
   }
+}
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class ReferralAppointmentsBffResponseDto(
+  val personDetails: ReferralAppointmentsPersonDetailsDto,
+  val appointments: List<ReferralAppointmentSummaryDto>,
+)
+
+data class ReferralAppointmentsPersonDetailsDto(
+  val firstName: String,
+  val lastName: String,
+  val dateOfBirth: String,
+  val crn: String,
+)
+
+data class ReferralAppointmentSummaryDto(
+  val id: UUID,
+  val label: String,
+  val time: String,
+) {
+  companion object {
+    fun from(appointment: AppointmentHistory): ReferralAppointmentSummaryDto {
+      val appointmentDateTime = appointment.appointmentDateTime
+      return ReferralAppointmentSummaryDto(
+        id = appointment.id,
+        label = appointment.appointment.type.toDisplayLabel(),
+        time = appointmentDateTime.format(APPOINTMENT_DATETIME_FORMATTER),
+      )
+    }
+  }
+}
+
+fun AppointmentType.toDisplayLabel(): String = when (this) {
+  AppointmentType.ICS -> "ICS Appointment"
+  AppointmentType.CONTACT_SESSION -> "Contact session"
+  AppointmentType.POST_RELEASE_SESSION -> "Post release appointment"
+  AppointmentType.PRE_RELEASE_SESSION -> "Pre release appointment"
+  AppointmentType.HANDOVER_SESSION -> "Handover session"
 }
 
 data class AppointmentTimeResponse(

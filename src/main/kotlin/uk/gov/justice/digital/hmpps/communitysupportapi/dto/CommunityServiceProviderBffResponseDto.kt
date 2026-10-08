@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.CommunityServiceProvider
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataCommunityServiceProvider
 import java.util.UUID
 
 data class CommunityServiceProviderBffResponseDto(
@@ -9,10 +9,10 @@ data class CommunityServiceProviderBffResponseDto(
   val communityServiceProviderName: String,
 ) {
   companion object {
-    fun from(referralId: UUID, communityServiceProvider: CommunityServiceProvider) = CommunityServiceProviderBffResponseDto(
+    fun from(referralId: UUID, referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider) = CommunityServiceProviderBffResponseDto(
       referralId = referralId,
-      communityServiceProviderId = communityServiceProvider.id,
-      communityServiceProviderName = communityServiceProvider.name,
+      communityServiceProviderId = referenceDataCommunityServiceProvider.id,
+      communityServiceProviderName = referenceDataCommunityServiceProvider.name,
     )
   }
 }

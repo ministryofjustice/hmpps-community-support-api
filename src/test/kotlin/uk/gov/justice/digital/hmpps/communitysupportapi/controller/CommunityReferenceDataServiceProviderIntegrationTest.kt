@@ -13,7 +13,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunitySupportServ
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.CommunityServiceProviderRepository
 
-class CommunityServiceProviderIntegrationTest : IntegrationTestBase() {
+class CommunityReferenceDataServiceProviderIntegrationTest : IntegrationTestBase() {
 
   @MockitoSpyBean
   lateinit var communityServiceProviderRepository: CommunityServiceProviderRepository
