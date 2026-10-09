@@ -284,7 +284,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
     val email: String? = null,
     val phoneNumber: String? = null,
     val pdu: String? = null,
-    val isProbationOfficer: Boolean? = null,
+    val office: String? = null,
     val teamPhoneNumber: String? = null,
   ) {
     companion object {
@@ -295,7 +295,7 @@ data class CheckDraftReferralDetailsBffResponseDto(
         ppDetails?.emailAddress,
         ppDetails?.phoneNumber,
         ppDetails?.pdu?.name,
-        ppDetails?.probationOffice != null,
+        ppDetails?.probationOffice?.name,
         ppDetails?.teamPhoneNumber,
       )
     }
