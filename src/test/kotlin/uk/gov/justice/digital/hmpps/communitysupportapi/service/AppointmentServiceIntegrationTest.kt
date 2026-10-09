@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeReque
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentTypeOptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.InPersonAppointment
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
@@ -142,6 +143,47 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(history.appointment).isSameAs(reloadedAppointment)
       assertThat(history.appointmentDelivery?.id).isEqualTo(delivery.id)
       assertThat(history.createdBy.id).isEqualTo(testUser.id)
+    }
+  }
+
+  @Nested
+  @DisplayName("getCreateAppointmentReferenceData")
+  inner class GetCreateAppointmentReferenceData {
+
+    @Test
+    fun `should throw NotFoundException when referral is not found`() {
+      val exception = assertThrows<NotFoundException> {
+        appointmentService.getCreateAppointmentReferenceData("ZZ9999ZZ")
+      }
+
+      assertThat(exception.message).isEqualTo("Referral not found for reference ZZ9999ZZ")
+    }
+
+    @Test
+    fun `should return the four supported appointment types and probation office locations`() {
+      val response = appointmentService.getCreateAppointmentReferenceData(caseReference)
+
+      assertThat(response.appointmentTypes).containsExactly(
+        CreateAppointmentTypeOptionDto(
+          name = "Contact session",
+          value = "contact",
+        ),
+        CreateAppointmentTypeOptionDto(
+          name = "Pre-release session",
+          value = "pre-release",
+        ),
+        CreateAppointmentTypeOptionDto(
+          name = "Post-release session",
+          value = "post-release",
+        ),
+        CreateAppointmentTypeOptionDto(
+          name = "Handover session",
+          value = "handover",
+        ),
+      )
+      assertThat(response.probationOfficeLocations).isNotEmpty
+      assertThat(response.probationOfficeLocations.map { it.name })
+        .isEqualTo(response.probationOfficeLocations.map { it.name }.sorted())
     }
   }
 
@@ -488,7 +530,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(result.personDetails.dateOfBirth).isEqualTo(person.dateOfBirth.toString())
 
       assertThat(result.appointments).hasSize(2)
-      assertThat(result.appointments.first().label).isEqualTo("Pre release appointment")
+      assertThat(result.appointments.first().label).isEqualTo("Pre-release session")
       assertThat(result.appointments.first().time).isEqualTo("15:00 Tuesday 22 September 2026")
       assertThat(result.appointments[1].label).isEqualTo("Contact session")
       assertThat(result.appointments[1].time).isEqualTo("09:15 Sunday 20 September 2026")

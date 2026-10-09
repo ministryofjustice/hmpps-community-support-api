@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReferenceDataBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
@@ -132,6 +133,33 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<ReferralAppointmentsBffResponseDto> = ResponseEntity.ok(
     appointmentService.getAppointmentsForReferral(caseReference),
+  )
+
+  @Operation(summary = "Get create appointment page data for a referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Create appointment data found",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = CreateAppointmentReferenceDataBffDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{caseReference}/create-an-appointment/appointment-type")
+  fun getCreateAppointmentReferenceData(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<CreateAppointmentReferenceDataBffDto> = ResponseEntity.ok(
+    appointmentService.getCreateAppointmentReferenceData(caseReference),
   )
 
   @Operation(summary = "Get a single ICS appointment by ID")
