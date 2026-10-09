@@ -2217,12 +2217,6 @@
               "null"
             ]
           },
-          "isProbationOfficer": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
           "jobRole": {
             "type": [
               "string",
@@ -2230,6 +2224,12 @@
             ]
           },
           "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "office": {
             "type": [
               "string",
               "null"
