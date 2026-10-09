@@ -8,7 +8,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentDetailsDt
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReferenceDataBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentTypeOptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentSummaryDto
@@ -18,6 +20,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayLabel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayString
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toLocalTime
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toSessionDisplayString
@@ -37,6 +40,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
@@ -51,8 +55,8 @@ import java.util.UUID
 
 @Service
 class AppointmentService(
-  private val referralService: ReferralService,
   private val referralAssignmentService: ReferralAssignmentService,
+  private val referenceDataService: ReferenceDataService,
   private val referralRepository: ReferralRepository,
   private val appointmentRepository: AppointmentRepository,
   private val appointmentDeliveryRepository: AppointmentDeliveryRepository,
@@ -64,6 +68,13 @@ class AppointmentService(
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
+
+    private val SUPPORTED_CREATE_APPOINTMENT_TYPES = listOf(
+      AppointmentType.CONTACT_SESSION,
+      AppointmentType.PRE_RELEASE_SESSION,
+      AppointmentType.POST_RELEASE_SESSION,
+      AppointmentType.HANDOVER_SESSION,
+    )
   }
 
   private fun createNewAppointment(referral: Referral, type: AppointmentType): Appointment {
@@ -159,11 +170,7 @@ class AppointmentService(
     // 3. Delivery method
     val appointmentDelivery = createAppointmentDelivery(request.sessionMethodRequest)
 
-    // 4. Combine date + time
-    val localTime = request.time.toLocalTime()
-    val startDateTime = LocalDateTime.of(request.date, localTime)
-
-    // 5. ICS record
+    // 4. ICS record
     val savedIcs = createAppointmentIcsRecord(
       appointment = appointment,
       appointmentDelivery = appointmentDelivery,
@@ -461,6 +468,25 @@ class AppointmentService(
   }
 
   /**
+   * Returns page data for create appointment, including supported appointment types and probation office locations.
+   */
+  @Transactional(readOnly = true)
+  fun getCreateAppointmentReferenceData(caseReference: String): CreateAppointmentReferenceDataBffDto {
+    referralLookupService.findByCaseIdentifier(caseReference)
+
+    return CreateAppointmentReferenceDataBffDto(
+      appointmentTypes = SUPPORTED_CREATE_APPOINTMENT_TYPES.map {
+        CreateAppointmentTypeOptionDto(
+          name = it.toDisplayLabel(),
+          value = it.toCreateAppointmentValue(),
+        )
+      },
+      probationOfficeLocations = referenceDataService.getProbationOffices()
+        .map { ProbationOfficeSummary(id = it.probationOfficeId, name = it.name) },
+    )
+  }
+
+  /**
    * Returns appointment tab data for a referral, including person details and all appointment summaries.
    */
   @Transactional(readOnly = true)
@@ -472,12 +498,7 @@ class AppointmentService(
 
     val appointments = appointmentIcsRepository.findByReferralIdAndTypesOrderByCreatedAtDesc(
       referral.id,
-      listOf(
-        AppointmentType.CONTACT_SESSION,
-        AppointmentType.POST_RELEASE_SESSION,
-        AppointmentType.PRE_RELEASE_SESSION,
-        AppointmentType.HANDOVER_SESSION,
-      ),
+      SUPPORTED_CREATE_APPOINTMENT_TYPES,
     )
       .map { appointment ->
         ReferralAppointmentSummaryDto.from(appointment)
@@ -493,4 +514,12 @@ class AppointmentService(
       appointments = appointments,
     )
   }
+}
+
+private fun AppointmentType.toCreateAppointmentValue(): String = when (this) {
+  AppointmentType.CONTACT_SESSION -> "contact"
+  AppointmentType.PRE_RELEASE_SESSION -> "pre-release"
+  AppointmentType.POST_RELEASE_SESSION -> "post-release"
+  AppointmentType.HANDOVER_SESSION -> "handover"
+  AppointmentType.ICS -> error("ICS is not supported when creating referral appointments")
 }

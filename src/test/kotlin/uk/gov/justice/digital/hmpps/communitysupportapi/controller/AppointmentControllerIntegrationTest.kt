@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDetails
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReferenceDataBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.InPersonAppointment
@@ -370,6 +371,62 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           assertThat(previousIcs.sessionCommunication).containsExactly("Email", "Phone call")
           assertThat(previousIcs.changeRequestedBy).isEqualTo(ChangeRequesterType.REFERRAL_USER)
           assertThat(previousIcs.changeReason).isEqualTo("Feeling unwell and not abe to attend the appointment")
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/referral/{caseReference}/create-an-appointment/appointment-type")
+  inner class GetCreateAppointmentDataEndpoint {
+
+    @Test
+    fun `should return 401 unauthorized when no token provided`() {
+      assertUnauthorized(HttpMethod.GET, "/bff/referral/${referral.referenceNumber}/create-an-appointment/appointment-type")
+    }
+
+    @Test
+    fun `should return 403 forbidden when no roles provided`() {
+      assertForbiddenNoRole(HttpMethod.GET, "/bff/referral/${referral.referenceNumber}/create-an-appointment/appointment-type")
+    }
+
+    @Test
+    fun `should return 403 forbidden when wrong role provided`() {
+      assertForbiddenWrongRole(HttpMethod.GET, "/bff/referral/${referral.referenceNumber}/create-an-appointment/appointment-type")
+    }
+
+    @Test
+    fun `should return 404 when referral is not found`() {
+      assertNotFound(HttpMethod.GET, "/bff/referral/ZZ9999ZZ/create-an-appointment/appointment-type")
+    }
+
+    @Test
+    fun `should return non-ICS appointment types and probation office locations`() {
+      webTestClient.get()
+        .uri("/bff/referral/${referral.referenceNumber}/create-an-appointment/appointment-type")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<CreateAppointmentReferenceDataBffDto>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+
+          assertThat(body.appointmentTypes.map { it.name }).containsExactly(
+            "Contact session",
+            "Pre-release session",
+            "Post-release session",
+            "Handover session",
+          )
+          assertThat(body.appointmentTypes.map { it.value }).containsExactly(
+            "contact",
+            "pre-release",
+            "post-release",
+            "handover",
+          )
+
+          assertThat(body.probationOfficeLocations).isNotEmpty
+          assertThat(body.probationOfficeLocations.map { it.name })
+            .isEqualTo(body.probationOfficeLocations.map { it.name }.sorted())
         }
     }
   }
@@ -761,7 +818,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           body.personDetails.dateOfBirth shouldBe person.dateOfBirth.toString()
 
           body.appointments.size shouldBe 1
-          body.appointments.first().label shouldBe "Pre release appointment"
+          body.appointments.first().label shouldBe "Pre-release session"
           body.appointments.first().time shouldBe "15:00 Tuesday 22 September 2026"
         }
     }
