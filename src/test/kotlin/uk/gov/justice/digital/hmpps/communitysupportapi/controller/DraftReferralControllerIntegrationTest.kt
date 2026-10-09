@@ -291,7 +291,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
             "pp@email.com",
             "01234567890",
             "County Durham and Darlington",
-            true,
+            "Greater Manchester: Moss Side Probation Office",
             "01234567890",
           )
           body.additionalInformationDetailsTableData.ofHomeOfficeInterest shouldBe true
