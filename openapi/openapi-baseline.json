@@ -63,6 +63,26 @@
         ],
         "type": "object"
       },
+      "ActionPlanNeedsOrderRequest": {
+        "properties": {
+          "action": {
+            "enum": [
+              "UP",
+              "DOWN"
+            ],
+            "type": "string"
+          },
+          "stepQuestionAnswerHeaderId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "stepQuestionAnswerHeaderId"
+        ],
+        "type": "object"
+      },
       "ActionPlanSelectANeedNeed": {
         "properties": {
           "id": {
@@ -183,6 +203,10 @@
       },
       "ActionPlanSummaryDto": {
         "properties": {
+          "lastUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
           "needs": {
             "items": {
               "$ref": "#/components/schemas/ActionPlanSummaryNeed"
@@ -194,6 +218,7 @@
           }
         },
         "required": [
+          "lastUpdatedAt",
           "needs",
           "personDetails"
         ],
@@ -208,6 +233,10 @@
           "label": {
             "type": "string"
           },
+          "orderNumber": {
+            "format": "int32",
+            "type": "integer"
+          },
           "outcomes": {
             "items": {
               "$ref": "#/components/schemas/ActionPlanSummaryOutcome"
@@ -218,6 +247,7 @@
         "required": [
           "id",
           "label",
+          "orderNumber",
           "outcomes"
         ],
         "type": "object"
@@ -2217,12 +2247,6 @@
               "null"
             ]
           },
-          "isProbationOfficer": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
           "jobRole": {
             "type": [
               "string",
@@ -2230,6 +2254,12 @@
             ]
           },
           "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "office": {
             "type": [
               "string",
               "null"
@@ -6865,6 +6895,59 @@
           }
         },
         "summary": "Save and update answers for session delivery details",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/referral/{referralReference}/action-plan/update-needs-order": {
+      "patch": {
+        "operationId": "patchActionPlanNeedsOrder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionPlanNeedsOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSummaryDto"
+                }
+              }
+            },
+            "description": "Action Plan needs order updated"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Unrecoverable error occurred"
+          }
+        },
+        "summary": "Update the Action Plan needs order",
         "tags": [
           "action-plan-controller"
         ]
