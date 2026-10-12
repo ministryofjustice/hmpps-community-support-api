@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -160,7 +159,6 @@ class ActionPlanServiceIntegrationTest :
     }
 
     @Test
-    @Disabled("TODO: Disabled until the needs and outcomes view is working correctly")
     fun `should return latest revision content for an outcome answer`() {
       // Given
       val person = referralHelper.createPerson(firstName = "Jane", lastName = "Doe")
