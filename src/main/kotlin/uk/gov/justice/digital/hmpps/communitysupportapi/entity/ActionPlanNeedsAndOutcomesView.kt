@@ -1,26 +1,26 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.entity
 
 import jakarta.persistence.Column
+import jakarta.persistence.Embeddable
+import jakarta.persistence.EmbeddedId
 import jakarta.persistence.Entity
-import jakarta.persistence.Id
 import jakarta.persistence.Table
+import java.io.Serializable
 import java.util.UUID
+
+@Embeddable
+class ActionPlanNeedsAndOutcomesViewId(
+  val referralId: UUID,
+  val actionPlanId: UUID,
+  val actionPlanStepQuestionAnswerHeaderId: UUID,
+  val actionPlanStepQuestionAnswerDetailsId: UUID,
+) : Serializable
 
 @Entity
 @Table(name = "action_plan_needs_and_outcomes_view")
 class ActionPlanNeedsAndOutcomesView(
-  @Id
-  @Column(name = "referral_id")
-  val referralId: UUID,
-
-  @Column(name = "action_plan_id")
-  val actionPlanId: UUID,
-
-  @Column(name = "action_plan_step_question_answer_header_id")
-  val actionPlanStepQuestionAnswerHeaderId: UUID,
-
-  @Column(name = "action_plan_step_question_answer_details_id")
-  val actionPlanStepQuestionAnswerDetailsId: UUID,
+  @EmbeddedId
+  val id: ActionPlanNeedsAndOutcomesViewId,
 
   @Column(name = "need_id")
   val needId: UUID,

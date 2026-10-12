@@ -1,12 +1,13 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanActivity
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
+import java.time.OffsetDateTime
 import java.util.UUID
 
 data class ActionPlanSummaryDto(
   val personDetails: ActionPlanSummaryPersonDetails,
   val needs: List<ActionPlanSummaryNeed>,
+  val lastUpdatedAt: OffsetDateTime,
 ) {
   data class ActionPlanSummaryPersonDetails(
     val firstName: String,
@@ -16,6 +17,7 @@ data class ActionPlanSummaryDto(
   data class ActionPlanSummaryNeed(
     val id: UUID,
     val label: String,
+    val orderNumber: Int,
     val outcomes: List<ActionPlanSummaryOutcome> = emptyList(),
   )
 
@@ -25,10 +27,10 @@ data class ActionPlanSummaryDto(
     val activities: List<ActionPlanSummaryOutcomeActivity> = emptyList(),
   ) {
     companion object {
-      fun from(actionPlanStepQuestionAnswerDetails: ActionPlanStepQuestionAnswerDetails, actionPlanActivities: Collection<ActionPlanActivity>): ActionPlanSummaryOutcome = ActionPlanSummaryOutcome(
-        actionPlanStepQuestionAnswerDetails.actionPlanStepQuestionAnswerHeaderId,
-        label = actionPlanStepQuestionAnswerDetails.content.orEmpty(),
-        activities = actionPlanActivities.map { activity -> ActionPlanSummaryOutcomeActivity.from(activity) },
+      fun from(headerId: UUID, content: String?, actionPlanActivities: Collection<ActionPlanActivity>?): ActionPlanSummaryOutcome = ActionPlanSummaryOutcome(
+        id = headerId,
+        label = content.orEmpty(),
+        activities = actionPlanActivities?.map { activity -> ActionPlanSummaryOutcomeActivity.from(activity) } ?: emptyList(),
       )
     }
   }
