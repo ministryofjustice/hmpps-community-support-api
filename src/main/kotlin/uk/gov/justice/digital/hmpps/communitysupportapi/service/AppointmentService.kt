@@ -75,6 +75,13 @@ class AppointmentService(
       AppointmentType.POST_RELEASE_SESSION,
       AppointmentType.HANDOVER_SESSION,
     )
+
+    private val CREATE_APPOINTMENT_TYPE_OPTIONS = SUPPORTED_CREATE_APPOINTMENT_TYPES.map {
+      CreateAppointmentTypeOptionDto(
+        name = it.toDisplayLabel(),
+        value = it.toCreateAppointmentValue(),
+      )
+    }
   }
 
   private fun createNewAppointment(referral: Referral, type: AppointmentType): Appointment {
@@ -475,12 +482,7 @@ class AppointmentService(
     referralLookupService.findByCaseIdentifier(caseReference)
 
     return CreateAppointmentReferenceDataBffDto(
-      appointmentTypes = SUPPORTED_CREATE_APPOINTMENT_TYPES.map {
-        CreateAppointmentTypeOptionDto(
-          name = it.toDisplayLabel(),
-          value = it.toCreateAppointmentValue(),
-        )
-      },
+      appointmentTypes = CREATE_APPOINTMENT_TYPE_OPTIONS,
       probationOfficeLocations = referenceDataService.getProbationOffices()
         .map { ProbationOfficeSummary(id = it.probationOfficeId, name = it.name) },
     )
