@@ -30,6 +30,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ActionPlanQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanNeedsAndOutcomesViewRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanQuestionWriter
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
@@ -54,6 +55,7 @@ class ActionPlanService(
   private val actionPlanDataFetcher: ActionPlanDataFetcher,
   private val placeholderFactory: PlaceholderFactory,
   private val actionPlanQuestionWriter: ActionPlanQuestionWriter,
+  private val actionPlanNeedsAndOutcomesViewRepository: ActionPlanNeedsAndOutcomesViewRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ActionPlanService::class.java)
@@ -66,15 +68,22 @@ class ActionPlanService(
     val person = personRepository.findById(actionPlanData.referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral $referralReference") }
 
-    // TODO How to do this without using a Pair
-    val outcomesByNeedId = getOutcomesByNeedIdForActionPlan(actionPlan.id, actionPlanData.needSteps)
+    val outcomes = actionPlanNeedsAndOutcomesViewRepository.findByIdReferralIdOrderByDisplayOrderAsc(actionPlanData.referral.id)
 
-    val needs = needRepository.findAllByIdInOrderByOrderNumberAsc(outcomesByNeedId.keys).map {
+    val activitiesByHeaderId = actionPlanActivityRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(outcomes.map { it.id.actionPlanStepQuestionAnswerHeaderId })
+      .groupBy { it.actionPlanStepQuestionAnswerHeaderId }
+
+    val needs = outcomes.map { outcome ->
+      val content = ActionPlanSummaryDto.ActionPlanSummaryOutcome.from(
+        outcome.id.actionPlanStepQuestionAnswerHeaderId,
+        outcome.outcomeAnswerText,
+        activitiesByHeaderId[outcome.id.actionPlanStepQuestionAnswerHeaderId],
+      )
       ActionPlanSummaryDto.ActionPlanSummaryNeed(
-        id = it.id,
-        label = it.label,
-        orderNumber = outcomesByNeedId[it.id]?.first()!!.first, // i dont like this
-        outcomes = outcomesByNeedId[it.id]!!.map { it.second },
+        id = outcome.needId,
+        label = outcome.needName,
+        orderNumber = outcome.displayOrder,
+        outcomes = listOf(content),
       )
     }
 
@@ -86,7 +95,7 @@ class ActionPlanService(
   }
 
   @Transactional
-  fun updateNeedsOrder(referralReference: String, request: ActionPlanNeedsOrderRequest): ActionPlanSummaryDto {
+  fun updateNeedsOrder(referralReference: String, request: ActionPlanNeedsOrderRequest) {
     fun swapOrderOfNeeds(firstNeed: ActionPlanStepQuestionAnswerHeader, secondNeed: ActionPlanStepQuestionAnswerHeader) {
       val firstNeedOrderNumber = firstNeed.orderNumber
       actionPlanStepQuestionAnswerHeaderRepository.save(firstNeed.updateOrderNumber(secondNeed.orderNumber))
@@ -96,10 +105,10 @@ class ActionPlanService(
     val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
 
     val answers = getAnswerHeadersByActionPlan(actionPlanData.actionPlan.id, actionPlanData.needSteps)
-    if (answers.none { it.actionPlanStepQuestionId == request.stepQuestionAnswerHeaderId }) {
+    if (answers.none { it.id == request.stepQuestionAnswerHeaderId }) {
       throw Exception("needId (${request.stepQuestionAnswerHeaderId}) in request does not match any needs in the action plan")
     }
-    val requestAnswer = answers.find { it.actionPlanStepQuestionId == request.stepQuestionAnswerHeaderId }
+    val requestAnswer = answers.find { it.id == request.stepQuestionAnswerHeaderId }
 
     when (request.action) {
       ActionPlanNeedsOrderRequest.ActionPlanNeedsOrderAction.UP -> {
@@ -116,7 +125,6 @@ class ActionPlanService(
         }
       }
     }
-    return getActionPlanSummaryForReferral(referralReference)
   }
 
   @Transactional(readOnly = true)
@@ -376,12 +384,12 @@ class ActionPlanService(
         ?.trim()
     }
 
-  private fun getQuestionsMapByQuestionId(needSteps: List<ActionPlanStep>): Map<UUID, ActionPlanStepQuestion> = actionPlanStepQuestionRepository
+  private fun getQuestionsMapByQuestionId(needSteps: List<ReferenceDataActionPlanStep>): Map<UUID, ReferenceDataActionPlanStepQuestion> = actionPlanStepQuestionRepository
     .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
     .filter { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId != null }
     .associateBy { it.id }
 
-  private fun getAnswerHeadersByActionPlan(actionPlanId: UUID, needSteps: List<ActionPlanStep>): List<ActionPlanStepQuestionAnswerHeader> {
+  private fun getAnswerHeadersByActionPlan(actionPlanId: UUID, needSteps: List<ReferenceDataActionPlanStep>): List<ActionPlanStepQuestionAnswerHeader> {
     val questionById = getQuestionsMapByQuestionId(needSteps)
 
     val answers = actionPlanStepQuestionAnswerHeaderRepository
@@ -389,43 +397,6 @@ class ActionPlanService(
       .filter { questionById.containsKey(it.actionPlanStepQuestionId) }
       .sortedBy { it.orderNumber }
     return answers
-  }
-
-  private fun getOutcomesByNeedIdForActionPlan(
-    actionPlanId: UUID,
-    needSteps: List<ReferenceDataActionPlanStep>,
-  ): Map<UUID, List<Pair<Int, ActionPlanSummaryDto.ActionPlanSummaryOutcome>>> {
-    val questionById = getQuestionsMapByQuestionId(needSteps)
-    if (questionById.isEmpty()) {
-      return emptyMap()
-    }
-
-    val answers = actionPlanStepQuestionAnswerHeaderRepository
-      .findAllByActionPlanIdAndDeletedAtIsNull(actionPlanId)
-      .filter { questionById.containsKey(it.actionPlanStepQuestionId) }
-      .sortedBy { it.orderNumber }
-    if (answers.isEmpty()) {
-      return emptyMap()
-    }
-
-    val latestDetailsByHeaderId = answers
-      .flatMap { it.details }
-      .groupBy { it.actionPlanStepQuestionAnswerHeaderId }
-      .mapValues { (_, detailItems) -> detailItems.maxByOrNull { it.revisionNumber } }
-
-    val activitiesByHeaderId = actionPlanActivityRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(answers.map { it.id })
-      .groupBy { it.actionPlanStepQuestionAnswerHeaderId }
-
-    return answers
-      .mapNotNull { answer ->
-        val question = questionById[answer.actionPlanStepQuestionId] ?: return@mapNotNull null
-        val needId = question.needId ?: return@mapNotNull null
-        val latestDetails = latestDetailsByHeaderId[answer.id] ?: return@mapNotNull null
-        val activities = activitiesByHeaderId[answer.id] ?: return@mapNotNull null
-        val content = ActionPlanSummaryDto.ActionPlanSummaryOutcome.from(latestDetails, activities)
-        needId to Pair(answer.orderNumber, content)
-      }
-      .groupBy(keySelector = { it.first }, valueTransform = { it.second })
   }
 
   @Transactional

@@ -92,7 +92,7 @@ class ActionPlanController(
   fun patchActionPlanNeedsOrder(
     @PathVariable referralReference: String,
     @Valid @RequestBody request: ActionPlanNeedsOrderRequest,
-  ): ResponseEntity<ActionPlanSummaryDto> {
+  ): ResponseEntity<Unit> {
     log.info("Updating action plan needs order")
     return ResponseEntity.ok(actionPlanService.updateNeedsOrder(referralReference, request))
   }

@@ -182,31 +182,6 @@ class ActionPlanServiceIntegrationTest :
     }
 
     @Test
-    fun `should return multiple outcome answers in order for the same need`() {
-      // Given
-      val person = referralHelper.createPerson(firstName = "Ella", lastName = "Brown")
-      val referral =
-        referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
-      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = globalTemplate.id)
-      val need = needRepository.findAllByOrderByOrderNumberAsc().first()
-      val outcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, need.id)
-
-      val firstAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, outcomeQuestion.id, orderNumber = 1, createdBy = user.id.toString())
-      val secondAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, outcomeQuestion.id, orderNumber = 2, createdBy = user.id.toString())
-      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(firstAnswer.id, content = "First outcome", createdBy = user.id.toString())
-      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(secondAnswer.id, content = "Second outcome", createdBy = user.id.toString())
-      actionPlanHelper.createActionPlanActivity(firstAnswer.id)
-      actionPlanHelper.createActionPlanActivity(secondAnswer.id)
-
-      // When
-      val result = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
-
-      // Then
-      val needSummary = result.needs.first { it.id == need.id }
-      assertEquals(listOf("First outcome", "Second outcome"), needSummary.outcomes.map { it.label })
-    }
-
-    @Test
     fun `should ignore soft deleted answers when building outcomes`() {
       // Given
       val person = referralHelper.createPerson(firstName = "Sam", lastName = "Green")
@@ -238,8 +213,17 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(listOf("Visible outcome"), needSummary.outcomes.map { it.label })
     }
 
+    private fun findOutcomeQuestionForNeed(templateId: UUID, needId: UUID): ReferenceDataActionPlanStepQuestion {
+      val needSteps = actionPlanStepRepository
+        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(templateId)
+        .filter { it.stepType == ActionPlanStepType.NEED }
+      return actionPlanStepQuestionRepository
+        .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
+        .first { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == needId }
+    }
+
     @Test
-    fun `should correctly reorder needs when requested`() {
+    fun `should correctly reorder needs when requested DOWN`() {
       // Given
       val person = referralHelper.createPerson(firstName = "Sam", lastName = "Green")
       val referral =
@@ -259,25 +243,55 @@ class ActionPlanServiceIntegrationTest :
       actionPlanHelper.createActionPlanActivity(secondAnswer.id)
 
       val needsOrderRequest = ActionPlanNeedsOrderRequest(
-        firstAnswer.actionPlanStepQuestionId,
+        firstAnswer.id,
         ActionPlanNeedsOrderRequest.ActionPlanNeedsOrderAction.DOWN,
       )
 
       // when
-      val result = actionPlanService.updateNeedsOrder(referral.referenceNumber!!, needsOrderRequest)
+      actionPlanService.updateNeedsOrder(referral.referenceNumber!!, needsOrderRequest)
+      val result = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
 
       // then
-      assertEquals(secondAnswer.orderNumber, result.needs[0].orderNumber)
-      assertEquals(firstAnswer.orderNumber, result.needs[1].orderNumber)
+      assertEquals(secondAnswer.id, result.needs[0].outcomes[0].id)
+      assertEquals(1, result.needs[0].orderNumber)
+      assertEquals(firstAnswer.id, result.needs[1].outcomes[0].id)
+      assertEquals(2, result.needs[1].orderNumber)
     }
 
-    private fun findOutcomeQuestionForNeed(templateId: UUID, needId: UUID): ReferenceDataActionPlanStepQuestion {
-      val needSteps = actionPlanStepRepository
-        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(templateId)
-        .filter { it.stepType == ActionPlanStepType.NEED }
-      return actionPlanStepQuestionRepository
-        .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
-        .first { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == needId }
+    @Test
+    fun `should correctly reorder needs when requested UP`() {
+      // Given
+      val person = referralHelper.createPerson(firstName = "Sam", lastName = "Green")
+      val referral =
+        referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
+      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = globalTemplate.id)
+      val needs = needRepository.findAllByOrderByOrderNumberAsc()
+
+      val firstOutcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, needs[0].id)
+      val firstAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, firstOutcomeQuestion.id, orderNumber = 1, createdBy = user.id.toString())
+
+      val secondOutcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, needs[1].id)
+      val secondAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, secondOutcomeQuestion.id, orderNumber = 2, createdBy = user.id.toString())
+
+      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(firstAnswer.id, content = "First outcome", createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(secondAnswer.id, content = "Second outcome", createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanActivity(firstAnswer.id)
+      actionPlanHelper.createActionPlanActivity(secondAnswer.id)
+
+      val needsOrderRequest = ActionPlanNeedsOrderRequest(
+        secondAnswer.id,
+        ActionPlanNeedsOrderRequest.ActionPlanNeedsOrderAction.UP,
+      )
+
+      // when
+      actionPlanService.updateNeedsOrder(referral.referenceNumber!!, needsOrderRequest)
+      val result = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
+
+      // then
+      assertEquals(secondAnswer.id, result.needs[0].outcomes[0].id)
+      assertEquals(1, result.needs[0].orderNumber)
+      assertEquals(firstAnswer.id, result.needs[1].outcomes[0].id)
+      assertEquals(2, result.needs[1].orderNumber)
     }
   }
 
