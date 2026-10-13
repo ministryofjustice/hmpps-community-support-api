@@ -34,6 +34,9 @@ class AppointmentHistory(
   @Column(name = "start_date", nullable = false)
   val appointmentDateTime: LocalDateTime,
 
+  @Column(name = "meet_at_the_gate")
+  val meetAtTheGate: Boolean? = null,
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "created_by", nullable = false)
   val createdBy: ReferralUser,

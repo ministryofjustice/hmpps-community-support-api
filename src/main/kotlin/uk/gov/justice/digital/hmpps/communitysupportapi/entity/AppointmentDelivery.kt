@@ -11,6 +11,9 @@ import java.util.UUID
 enum class AppointmentDeliveryMethod {
   PHONE_CALL,
   VIDEO_CALL,
+
+  /** In person without a recorded location – used by handover sessions. */
+  IN_PERSON,
   IN_PERSON_PROBATION_OFFICE,
   IN_PERSON_OTHER_LOCATION,
 }

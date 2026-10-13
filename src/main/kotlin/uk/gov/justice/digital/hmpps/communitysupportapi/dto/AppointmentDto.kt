@@ -19,10 +19,15 @@ import java.time.ZoneOffset
 import java.util.UUID
 
 data class CreateAppointmentRequest(
+  /** Required by POST /referral/{caseIdentifier}/appointment; ignored by the ICS endpoints, which always use ICS. */
+  val appointmentType: AppointmentType? = null,
   val date: LocalDate,
   val time: AppointmentTimeRequest,
   val sessionMethodRequest: SessionMethodRequest,
+  /** "How was [first name] informed about the session?" – not applicable to HANDOVER_SESSION. */
   val sessionCommunication: List<String> = emptyList(),
+  /** "Is this a Meet at the Gate session?" – required for POST_RELEASE_SESSION only. */
+  val meetAtTheGate: Boolean? = null,
   var changeAppointmentDetails: ChangeAppointmentDetails? = null,
 )
 
@@ -42,7 +47,8 @@ data class AppointmentTimeRequest(
 data class SessionMethodRequest(
   /**
    * Matches the UI options.
-   * "PHONE" | "VIDEO" | "IN_PERSON_PROBATION_OFFICE" | "IN_PERSON_OTHER_LOCATION"
+   * "PHONE" | "VIDEO" | "IN_PERSON" | "IN_PERSON_PROBATION_OFFICE" | "IN_PERSON_OTHER_LOCATION"
+   * IN_PERSON (no location recorded) is only valid for HANDOVER_SESSION.
    */
   val type: SessionMethodType,
   val additionalDetails: String? = null,
@@ -59,6 +65,7 @@ data class SessionMethodRequest(
 enum class SessionMethodType {
   PHONE,
   VIDEO,
+  IN_PERSON,
   IN_PERSON_PROBATION_OFFICE,
   IN_PERSON_OTHER_LOCATION,
 }
@@ -105,7 +112,7 @@ data class VirtualAppointment(
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class InPersonAppointment(
-  /** "IN_PERSON_PROBATION_OFFICE" or "IN_PERSON_OTHER_LOCATION" */
+  /** "IN_PERSON", "IN_PERSON_PROBATION_OFFICE" or "IN_PERSON_OTHER_LOCATION" */
   override val type: String,
   // For IN_PERSON_PROBATION_OFFICE cases
   val probationOfficeName: String? = null,
@@ -129,6 +136,7 @@ data class AppointmentIcsResponse(
   val appointmentStatus: AppointmentStatusHistoryType,
   val sessionMethod: SessionMethod,
   val sessionCommunications: List<String>,
+  val meetAtTheGate: Boolean? = null,
   val referralFirstName: String,
   val referralLastName: String,
   val createdAt: OffsetDateTime,
@@ -138,13 +146,6 @@ data class AppointmentIcsResponse(
   companion object {
     fun from(ics: AppointmentHistory, status: AppointmentStatusHistoryType, referralName: ReferralNameDto): AppointmentIcsResponse {
       val appointmentDateTime = ics.appointmentDateTime
-      val hour24 = appointmentDateTime.hour
-      val amPm = if (hour24 < 12) "am" else "pm"
-      val hour12 = when {
-        hour24 == 0 -> 12
-        hour24 > 12 -> hour24 - 12
-        else -> hour24
-      }
       return AppointmentIcsResponse(
         appointmentIcsId = ics.id,
         appointmentId = ics.appointment.id,
@@ -152,14 +153,11 @@ data class AppointmentIcsResponse(
         caseReference = ics.appointment.referral.referenceNumber,
         appointmentType = ics.appointment.type,
         appointmentDate = appointmentDateTime.toLocalDate(),
-        appointmentTime = AppointmentTimeResponse(
-          hour = hour12,
-          minute = appointmentDateTime.minute,
-          amPm = amPm,
-        ),
+        appointmentTime = appointmentDateTime.toLocalTime().toAppointmentTimeResponse(),
         appointmentStatus = status,
         sessionMethod = buildSessionMethod(ics.appointmentDelivery),
         sessionCommunications = ics.sessionCommunication,
+        meetAtTheGate = ics.meetAtTheGate,
         referralFirstName = referralName.firstName,
         referralLastName = referralName.lastName,
         createdAt = ics.createdAt.atOffset(ZoneOffset.UTC),
@@ -178,6 +176,9 @@ data class AppointmentIcsResponse(
 
         AppointmentDeliveryMethod.VIDEO_CALL ->
           VirtualAppointment(type = "VIDEO", whyNotInPersonReason = delivery.methodDetails)
+
+        AppointmentDeliveryMethod.IN_PERSON ->
+          InPersonAppointment(type = "IN_PERSON")
 
         AppointmentDeliveryMethod.IN_PERSON_PROBATION_OFFICE ->
           InPersonAppointment(
@@ -245,6 +246,19 @@ data class AppointmentTimeResponse(
 )
 
 /**
+ * Converts a [LocalTime] into the 12-hour split format used in responses.
+ */
+fun LocalTime.toAppointmentTimeResponse(): AppointmentTimeResponse = AppointmentTimeResponse(
+  hour = when {
+    hour == 0 -> 12
+    hour > 12 -> hour - 12
+    else -> hour
+  },
+  minute = minute,
+  amPm = if (hour < 12) "am" else "pm",
+)
+
+/**
  * Converts the split date/time request fields into a [LocalTime].
  * The [AppointmentTimeRequest.hour] is a 12-hour value (1–12).
  */
@@ -264,6 +278,7 @@ fun AppointmentTimeRequest.toLocalTime(): LocalTime {
 fun SessionMethodType.toDeliveryMethod(): AppointmentDeliveryMethod = when (this) {
   SessionMethodType.PHONE -> AppointmentDeliveryMethod.PHONE_CALL
   SessionMethodType.VIDEO -> AppointmentDeliveryMethod.VIDEO_CALL
+  SessionMethodType.IN_PERSON -> AppointmentDeliveryMethod.IN_PERSON
   SessionMethodType.IN_PERSON_PROBATION_OFFICE -> AppointmentDeliveryMethod.IN_PERSON_PROBATION_OFFICE
   SessionMethodType.IN_PERSON_OTHER_LOCATION -> AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION
 }
@@ -275,6 +290,7 @@ fun SessionMethodType.toDeliveryMethod(): AppointmentDeliveryMethod = when (this
 fun SessionMethodType.toSessionDisplayString(): String = when (this) {
   SessionMethodType.PHONE -> "Phone call"
   SessionMethodType.VIDEO -> "Video call"
+  SessionMethodType.IN_PERSON -> "In person"
   SessionMethodType.IN_PERSON_PROBATION_OFFICE -> "In person (probation office)"
   SessionMethodType.IN_PERSON_OTHER_LOCATION -> "In person (other location)"
 }

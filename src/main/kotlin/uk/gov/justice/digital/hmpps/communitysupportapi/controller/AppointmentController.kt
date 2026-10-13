@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -24,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReq
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralLookupService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -60,7 +62,31 @@ class AppointmentController(
   ): ResponseEntity<AppointmentIcsResponse> {
     log.info("POST /referral/{}/ics", caseIdentifier)
     val createdBy = userMapper.fromToken(authenticationHolder)
-    val response = appointmentService.createIcsAppointment(caseIdentifier, request, createdBy)
+    val response = appointmentService.createAppointment(caseIdentifier, AppointmentType.ICS, request, createdBy)
+    return ResponseEntity.status(HttpStatus.CREATED).body(response)
+  }
+
+  @Operation(summary = "Book an appointment of a given type for a referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "201",
+        description = "Appointment created successfully",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = AppointmentIcsResponse::class))],
+      ),
+      ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content(mediaType = "application/json")]),
+      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @PostMapping("/referral/{caseIdentifier}/appointment")
+  fun createAppointment(
+    @PathVariable caseIdentifier: String,
+    @RequestBody request: CreateAppointmentRequest,
+  ): ResponseEntity<AppointmentIcsResponse> {
+    log.info("POST /referral/{}/appointment", caseIdentifier)
+    val type = request.appointmentType ?: throw ValidationException("appointmentType is required")
+    val createdBy = userMapper.fromToken(authenticationHolder)
+    val response = appointmentService.createAppointment(caseIdentifier, type, request, createdBy)
     return ResponseEntity.status(HttpStatus.CREATED).body(response)
   }
 
