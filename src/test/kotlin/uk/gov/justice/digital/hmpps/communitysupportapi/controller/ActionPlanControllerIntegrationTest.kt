@@ -1263,7 +1263,14 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
       fun `should save answers across service delivery steps (pages) and return them from each endpoint`() {
         whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 
-        val referral = createReferral("Lucy", "Miles")
+        val person = referralHelper.createPerson(firstName = "Lucy", lastName = "Miles")
+        val serviceEndDate = OffsetDateTime.now().plusDays(5)
+        val referral = referralHelper.createReferral(
+          person = person,
+          referenceNumber = randomReferralReference(),
+          submittedBy = referralHelper.ensureReferralUser(),
+          targetServiceCompletionDate = serviceEndDate,
+        )
         val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
         actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
 
@@ -1400,7 +1407,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           ActionPlanStepQuestionFactory()
             .withActionPlanStepId(confirmStep.id)
             .withOrderNumber(1)
-            .withTitle("Is the service end date still {{ serviceEndDate }}?")
+            .withTitle("Is the service end date still {{ service_end_date }}?")
             .withQuestionKey("SERVICE_END_DATE_CHECK")
             .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
             .withMaxNumberResponses(1)
@@ -1597,6 +1604,8 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
           .consumeWith { response ->
             val body = response.responseBody!!
+            body.questions.single { it.id == confirmQuestion.id }.label shouldBe
+              "Is the service end date still ${serviceEndDate.format(FULL_MONTH_DATE_FORMAT)}?"
             body.questions.single { it.id == confirmQuestion.id }.savedResponses.map { it.value } shouldBe listOf("NO")
           }
 
@@ -1622,6 +1631,10 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .consumeWith { response ->
             val body = response.responseBody!!
             body.questions.single { it.id == personQuestion.id }.label shouldBe "Was Lucy involved in creating the action plan?"
+            body.questions.single { it.id == personQuestion.id }.choices?.map { it.additionalDetailsLabel } shouldBe listOf(
+              null,
+              "Give details about why Lucy was not involved",
+            )
             body.questions.single { it.id == personQuestion.id }.savedResponses.map { it.value } shouldBe listOf("NO")
             body.questions.single { it.id == personQuestion.id }.savedResponses.map { it.additionalDetails } shouldBe
               listOf("Lucy was unavailable during the planning meeting.")
