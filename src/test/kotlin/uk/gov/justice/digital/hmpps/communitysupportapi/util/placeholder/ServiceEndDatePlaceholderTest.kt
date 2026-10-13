@@ -67,4 +67,27 @@ class ServiceEndDatePlaceholderTest {
 
     Assertions.assertEquals(emptyMap<String, String>(), placeholder.resolve(setOf("service_end_date")))
   }
+
+  @Test
+  fun `resolve should populate both service end date aliases when either alias is requested`() {
+    val referral = Referral(
+      id = UUID.randomUUID(),
+      personId = UUID.randomUUID(),
+      personIdentifier = "X123456",
+      createdAt = OffsetDateTime.now(),
+      createdBy = UUID.randomUUID(),
+      targetServiceCompletionDate = serviceEndDate,
+    )
+
+    val placeholder = ServiceEndDatePlaceholder(referral)
+    val expectedDate = serviceEndDate.format(FULL_MONTH_DATE_FORMAT)
+
+    Assertions.assertEquals(
+      mapOf(
+        "service_end_date" to expectedDate,
+        "serviceEndDate" to expectedDate,
+      ),
+      placeholder.resolve(setOf("serviceEndDate")),
+    )
+  }
 }
