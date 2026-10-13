@@ -260,6 +260,190 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("POST /referral/{caseIdentifier}/appointment")
+  inner class CreateAppointmentEndpoint {
+
+    private fun buildTypedRequest(
+      appointmentType: AppointmentType? = AppointmentType.CONTACT_SESSION,
+      sessionMethodRequest: SessionMethodRequest = SessionMethodRequest(type = SessionMethodType.PHONE),
+      sessionCommunication: List<String> = listOf("Text message"),
+      meetAtTheGate: Boolean? = null,
+    ) = CreateAppointmentRequest(
+      appointmentType = appointmentType,
+      date = LocalDate.of(2026, 3, 27),
+      time = AppointmentTimeRequest(hour = 10, minute = 30, amPm = "am"),
+      sessionMethodRequest = sessionMethodRequest,
+      sessionCommunication = sessionCommunication,
+      meetAtTheGate = meetAtTheGate,
+    )
+
+    private fun postAppointment(request: Any) = webTestClient.post()
+      .uri("/referral/${referral.id}/appointment")
+      .contentType(MediaType.APPLICATION_JSON)
+      .headers(setAuthorisation())
+      .bodyValue(request)
+      .exchange()
+
+    @Test
+    fun `should return 401 unauthorized when no token provided`() {
+      assertUnauthorized(POST, "/referral/${referral.id}/appointment")
+    }
+
+    @Test
+    fun `should return 403 forbidden when no roles provided`() {
+      assertForbiddenNoRole(POST, "/referral/${referral.id}/appointment", buildTypedRequest())
+    }
+
+    @Test
+    fun `should return 403 forbidden when wrong role provided`() {
+      assertForbiddenWrongRole(POST, "/referral/${referral.id}/appointment", buildTypedRequest())
+    }
+
+    @Test
+    fun `should return 404 not found for unknown referral id`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      assertNotFound(POST, "/referral/${UUID.randomUUID()}/appointment", buildTypedRequest())
+    }
+
+    @Test
+    fun `should return 201 created and persist a contact session`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      postAppointment(buildTypedRequest())
+        .expectStatus()
+        .isCreated
+        .expectBody<AppointmentIcsResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.referralId).isEqualTo(referral.id)
+          assertThat(body.appointmentType).isEqualTo(AppointmentType.CONTACT_SESSION)
+          assertThat(body.appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
+          assertThat(body.appointmentTime.hour).isEqualTo(10)
+          assertThat(body.sessionCommunications).containsExactly("Text message")
+          assertThat(body.meetAtTheGate).isNull()
+
+          val history = appointmentIcsRepository.findById(body.appointmentIcsId).orElseThrow()
+          assertThat(history.appointmentDateTime).isEqualTo(LocalDateTime.of(2026, 3, 27, 10, 30))
+          assertThat(appointmentRepository.findById(body.appointmentId).orElseThrow().type)
+            .isEqualTo(AppointmentType.CONTACT_SESSION)
+        }
+    }
+
+    @Test
+    fun `should return 201 created for a post-release meet at the gate session`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val request = buildTypedRequest(
+        appointmentType = AppointmentType.POST_RELEASE_SESSION,
+        sessionMethodRequest = SessionMethodRequest(
+          type = SessionMethodType.IN_PERSON_OTHER_LOCATION,
+          addressLine1 = "HMP Leeds",
+          townOrCity = "Leeds",
+          postcode = "LS12 2TJ",
+        ),
+        meetAtTheGate = true,
+      )
+
+      postAppointment(request)
+        .expectStatus()
+        .isCreated
+        .expectBody<AppointmentIcsResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.appointmentType).isEqualTo(AppointmentType.POST_RELEASE_SESSION)
+          assertThat(body.meetAtTheGate).isTrue()
+          with(body.sessionMethod as InPersonAppointment) {
+            assertThat(type).isEqualTo("IN_PERSON_OTHER_LOCATION")
+            assertThat(addressLine1).isEqualTo("HMP Leeds")
+          }
+        }
+    }
+
+    @Test
+    fun `should return 201 created for an in-person handover session without location or session communication`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val request = buildTypedRequest(
+        appointmentType = AppointmentType.HANDOVER_SESSION,
+        sessionMethodRequest = SessionMethodRequest(type = SessionMethodType.IN_PERSON),
+        sessionCommunication = emptyList(),
+      )
+
+      postAppointment(request)
+        .expectStatus()
+        .isCreated
+        .expectBody<AppointmentIcsResponse>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.appointmentType).isEqualTo(AppointmentType.HANDOVER_SESSION)
+          assertThat(body.sessionMethod).isInstanceOf(InPersonAppointment::class.java)
+          assertThat(body.sessionMethod.type).isEqualTo("IN_PERSON")
+          assertThat(body.sessionCommunications).isEmpty()
+
+          val history = appointmentIcsRepository.findById(body.appointmentIcsId).orElseThrow()
+          assertThat(history.appointmentDelivery?.method).isEqualTo(AppointmentDeliveryMethod.IN_PERSON)
+        }
+    }
+
+    @Test
+    fun `should return 400 when appointment type is missing`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      postAppointment(buildTypedRequest(appointmentType = null))
+        .expectStatus()
+        .isBadRequest
+        .expectBody()
+        .jsonPath("$.developerMessage").isEqualTo("appointmentType is required")
+    }
+
+    @Test
+    fun `should return 400 when appointment type is not recognised`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val request = mapOf(
+        "appointmentType" to "UNKNOWN_SESSION",
+        "date" to "2026-03-27",
+        "time" to mapOf("hour" to 10, "minute" to 0, "amPm" to "am"),
+        "sessionMethodRequest" to mapOf("type" to "PHONE"),
+      )
+
+      postAppointment(request)
+        .expectStatus()
+        .isBadRequest
+    }
+
+    @Test
+    fun `should return 400 when session method is not allowed for the appointment type`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      val request = buildTypedRequest(
+        appointmentType = AppointmentType.PRE_RELEASE_SESSION,
+        sessionMethodRequest = SessionMethodRequest(type = SessionMethodType.IN_PERSON_PROBATION_OFFICE),
+      )
+
+      postAppointment(request)
+        .expectStatus()
+        .isBadRequest
+        .expectBody()
+        .jsonPath("$.developerMessage")
+        .isEqualTo("Session method IN_PERSON_PROBATION_OFFICE is not allowed for appointment type PRE_RELEASE_SESSION")
+
+      assertThat(appointmentRepository.findAllByReferralId(referral.id).orEmpty()).isEmpty()
+    }
+
+    @Test
+    fun `should return 400 when post-release session is missing meet at the gate`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      postAppointment(buildTypedRequest(appointmentType = AppointmentType.POST_RELEASE_SESSION))
+        .expectStatus()
+        .isBadRequest
+        .expectBody()
+        .jsonPath("$.developerMessage").isEqualTo("meetAtTheGate is required for appointment type POST_RELEASE_SESSION")
+    }
+  }
+
+  @Nested
   @DisplayName("PUT /referral/{caseIdentifier}/ics")
   inner class ChangeIcsAppointmentEndpoint {
 

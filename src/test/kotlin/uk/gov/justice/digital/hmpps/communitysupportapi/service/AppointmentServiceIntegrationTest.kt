@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.persistence.EntityManager
+import jakarta.validation.ValidationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -188,7 +189,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("createIcsAppointment")
+  @DisplayName("createAppointment (ICS)")
   inner class CreateIcsAppointment {
 
     @Test
@@ -202,7 +203,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         sessionCommunication = listOf("Phone call", "Text message"),
       )
 
-      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      val response = appointmentService.createAppointment(caseReference, AppointmentType.ICS, request, testUser)
       assertThat(response.caseReference).isEqualTo(referral.referenceNumber)
 
       // Appointment persisted
@@ -235,7 +236,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should correctly convert 12-hour am time to 24-hour`() {
       val request = buildRequest(hour = 12, minute = 0, amPm = "am") // midnight edge case
-      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      val response = appointmentService.createAppointment(caseReference, AppointmentType.ICS, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.appointmentDateTime.hour).isEqualTo(0) // 12am → 00:xx
@@ -244,7 +245,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should correctly convert 12-hour pm time to 24-hour`() {
       val request = buildRequest(hour = 12, minute = 0, amPm = "pm") // noon
-      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      val response = appointmentService.createAppointment(caseReference, AppointmentType.ICS, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.appointmentDateTime.hour).isEqualTo(12) // 12pm stays 12
@@ -253,7 +254,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should correctly convert 1pm to 13 in 24-hour format`() {
       val request = buildRequest(hour = 1, minute = 0, amPm = "pm")
-      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      val response = appointmentService.createAppointment(caseReference, AppointmentType.ICS, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.appointmentDateTime.hour).isEqualTo(13)
@@ -262,7 +263,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should map VIDEO type to VIDEO_CALL delivery method`() {
       val request = buildRequest(type = SessionMethodType.VIDEO, additionalDetails = "Teams link")
-      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      val response = appointmentService.createAppointment(caseReference, AppointmentType.ICS, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.appointmentDelivery?.method).isEqualTo(AppointmentDeliveryMethod.VIDEO_CALL)
@@ -289,7 +290,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
           postcode = "SW1A 2AA",
         ),
       )
-      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      val response = appointmentService.createAppointment(caseReference, AppointmentType.ICS, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       val delivery = ics.appointmentDelivery!!
@@ -314,7 +315,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         type = SessionMethodType.PHONE,
         additionalDetails = "Not feeling well enough to attend in person",
       )
-      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      val response = appointmentService.createAppointment(caseReference, AppointmentType.ICS, request, testUser)
 
       val sessionMethod = response.sessionMethod
       assertThat(sessionMethod).isInstanceOf(VirtualAppointment::class.java)
@@ -327,7 +328,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should persist empty sessionCommunication list as empty session_communication`() {
       val request = buildRequest(sessionCommunication = emptyList())
-      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      val response = appointmentService.createAppointment(caseReference, AppointmentType.ICS, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.sessionCommunication).isEmpty()
@@ -339,7 +340,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       val request = buildRequest()
 
       val notFoundException = assertThrows<NotFoundException> {
-        appointmentService.createIcsAppointment(referralId.toString(), request, testUser)
+        appointmentService.createAppointment(referralId.toString(), AppointmentType.ICS, request, testUser)
       }
       assertThat(notFoundException.message).isEqualTo("Referral not found for id $referralId")
     }
@@ -347,7 +348,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should link ics to the correct referral via appointment`() {
       val request = buildRequest()
-      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      val response = appointmentService.createAppointment(caseReference, AppointmentType.ICS, request, testUser)
 
       assertThat(response.referralId).isEqualTo(referral.id)
     }
@@ -356,10 +357,192 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     fun `should persist createdBy when a user is supplied`() {
       val testUser = referralUserRepository.findById(testUser.id).orElseThrow()
       val request = buildRequest()
-      val response = appointmentService.createIcsAppointment(caseReference, request, testUser)
+      val response = appointmentService.createAppointment(caseReference, AppointmentType.ICS, request, testUser)
 
       val ics = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(ics.createdBy.id).isEqualTo(testUser.id)
+    }
+  }
+
+  @Nested
+  @DisplayName("createAppointment (typed)")
+  inner class CreateTypedAppointment {
+
+    private val otherLocation = SessionMethodRequest(
+      type = SessionMethodType.IN_PERSON_OTHER_LOCATION,
+      addressLine1 = "1 High Street",
+      addressLine2 = "Flat 2",
+      townOrCity = "Leeds",
+      county = "West Yorkshire",
+      postcode = "LS1 1AA",
+    )
+
+    private fun buildTypedRequest(
+      type: AppointmentType,
+      sessionMethodRequest: SessionMethodRequest = SessionMethodRequest(type = SessionMethodType.PHONE),
+      sessionCommunication: List<String> = if (type == AppointmentType.HANDOVER_SESSION) emptyList() else listOf("Email"),
+      meetAtTheGate: Boolean? = if (type == AppointmentType.POST_RELEASE_SESSION) false else null,
+    ) = CreateAppointmentRequest(
+      appointmentType = type,
+      date = LocalDate.of(2026, 3, 27),
+      time = AppointmentTimeRequest(hour = 10, minute = 0, amPm = "am"),
+      sessionMethodRequest = sessionMethodRequest,
+      sessionCommunication = sessionCommunication,
+      meetAtTheGate = meetAtTheGate,
+    )
+
+    @ParameterizedTest
+    @EnumSource(AppointmentType::class)
+    fun `should create appointment with the requested type and start time`(type: AppointmentType) {
+      val response = appointmentService.createAppointment(caseReference, type, buildTypedRequest(type), testUser)
+
+      assertThat(response.appointmentType).isEqualTo(type)
+      assertThat(response.appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
+
+      val appointment = appointmentRepository.findById(response.appointmentId).orElseThrow()
+      assertThat(appointment.type).isEqualTo(type)
+
+      val history = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
+      assertThat(history.appointmentDateTime).isEqualTo(LocalDateTime.of(2026, 3, 27, 10, 0))
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = AppointmentType::class, names = ["ICS", "CONTACT_SESSION", "PRE_RELEASE_SESSION", "POST_RELEASE_SESSION"])
+    fun `should allow in-person other location with address for non-handover types`(type: AppointmentType) {
+      val response = appointmentService.createAppointment(caseReference, type, buildTypedRequest(type, otherLocation), testUser)
+
+      with(response.sessionMethod as InPersonAppointment) {
+        assertThat(this.type).isEqualTo("IN_PERSON_OTHER_LOCATION")
+        assertThat(addressLine1).isEqualTo("1 High Street")
+        assertThat(townOrCity).isEqualTo("Leeds")
+        assertThat(postcode).isEqualTo("LS1 1AA")
+      }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = AppointmentType::class, names = ["ICS", "CONTACT_SESSION", "POST_RELEASE_SESSION"])
+    fun `should allow in-person probation office for ICS, contact and post-release sessions`(type: AppointmentType) {
+      val request = buildTypedRequest(type, SessionMethodRequest(type = SessionMethodType.IN_PERSON_PROBATION_OFFICE, additionalDetails = "Leeds office"))
+      val response = appointmentService.createAppointment(caseReference, type, request, testUser)
+
+      with(response.sessionMethod as InPersonAppointment) {
+        assertThat(this.type).isEqualTo("IN_PERSON_PROBATION_OFFICE")
+        assertThat(probationOfficeName).isEqualTo("Leeds office")
+      }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = AppointmentType::class, names = ["PRE_RELEASE_SESSION", "HANDOVER_SESSION"])
+    fun `should reject in-person probation office for pre-release and handover sessions`(type: AppointmentType) {
+      val request = buildTypedRequest(type, SessionMethodRequest(type = SessionMethodType.IN_PERSON_PROBATION_OFFICE))
+
+      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, request, testUser) }
+        .isInstanceOf(ValidationException::class.java)
+        .hasMessage("Session method IN_PERSON_PROBATION_OFFICE is not allowed for appointment type $type")
+    }
+
+    @Test
+    fun `should reject in-person other location for handover session`() {
+      val type = AppointmentType.HANDOVER_SESSION
+
+      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, buildTypedRequest(type, otherLocation), testUser) }
+        .isInstanceOf(ValidationException::class.java)
+        .hasMessage("Session method IN_PERSON_OTHER_LOCATION is not allowed for appointment type HANDOVER_SESSION")
+    }
+
+    @Test
+    fun `should create handover session as in-person without recording a location`() {
+      val type = AppointmentType.HANDOVER_SESSION
+      val request = buildTypedRequest(type, SessionMethodRequest(type = SessionMethodType.IN_PERSON, addressLine1 = "ignored"))
+      val response = appointmentService.createAppointment(caseReference, type, request, testUser)
+
+      with(response.sessionMethod as InPersonAppointment) {
+        assertThat(this.type).isEqualTo("IN_PERSON")
+        assertThat(addressLine1).isNull()
+      }
+      assertThat(response.sessionCommunications).isEmpty()
+
+      val history = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
+      assertThat(history.appointmentDelivery?.method).isEqualTo(AppointmentDeliveryMethod.IN_PERSON)
+      assertThat(history.appointmentDelivery?.addressLine1).isNull()
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = AppointmentType::class, names = ["HANDOVER_SESSION"], mode = EnumSource.Mode.EXCLUDE)
+    fun `should reject in-person without location for non-handover types`(type: AppointmentType) {
+      val request = buildTypedRequest(type, SessionMethodRequest(type = SessionMethodType.IN_PERSON))
+
+      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, request, testUser) }
+        .isInstanceOf(ValidationException::class.java)
+        .hasMessage("Session method IN_PERSON is not allowed for appointment type $type")
+    }
+
+    @Test
+    fun `should reject session communication for handover session`() {
+      val type = AppointmentType.HANDOVER_SESSION
+      val request = buildTypedRequest(type, sessionCommunication = listOf("Email"))
+
+      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, request, testUser) }
+        .isInstanceOf(ValidationException::class.java)
+        .hasMessage("sessionCommunication is not applicable to appointment type HANDOVER_SESSION")
+    }
+
+    @Test
+    fun `should persist meet at the gate for post-release session`() {
+      val type = AppointmentType.POST_RELEASE_SESSION
+      val response = appointmentService.createAppointment(caseReference, type, buildTypedRequest(type, meetAtTheGate = true), testUser)
+
+      assertThat(response.meetAtTheGate).isTrue()
+      val history = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
+      assertThat(history.meetAtTheGate).isTrue()
+    }
+
+    @Test
+    fun `should require meet at the gate for post-release session`() {
+      val type = AppointmentType.POST_RELEASE_SESSION
+
+      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, buildTypedRequest(type, meetAtTheGate = null), testUser) }
+        .isInstanceOf(ValidationException::class.java)
+        .hasMessage("meetAtTheGate is required for appointment type POST_RELEASE_SESSION")
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = AppointmentType::class, names = ["POST_RELEASE_SESSION"], mode = EnumSource.Mode.EXCLUDE)
+    fun `should reject meet at the gate for non post-release types`(type: AppointmentType) {
+      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, buildTypedRequest(type, meetAtTheGate = true), testUser) }
+        .isInstanceOf(ValidationException::class.java)
+        .hasMessage("meetAtTheGate is only applicable to appointment type POST_RELEASE_SESSION")
+    }
+
+    @Test
+    fun `should reject in-person other location with missing mandatory address fields`() {
+      val type = AppointmentType.CONTACT_SESSION
+      val request = buildTypedRequest(type, SessionMethodRequest(type = SessionMethodType.IN_PERSON_OTHER_LOCATION, addressLine1 = "1 High Street"))
+
+      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, request, testUser) }
+        .isInstanceOf(ValidationException::class.java)
+        .hasMessage("Missing required address fields for IN_PERSON_OTHER_LOCATION: townOrCity, postcode")
+    }
+
+    @Test
+    fun `should allow optional address fields to be omitted for in-person other location`() {
+      val type = AppointmentType.CONTACT_SESSION
+      val request = buildTypedRequest(type, otherLocation.copy(addressLine2 = null, county = null))
+      val response = appointmentService.createAppointment(caseReference, type, request, testUser)
+
+      with(response.sessionMethod as InPersonAppointment) {
+        assertThat(addressLine2).isNull()
+        assertThat(county).isNull()
+      }
+    }
+
+    @Test
+    fun `should not persist anything when validation fails`() {
+      val type = AppointmentType.HANDOVER_SESSION
+      val request = buildTypedRequest(type, otherLocation)
+
+      assertThrows<ValidationException> { appointmentService.createAppointment(caseReference, type, request, testUser) }
+      assertThat(appointmentRepository.findAllByReferralId(referral.id).orEmpty()).isEmpty()
     }
   }
 
@@ -377,7 +560,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         sessionCommunication = listOf("Phone call", "Text message"),
       )
 
-      val previousAppointment = appointmentService.createIcsAppointment(caseReference, createIcsAppointRequest, testUser)
+      val previousAppointment = appointmentService.createAppointment(caseReference, AppointmentType.ICS, createIcsAppointRequest, testUser)
 
       val changeIcsAppointmentRequest = CreateAppointmentRequest(
         date = createIcsAppointRequest.date,
@@ -448,8 +631,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return all appointments for the referral`() {
-      appointmentService.createIcsAppointment(caseReference, buildRequest(hour = 9, amPm = "am"), testUser)
-      appointmentService.createIcsAppointment(caseReference, buildRequest(hour = 2, amPm = "pm"), testUser)
+      appointmentService.createAppointment(caseReference, AppointmentType.ICS, buildRequest(hour = 9, amPm = "am"), testUser)
+      appointmentService.createAppointment(caseReference, AppointmentType.ICS, buildRequest(hour = 2, amPm = "pm"), testUser)
 
       val result = appointmentService.getIcsAppointmentsByReferral(referral.id)
       assertThat(result).hasSize(2)
@@ -463,8 +646,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         ReferralFactory().withPersonId(anotherPerson.id).withCrn("Y999999").create(),
       )
 
-      appointmentService.createIcsAppointment(caseReference, buildRequest(), testUser)
-      appointmentService.createIcsAppointment(anotherReferral.referenceNumber!!, buildRequest(), testUser)
+      appointmentService.createAppointment(caseReference, AppointmentType.ICS, buildRequest(), testUser)
+      appointmentService.createAppointment(anotherReferral.referenceNumber!!, AppointmentType.ICS, buildRequest(), testUser)
 
       val result = appointmentService.getIcsAppointmentsByReferral(referral.id)
       assertThat(result).hasSize(1)
@@ -480,8 +663,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return correct date and time in response`() {
-      appointmentService.createIcsAppointment(
+      appointmentService.createAppointment(
         caseReference,
+        AppointmentType.ICS,
         buildRequest(hour = 3, minute = 15, amPm = "pm"),
         testUser,
       )
@@ -550,7 +734,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return the correct ICS appointment by id`() {
-      val created = appointmentService.createIcsAppointment(caseReference, buildRequest(hour = 11, amPm = "am"), testUser)
+      val created = appointmentService.createAppointment(caseReference, AppointmentType.ICS, buildRequest(hour = 11, amPm = "am"), testUser)
       val fetched = appointmentService.getIcsAppointment(created.appointmentIcsId)
 
       assertThat(fetched.appointmentIcsId).isEqualTo(created.appointmentIcsId)
@@ -567,8 +751,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return correct sessionCommunication in response`() {
-      val created = appointmentService.createIcsAppointment(
+      val created = appointmentService.createAppointment(
         caseReference,
+        AppointmentType.ICS,
         buildRequest(sessionCommunication = listOf("Email", "Phone call")),
         testUser,
       )
@@ -579,8 +764,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return correct howTakePlace type in response`() {
-      val created = appointmentService.createIcsAppointment(
+      val created = appointmentService.createAppointment(
         caseReference,
+        AppointmentType.ICS,
         buildRequest(type = SessionMethodType.IN_PERSON_PROBATION_OFFICE),
         testUser,
       )
@@ -598,8 +784,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return the correct ICS appointment by caseIdentifier`() {
-      val created = appointmentService.createIcsAppointment(
+      val created = appointmentService.createAppointment(
         caseReference,
+        AppointmentType.ICS,
         buildRequest(hour = 11, amPm = "am"),
         testUser,
       )
@@ -776,7 +963,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   )
 
   /** Creates an ICS appointment and returns its id, ready to receive feedback. */
-  private fun createIcsAndGetId(): UUID = appointmentService.createIcsAppointment(caseReference, buildRequest(), testUser).appointmentIcsId
+  private fun createIcsAndGetId(): UUID = appointmentService.createAppointment(caseReference, AppointmentType.ICS, buildRequest(), testUser).appointmentIcsId
 
   private fun buildFeedbackRequest(
     didSessionHappen: Boolean = true,
@@ -922,7 +1109,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         ReferralFactory().withPersonId(otherPerson.id).withCrn("Z777777").create(),
       )
 
-      val otherIcsId = appointmentService.createIcsAppointment(otherReferral.referenceNumber!!, buildRequest(), testUser).appointmentIcsId
+      val otherIcsId = appointmentService.createAppointment(otherReferral.referenceNumber!!, AppointmentType.ICS, buildRequest(), testUser).appointmentIcsId
 
       val ex = assertThrows<NotFoundException> {
         appointmentService.createIcsFeedback(referral.id, otherIcsId, buildFeedbackRequest(), testUser)
