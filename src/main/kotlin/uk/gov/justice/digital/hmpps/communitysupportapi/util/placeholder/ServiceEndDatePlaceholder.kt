@@ -8,11 +8,10 @@ class ServiceEndDatePlaceholder(
   private val referral: Referral,
 ) : Placeholders {
   override fun resolve(tokens: Set<String>): Map<String, String> = buildMap {
+    if (!neededFor(tokens)) return@buildMap
     val targetServiceCompletionDate = referral.targetServiceCompletionDate ?: return@buildMap
     val formatted = targetServiceCompletionDate.format(FULL_MONTH_DATE_FORMAT)
-    SERVICE_END_DATE_TOKENS.forEach { token ->
-      if (token in tokens) put(token, formatted)
-    }
+    SERVICE_END_DATE_TOKENS.forEach { token -> put(token, formatted) }
   }
 
   companion object {
