@@ -431,7 +431,8 @@ class ActionPlanService(
     val question = needStepQuestions.first()
     val questionResponseChangeBatchId = UUID.randomUUID()
     val answers = actionPlanQuestionWriter.answersForActionPlanAndQuestions(actionPlan.id, listOf(question)).single()
-    val change = answers.replaceFirstOutcome(request.outcomeId)
+    val numberOfActiveAnswers = actionPlanQuestionWriter.answersForActionPlan(actionPlan.id).size
+    val change = answers.replaceFirstOutcome(request.outcomeId, numberOfActiveAnswers + 1)
     if (change is ActionPlanQuestionAnswers.Change.Update) {
       actionPlanActivityRepository.deleteByActionPlanStepQuestionAnswerHeaderId(change.current.headerId)
     }
