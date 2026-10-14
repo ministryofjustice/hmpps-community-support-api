@@ -107,12 +107,12 @@ class ActionPlanQuestionAnswers(
     }
   }
 
-  fun replaceFirstOutcome(outcomeId: UUID): Change {
+  fun replaceFirstOutcome(outcomeId: UUID, orderNumber: Int): Change {
     require(question.questionType == ActionPlanQuestionType.OUTCOME) {
       "replaceFirstOutcome can only be called for questions of type OUTCOME (question ${question.id} is of type ${question.questionType})"
     }
     val answer = Answer(outcomeId.toString(), null)
-    return currentAnswers.firstOrNull()?.let { Change.Update(it, answer) } ?: Change.Create(1, answer)
+    return currentAnswers.firstOrNull()?.let { Change.Update(it, answer) } ?: Change.Create(orderNumber, answer)
   }
 
   private fun validate(answer: Answer) {

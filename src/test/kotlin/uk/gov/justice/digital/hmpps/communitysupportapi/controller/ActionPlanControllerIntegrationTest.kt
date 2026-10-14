@@ -1817,6 +1817,149 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
       }
 
       @Test
+      fun `should submit new needs at the end of the need list successfully`() {
+        whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+        val referral = createReferral("Sarah", "Williams")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+        val firstNeedStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(1)
+            .withName("Select a Need")
+            .withStepType(ActionPlanStepType.NEED)
+            .create(),
+        )
+
+        val firstNeed = needRepository.findAllByOrderByOrderNumberAsc().first()
+        val firstOutcome = firstNeed.referenceDataOutcomes.first()
+
+        val firstQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(firstNeedStep.id)
+            .withOrderNumber(1)
+            .withTitle("Select an outcome for ${firstNeed.label}")
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withQuestionType(ActionPlanQuestionType.OUTCOME)
+            .withMaxNumberResponses(1)
+            .withNeedId(firstNeed.id)
+            .create(),
+        )
+
+        val firstActivities = listOf(
+          ActionPlanActivityRequest(
+            who = "Service provider",
+            activityDetails = "Weekly one-to-one sessions",
+            status = "Active",
+          ),
+          ActionPlanActivityRequest(
+            who = "Service user",
+            activityDetails = "Attend all sessions",
+            status = "Active",
+          ),
+        )
+
+        webTestClient.post()
+          .uri("/referral/${referral.referenceNumber}/action-plan/action")
+          .headers(setAuthorisation())
+          .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+          .bodyValue(
+            ActionPlanActionRequest(
+              needId = firstNeed.id,
+              outcomeId = firstOutcome.id,
+              activities = firstActivities,
+            ),
+          )
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanActionResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.success shouldBe true
+            body.message shouldBe "Action submitted successfully"
+          }
+
+        val savedAnswerHeader = actionPlanStepQuestionAnswerHeaderRepository
+          .findActiveByPlanAndQuestionIds(actionPlan.id, listOf(firstQuestion.id))
+          .first()
+
+        savedAnswerHeader.orderNumber shouldBe 1
+
+        val savedAnswerDetails = actionPlanStepQuestionAnswerDetailsRepository
+          .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(savedAnswerHeader.id))
+          .first()
+
+        savedAnswerDetails.content shouldBe firstOutcome.id.toString()
+
+        // Submit second answer
+        val secondNeedStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(2)
+            .withName("Select a Need")
+            .withStepType(ActionPlanStepType.NEED)
+            .create(),
+        )
+
+        val secondNeed = needRepository.findAllByOrderByOrderNumberAsc()[1]
+        val secondOutcome = secondNeed.referenceDataOutcomes.first()
+
+        val secondQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(secondNeedStep.id)
+            .withOrderNumber(2)
+            .withTitle("Select an outcome for ${secondNeed.label}")
+            .withAnswerType(ActionPlanQuestionAnswerType.RADIO)
+            .withQuestionType(ActionPlanQuestionType.OUTCOME)
+            .withMaxNumberResponses(1)
+            .withNeedId(secondNeed.id)
+            .create(),
+        )
+
+        val secondActivities = listOf(
+          ActionPlanActivityRequest(
+            who = "Service provider",
+            activityDetails = "Weekly one-to-one sessions",
+            status = "Active",
+          ),
+        )
+
+        webTestClient.post()
+          .uri("/referral/${referral.referenceNumber}/action-plan/action")
+          .headers(setAuthorisation())
+          .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+          .bodyValue(
+            ActionPlanActionRequest(
+              needId = secondNeed.id,
+              outcomeId = secondOutcome.id,
+              activities = secondActivities,
+            ),
+          )
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanActionResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.success shouldBe true
+            body.message shouldBe "Action submitted successfully"
+          }
+
+        val secondSavedAnswerHeader = actionPlanStepQuestionAnswerHeaderRepository
+          .findActiveByPlanAndQuestionIds(actionPlan.id, listOf(secondQuestion.id))
+          .first()
+
+        secondSavedAnswerHeader.orderNumber shouldBe 2
+
+        val secondSavedAnswerDetails = actionPlanStepQuestionAnswerDetailsRepository
+          .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(secondSavedAnswerHeader.id))
+          .first()
+
+        secondSavedAnswerDetails.content shouldBe secondOutcome.id.toString()
+      }
+
+      @Test
       fun `should replace existing action when submitting new action for same need`() {
         whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
 

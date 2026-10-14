@@ -20,6 +20,10 @@ class ActionPlanQuestionWriter(
   private val details: ActionPlanStepQuestionAnswerDetailsRepository,
   private val events: ActionPlanQuestionResponseEventRepository,
 ) {
+  fun answersForActionPlan(
+    actionPlanId: UUID,
+  ): List<ActionPlanStepQuestionAnswerHeader> = headers.findAllByActionPlanIdAndDeletedAtIsNull(actionPlanId)
+
   fun answersForActionPlanAndQuestions(
     actionPlanId: UUID,
     questions: List<ReferenceDataActionPlanStepQuestion>,
