@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNee
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AreaConfirmationBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckDraftReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CommunityServiceProviderBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ContactDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ProbationPractitionerDetailsBffResponseDto
@@ -1315,15 +1316,13 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           val body = response.responseBody!!
 
           body.fullName shouldBe "John Smith"
-          body.confirmPersonalDetailsCompleted shouldBe TaskListStatusItem.notStarted()
-          body.checkRiskInformationCompleted shouldBe TaskListStatusItem.notStarted()
-          body.selectThePersonsNeedsCompleted shouldBe TaskListStatusItem.notStarted()
-          body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.notStarted()
-          body.addDetailsOfMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
-          body.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.notStarted()
-          body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.notStarted()
-          body.checkProbationPractitionerDetailsCompleted shouldBe null
-          body.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
+          body.confirmPersonalDetailsStatus shouldBe TaskListStatusItem.completed()
+          body.checkRiskInformationStatus shouldBe TaskListStatusItem.notStarted()
+          body.selectThePersonsNeedsStatus shouldBe TaskListStatusItem.notStarted()
+          body.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
+          body.selectAnAreaForReferralStatus shouldBe TaskListStatusItem.notStarted()
+          body.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
+          body.contactDetailsStatus shouldBe ContactDetailsDto(false, TaskListStatusItem.notStarted())
         }
     }
 
@@ -1353,7 +1352,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.inProgress()
+          body.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.inProgress()
         }
     }
 
@@ -1384,7 +1383,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.addDetailsOfAnyAdditionalSupportNeedsCompleted shouldBe TaskListStatusItem.completed()
+          body.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.completed()
         }
     }
 
@@ -1412,7 +1411,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.checkRiskInformationCompleted shouldBe TaskListStatusItem.completed()
+          body.checkRiskInformationStatus shouldBe TaskListStatusItem.completed()
         }
     }
 
@@ -1437,7 +1436,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.selectAnAreaForReferralCompleted shouldBe TaskListStatusItem.completed()
+          body.selectAnAreaForReferralStatus shouldBe TaskListStatusItem.completed()
         }
     }
 
@@ -1462,7 +1461,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.inProgress()
+          body.addAdditionalInformationStatus shouldBe TaskListStatusItem.inProgress()
         }
     }
 
@@ -1488,7 +1487,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.addAdditionalInformationCompleted shouldBe TaskListStatusItem.completed()
+          body.addAdditionalInformationStatus shouldBe TaskListStatusItem.completed()
         }
     }
 
@@ -1509,9 +1508,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<TaskListStatusResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-
-          body.checkProbationPractitionerDetailsCompleted shouldBe null
-          body.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
+          body.contactDetailsStatus shouldBe ContactDetailsDto(false, TaskListStatusItem.notStarted())
         }
     }
 
@@ -1535,9 +1532,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<TaskListStatusResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-
-          body.checkProbationPractitionerDetailsCompleted shouldBe null
-          body.addMainPointOfContactCompleted shouldBe TaskListStatusItem.notStarted()
+          body.contactDetailsStatus shouldBe ContactDetailsDto(false, TaskListStatusItem.notStarted())
         }
     }
 
@@ -1559,8 +1554,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.notStarted()
-          body.addMainPointOfContactCompleted shouldBe null
+          body.contactDetailsStatus shouldBe ContactDetailsDto(true, TaskListStatusItem.notStarted())
         }
     }
 
@@ -1592,8 +1586,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.checkProbationPractitionerDetailsCompleted shouldBe TaskListStatusItem.completed()
-          body.addMainPointOfContactCompleted shouldBe null
+          body.contactDetailsStatus shouldBe ContactDetailsDto(true, TaskListStatusItem.completed())
         }
     }
 
@@ -1625,9 +1618,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<TaskListStatusResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-
-          body.checkProbationPractitionerDetailsCompleted shouldBe null
-          body.addMainPointOfContactCompleted shouldBe TaskListStatusItem.completed()
+          body.contactDetailsStatus shouldBe ContactDetailsDto(false, TaskListStatusItem.completed())
         }
     }
   }
