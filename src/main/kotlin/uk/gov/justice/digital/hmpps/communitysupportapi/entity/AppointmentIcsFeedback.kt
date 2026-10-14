@@ -96,8 +96,6 @@ class AppointmentIcsFeedback(
   @Column(name = "next_steps_actions_before_next_session", columnDefinition = "TEXT")
   val nextStepsActionsBeforeNextSession: String? = null,
 
-
-
   @Column(name = "created_at", nullable = false)
   val createdAt: LocalDateTime = LocalDateTime.now(),
 
