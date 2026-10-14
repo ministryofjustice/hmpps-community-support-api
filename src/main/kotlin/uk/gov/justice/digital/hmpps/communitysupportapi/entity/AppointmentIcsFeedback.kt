@@ -87,11 +87,16 @@ class AppointmentIcsFeedback(
   @Column(name = "issues_concerns_notify_probation_practitioner")
   val issuesConcernsNotifyProbationPractitioner: Boolean? = null,
 
+  @Column(name = "additional_support_needs")
+  val additionalSupportNeeds: String? = null,
+
   @Column(name = "next_steps_planned_for_next_session", columnDefinition = "TEXT")
   val nextStepsPlannedForNextSession: String? = null,
 
   @Column(name = "next_steps_actions_before_next_session", columnDefinition = "TEXT")
   val nextStepsActionsBeforeNextSession: String? = null,
+
+
 
   @Column(name = "created_at", nullable = false)
   val createdAt: LocalDateTime = LocalDateTime.now(),

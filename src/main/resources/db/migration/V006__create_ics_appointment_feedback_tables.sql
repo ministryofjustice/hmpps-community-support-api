@@ -29,7 +29,10 @@ CREATE TABLE IF NOT EXISTS appointment_ics_feedback (
     issues_concerns_identified                      TEXT,
     issues_concerns_notify_probation_practitioner   BOOLEAN,
 
-    -- Section 5: Next steps
+    -- Section 5: Additional support needs
+    additional_support_needs                         TEXT,
+
+    -- Section 6: Next steps
     next_steps_planned_for_next_session             TEXT,
     next_steps_actions_before_next_session          TEXT,
 
@@ -65,6 +68,9 @@ COMMENT ON COLUMN appointment_ics_feedback.session_feedback_strengths_identified
 -- Issues or concerns
 COMMENT ON COLUMN appointment_ics_feedback.issues_concerns_identified IS 'Any issues or concerns that arose during the session';
 COMMENT ON COLUMN appointment_ics_feedback.issues_concerns_notify_probation_practitioner IS 'Whether the probation practitioner needs to be notified about identified issues';
+
+-- Additional support needs
+COMMENT ON COLUMN appointment_ics_feedback.additional_support_needs IS 'Any additional support needs identified for the person during the session';
 
 -- Next steps
 COMMENT ON COLUMN appointment_ics_feedback.next_steps_planned_for_next_session IS 'What is planned to happen in the next session';
