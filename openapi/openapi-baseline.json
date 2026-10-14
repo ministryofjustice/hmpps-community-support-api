@@ -551,6 +551,7 @@
             "enum": [
               "PHONE_CALL",
               "VIDEO_CALL",
+              "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
               "IN_PERSON_OTHER_LOCATION"
             ],
@@ -593,6 +594,7 @@
             "enum": [
               "PHONE_CALL",
               "VIDEO_CALL",
+              "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
               "IN_PERSON_OTHER_LOCATION"
             ],
@@ -843,6 +845,12 @@
           "createdAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "meetAtTheGate": {
+            "type": [
+              "boolean",
+              "null"
+            ]
           },
           "referralFirstName": {
             "type": "string"
@@ -1763,8 +1771,42 @@
         },
         "type": "object"
       },
+      "CreateAppointmentReferenceDataBffDto": {
+        "properties": {
+          "appointmentTypes": {
+            "items": {
+              "$ref": "#/components/schemas/CreateAppointmentTypeOptionDto"
+            },
+            "type": "array"
+          },
+          "probationOfficeLocations": {
+            "items": {
+              "$ref": "#/components/schemas/ProbationOfficeSummary"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "appointmentTypes",
+          "probationOfficeLocations"
+        ],
+        "type": "object"
+      },
       "CreateAppointmentRequest": {
         "properties": {
+          "appointmentType": {
+            "enum": [
+              "ICS",
+              "CONTACT_SESSION",
+              "POST_RELEASE_SESSION",
+              "PRE_RELEASE_SESSION",
+              "HANDOVER_SESSION"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "changeAppointmentDetails": {
             "oneOf": [
               {
@@ -1778,6 +1820,12 @@
           "date": {
             "format": "date",
             "type": "string"
+          },
+          "meetAtTheGate": {
+            "type": [
+              "boolean",
+              "null"
+            ]
           },
           "sessionCommunication": {
             "items": {
@@ -1797,6 +1845,21 @@
           "sessionCommunication",
           "sessionMethodRequest",
           "time"
+        ],
+        "type": "object"
+      },
+      "CreateAppointmentTypeOptionDto": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "value"
         ],
         "type": "object"
       },
@@ -4139,6 +4202,7 @@
             "enum": [
               "PHONE",
               "VIDEO",
+              "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
               "IN_PERSON_OTHER_LOCATION"
             ],
@@ -5535,6 +5599,43 @@
         ]
       }
     },
+    "/bff/referral/{caseReference}/create-an-appointment/appointment-type": {
+      "get": {
+        "operationId": "getCreateAppointmentReferenceData",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAppointmentReferenceDataBffDto"
+                }
+              }
+            },
+            "description": "Create appointment data found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get create appointment page data for a referral",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
     "/bff/referral/{caseReference}/ics": {
       "get": {
         "operationId": "getIcsAppointments",
@@ -6506,6 +6607,59 @@
         "summary": "Create a referral",
         "tags": [
           "referral-controller"
+        ]
+      }
+    },
+    "/referral/{caseIdentifier}/appointment": {
+      "post": {
+        "operationId": "createAppointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseIdentifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAppointmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentIcsResponse"
+                }
+              }
+            },
+            "description": "Appointment created successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Invalid request body"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Book an appointment of a given type for a referral",
+        "tags": [
+          "appointment-controller"
         ]
       }
     },
