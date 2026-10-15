@@ -494,7 +494,7 @@ class ActionPlanService(
       UUID.randomUUID(),
     )
 
-    reorderActionPlanActions(activeAnswers.filterNot { it.id == actionId })
+    actionPlanQuestionWriter.reorderActionPlanActions(actionPlan.id)
 
     logger.info(
       "Successfully deleted action for referral={} with actionId={}",
@@ -509,15 +509,4 @@ class ActionPlanService(
   }
 
   fun findOrCreateByReferralId(referralId: UUID): ActionPlan = actionPlanDataFetcher.findOrCreateActionPlanForReferral(referralId)
-
-  private fun reorderActionPlanActions(actionHeaders: List<ActionPlanStepQuestionAnswerHeader>) {
-    actionHeaders
-      .sortedBy { it.orderNumber }
-      .forEachIndexed { index, header ->
-        val expectedOrderNumber = index + 1
-        if (header.orderNumber != expectedOrderNumber) {
-          actionPlanStepQuestionAnswerHeaderRepository.save(header.updateOrderNumber(expectedOrderNumber))
-        }
-      }
-  }
 }

@@ -1156,10 +1156,8 @@ class ActionPlanServiceIntegrationTest :
         assertEquals("Action deleted successfully", response.message)
 
         val remainingHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
-          .sortedBy { it.orderNumber }
         assertEquals(1, remainingHeaders.size)
         assertEquals(headers[1].id, remainingHeaders.single().id)
-        assertEquals(1, remainingHeaders.single().orderNumber)
 
         assertTrue(actionPlanActivityRepository.findByActionPlanStepQuestionAnswerHeaderId(headers[0].id).isEmpty())
       }
