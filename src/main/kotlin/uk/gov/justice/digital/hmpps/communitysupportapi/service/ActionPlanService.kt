@@ -463,5 +463,61 @@ class ActionPlanService(
     )
   }
 
+  @Transactional
+  fun deleteActionForReferral(
+    referralReference: String,
+    actionId: UUID,
+    changedBy: String,
+  ): ActionPlanActionResponse {
+    val changedAt = OffsetDateTime.now()
+    val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
+    val actionPlan = actionPlanData.actionPlan
+    val activeAnswers = actionPlanQuestionWriter.answersForActionPlan(actionPlan.id)
+
+    val targetAction = activeAnswers
+      .firstOrNull { it.id == actionId }
+      ?: throw NotFoundException("Action not found with id=$actionId")
+
+    val question = actionPlanStepQuestionRepository.findById(targetAction.actionPlanStepQuestionId)
+      .orElseThrow { NotFoundException("Question not found for action $actionId") }
+
+    val answers = actionPlanQuestionWriter.answersForActionPlanAndQuestions(actionPlan.id, listOf(question)).single()
+    val currentAnswer = answers.currentAnswers.firstOrNull { it.headerId == actionId }
+      ?: throw NotFoundException("Action not found with id=$actionId")
+
+    actionPlanActivityRepository.deleteByActionPlanStepQuestionAnswerHeaderId(actionId)
+    actionPlanQuestionWriter.write(
+      answers,
+      listOf(ActionPlanQuestionAnswers.Change.Delete(currentAnswer)),
+      changedBy,
+      changedAt,
+      UUID.randomUUID(),
+    )
+
+    reorderActionPlanActions(activeAnswers.filterNot { it.id == actionId })
+
+    logger.info(
+      "Successfully deleted action for referral={} with actionId={}",
+      referralReference,
+      actionId,
+    )
+
+    return ActionPlanActionResponse(
+      success = true,
+      message = "Action deleted successfully",
+    )
+  }
+
   fun findOrCreateByReferralId(referralId: UUID): ActionPlan = actionPlanDataFetcher.findOrCreateActionPlanForReferral(referralId)
+
+  private fun reorderActionPlanActions(actionHeaders: List<ActionPlanStepQuestionAnswerHeader>) {
+    actionHeaders
+      .sortedBy { it.orderNumber }
+      .forEachIndexed { index, header ->
+        val expectedOrderNumber = index + 1
+        if (header.orderNumber != expectedOrderNumber) {
+          actionPlanStepQuestionAnswerHeaderRepository.save(header.updateOrderNumber(expectedOrderNumber))
+        }
+      }
+  }
 }
