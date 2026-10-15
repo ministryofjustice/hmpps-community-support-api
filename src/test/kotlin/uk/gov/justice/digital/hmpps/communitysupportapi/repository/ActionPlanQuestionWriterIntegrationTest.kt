@@ -166,15 +166,26 @@ class ActionPlanQuestionWriterIntegrationTest :
       val step = testSupport.createActionPlanStep(actionPlanTemplate.id, stepType = ActionPlanStepType.SESSION_DELIVERY)
       val referral = referralSupport.createReferral(referenceNumber = "AB${UUID.randomUUID().toString().take(6).uppercase()}")
       val actionPlan = testSupport.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+      val question = testSupport.createActionPlanStepQuestion(
+        actionPlanStepId = step.id,
+        answerType = ActionPlanQuestionAnswerType.TEXTAREA,
+        questionType = ActionPlanQuestionType.GENERAL,
+        maxNumberResponses = 1,
+      )
 
       val headerIds = (1..actionCount).map { orderNumber ->
-        testSupport.createTextAreaQuestionAndAnswer(
-          actionPlanStepId = step.id,
+        val header = testSupport.createActionPlanStepQuestionAnswerHeader(
           actionPlanId = actionPlan.id,
-          answer = "Answer $orderNumber",
+          actionPlanStepQuestionId = question.id,
           orderNumber = orderNumber,
           createdBy = "TEST_USER",
-        ).answerHeader.id
+        )
+        testSupport.createActionPlanStepQuestionAnswerDetails(
+          actionPlanStepQuestionAnswerHeaderId = header.id,
+          content = "Answer $orderNumber",
+          createdBy = "TEST_USER",
+        )
+        header.id
       }
 
       return actionPlan.id to headerIds
