@@ -9,6 +9,7 @@ import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -25,6 +26,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ActionPlanService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.util.UUID
 
 @RestController
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
@@ -318,5 +320,36 @@ class ActionPlanController(
     val changedBy = user.hmppsAuthUsername
     log.info("Submitting action for referral={} with need={}", referralReference, request.needId)
     return ResponseEntity.ok(actionPlanService.submitActionForReferral(referralReference, request, changedBy))
+  }
+
+  @Operation(summary = "Delete an action from an action plan")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Action deleted successfully",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanActionResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral or action not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @DeleteMapping("/referral/{referralReference}/action-plan/action/{actionId}")
+  fun deleteAction(
+    @PathVariable referralReference: String,
+    @PathVariable actionId: UUID,
+  ): ResponseEntity<ActionPlanActionResponse> {
+    val user = userMapper.fromToken(authenticationHolder)
+    val changedBy = user.hmppsAuthUsername
+    log.info("Deleting action={} for referral={}", actionId, referralReference)
+    return ResponseEntity.ok(actionPlanService.deleteActionForReferral(referralReference, actionId, changedBy))
   }
 }
