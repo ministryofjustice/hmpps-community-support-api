@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.11"
-  kotlin("plugin.spring") version "2.4.20"
-  kotlin("plugin.jpa") version "2.4.20"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.12"
+  kotlin("plugin.spring") version "2.4.21"
+  kotlin("plugin.jpa") version "2.4.21"
 }
 
 configurations {
@@ -49,11 +49,11 @@ dependencies {
   testImplementation("org.testcontainers:junit-jupiter:1.21.4")
   testImplementation("org.awaitility:awaitility-kotlin")
   testImplementation("com.ninja-squad:springmockk:5.0.1")
-  testImplementation("io.kotest:kotest-assertions-core:6.2.5")
+  testImplementation("io.kotest:kotest-assertions-core:6.2.6")
   testImplementation("io.mockk:mockk:1.14.11")
 
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
-  runtimeOnly("org.postgresql:postgresql:42.7.13")
+  runtimeOnly("org.postgresql:postgresql:42.7.14")
 
   testImplementation("org.awaitility:awaitility-kotlin:4.3.0")
 }
