@@ -261,7 +261,6 @@ INSERT INTO appointment_ics_feedback (
     session_feedback_strengths_identified,
     issues_concerns_identified,
     issues_concerns_notify_probation_practitioner,
-    -- New additional support needs fields
     additional_support_needs_identified,
     additional_support_needs_details,
     next_steps_planned_for_next_session,
@@ -288,6 +287,8 @@ VALUES
         'Strong communication skills and clear awareness of personal goals.',
         NULL,
         false,
+        false,
+        NULL,
         'Review housing application outcome and set next employment milestone.',
         'Alice to submit housing application by 10 February 2026.',
         '2026-02-01 11:15:00',
