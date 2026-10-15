@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.repository
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -156,5 +157,78 @@ class ActionPlanQuestionWriterIntegrationTest :
     assertThat(activeHeaders.map { it.id }).containsExactlyInAnyOrder(
       testData.multipleChoiceQuestionWithMultipleAnswersSelected.answers.single { it.details.content == "Option 1" }.header.id,
     )
+  }
+
+  @Nested
+  inner class ReorderActionPlanActions {
+    private fun createActionPlanWithHeaders(actionCount: Int): Pair<UUID, List<UUID>> {
+      val actionPlanTemplate = testSupport.createActionPlanTemplate()
+      val step = testSupport.createActionPlanStep(actionPlanTemplate.id, stepType = ActionPlanStepType.SESSION_DELIVERY)
+      val referral = referralSupport.createReferral(referenceNumber = "AB${UUID.randomUUID().toString().take(6).uppercase()}")
+      val actionPlan = testSupport.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+      val question = testSupport.createActionPlanStepQuestion(
+        actionPlanStepId = step.id,
+        answerType = ActionPlanQuestionAnswerType.TEXTAREA,
+        questionType = ActionPlanQuestionType.GENERAL,
+        maxNumberResponses = 1,
+      )
+
+      val headerIds = (1..actionCount).map { orderNumber ->
+        val header = testSupport.createActionPlanStepQuestionAnswerHeader(
+          actionPlanId = actionPlan.id,
+          actionPlanStepQuestionId = question.id,
+          orderNumber = orderNumber,
+          createdBy = "TEST_USER",
+        )
+        testSupport.createActionPlanStepQuestionAnswerDetails(
+          actionPlanStepQuestionAnswerHeaderId = header.id,
+          content = "Answer $orderNumber",
+          createdBy = "TEST_USER",
+        )
+        header.id
+      }
+
+      return actionPlan.id to headerIds
+    }
+
+    @Test
+    fun `should leave no headers when the only action is deleted`() {
+      val (actionPlanId, headerIds) = createActionPlanWithHeaders(1)
+
+      val header = headerRepository.findById(headerIds.single()).orElseThrow()
+      headerRepository.save(header.delete(OffsetDateTime.now(), "TEST_USER"))
+
+      writer.reorderActionPlanActions(actionPlanId)
+
+      assertThat(headerRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlanId)).isEmpty()
+    }
+
+    @Test
+    fun `should compact order after deleting the last action from three`() {
+      val (actionPlanId, headerIds) = createActionPlanWithHeaders(3)
+
+      val header = headerRepository.findById(headerIds[2]).orElseThrow()
+      headerRepository.save(header.delete(OffsetDateTime.now(), "TEST_USER"))
+
+      writer.reorderActionPlanActions(actionPlanId)
+
+      val remainingHeaders = headerRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlanId).sortedBy { it.orderNumber }
+      assertThat(remainingHeaders.map { it.id }).containsExactly(headerIds[0], headerIds[1])
+      assertThat(remainingHeaders.map { it.orderNumber }).containsExactly(1, 2)
+    }
+
+    @Test
+    fun `should compact order after deleting the second action from five`() {
+      val (actionPlanId, headerIds) = createActionPlanWithHeaders(5)
+
+      val header = headerRepository.findById(headerIds[1]).orElseThrow()
+      headerRepository.save(header.delete(OffsetDateTime.now(), "TEST_USER"))
+
+      writer.reorderActionPlanActions(actionPlanId)
+
+      val remainingHeaders = headerRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlanId).sortedBy { it.orderNumber }
+      assertThat(remainingHeaders.map { it.id }).containsExactly(headerIds[0], headerIds[2], headerIds[3], headerIds[4])
+      assertThat(remainingHeaders.map { it.orderNumber }).containsExactly(1, 2, 3, 4)
+    }
   }
 }

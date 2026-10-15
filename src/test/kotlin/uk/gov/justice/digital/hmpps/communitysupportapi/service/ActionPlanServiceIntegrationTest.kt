@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanQuestionResponseEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
@@ -68,6 +69,9 @@ class ActionPlanServiceIntegrationTest :
 
   @Autowired
   private lateinit var actionPlanQuestionResponseEventRepository: ActionPlanQuestionResponseEventRepository
+
+  @Autowired
+  private lateinit var actionPlanActivityRepository: ActionPlanActivityRepository
 
   @Autowired
   private lateinit var actionPlanRepository: ActionPlanRepository
@@ -1071,6 +1075,130 @@ class ActionPlanServiceIntegrationTest :
         listOf("Mia was away for work"),
         personResponses.questions.single { it.id == personQuestion.id }.savedResponses.map { it.additionalDetails },
       )
+    }
+
+    @Nested
+    @DisplayName("deleteActionForReferral")
+    inner class DeleteActionForReferral {
+      val user = referralHelper.ensureReferralUser()
+
+      @Test
+      fun `should delete the only action and leave no remaining actions`() {
+        val (referral, actionPlan, headers) = createActionPlanWithActions(1)
+
+        val response = actionPlanService.deleteActionForReferral(
+          referral.referenceNumber!!,
+          headers.single().id,
+          user.id.toString(),
+        )
+
+        assertTrue(response.success)
+        assertEquals("Action deleted successfully", response.message)
+
+        val remainingHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+        assertTrue(remainingHeaders.isEmpty())
+        assertTrue(actionPlanActivityRepository.findByActionPlanStepQuestionAnswerHeaderId(headers.single().id).isEmpty())
+      }
+
+      @Test
+      fun `should delete the last action in a list of three and keep the remaining order sequential`() {
+        val (referral, actionPlan, headers) = createActionPlanWithActions(3)
+
+        val response = actionPlanService.deleteActionForReferral(
+          referral.referenceNumber!!,
+          headers[2].id,
+          user.id.toString(),
+        )
+
+        assertTrue(response.success)
+        assertEquals("Action deleted successfully", response.message)
+
+        val remainingHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+          .sortedBy { it.orderNumber }
+
+        assertEquals(listOf(headers[0].id, headers[1].id), remainingHeaders.map { it.id })
+        assertEquals(listOf(1, 2), remainingHeaders.map { it.orderNumber })
+        assertTrue(actionPlanActivityRepository.findByActionPlanStepQuestionAnswerHeaderId(headers[2].id).isEmpty())
+      }
+
+      @Test
+      fun `should delete the second action in a list of five and keep the remaining order sequential`() {
+        val (referral, actionPlan, headers) = createActionPlanWithActions(5)
+
+        val response = actionPlanService.deleteActionForReferral(
+          referral.referenceNumber!!,
+          headers[1].id,
+          user.id.toString(),
+        )
+
+        assertTrue(response.success)
+        assertEquals("Action deleted successfully", response.message)
+
+        val remainingHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+          .sortedBy { it.orderNumber }
+
+        assertEquals(listOf(headers[0].id, headers[2].id, headers[3].id, headers[4].id), remainingHeaders.map { it.id })
+        assertEquals(listOf(1, 2, 3, 4), remainingHeaders.map { it.orderNumber })
+        assertTrue(actionPlanActivityRepository.findByActionPlanStepQuestionAnswerHeaderId(headers[1].id).isEmpty())
+      }
+
+      @Test
+      fun `should delete an action, remove its activities, and reorder the remaining actions`() {
+        val (referral, actionPlan, headers) = createActionPlanWithActions(2)
+
+        val response = actionPlanService.deleteActionForReferral(
+          referral.referenceNumber!!,
+          headers[0].id,
+          user.id.toString(),
+        )
+
+        assertTrue(response.success)
+        assertEquals("Action deleted successfully", response.message)
+
+        val remainingHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+        assertEquals(1, remainingHeaders.size)
+        assertEquals(headers[1].id, remainingHeaders.single().id)
+
+        assertTrue(actionPlanActivityRepository.findByActionPlanStepQuestionAnswerHeaderId(headers[0].id).isEmpty())
+      }
+
+      private fun createActionPlanWithActions(actionCount: Int): Triple<Referral, ActionPlan, List<ActionPlanStepQuestionAnswerHeader>> {
+        val person = referralHelper.createPerson(
+          firstName = "Chris",
+          lastName = "Taylor",
+          identifier = "X${UUID.randomUUID().toString().replace("-", "").take(6).uppercase()}",
+        )
+        val referral =
+          referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
+        val actionPlanTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
+          ?: throw NotFoundException("Cannot find Global ActionPlan")
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+        val need = needRepository.findAllByOrderByOrderNumberAsc().first()
+        val needStep = actionPlanStepRepository
+          .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplate.id)
+          .first { it.stepType == ActionPlanStepType.NEED }
+        val outcomeQuestion = actionPlanStepQuestionRepository
+          .findAllByActionPlanStepIdInOrderByOrderNumberAsc(listOf(needStep.id))
+          .first { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == need.id }
+
+        val headers = (1..actionCount).map { orderNumber ->
+          val header = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(
+            actionPlan.id,
+            outcomeQuestion.id,
+            orderNumber = orderNumber,
+            createdBy = user.id.toString(),
+          )
+          actionPlanHelper.createActionPlanStepQuestionAnswerDetails(
+            header.id,
+            content = "Outcome $orderNumber",
+            createdBy = user.id.toString(),
+          )
+          actionPlanHelper.createActionPlanActivity(header.id)
+          header
+        }
+
+        return Triple(referral, actionPlan, headers)
+      }
     }
 
     private fun createSessionDeliveryStep(actionPlanTemplateId: UUID) = actionPlanStepRepository.save(

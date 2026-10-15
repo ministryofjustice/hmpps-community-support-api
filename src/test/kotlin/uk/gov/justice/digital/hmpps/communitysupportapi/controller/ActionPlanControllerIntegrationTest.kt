@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpMethod.DELETE
 import org.springframework.http.HttpMethod.GET
 import org.springframework.http.HttpMethod.PATCH
 import org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -1814,6 +1815,92 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
         savedActivities[1].who shouldBe "Service user"
         savedActivities[1].activityDetails shouldBe "Attend all sessions"
         savedActivities[1].status shouldBe "Active"
+      }
+
+      @Nested
+      @DisplayName("DELETE /referral/{referralReference}/action-plan/action/{actionId}")
+      inner class DeleteActionEndpoint {
+        @Test
+        fun `should return unauthorized if no token`() {
+          assertUnauthorized(DELETE, "/referral/AB1234CD/action-plan/action/00000000-0000-0000-0000-000000000000")
+        }
+
+        @Test
+        fun `should return forbidden if no role`() {
+          assertForbiddenNoRole(DELETE, "/referral/AB1234CD/action-plan/action/00000000-0000-0000-0000-000000000000")
+        }
+
+        @Test
+        fun `should return forbidden if wrong role`() {
+          assertForbiddenWrongRole(DELETE, "/referral/AB1234CD/action-plan/action/00000000-0000-0000-0000-000000000000")
+        }
+
+        @Test
+        fun `should return not found for unknown referral reference`() {
+          whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+          webTestClient.delete()
+            .uri("/referral/INVALID-REF/action-plan/action/00000000-0000-0000-0000-000000000000")
+            .headers(setAuthorisation())
+            .exchange()
+            .expectStatus().isNotFound
+        }
+
+        @Test
+        fun `should delete an action and reorder the remaining actions`() {
+          whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+          val referral = createReferral("Sarah", "Williams")
+          val actionPlanTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
+            ?: throw IllegalStateException("Cannot find Global ActionPlan")
+          val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+          val needs = needRepository.findAllByOrderByOrderNumberAsc().take(2)
+          val needSteps = actionPlanStepRepository
+            .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplate.id)
+            .filter { it.stepType == ActionPlanStepType.NEED }
+          val outcomeQuestions = actionPlanStepQuestionRepository
+            .findAllByActionPlanStepIdInOrderByOrderNumberAsc(needSteps.map { it.id })
+            .filter { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId != null }
+
+          val firstOutcomeQuestion = outcomeQuestions.first { it.needId == needs[0].id }
+          val secondOutcomeQuestion = outcomeQuestions.first { it.needId == needs[1].id }
+
+          val firstAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(
+            actionPlan.id,
+            firstOutcomeQuestion.id,
+            orderNumber = 1,
+            createdBy = testUser.id.toString(),
+          )
+          val secondAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(
+            actionPlan.id,
+            secondOutcomeQuestion.id,
+            orderNumber = 2,
+            createdBy = testUser.id.toString(),
+          )
+
+          actionPlanHelper.createActionPlanStepQuestionAnswerDetails(firstAnswer.id, content = "First outcome", createdBy = testUser.id.toString())
+          actionPlanHelper.createActionPlanStepQuestionAnswerDetails(secondAnswer.id, content = "Second outcome", createdBy = testUser.id.toString())
+          actionPlanHelper.createActionPlanActivity(firstAnswer.id)
+          actionPlanHelper.createActionPlanActivity(secondAnswer.id)
+
+          webTestClient.delete()
+            .uri("/referral/${referral.referenceNumber}/action-plan/action/${firstAnswer.id}")
+            .headers(setAuthorisation())
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<ActionPlanActionResponse>()
+            .consumeWith { response ->
+              val body = response.responseBody!!
+              body.success shouldBe true
+              body.message shouldBe "Action deleted successfully"
+            }
+
+          val remainingHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+            .sortedBy { it.orderNumber }
+          remainingHeaders.map { it.id } shouldBe listOf(secondAnswer.id)
+          remainingHeaders.map { it.orderNumber } shouldBe listOf(1)
+          actionPlanActivityRepository.findByActionPlanStepQuestionAnswerHeaderId(firstAnswer.id) shouldBe emptyList()
+        }
       }
 
       @Test
