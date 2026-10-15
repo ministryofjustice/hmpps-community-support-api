@@ -261,7 +261,9 @@ INSERT INTO appointment_ics_feedback (
     session_feedback_strengths_identified,
     issues_concerns_identified,
     issues_concerns_notify_probation_practitioner,
-    additional_support_needs
+    -- New additional support needs fields
+    additional_support_needs_identified,
+    additional_support_needs_details,
     next_steps_planned_for_next_session,
     next_steps_actions_before_next_session,
     created_at,
