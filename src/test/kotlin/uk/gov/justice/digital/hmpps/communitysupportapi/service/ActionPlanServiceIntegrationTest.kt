@@ -1098,6 +1098,9 @@ class ActionPlanServiceIntegrationTest :
         val remainingHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
         assertTrue(remainingHeaders.isEmpty())
         assertTrue(actionPlanActivityRepository.findByActionPlanStepQuestionAnswerHeaderId(headers.single().id).isEmpty())
+
+        val summary = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
+        assertTrue(summary.needs.isEmpty())
       }
 
       @Test
