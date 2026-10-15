@@ -141,7 +141,11 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   private var issuesConcernsIdentified: String? = null
   private var notifyProbationPractitioner: Boolean? = false
 
-  // Section 5 – Next steps
+  // Section 5 – Additional support needs
+  private var additionalSupportNeedsIdentified: Boolean? = null
+  private var additionalSupportNeedsDetails: String? = null
+
+  // Section 6 – Next steps
   private var plannedForNextSession: String? = "Continue with action plan"
   private var actionsBeforeNextSession: String? = "Complete CV template"
 
@@ -158,6 +162,8 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   fun withStrengthsIdentified(value: String?) = apply { strengthsIdentified = value }
   fun withIssuesConcernsIdentified(value: String?) = apply { issuesConcernsIdentified = value }
   fun withNotifyProbationPractitioner(value: Boolean?) = apply { notifyProbationPractitioner = value }
+  fun withAdditionalSupportNeedsIdentified(value: Boolean?) = apply { additionalSupportNeedsIdentified = value }
+  fun withAdditionalSupportNeedsDetails(value: String?) = apply { additionalSupportNeedsDetails = value }
   fun withPlannedForNextSession(value: String?) = apply { plannedForNextSession = value }
   fun withActionsBeforeNextSession(value: String?) = apply { actionsBeforeNextSession = value }
 
@@ -183,6 +189,7 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
       identified = issuesConcernsIdentified,
       notifyProbationPractitioner = notifyProbationPractitioner,
     ),
+    additionalSupportNeeds = if (additionalSupportNeedsIdentified != null || additionalSupportNeedsDetails != null) uk.gov.justice.digital.hmpps.communitysupportapi.dto.AdditionalSupportNeedsRequest(additionalSupportNeedsIdentified, additionalSupportNeedsDetails) else null,
     nextSteps = NextStepsRequest(
       plannedForNextSession = plannedForNextSession,
       actionsBeforeNextSession = actionsBeforeNextSession,

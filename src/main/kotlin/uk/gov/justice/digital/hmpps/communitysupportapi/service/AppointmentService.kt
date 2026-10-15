@@ -493,6 +493,8 @@ class AppointmentService(
       sessionFeedbackStrengthsIdentified = request.sessionFeedback?.strengthsIdentified,
       issuesConcernsIdentified = request.issuesAndConcerns?.identified,
       issuesConcernsNotifyProbationPractitioner = request.issuesAndConcerns?.notifyProbationPractitioner,
+      additionalSupportNeedsIdentified = request.additionalSupportNeeds?.additionalSupportNeedsIdentified,
+      additionalSupportNeedsDetails = request.additionalSupportNeeds?.additionalSupportNeedsDetails,
       nextStepsPlannedForNextSession = request.nextSteps?.plannedForNextSession,
       nextStepsActionsBeforeNextSession = request.nextSteps?.actionsBeforeNextSession,
       createdBy = submittedBy,

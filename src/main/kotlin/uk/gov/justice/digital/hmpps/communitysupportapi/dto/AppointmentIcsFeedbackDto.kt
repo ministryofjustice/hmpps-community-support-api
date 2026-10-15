@@ -69,6 +69,11 @@ data class IssuesAndConcernsRequest(
   val notifyProbationPractitioner: Boolean? = null,
 )
 
+data class AdditionalSupportNeedsRequest(
+  val additionalSupportNeedsIdentified: Boolean? = null,
+  val additionalSupportNeedsDetails: String? = null,
+)
+
 data class NextStepsRequest(
   val plannedForNextSession: String? = null,
   val actionsBeforeNextSession: String? = null,
@@ -79,6 +84,7 @@ data class CreateIcsFeedbackRequest(
   val sessionDetails: SessionDetailsRequest? = null,
   val sessionFeedback: SessionFeedbackRequest? = null,
   val issuesAndConcerns: IssuesAndConcernsRequest? = null,
+  val additionalSupportNeeds: AdditionalSupportNeedsRequest? = null,
   val nextSteps: NextStepsRequest? = null,
 )
 
