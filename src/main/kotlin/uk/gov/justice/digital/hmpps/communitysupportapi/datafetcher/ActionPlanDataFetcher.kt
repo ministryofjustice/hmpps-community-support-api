@@ -83,6 +83,32 @@ class ActionPlanDataFetcher(
     return UpdateServiceEndDateData(data.actionPlan, data.referral, data.step)
   }
 
+  fun getCheckYourAnswersForReferral(
+    referralReference: String,
+    isServiceEndDateChanged: Boolean,
+  ): CheckYourAnswersData {
+    val sessionDeliveryData = getActionPlanStepData(referralReference, ActionPlanStepType.SESSION_DELIVERY, "session delivery")
+    val riskAndAdjustmentsData = getActionPlanStepData(referralReference, ActionPlanStepType.RISK_AND_ADJUSTMENTS, "risk and adjustments")
+    val serviceEndDateCheckData = getActionPlanStepData(referralReference, ActionPlanStepType.SERVICE_END_DATE_CHECK, "service end date check")
+    val changeServiceEndDateData = if (isServiceEndDateChanged) {
+      getActionPlanStepData(referralReference, ActionPlanStepType.CHANGE_SERVICE_END_DATE, "change service end date")
+    } else {
+      null
+    }
+    val userInvolvementData = getActionPlanStepData(referralReference, ActionPlanStepType.USER_INVOLVEMENT, "user involvement")
+    return CheckYourAnswersData(
+      actionPlan = sessionDeliveryData.actionPlan,
+      referral = sessionDeliveryData.referral,
+      steps = listOfNotNull(
+        sessionDeliveryData.step,
+        riskAndAdjustmentsData.step,
+        serviceEndDateCheckData.step,
+        changeServiceEndDateData?.step,
+        userInvolvementData.step,
+      ),
+    )
+  }
+
   fun getServiceDeliveryDetailsDataForReferral(referralReference: String): ServiceDeliveryDetailsData {
     val (referral, actionPlan) = getReferralAndActionPlanForReferral(referralReference)
     val allSteps = actionPlanStepRepository.findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlan.actionPlanTemplateId)
@@ -204,6 +230,12 @@ data class UpdateServiceEndDateData(
 )
 
 data class ServiceDeliveryDetailsData(
+  val actionPlan: ActionPlan,
+  val referral: Referral,
+  val steps: List<ReferenceDataActionPlanStep>,
+)
+
+data class CheckYourAnswersData(
   val actionPlan: ActionPlan,
   val referral: Referral,
   val steps: List<ReferenceDataActionPlanStep>,
