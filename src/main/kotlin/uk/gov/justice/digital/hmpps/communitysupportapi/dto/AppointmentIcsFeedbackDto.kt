@@ -124,11 +124,15 @@ data class AppointmentIcsFeedbackResponse(
   val issuesOrConcernsIdentified: String?,
   val issuesOrConcernsNotifyProbationPractitioner: Boolean?,
 
-  // Section 5 – Next steps
+  // Section 5 – Additional support needs
+  val additionalSupportNeedsIdentified: Boolean?,
+  val additionalSupportNeedsDetails: String?,
+
+  // Section 6 – Next steps
   val nextStepsPlannedForNextSession: String?,
   val nextStepsActionsBeforeNextSession: String?,
 
-  // Appointment details linked to session feedback
+  // Section 7 – Appointment details linked to session feedback
   val sessionFeedbackAppointmentDetails: SessionFeedbackAppointmentDetailsDto?,
 
   // Audit
@@ -160,6 +164,8 @@ data class AppointmentIcsFeedbackResponse(
       sessionFeedbackStrengthsIdentified = feedback.sessionFeedbackStrengthsIdentified,
       issuesOrConcernsIdentified = feedback.issuesConcernsIdentified,
       issuesOrConcernsNotifyProbationPractitioner = feedback.issuesConcernsNotifyProbationPractitioner,
+      additionalSupportNeedsIdentified = feedback.additionalSupportNeedsIdentified,
+      additionalSupportNeedsDetails = feedback.additionalSupportNeedsDetails, 
       nextStepsPlannedForNextSession = feedback.nextStepsPlannedForNextSession,
       nextStepsActionsBeforeNextSession = feedback.nextStepsActionsBeforeNextSession,
       sessionFeedbackAppointmentDetails = sessionFeedbackAppointmentDetails,
