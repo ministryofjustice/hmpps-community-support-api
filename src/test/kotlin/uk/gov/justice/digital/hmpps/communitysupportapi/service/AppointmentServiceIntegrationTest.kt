@@ -979,8 +979,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     notifyProbationPractitioner: Boolean? = false,
     plannedForNextSession: String? = "Continue with action plan",
     actionsBeforeNextSession: String? = "Complete referral details",
-    additionalSupportNeedsIdentified: Boolean? = null,
-    additionalSupportNeedsDetails: String? = null,
+    newlyIdentifiedAdditionalSupportNeedsIdentified: Boolean? = null,
+    newlyIdentifiedAdditionalSupportNeedsDetails: String? = null,
   ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
     .withDidSessionHappen(didSessionHappen)
     .withDidPersonAttend(didPersonAttend)
@@ -993,8 +993,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     .withStrengthsIdentified(strengthsIdentified)
     .withIssuesConcernsIdentified(issuesConcernsIdentified)
     .withNotifyProbationPractitioner(notifyProbationPractitioner)
-    .withAdditionalSupportNeedsIdentified(additionalSupportNeedsIdentified)
-    .withAdditionalSupportNeedsDetails(additionalSupportNeedsDetails)
+    .withNewlyIdentifiedAdditionalSupportNeedsIdentified(newlyIdentifiedAdditionalSupportNeedsIdentified)
+    .withNewlyIdentifiedAdditionalSupportNeedsDetails(newlyIdentifiedAdditionalSupportNeedsDetails)
     .withPlannedForNextSession(plannedForNextSession)
     .withActionsBeforeNextSession(actionsBeforeNextSession)
     .create()
@@ -1021,8 +1021,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         strengthsIdentified = "Excellent communication",
         issuesConcernsIdentified = "Risk of housing loss",
         notifyProbationPractitioner = true,
-        additionalSupportNeedsIdentified = true,
-        additionalSupportNeedsDetails = "Requires large-print materials and interpreter",
+        newlyIdentifiedAdditionalSupportNeedsIdentified = true,
+        newlyIdentifiedAdditionalSupportNeedsDetails = "Requires large-print materials and interpreter",
         plannedForNextSession = "Review housing options",
         actionsBeforeNextSession = "Contact housing officer",
       )
