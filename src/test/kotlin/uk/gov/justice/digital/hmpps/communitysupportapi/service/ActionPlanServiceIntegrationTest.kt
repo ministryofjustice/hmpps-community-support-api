@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActivityRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsOrderRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswer
@@ -38,6 +40,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.OutcomeRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionAnswerDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionAnswerHeaderFactory
@@ -93,6 +96,9 @@ class ActionPlanServiceIntegrationTest :
 
   @Autowired
   private lateinit var actionPlanStepQuestionAnswerDetailsRepository: ActionPlanStepQuestionAnswerDetailsRepository
+
+  @Autowired
+  private lateinit var outcomeRepository: OutcomeRepository
 
   override fun afterAll(context: ExtensionContext) {
     testDataCleaner.cleanAllTables()
@@ -1165,6 +1171,37 @@ class ActionPlanServiceIntegrationTest :
         assertTrue(actionPlanActivityRepository.findByActionPlanStepQuestionAnswerHeaderId(headers[0].id).isEmpty())
       }
 
+      @Test
+      fun `should submit an action for an outcome`() {
+        val (referral, actionPlan, _) = createActionPlanWithActions(0)
+
+        val need = needRepository.findAllByOrderByOrderNumberAsc().first()
+        val outcome = outcomeRepository.findAllByNeedIdOrderByOrderNumberAsc(need.id).first()
+
+        val actionPlanTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
+          ?: throw NotFoundException("Cannot find Global ActionPlan")
+        val outcomeQuestion = getOutcomeQuestion(actionPlanTemplate.id, need.id)
+
+        val response = actionPlanService.submitActionForReferral(
+          referral.referenceNumber!!,
+          ActionPlanActionRequest(outcomeQuestion.needId!!, outcome.id, listOf(ActionPlanActivityRequest(who = "Service provider", activityDetails = "Details about the activity", status = "ACTIVE"))),
+          user.id.toString(),
+        )
+
+        assertTrue(response.success)
+        assertEquals("Action submitted successfully", response.message)
+
+        val headers = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+        assertEquals(1, headers.size)
+        assertEquals(actionPlan.id, headers[0].actionPlanId)
+        assertEquals(outcomeQuestion.id, headers[0].actionPlanStepQuestionId)
+        assertEquals(1, headers[0].orderNumber)
+        assertEquals(outcome.text, headers[0].details[0].content)
+
+        val actions = actionPlanActivityRepository.findByActionPlanStepQuestionAnswerHeaderId(headers[0].id)
+        assertEquals(1, actions.size)
+      }
+
       private fun createActionPlanWithActions(actionCount: Int): Triple<Referral, ActionPlan, List<ActionPlanStepQuestionAnswerHeader>> {
         val person = referralHelper.createPerson(
           firstName = "Chris",
@@ -1176,13 +1213,10 @@ class ActionPlanServiceIntegrationTest :
         val actionPlanTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
           ?: throw NotFoundException("Cannot find Global ActionPlan")
         val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
         val need = needRepository.findAllByOrderByOrderNumberAsc().first()
-        val needStep = actionPlanStepRepository
-          .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplate.id)
-          .first { it.stepType == ActionPlanStepType.NEED }
-        val outcomeQuestion = actionPlanStepQuestionRepository
-          .findAllByActionPlanStepIdInOrderByOrderNumberAsc(listOf(needStep.id))
-          .first { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == need.id }
+
+        val outcomeQuestion = getOutcomeQuestion(actionPlan.actionPlanTemplateId, need.id)
 
         val headers = (1..actionCount).map { orderNumber ->
           val header = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(
@@ -1201,6 +1235,15 @@ class ActionPlanServiceIntegrationTest :
         }
 
         return Triple(referral, actionPlan, headers)
+      }
+
+      private fun getOutcomeQuestion(actionPlanTemplateId: UUID, needId: UUID): ReferenceDataActionPlanStepQuestion {
+        val needStep = actionPlanStepRepository
+          .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
+          .first { it.stepType == ActionPlanStepType.NEED }
+        return actionPlanStepQuestionRepository
+          .findAllByActionPlanStepIdInOrderByOrderNumberAsc(listOf(needStep.id))
+          .first { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == needId }
       }
     }
 

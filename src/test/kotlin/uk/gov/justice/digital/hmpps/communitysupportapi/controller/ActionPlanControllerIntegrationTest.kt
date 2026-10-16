@@ -1950,7 +1950,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(savedAnswerHeader.id))
           .first()
 
-        savedAnswerDetails.content shouldBe outcome.id.toString()
+        savedAnswerDetails.content shouldBe outcome.text
 
         val savedActivities = actionPlanActivityRepository
           .findByActionPlanStepQuestionAnswerHeaderId(savedAnswerHeader.id)
@@ -2125,7 +2125,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(savedAnswerHeader.id))
           .first()
 
-        savedAnswerDetails.content shouldBe firstOutcome.id.toString()
+        savedAnswerDetails.content shouldBe firstOutcome.text
 
         // Submit second answer
         val secondNeedStep = actionPlanStepRepository.save(
@@ -2190,7 +2190,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(secondSavedAnswerHeader.id))
           .first()
 
-        secondSavedAnswerDetails.content shouldBe secondOutcome.id.toString()
+        secondSavedAnswerDetails.content shouldBe secondOutcome.text
       }
 
       @Test
@@ -2283,7 +2283,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .maxByOrNull { it.revisionNumber }
           ?: error("Expected answer details for updated action")
 
-        secondAnswerDetails.content shouldBe secondOutcome.id.toString()
+        secondAnswerDetails.content shouldBe secondOutcome.text
 
         val secondActivities = actionPlanActivityRepository
           .findByActionPlanStepQuestionAnswerHeaderId(secondAnswerHeaders.first().id)
