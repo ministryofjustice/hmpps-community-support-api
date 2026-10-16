@@ -51,7 +51,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.util.ReferralReferenceTe
 import java.time.OffsetDateTime
 import java.util.UUID
 
-class ActionPlanServiceIntegrationTest(@Autowired private val outcomeRepository: OutcomeRepository) :
+class ActionPlanServiceIntegrationTest :
   IntegrationTestBase(),
   AfterAllCallback {
 
@@ -96,6 +96,9 @@ class ActionPlanServiceIntegrationTest(@Autowired private val outcomeRepository:
 
   @Autowired
   private lateinit var actionPlanStepQuestionAnswerDetailsRepository: ActionPlanStepQuestionAnswerDetailsRepository
+
+  @Autowired
+  private lateinit var outcomeRepository: OutcomeRepository
 
   override fun afterAll(context: ExtensionContext) {
     testDataCleaner.cleanAllTables()
