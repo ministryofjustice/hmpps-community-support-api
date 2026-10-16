@@ -184,6 +184,19 @@ class ActionPlanService(
   }
 
   @Transactional(readOnly = true)
+  fun getSessionDeliveryCheckYourAnswersForReferral(
+    referralReference: String,
+    isServiceEndDateChanged: Boolean,
+  ): ActionPlanSessionDeliveryDetailsResponse {
+    val data = actionPlanDataFetcher.getCheckYourAnswersForReferral(referralReference, isServiceEndDateChanged)
+    return buildQuestionResponse(
+      actionPlanId = data.actionPlan.id,
+      referral = data.referral,
+      steps = data.steps,
+    )
+  }
+
+  @Transactional(readOnly = true)
   fun getPersonInvolvementForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
     val data = actionPlanDataFetcher.getPersonInvolvementForReferral(referralReference)
     return buildQuestionResponse(
