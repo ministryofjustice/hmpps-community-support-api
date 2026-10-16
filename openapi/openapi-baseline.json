@@ -5944,6 +5944,58 @@
         ]
       }
     },
+    "/bff/referral/{referralReference}/action-plan/session-delivery-details/check-your-answers": {
+      "get": {
+        "operationId": "getSessionDeliveryCheckYourAnswers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Include change-service-end-date questions when the current frontend session answer requires a date change",
+            "in": "query",
+            "name": "isServiceEndDateChanged",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSessionDeliveryDetailsResponse"
+                }
+              }
+            },
+            "description": "Session Delivery Check your answers questions and saved answers returned"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Missing or invalid isServiceEndDateChanged query parameter"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get the check your answers questions and saved answers of the service delivery details",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
     "/bff/referral/{referralReference}/action-plan/session-delivery-details/session-delivery": {
       "get": {
         "operationId": "getSessionDeliveryDetails",
