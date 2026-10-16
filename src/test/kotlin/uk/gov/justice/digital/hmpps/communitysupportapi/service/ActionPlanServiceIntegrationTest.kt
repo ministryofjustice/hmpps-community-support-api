@@ -1172,7 +1172,7 @@ class ActionPlanServiceIntegrationTest :
       }
 
       @Test
-      fun `should submit and action for an outcome`() {
+      fun `should submit an action for an outcome`() {
         val (referral, actionPlan, _) = createActionPlanWithActions(0)
 
         val need = needRepository.findAllByOrderByOrderNumberAsc().first()
