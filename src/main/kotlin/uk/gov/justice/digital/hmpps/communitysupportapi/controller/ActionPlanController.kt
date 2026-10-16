@@ -117,9 +117,12 @@ class ActionPlanController(
     ],
   )
   @GetMapping("/bff/referral/action-plan/select-a-need")
-  fun getNeedsAndOutcomes(): ResponseEntity<ActionPlanSelectANeedResponse> {
-    log.info("Fetching select-a-need data")
-    return ResponseEntity.ok(actionPlanService.getNeedsAndOutcomesForActionPlan())
+  fun getNeedsAndOutcomes(
+    @Parameter(description = "Referral reference used to return needs already added to the referral", required = true)
+    @RequestParam referralReference: String,
+  ): ResponseEntity<ActionPlanSelectANeedResponse> {
+    log.info("Fetching select-a-need data for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.getNeedsAndOutcomesForActionPlan(referralReference))
   }
 
   @Operation(summary = "Get the session delivery details with questions and saved answers for an action plan")
