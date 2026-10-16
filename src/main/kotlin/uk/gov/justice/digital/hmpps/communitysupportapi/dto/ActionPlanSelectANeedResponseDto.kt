@@ -4,7 +4,6 @@ import java.util.UUID
 
 data class ActionPlanSelectANeedResponse(
   val needs: List<ActionPlanSelectANeedNeed>,
-  val selectedNeeds: List<ActionPlanSelectANeedSelectedNeed> = emptyList(),
 )
 
 data class ActionPlanSelectANeedNeed(
@@ -16,9 +15,4 @@ data class ActionPlanSelectANeedNeed(
 data class ActionPlanSelectANeedOutcome(
   val id: UUID,
   val text: String,
-)
-
-data class ActionPlanSelectANeedSelectedNeed(
-  val id: UUID,
-  val label: String,
 )

@@ -11,7 +11,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsOrder
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedNeed
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedOutcome
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedSelectedNeed
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStepQuestionDto
@@ -129,32 +128,20 @@ class ActionPlanService(
   }
 
   @Transactional(readOnly = true)
-  fun getNeedsAndOutcomesForActionPlan(referralReference: String): ActionPlanSelectANeedResponse {
-    val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
-
-    return ActionPlanSelectANeedResponse(
-      needs = needRepository.findAllByOrderByOrderNumberAsc().map { need ->
-        ActionPlanSelectANeedNeed(
-          id = need.id,
-          label = need.label,
-          outcomes = need.referenceDataOutcomes.map { outcome ->
-            ActionPlanSelectANeedOutcome(
-              id = outcome.id,
-              text = outcome.text,
-            )
-          },
-        )
-      },
-      selectedNeeds = actionPlanNeedsAndOutcomesViewRepository.findByIdReferralIdOrderByDisplayOrderAsc(actionPlanData.referral.id)
-        .distinctBy { it.needId }
-        .map { selectedNeed ->
-          ActionPlanSelectANeedSelectedNeed(
-            id = selectedNeed.needId,
-            label = selectedNeed.needName,
+  fun getNeedsAndOutcomesForActionPlan(): ActionPlanSelectANeedResponse = ActionPlanSelectANeedResponse(
+    needs = needRepository.findAllByOrderByOrderNumberAsc().map { need ->
+      ActionPlanSelectANeedNeed(
+        id = need.id,
+        label = need.label,
+        outcomes = need.referenceDataOutcomes.map { outcome ->
+          ActionPlanSelectANeedOutcome(
+            id = outcome.id,
+            text = outcome.text,
           )
         },
-    )
-  }
+      )
+    },
+  )
 
   @Transactional(readOnly = true)
   fun getSessionDeliveryDetailsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {

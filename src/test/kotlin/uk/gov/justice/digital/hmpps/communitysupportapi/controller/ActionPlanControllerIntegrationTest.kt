@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionRequ
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActivityRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedSelectedNeed
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
@@ -158,97 +157,25 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
     inner class GetSelectAReferenceDataNeedEndpoint {
       @Test
       fun `should return unauthorized if no token`() {
-        assertUnauthorized(GET, "/bff/referral/action-plan/select-a-need?referralReference=AB1234CD")
+        assertUnauthorized(GET, "/bff/referral/action-plan/select-a-need")
       }
 
       @Test
       fun `should return forbidden if no role`() {
-        assertForbiddenNoRole(GET, "/bff/referral/action-plan/select-a-need?referralReference=AB1234CD")
+        assertForbiddenNoRole(GET, "/bff/referral/action-plan/select-a-need")
       }
 
       @Test
       fun `should return forbidden if wrong role`() {
-        assertForbiddenWrongRole(GET, "/bff/referral/action-plan/select-a-need?referralReference=AB1234CD")
+        assertForbiddenWrongRole(GET, "/bff/referral/action-plan/select-a-need")
       }
 
       @Test
       fun `should return needs with related outcomes ordered by need and outcome order`() {
-        val referral = createReferral("Adam", "Smith")
-        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
-        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
-        val needStep = actionPlanStepRepository.save(
-          ActionPlanStepFactory()
-            .withActionPlanTemplateId(actionPlanTemplate.id)
-            .withOrderNumber(1)
-            .withName("Needs")
-            .withStepType(ActionPlanStepType.NEED)
-            .create(),
-        )
         val expectedNeeds = needRepository.findAllByOrderByOrderNumberAsc()
 
-        val firstNeedQuestion = actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(needStep.id)
-            .withOrderNumber(1)
-            .withTitle("Select a need")
-            .withQuestionType(ActionPlanQuestionType.OUTCOME)
-            .withNeedId(expectedNeeds[0].id)
-            .create(),
-        )
-        val secondNeedQuestion = actionPlanStepQuestionRepository.save(
-          ActionPlanStepQuestionFactory()
-            .withActionPlanStepId(needStep.id)
-            .withOrderNumber(2)
-            .withTitle("Select a need")
-            .withQuestionType(ActionPlanQuestionType.OUTCOME)
-            .withNeedId(expectedNeeds[1].id)
-            .create(),
-        )
-
-        val firstNeedHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
-          ActionPlanStepQuestionAnswerHeader(
-            id = UUID.randomUUID(),
-            actionPlanId = actionPlan.id,
-            actionPlanStepQuestionId = firstNeedQuestion.id,
-            orderNumber = 1,
-            createdAt = OffsetDateTime.now(),
-            createdBy = testUser.hmppsAuthUsername,
-          ),
-        )
-        val secondNeedHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
-          ActionPlanStepQuestionAnswerHeader(
-            id = UUID.randomUUID(),
-            actionPlanId = actionPlan.id,
-            actionPlanStepQuestionId = secondNeedQuestion.id,
-            orderNumber = 2,
-            createdAt = OffsetDateTime.now(),
-            createdBy = testUser.hmppsAuthUsername,
-          ),
-        )
-
-        actionPlanStepQuestionAnswerDetailsRepository.save(
-          ActionPlanStepQuestionAnswerDetails(
-            id = UUID.randomUUID(),
-            actionPlanStepQuestionAnswerHeaderId = firstNeedHeader.id,
-            revisionNumber = 1,
-            content = "First selected need",
-            createdAt = OffsetDateTime.now(),
-            createdBy = testUser.hmppsAuthUsername,
-          ),
-        )
-        actionPlanStepQuestionAnswerDetailsRepository.save(
-          ActionPlanStepQuestionAnswerDetails(
-            id = UUID.randomUUID(),
-            actionPlanStepQuestionAnswerHeaderId = secondNeedHeader.id,
-            revisionNumber = 1,
-            content = "Second selected need",
-            createdAt = OffsetDateTime.now(),
-            createdBy = testUser.hmppsAuthUsername,
-          ),
-        )
-
         webTestClient.get()
-          .uri("/bff/referral/action-plan/select-a-need?referralReference=${referral.referenceNumber}")
+          .uri("/bff/referral/action-plan/select-a-need")
           .headers(setAuthorisation())
           .exchange()
           .expectStatus().isOk
@@ -258,10 +185,6 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
             body.needs.map { it.id } shouldBe expectedNeeds.map { it.id }
             body.needs.map { it.label } shouldBe expectedNeeds.map { it.label }
-            body.selectedNeeds shouldBe listOf(
-              ActionPlanSelectANeedSelectedNeed(expectedNeeds[0].id, expectedNeeds[0].label),
-              ActionPlanSelectANeedSelectedNeed(expectedNeeds[1].id, expectedNeeds[1].label),
-            )
             body.needs[0].outcomes.map { it.id } shouldBe listOf(
               UUID.fromString("f2a3c4d5-e6f7-4801-9001-000000000001"),
               UUID.fromString("f2a3c4d5-e6f7-4801-9001-000000000002"),
