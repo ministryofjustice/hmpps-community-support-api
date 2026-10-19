@@ -125,8 +125,8 @@ or
 we can use pgAdmin to connect to the database using the following connection details:
 - Host: localhost
 - Port: 5432
-- Database: interventions
-- Username: postgres
+- Database: postgres
+- Username: admin
 - Password: password
 
 ## Seeding the local database
