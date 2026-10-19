@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionRequest
@@ -115,9 +117,12 @@ class ActionPlanController(
     ],
   )
   @GetMapping("/bff/referral/action-plan/select-a-need")
-  fun getNeedsAndOutcomes(): ResponseEntity<ActionPlanSelectANeedResponse> {
-    log.info("Fetching select-a-need data")
-    return ResponseEntity.ok(actionPlanService.getNeedsAndOutcomesForActionPlan())
+  fun getNeedsAndOutcomes(
+    @Parameter(description = "Referral reference used to return needs already added to the referral", required = true)
+    @RequestParam referralReference: String,
+  ): ResponseEntity<ActionPlanSelectANeedResponse> {
+    log.info("Fetching select-a-need data for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.getNeedsAndOutcomesForActionPlan(referralReference))
   }
 
   @Operation(summary = "Get the session delivery details with questions and saved answers for an action plan")
@@ -284,6 +289,43 @@ class ActionPlanController(
   fun getPersonInvolvement(@PathVariable referralReference: String): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
     log.info("Fetching person involvement service delivery details for referral={}", referralReference)
     return ResponseEntity.ok(actionPlanService.getPersonInvolvementForReferral(referralReference))
+  }
+
+  @Operation(
+    summary = "Get the check your answers questions and saved answers of the service delivery details",
+  )
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Session Delivery Check your answers questions and saved answers returned",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanSessionDeliveryDetailsResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Missing or invalid isServiceEndDateChanged query parameter",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{referralReference}/action-plan/session-delivery-details/check-your-answers")
+  fun getSessionDeliveryCheckYourAnswers(
+    @PathVariable referralReference: String,
+    @Parameter(description = "Include change-service-end-date questions when the current frontend session answer requires a date change", required = true)
+    @RequestParam isServiceEndDateChanged: Boolean,
+  ): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
+    log.info("Fetching session delivery details for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.getSessionDeliveryCheckYourAnswersForReferral(referralReference, isServiceEndDateChanged))
   }
 
   @Operation(summary = "Submit a need, outcome, and activities for an action plan")

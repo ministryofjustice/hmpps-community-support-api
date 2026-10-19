@@ -6,6 +6,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,6 +21,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionRequ
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActivityRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedSelectedNeed
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
@@ -155,25 +158,97 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
     inner class GetSelectAReferenceDataNeedEndpoint {
       @Test
       fun `should return unauthorized if no token`() {
-        assertUnauthorized(GET, "/bff/referral/action-plan/select-a-need")
+        assertUnauthorized(GET, "/bff/referral/action-plan/select-a-need?referralReference=AB1234CD")
       }
 
       @Test
       fun `should return forbidden if no role`() {
-        assertForbiddenNoRole(GET, "/bff/referral/action-plan/select-a-need")
+        assertForbiddenNoRole(GET, "/bff/referral/action-plan/select-a-need?referralReference=AB1234CD")
       }
 
       @Test
       fun `should return forbidden if wrong role`() {
-        assertForbiddenWrongRole(GET, "/bff/referral/action-plan/select-a-need")
+        assertForbiddenWrongRole(GET, "/bff/referral/action-plan/select-a-need?referralReference=AB1234CD")
       }
 
       @Test
       fun `should return needs with related outcomes ordered by need and outcome order`() {
+        val referral = createReferral("Adam", "Smith")
+        val actionPlanTemplate = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+        val needStep = actionPlanStepRepository.save(
+          ActionPlanStepFactory()
+            .withActionPlanTemplateId(actionPlanTemplate.id)
+            .withOrderNumber(1)
+            .withName("Needs")
+            .withStepType(ActionPlanStepType.NEED)
+            .create(),
+        )
         val expectedNeeds = needRepository.findAllByOrderByOrderNumberAsc()
 
+        val firstNeedQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(needStep.id)
+            .withOrderNumber(1)
+            .withTitle("Select a need")
+            .withQuestionType(ActionPlanQuestionType.OUTCOME)
+            .withNeedId(expectedNeeds[0].id)
+            .create(),
+        )
+        val secondNeedQuestion = actionPlanStepQuestionRepository.save(
+          ActionPlanStepQuestionFactory()
+            .withActionPlanStepId(needStep.id)
+            .withOrderNumber(2)
+            .withTitle("Select a need")
+            .withQuestionType(ActionPlanQuestionType.OUTCOME)
+            .withNeedId(expectedNeeds[1].id)
+            .create(),
+        )
+
+        val firstNeedHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
+            id = UUID.randomUUID(),
+            actionPlanId = actionPlan.id,
+            actionPlanStepQuestionId = firstNeedQuestion.id,
+            orderNumber = 1,
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+        val secondNeedHeader = actionPlanStepQuestionAnswerHeaderRepository.save(
+          ActionPlanStepQuestionAnswerHeader(
+            id = UUID.randomUUID(),
+            actionPlanId = actionPlan.id,
+            actionPlanStepQuestionId = secondNeedQuestion.id,
+            orderNumber = 2,
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
+            id = UUID.randomUUID(),
+            actionPlanStepQuestionAnswerHeaderId = firstNeedHeader.id,
+            revisionNumber = 1,
+            content = "First selected need",
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+        actionPlanStepQuestionAnswerDetailsRepository.save(
+          ActionPlanStepQuestionAnswerDetails(
+            id = UUID.randomUUID(),
+            actionPlanStepQuestionAnswerHeaderId = secondNeedHeader.id,
+            revisionNumber = 1,
+            content = "Second selected need",
+            createdAt = OffsetDateTime.now(),
+            createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+
         webTestClient.get()
-          .uri("/bff/referral/action-plan/select-a-need")
+          .uri("/bff/referral/action-plan/select-a-need?referralReference=${referral.referenceNumber}")
           .headers(setAuthorisation())
           .exchange()
           .expectStatus().isOk
@@ -183,6 +258,10 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
             body.needs.map { it.id } shouldBe expectedNeeds.map { it.id }
             body.needs.map { it.label } shouldBe expectedNeeds.map { it.label }
+            body.selectedNeeds shouldBe listOf(
+              ActionPlanSelectANeedSelectedNeed(expectedNeeds[0].id, expectedNeeds[0].label),
+              ActionPlanSelectANeedSelectedNeed(expectedNeeds[1].id, expectedNeeds[1].label),
+            )
             body.needs[0].outcomes.map { it.id } shouldBe listOf(
               UUID.fromString("f2a3c4d5-e6f7-4801-9001-000000000001"),
               UUID.fromString("f2a3c4d5-e6f7-4801-9001-000000000002"),
@@ -1235,6 +1314,151 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Nested
+    @DisplayName("GET /bff/referral/{referralReference}/action-plan/session-delivery-details/check-your-answers")
+    inner class GetSessionDeliveryCheckYourAnswersEndpoint {
+      private val endpoint = "/bff/referral/$UNKNOWN_REFERRAL_REFERENCE/action-plan/session-delivery-details/check-your-answers"
+
+      @Test
+      fun `should return unauthorized if no token`() {
+        assertUnauthorized(GET, "$endpoint?isServiceEndDateChanged=false")
+      }
+
+      @Test
+      fun `should return forbidden if no role`() {
+        assertForbiddenNoRole(GET, "$endpoint?isServiceEndDateChanged=false")
+      }
+
+      @Test
+      fun `should return forbidden if wrong role`() {
+        assertForbiddenWrongRole(GET, "$endpoint?isServiceEndDateChanged=false")
+      }
+
+      @Test
+      fun `should return not found for unknown referral reference`() {
+        assertNotFound(GET, "$endpoint?isServiceEndDateChanged=false")
+      }
+
+      @Test
+      fun `should reject a missing inclusion flag`() {
+        webTestClient.get()
+          .uri(endpoint)
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus().isBadRequest
+      }
+
+      @Test
+      fun `should reject an invalid isServiceEndDate flag`() {
+        webTestClient.get()
+          .uri("$endpoint?isServiceEndDateChanged=invalid")
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus().isBadRequest
+      }
+
+      @ParameterizedTest
+      @CsvSource(
+        "true, YES, true",
+        "true, NULL, true",
+        "false, NO, true",
+        "false, NO, false",
+        nullValues = ["NULL"],
+      )
+      fun `should use the session flag rather than persisted confirmation to select questions`(
+        isServiceEndDateChanged: Boolean,
+        savedConfirmation: String?,
+        hasChangeServiceEndDateStep: Boolean,
+      ) {
+        val referral = referralHelper.createReferral(
+          person = referralHelper.createPerson(firstName = "Jane", lastName = "Doe"),
+          referenceNumber = randomReferralReference(),
+          submittedBy = referralHelper.ensureReferralUser(),
+        )
+        val template = actionPlanHelper.createActionPlanTemplate()
+        val actionPlan = actionPlanHelper.createActionPlan(referral.id, template.id)
+        val stepTypes = listOfNotNull(
+          ActionPlanStepType.SESSION_DELIVERY,
+          ActionPlanStepType.RISK_AND_ADJUSTMENTS,
+          ActionPlanStepType.SERVICE_END_DATE_CHECK,
+          ActionPlanStepType.CHANGE_SERVICE_END_DATE.takeIf { hasChangeServiceEndDateStep },
+          ActionPlanStepType.USER_INVOLVEMENT,
+        )
+        val questions = stepTypes.mapIndexed { index, stepType ->
+          val step = actionPlanHelper.createActionPlanStep(
+            actionPlanTemplateId = template.id,
+            orderNumber = index + 1,
+            stepType = stepType,
+          )
+          val question = actionPlanStepQuestionRepository.save(
+            ActionPlanStepQuestionFactory()
+              .withActionPlanStepId(step.id)
+              .withOrderNumber(1)
+              .withTitle("Question for {{ firstName }}")
+              .withQuestionKey(stepType.name)
+              .withAnswerType(ActionPlanQuestionAnswerType.TEXTAREA)
+              .withQuestionType(ActionPlanQuestionType.GENERAL)
+              .create(),
+          )
+          if (stepType == ActionPlanStepType.SERVICE_END_DATE_CHECK && savedConfirmation != null) {
+            val header = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, question.id)
+            actionPlanHelper.createActionPlanStepQuestionAnswerDetails(header.id, content = savedConfirmation)
+          } else if (stepType != ActionPlanStepType.SERVICE_END_DATE_CHECK && stepType != ActionPlanStepType.CHANGE_SERVICE_END_DATE) {
+            val header = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, question.id)
+            actionPlanHelper.createActionPlanStepQuestionAnswerDetails(header.id, revisionNumber = 1, content = "Original answer")
+            actionPlanHelper.createActionPlanStepQuestionAnswerDetails(header.id, revisionNumber = 2, content = "Latest answer")
+          }
+          question
+        }
+        val expectedQuestions = questions.filter {
+          isServiceEndDateChanged || it.questionKey != ActionPlanStepType.CHANGE_SERVICE_END_DATE.name
+        }
+
+        webTestClient.get()
+          .uri("/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details/check-your-answers?isServiceEndDateChanged=$isServiceEndDateChanged")
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus().isOk
+          .expectBody<ActionPlanSessionDeliveryDetailsResponse>()
+          .consumeWith { response ->
+            val body = response.responseBody!!
+            body.questions.map { it.id } shouldBe expectedQuestions.map { it.id }
+            body.questions.map { it.label } shouldBe List(expectedQuestions.size) { "Question for Jane" }
+            body.questions.forEach { question ->
+              val expectedAnswers = when (question.key) {
+                ActionPlanStepType.SERVICE_END_DATE_CHECK.name -> listOfNotNull(savedConfirmation)
+                ActionPlanStepType.CHANGE_SERVICE_END_DATE.name -> emptyList()
+                else -> listOf("Latest answer")
+              }
+              question.savedResponses.map { it.value } shouldBe expectedAnswers
+            }
+          }
+      }
+
+      @Test
+      fun `should return not found when the requested change service end date step is missing`() {
+        val referral = referralHelper.createReferral(
+          referenceNumber = randomReferralReference(),
+          submittedBy = referralHelper.ensureReferralUser(),
+        )
+        val template = actionPlanHelper.createActionPlanTemplate()
+        actionPlanHelper.createActionPlan(referral.id, template.id)
+        listOf(
+          ActionPlanStepType.SESSION_DELIVERY,
+          ActionPlanStepType.RISK_AND_ADJUSTMENTS,
+          ActionPlanStepType.SERVICE_END_DATE_CHECK,
+          ActionPlanStepType.USER_INVOLVEMENT,
+        ).forEachIndexed { index, stepType ->
+          actionPlanHelper.createActionPlanStep(template.id, orderNumber = index + 1, stepType = stepType)
+        }
+
+        assertNotFound(
+          GET,
+          "/bff/referral/${referral.referenceNumber}/action-plan/session-delivery-details/check-your-answers?isServiceEndDateChanged=true",
+        )
+      }
+    }
+
+    @Nested
     @DisplayName("PATCH /referral/{referralReference}/action-plan/session-delivery-details")
     inner class PatchSessionDeliveryDetailsEndpoint {
       @Test
@@ -1803,7 +2027,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(savedAnswerHeader.id))
           .first()
 
-        savedAnswerDetails.content shouldBe outcome.id.toString()
+        savedAnswerDetails.content shouldBe outcome.text
 
         val savedActivities = actionPlanActivityRepository
           .findByActionPlanStepQuestionAnswerHeaderId(savedAnswerHeader.id)
@@ -1978,7 +2202,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(savedAnswerHeader.id))
           .first()
 
-        savedAnswerDetails.content shouldBe firstOutcome.id.toString()
+        savedAnswerDetails.content shouldBe firstOutcome.text
 
         // Submit second answer
         val secondNeedStep = actionPlanStepRepository.save(
@@ -2043,7 +2267,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .findAllByActionPlanStepQuestionAnswerHeaderIdIn(listOf(secondSavedAnswerHeader.id))
           .first()
 
-        secondSavedAnswerDetails.content shouldBe secondOutcome.id.toString()
+        secondSavedAnswerDetails.content shouldBe secondOutcome.text
       }
 
       @Test
@@ -2136,7 +2360,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           .maxByOrNull { it.revisionNumber }
           ?: error("Expected answer details for updated action")
 
-        secondAnswerDetails.content shouldBe secondOutcome.id.toString()
+        secondAnswerDetails.content shouldBe secondOutcome.text
 
         val secondActivities = actionPlanActivityRepository
           .findByActionPlanStepQuestionAnswerHeaderId(secondAnswerHeaders.first().id)
