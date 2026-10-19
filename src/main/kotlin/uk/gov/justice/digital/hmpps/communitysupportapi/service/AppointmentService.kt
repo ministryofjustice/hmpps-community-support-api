@@ -571,7 +571,7 @@ class AppointmentService(
       SUPPORTED_CREATE_APPOINTMENT_TYPES,
     )
       .map { appointment ->
-        ReferralAppointmentSummaryDto.from(appointment)
+        ReferralAppointmentSummaryDto.from(appointment, getLatestAppointmentStatus(appointment.appointment.id))
       }
 
     return ReferralAppointmentsBffResponseDto(

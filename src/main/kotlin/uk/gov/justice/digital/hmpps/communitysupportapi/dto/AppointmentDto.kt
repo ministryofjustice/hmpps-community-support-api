@@ -11,7 +11,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistor
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
-import uk.gov.justice.digital.hmpps.communitysupportapi.util.APPOINTMENT_DATETIME_FORMATTER
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.OffsetDateTime
@@ -217,15 +216,19 @@ data class ReferralAppointmentsPersonDetailsDto(
 data class ReferralAppointmentSummaryDto(
   val id: UUID,
   val label: String,
-  val time: String,
+  val appointmentDate: LocalDate,
+  val appointmentTime: AppointmentTimeResponse,
+  val appointmentStatus: AppointmentStatusHistoryType,
 ) {
   companion object {
-    fun from(appointment: AppointmentHistory): ReferralAppointmentSummaryDto {
+    fun from(appointment: AppointmentHistory, status: AppointmentStatusHistoryType): ReferralAppointmentSummaryDto {
       val appointmentDateTime = appointment.appointmentDateTime
       return ReferralAppointmentSummaryDto(
         id = appointment.id,
         label = appointment.appointment.type.toDisplayLabel(),
-        time = appointmentDateTime.format(APPOINTMENT_DATETIME_FORMATTER),
+        appointmentDate = appointmentDateTime.toLocalDate(),
+        appointmentTime = appointmentDateTime.toLocalTime().toAppointmentTimeResponse(),
+        appointmentStatus = status,
       )
     }
   }

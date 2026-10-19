@@ -14,6 +14,7 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
@@ -715,9 +716,13 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
       assertThat(result.appointments).hasSize(2)
       assertThat(result.appointments.first().label).isEqualTo("Pre-release session")
-      assertThat(result.appointments.first().time).isEqualTo("15:00 Tuesday 22 September 2026")
+      assertThat(result.appointments.first().appointmentDate).isEqualTo(LocalDate.of(2026, 9, 22))
+      assertThat(result.appointments.first().appointmentTime).isEqualTo(AppointmentTimeResponse(hour = 3, minute = 0, amPm = "pm"))
+      assertThat(result.appointments.first().appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
       assertThat(result.appointments[1].label).isEqualTo("Contact session")
-      assertThat(result.appointments[1].time).isEqualTo("09:15 Sunday 20 September 2026")
+      assertThat(result.appointments[1].appointmentDate).isEqualTo(LocalDate.of(2026, 9, 20))
+      assertThat(result.appointments[1].appointmentTime).isEqualTo(AppointmentTimeResponse(hour = 9, minute = 15, amPm = "am"))
+      assertThat(result.appointments[1].appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
     }
 
     @Test
