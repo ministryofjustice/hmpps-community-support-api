@@ -493,6 +493,8 @@ class AppointmentService(
       sessionFeedbackStrengthsIdentified = request.sessionFeedback?.strengthsIdentified,
       issuesConcernsIdentified = request.issuesAndConcerns?.identified,
       issuesConcernsNotifyProbationPractitioner = request.issuesAndConcerns?.notifyProbationPractitioner,
+      additionalSupportNeedsIdentified = request.newlyIdentifiedAdditionalSupportNeeds?.newlyIdentifiedAdditionalSupportNeedsIdentified,
+      additionalSupportNeedsDetails = request.newlyIdentifiedAdditionalSupportNeeds?.newlyIdentifiedAdditionalSupportNeedsDetails,
       nextStepsPlannedForNextSession = request.nextSteps?.plannedForNextSession,
       nextStepsActionsBeforeNextSession = request.nextSteps?.actionsBeforeNextSession,
       createdBy = submittedBy,
@@ -571,7 +573,7 @@ class AppointmentService(
       SUPPORTED_CREATE_APPOINTMENT_TYPES,
     )
       .map { appointment ->
-        ReferralAppointmentSummaryDto.from(appointment)
+        ReferralAppointmentSummaryDto.from(appointment, getLatestAppointmentStatus(appointment.appointment.id))
       }
 
     return ReferralAppointmentsBffResponseDto(
