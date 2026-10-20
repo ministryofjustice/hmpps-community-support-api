@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -46,6 +47,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionChoiceFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionFactory
@@ -90,6 +92,9 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var actionPlanTemplateRepository: ActionPlanTemplateRepository
+
+  @Autowired
+  private lateinit var referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
@@ -244,6 +249,17 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             content = "Second selected need",
             createdAt = OffsetDateTime.now(),
             createdBy = testUser.hmppsAuthUsername,
+          ),
+        )
+
+        referralCriminogenicNeedsRepository.save(
+          ReferralCriminogenicNeeds(
+            id = UUID.randomUUID(),
+            referral = referral,
+            hasAccommodationNeeds = true,
+            hasEmploymentEducationNeeds = true,
+            updatedAt = OffsetDateTime.now(),
+            updatedBy = testUser.id,
           ),
         )
 

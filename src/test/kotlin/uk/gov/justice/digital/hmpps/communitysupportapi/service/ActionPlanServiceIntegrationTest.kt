@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepTyp
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStep
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ActionPlanTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -41,6 +42,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanTemplateRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.OutcomeRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionAnswerDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ActionPlanStepQuestionAnswerHeaderFactory
@@ -99,6 +101,9 @@ class ActionPlanServiceIntegrationTest :
 
   @Autowired
   private lateinit var outcomeRepository: OutcomeRepository
+
+  @Autowired
+  private lateinit var referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository
 
   override fun afterAll(context: ExtensionContext) {
     testDataCleaner.cleanAllTables()
@@ -302,6 +307,54 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(1, result.needs[0].orderNumber)
       assertEquals(firstAnswer.id, result.needs[1].outcomes[0].id)
       assertEquals(2, result.needs[1].orderNumber)
+    }
+  }
+
+  @Nested
+  @DisplayName("getNeedsAndOutcomesForActionPlan")
+  inner class GetNeedsAndOutcomesForActionPlan {
+    val user = referralHelper.ensureReferralUser()
+    val globalTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
+      ?: throw NotFoundException("Cannot find Global ActionPlan")
+
+    @Test
+    fun `should return selected needs from referral criminogenic needs`() {
+      val person = referralHelper.createPerson(firstName = "Ava", lastName = "Miller")
+      val referral = referralHelper.createReferral(
+        person = person,
+        referenceNumber = randomReferralReference(),
+        submittedBy = user,
+      )
+      actionPlanHelper.createActionPlan(referralId = referral.id, templateId = globalTemplate.id)
+
+      referralCriminogenicNeedsRepository.save(
+        ReferralCriminogenicNeeds(
+          id = UUID.randomUUID(),
+          referral = referral,
+          hasAccommodationNeeds = true,
+          hasEmploymentEducationNeeds = true,
+          hasFinancialNeeds = false,
+          hasDrugUseNeeds = false,
+          hasAlcoholUseNeeds = false,
+          hasHealthWellbeingNeeds = false,
+          hasPersonalRelationshipsCommunityNeeds = false,
+          hasThinkingBehavioursAttitudeNeeds = false,
+          updatedAt = OffsetDateTime.now(),
+          updatedBy = user.id,
+        ),
+      )
+
+      val result = actionPlanService.getNeedsAndOutcomesForActionPlan(referral.referenceNumber!!)
+      val needs = needRepository.findAllByOrderByOrderNumberAsc()
+
+      assertEquals(
+        listOf(needs[0].id, needs[1].id),
+        result.selectedNeeds.map { it.id },
+      )
+      assertEquals(
+        listOf(needs[0].label, needs[1].label),
+        result.selectedNeeds.map { it.label },
+      )
     }
   }
 
