@@ -19,6 +19,7 @@ import org.springframework.test.web.reactive.server.expectBodyList
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ChangeAppointmentDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReferenceDataBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
@@ -986,6 +987,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         createdAt,
         listOf("Email"),
       )
+      appointmentHelper.createAppointmentStatusHistory(appointment, AppointmentStatusHistoryType.SCHEDULED, createdAt)
 
       webTestClient.get()
         .uri("/bff/referral/$caseReference/appointments")
@@ -1003,7 +1005,9 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
           body.appointments.size shouldBe 1
           body.appointments.first().label shouldBe "Pre-release session"
-          body.appointments.first().time shouldBe "15:00 Tuesday 22 September 2026"
+          body.appointments.first().appointmentDate shouldBe appointmentDateTime.toLocalDate()
+          body.appointments.first().appointmentTime shouldBe AppointmentTimeResponse(hour = 3, minute = 0, amPm = "pm")
+          body.appointments.first().appointmentStatus shouldBe AppointmentStatusHistoryType.SCHEDULED
         }
     }
   }

@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IssuesAndConcernsRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NewlyIdentifiedAdditionalSupportNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NextStepsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDetailsRequest
@@ -141,7 +142,11 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   private var issuesConcernsIdentified: String? = null
   private var notifyProbationPractitioner: Boolean? = false
 
-  // Section 5 – Next steps
+  // Section 5 – Newly identified additional support needs
+  private var newlyIdentifiedAdditionalSupportNeedsIdentified: Boolean? = null
+  private var newlyIdentifiedAdditionalSupportNeedsDetails: String? = null
+
+  // Section 6 – Next steps
   private var plannedForNextSession: String? = "Continue with action plan"
   private var actionsBeforeNextSession: String? = "Complete CV template"
 
@@ -158,6 +163,8 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   fun withStrengthsIdentified(value: String?) = apply { strengthsIdentified = value }
   fun withIssuesConcernsIdentified(value: String?) = apply { issuesConcernsIdentified = value }
   fun withNotifyProbationPractitioner(value: Boolean?) = apply { notifyProbationPractitioner = value }
+  fun withNewlyIdentifiedAdditionalSupportNeedsIdentified(value: Boolean?) = apply { newlyIdentifiedAdditionalSupportNeedsIdentified = value }
+  fun withNewlyIdentifiedAdditionalSupportNeedsDetails(value: String?) = apply { newlyIdentifiedAdditionalSupportNeedsDetails = value }
   fun withPlannedForNextSession(value: String?) = apply { plannedForNextSession = value }
   fun withActionsBeforeNextSession(value: String?) = apply { actionsBeforeNextSession = value }
 
@@ -182,6 +189,10 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
     issuesAndConcerns = IssuesAndConcernsRequest(
       identified = issuesConcernsIdentified,
       notifyProbationPractitioner = notifyProbationPractitioner,
+    ),
+    newlyIdentifiedAdditionalSupportNeeds = NewlyIdentifiedAdditionalSupportNeedsRequest(
+      newlyIdentifiedAdditionalSupportNeedsIdentified = newlyIdentifiedAdditionalSupportNeedsIdentified,
+      newlyIdentifiedAdditionalSupportNeedsDetails = newlyIdentifiedAdditionalSupportNeedsDetails,
     ),
     nextSteps = NextStepsRequest(
       plannedForNextSession = plannedForNextSession,

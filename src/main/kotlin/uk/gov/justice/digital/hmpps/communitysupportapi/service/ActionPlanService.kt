@@ -131,9 +131,11 @@ class ActionPlanService(
   @Transactional(readOnly = true)
   fun getNeedsAndOutcomesForActionPlan(referralReference: String): ActionPlanSelectANeedResponse {
     val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
+    val needs = needRepository.findAllByOrderByOrderNumberAsc()
+    val selectedNeeds = needRepository.findSelectedForReferralIdOrderByOrderNumberAsc(actionPlanData.referral.id)
 
     return ActionPlanSelectANeedResponse(
-      needs = needRepository.findAllByOrderByOrderNumberAsc().map { need ->
+      needs = needs.map { need ->
         ActionPlanSelectANeedNeed(
           id = need.id,
           label = need.label,
@@ -145,12 +147,11 @@ class ActionPlanService(
           },
         )
       },
-      selectedNeeds = actionPlanNeedsAndOutcomesViewRepository.findByIdReferralIdOrderByDisplayOrderAsc(actionPlanData.referral.id)
-        .distinctBy { it.needId }
+      selectedNeeds = selectedNeeds
         .map { selectedNeed ->
           ActionPlanSelectANeedSelectedNeed(
-            id = selectedNeed.needId,
-            label = selectedNeed.needName,
+            id = selectedNeed.id,
+            label = selectedNeed.label,
           )
         },
     )
