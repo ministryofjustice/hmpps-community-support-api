@@ -193,10 +193,9 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
         strengthsIdentified = "Excellent communication skills",
         issuesConcernsIdentified = "Risk of housing loss",
         notifyProbationPractitioner = true,
+        additionalSupportNeeds = "Requires large-print materials and interpreter",
         plannedForNextSession = "Review housing options",
         actionsBeforeNextSession = "Contact housing officer",
-        newlyIdentifiedAdditionalSupportNeedsIdentified = true,
-        newlyIdentifiedAdditionalSupportNeedsDetails = "Requires large-print materials and interpreter",
       )
 
       webTestClient.post()
@@ -223,17 +222,15 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           assertThat(body.sessionFeedbackStrengthsIdentified).isEqualTo("Excellent communication skills")
           assertThat(body.issuesOrConcernsIdentified).isEqualTo("Risk of housing loss")
           assertThat(body.issuesOrConcernsNotifyProbationPractitioner).isTrue()
+          assertThat(body.additionalSupportNeeds).isEqualTo("Requires large-print materials and interpreter")
           assertThat(body.nextStepsPlannedForNextSession).isEqualTo("Review housing options")
           assertThat(body.nextStepsActionsBeforeNextSession).isEqualTo("Contact housing officer")
-          assertThat(body.newlyIdentifiedAdditionalSupportNeedsIdentified).isTrue()
-          assertThat(body.newlyIdentifiedAdditionalSupportNeedsDetails).isEqualTo("Requires large-print materials and interpreter")
           val saved = appointmentIcsFeedbackRepository.findById(body.id).orElseThrow()
           assertThat(saved.appointmentIcs.id).isEqualTo(icsId)
           assertThat(saved.recordSessionDidSessionHappen).isTrue()
           assertThat(saved.sessionDetailsDuration).isEqualTo("1 hour and 45 minutes")
           assertThat(saved.issuesConcernsNotifyProbationPractitioner).isTrue()
-          assertThat(saved.additionalSupportNeedsIdentified).isTrue()
-          assertThat(saved.additionalSupportNeedsDetails).isEqualTo("Requires large-print materials and interpreter")
+          assertThat(saved.additionalSupportNeeds).isEqualTo("Requires large-print materials and interpreter")
           assertThat(saved.createdBy?.id).isEqualTo(testUser.id)
           val events = referralEventRepository.findAll()
             .filter { it.eventType == ReferralEventType.APPOINTMENT_FEEDBACK_SENT }
@@ -265,9 +262,8 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           assertThat(body.recordSessionHowSessionTookPlace).isNull()
           assertThat(body.sessionDetailsWasPersonLate).isNull()
           assertThat(body.issuesOrConcernsIdentified).isNull()
+          assertThat(body.additionalSupportNeeds).isNull()
           assertThat(body.nextStepsPlannedForNextSession).isNull()
-          assertThat(body.newlyIdentifiedAdditionalSupportNeedsIdentified).isNull()
-          assertThat(body.newlyIdentifiedAdditionalSupportNeedsDetails).isNull()
         }
     }
 
@@ -288,8 +284,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           val body = result.responseBody!!
           assertThat(body.sessionDetailsWasPersonLate).isFalse()
           assertThat(body.sessionDetailsLateReason).isNull()
-          assertThat(body.newlyIdentifiedAdditionalSupportNeedsIdentified).isNull()
-          assertThat(body.newlyIdentifiedAdditionalSupportNeedsDetails).isNull()
+          assertThat(body.additionalSupportNeeds).isNull()
         }
     }
 
@@ -504,8 +499,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           val body = result.responseBody!!
           assertThat(body.recordSessionNotHappenReason).isEqualTo("REFERRAL_DID_NOT_COMPLY")
           assertThat(body.recordSessionNotHappenReasonDetails).isEqualTo("Alex was disruptive and refused to engage with the session.")
-          assertThat(body.newlyIdentifiedAdditionalSupportNeedsIdentified).isNull()
-          assertThat(body.newlyIdentifiedAdditionalSupportNeedsDetails).isNull()
+          assertThat(body.additionalSupportNeeds).isNull()
         }
     }
 
@@ -781,10 +775,9 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
         strengthsIdentified = "Excellent communication skills",
         issuesConcernsIdentified = "Risk of housing loss",
         notifyProbationPractitioner = true,
+        additionalSupportNeeds = "Requires large-print materials and interpreter",
         plannedForNextSession = "Review housing options",
         actionsBeforeNextSession = "Contact housing officer",
-        newlyIdentifiedAdditionalSupportNeedsIdentified = true,
-        newlyIdentifiedAdditionalSupportNeedsDetails = "Requires large-print materials and interpreter",
       )
 
       referralHelper.assignCaseWorkers(referral, referralHelper.createCaseWorkers("CaseWorker One"))
@@ -813,10 +806,9 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           assertThat(body.sessionFeedbackStrengthsIdentified).isEqualTo("Excellent communication skills")
           assertThat(body.issuesOrConcernsIdentified).isEqualTo("Risk of housing loss")
           assertThat(body.issuesOrConcernsNotifyProbationPractitioner).isTrue()
+          assertThat(body.additionalSupportNeeds).isEqualTo("Requires large-print materials and interpreter")
           assertThat(body.nextStepsPlannedForNextSession).isEqualTo("Review housing options")
           assertThat(body.nextStepsActionsBeforeNextSession).isEqualTo("Contact housing officer")
-          assertThat(body.newlyIdentifiedAdditionalSupportNeedsIdentified).isTrue()
-          assertThat(body.newlyIdentifiedAdditionalSupportNeedsDetails).isEqualTo("Requires large-print materials and interpreter")
         }
     }
   }
