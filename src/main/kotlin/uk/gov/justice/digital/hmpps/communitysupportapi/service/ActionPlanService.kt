@@ -28,6 +28,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepTyp
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStep
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataActionPlanStepQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ActionPlanQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
@@ -39,6 +40,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanSte
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.NeedRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.OutcomeRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralCriminogenicNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.placeholder.PlaceholderFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.PlaceholderUtils
 import java.time.OffsetDateTime
@@ -57,9 +59,18 @@ class ActionPlanService(
   private val placeholderFactory: PlaceholderFactory,
   private val actionPlanQuestionWriter: ActionPlanQuestionWriter,
   private val actionPlanNeedsAndOutcomesViewRepository: ActionPlanNeedsAndOutcomesViewRepository,
+  private val referralCriminogenicNeedsRepository: ReferralCriminogenicNeedsRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ActionPlanService::class.java)
+    private val accommodationNeedId = UUID.fromString("3b1f7e2a-1a01-4c2d-8e3f-1a2b3c4d5e01")
+    private val employmentAndEducationNeedId = UUID.fromString("3b1f7e2a-1a02-4c2d-8e3f-1a2b3c4d5e02")
+    private val financialNeedId = UUID.fromString("3b1f7e2a-1a03-4c2d-8e3f-1a2b3c4d5e03")
+    private val drugUseNeedId = UUID.fromString("3b1f7e2a-1a04-4c2d-8e3f-1a2b3c4d5e04")
+    private val alcoholUseNeedId = UUID.fromString("3b1f7e2a-1a05-4c2d-8e3f-1a2b3c4d5e05")
+    private val healthAndWellbeingNeedId = UUID.fromString("3b1f7e2a-1a06-4c2d-8e3f-1a2b3c4d5e06")
+    private val personalRelationshipsAndCommunityNeedId = UUID.fromString("3b1f7e2a-1a07-4c2d-8e3f-1a2b3c4d5e07")
+    private val thinkingBehavioursAndAttitudesNeedId = UUID.fromString("3b1f7e2a-1a08-4c2d-8e3f-1a2b3c4d5e08")
   }
 
   fun getActionPlanSummaryForReferral(referralReference: String): ActionPlanSummaryDto {
@@ -131,6 +142,9 @@ class ActionPlanService(
   @Transactional(readOnly = true)
   fun getNeedsAndOutcomesForActionPlan(referralReference: String): ActionPlanSelectANeedResponse {
     val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
+    val selectedNeedIds = referralCriminogenicNeedsRepository.findByReferralId(actionPlanData.referral.id)
+      ?.toSelectedNeedIds()
+      ?: emptyList()
 
     return ActionPlanSelectANeedResponse(
       needs = needRepository.findAllByOrderByOrderNumberAsc().map { need ->
@@ -145,15 +159,25 @@ class ActionPlanService(
           },
         )
       },
-      selectedNeeds = actionPlanNeedsAndOutcomesViewRepository.findByIdReferralIdOrderByDisplayOrderAsc(actionPlanData.referral.id)
-        .distinctBy { it.needId }
+      selectedNeeds = needRepository.findAllByIdInOrderByOrderNumberAsc(selectedNeedIds)
         .map { selectedNeed ->
           ActionPlanSelectANeedSelectedNeed(
-            id = selectedNeed.needId,
-            label = selectedNeed.needName,
+            id = selectedNeed.id,
+            label = selectedNeed.label,
           )
         },
     )
+  }
+
+  private fun ReferralCriminogenicNeeds.toSelectedNeedIds(): List<UUID> = buildList {
+    if (hasAccommodationNeeds == true) add(accommodationNeedId)
+    if (hasEmploymentEducationNeeds == true) add(employmentAndEducationNeedId)
+    if (hasFinancialNeeds == true) add(financialNeedId)
+    if (hasDrugUseNeeds == true) add(drugUseNeedId)
+    if (hasAlcoholUseNeeds == true) add(alcoholUseNeedId)
+    if (hasHealthWellbeingNeeds == true) add(healthAndWellbeingNeedId)
+    if (hasPersonalRelationshipsCommunityNeeds == true) add(personalRelationshipsAndCommunityNeedId)
+    if (hasThinkingBehavioursAttitudeNeeds == true) add(thinkingBehavioursAndAttitudesNeedId)
   }
 
   @Transactional(readOnly = true)
