@@ -286,7 +286,6 @@ VALUES
         'Strong communication skills and clear awareness of personal goals.',
         NULL,
         false,
-        false,
         NULL,
         'Review housing application outcome and set next employment milestone.',
         'Alice to submit housing application by 10 February 2026.',
@@ -311,7 +310,6 @@ VALUES
         'Demonstrated resilience and willingness to engage despite initial technical barriers.',
         'Bob expressed concern about the upcoming court date and its potential impact on his accommodation.',
         true,
-        false,
         NULL,
         'Follow up on court outcome and reassess accommodation support needs.',
         'Practitioner to liaise with probation officer regarding court date concerns. Bob to practise breathing exercises daily.',
@@ -335,7 +333,6 @@ VALUES
         'Cooperative and engaged. Demonstrated understanding of licence obligations and willingness to comply.',
         'Strong sense of personal accountability and clear progress on agreed action points.',
         NULL,
-        false,
         false,
         NULL,
         'Review progress against licence conditions and plan next in-person appointment.',
@@ -361,7 +358,6 @@ VALUES
         NULL, NULL, NULL,  -- session feedback (n/a)
         'Unable to make contact with Dana. Pattern of non-attendance may indicate additional needs or barriers to engagement.',
         true,
-        false,
         NULL,
         'Attempt re-engagement via alternative contact method and reschedule session.',
         'Practitioner to send letter and attempt contact via text before rescheduling.',
@@ -385,7 +381,6 @@ VALUES
         'Engaged and enthusiastic. Came prepared with questions about the volunteer programme.',
         'Proactive attitude and strong motivation to build a stable routine.',
         'Evan mentioned difficulties managing benefit payments. Referred to financial support service.',
-        false,
         false,
         NULL,
         'Review progress with volunteer coordinator and assess budgeting skill development.',
@@ -412,7 +407,6 @@ VALUES
         NULL, NULL, NULL,  -- session feedback (n/a)
         NULL,
         false,
-        false,
         NULL,
         'Reschedule and confirm room availability in advance.',
         'Practitioner to arrange a new appointment date and confirm the venue with Fiona.',
@@ -437,7 +431,6 @@ VALUES
         NULL, NULL, NULL,  -- session feedback (n/a)
         'Disruptive behaviour resulted in early termination of the session. Safeguarding considerations noted.',
         true,
-        false,
         NULL,
         'Review engagement approach and discuss incident with probation officer before rescheduling.',
         'Practitioner to complete incident report and share with probation officer.',
@@ -462,7 +455,6 @@ VALUES
         NULL, NULL, NULL,  -- session feedback (n/a)
         'Disruptive behaviour resulted in early termination of the session. Safeguarding considerations noted.',
         true,
-        false,
         NULL,
         'Review engagement approach and discuss incident with probation officer before rescheduling.',
         'Practitioner to complete incident report and share with probation officer.',
