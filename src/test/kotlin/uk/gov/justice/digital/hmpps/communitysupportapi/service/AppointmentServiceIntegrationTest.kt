@@ -982,7 +982,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     strengthsIdentified: String? = "Good communication",
     issuesConcernsIdentified: String? = null,
     notifyProbationPractitioner: Boolean? = false,
-    additionalSupportNeeds: String? = null,
+    newlyIdentifiedAdditionalSupportNeeds: String? = null,
     plannedForNextSession: String? = "Continue with action plan",
     actionsBeforeNextSession: String? = "Complete referral details",
   ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
@@ -997,7 +997,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     .withStrengthsIdentified(strengthsIdentified)
     .withIssuesConcernsIdentified(issuesConcernsIdentified)
     .withNotifyProbationPractitioner(notifyProbationPractitioner)
-    .withAdditionalSupportNeeds(additionalSupportNeeds)
+    .withNewlyIdentifiedAdditionalSupportNeeds(newlyIdentifiedAdditionalSupportNeeds)
     .withPlannedForNextSession(plannedForNextSession)
     .withActionsBeforeNextSession(actionsBeforeNextSession)
     .create()
@@ -1024,7 +1024,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         strengthsIdentified = "Excellent communication",
         issuesConcernsIdentified = "Risk of housing loss",
         notifyProbationPractitioner = true,
-        additionalSupportNeeds = "Requires large-print materials and interpreter",
+        newlyIdentifiedAdditionalSupportNeeds = "Requires large-print materials and interpreter",
         plannedForNextSession = "Review housing options",
         actionsBeforeNextSession = "Contact housing officer",
       )

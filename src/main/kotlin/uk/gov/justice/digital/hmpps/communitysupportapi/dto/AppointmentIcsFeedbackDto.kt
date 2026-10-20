@@ -79,7 +79,7 @@ data class CreateIcsFeedbackRequest(
   val sessionDetails: SessionDetailsRequest? = null,
   val sessionFeedback: SessionFeedbackRequest? = null,
   val issuesAndConcerns: IssuesAndConcernsRequest? = null,
-  val additionalSupportNeeds: String? = null,
+  val newlyIdentifiedAdditionalSupportNeeds: String? = null,
   val nextSteps: NextStepsRequest? = null,
 )
 

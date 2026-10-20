@@ -126,7 +126,7 @@ class AppointmentTestSupport(
     strengthsIdentified: String? = "Strong family support",
     issuesConcernsIdentified: String? = null,
     notifyProbationPractitioner: Boolean? = false,
-    additionalSupportNeeds: String? = null,
+    newlyIdentifiedAdditionalSupportNeeds: String? = null,
     plannedForNextSession: String? = "Continue with action plan",
     actionsBeforeNextSession: String? = "Complete CV template",
   ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
@@ -143,7 +143,7 @@ class AppointmentTestSupport(
     .withStrengthsIdentified(strengthsIdentified)
     .withIssuesConcernsIdentified(issuesConcernsIdentified)
     .withNotifyProbationPractitioner(notifyProbationPractitioner)
-    .withAdditionalSupportNeeds(additionalSupportNeeds)
+    .withNewlyIdentifiedAdditionalSupportNeeds(newlyIdentifiedAdditionalSupportNeeds)
     .withPlannedForNextSession(plannedForNextSession)
     .withActionsBeforeNextSession(actionsBeforeNextSession)
     .create()
