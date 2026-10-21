@@ -69,11 +69,6 @@ data class IssuesAndConcernsRequest(
   val notifyProbationPractitioner: Boolean? = null,
 )
 
-data class NewlyIdentifiedAdditionalSupportNeedsRequest(
-  val newlyIdentifiedAdditionalSupportNeedsIdentified: Boolean? = null,
-  val newlyIdentifiedAdditionalSupportNeedsDetails: String? = null,
-)
-
 data class NextStepsRequest(
   val plannedForNextSession: String? = null,
   val actionsBeforeNextSession: String? = null,
@@ -84,7 +79,7 @@ data class CreateIcsFeedbackRequest(
   val sessionDetails: SessionDetailsRequest? = null,
   val sessionFeedback: SessionFeedbackRequest? = null,
   val issuesAndConcerns: IssuesAndConcernsRequest? = null,
-  val newlyIdentifiedAdditionalSupportNeeds: NewlyIdentifiedAdditionalSupportNeedsRequest? = null,
+  val newlyIdentifiedAdditionalSupportNeeds: String? = null,
   val nextSteps: NextStepsRequest? = null,
 )
 
@@ -124,9 +119,8 @@ data class AppointmentIcsFeedbackResponse(
   val issuesOrConcernsIdentified: String?,
   val issuesOrConcernsNotifyProbationPractitioner: Boolean?,
 
-  // Section 5 – Newly identified additional support needs
-  val newlyIdentifiedAdditionalSupportNeedsIdentified: Boolean?,
-  val newlyIdentifiedAdditionalSupportNeedsDetails: String?,
+  // Section 5 – Additional support needs
+  val additionalSupportNeeds: String?,
 
   // Section 6 – Next steps
   val nextStepsPlannedForNextSession: String?,
@@ -164,8 +158,7 @@ data class AppointmentIcsFeedbackResponse(
       sessionFeedbackStrengthsIdentified = feedback.sessionFeedbackStrengthsIdentified,
       issuesOrConcernsIdentified = feedback.issuesConcernsIdentified,
       issuesOrConcernsNotifyProbationPractitioner = feedback.issuesConcernsNotifyProbationPractitioner,
-      newlyIdentifiedAdditionalSupportNeedsIdentified = feedback.additionalSupportNeedsIdentified,
-      newlyIdentifiedAdditionalSupportNeedsDetails = feedback.additionalSupportNeedsDetails,
+      additionalSupportNeeds = feedback.additionalSupportNeeds,
       nextStepsPlannedForNextSession = feedback.nextStepsPlannedForNextSession,
       nextStepsActionsBeforeNextSession = feedback.nextStepsActionsBeforeNextSession,
       sessionFeedbackAppointmentDetails = sessionFeedbackAppointmentDetails,
