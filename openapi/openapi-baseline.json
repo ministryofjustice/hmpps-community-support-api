@@ -638,6 +638,12 @@
       "AppointmentIcsFeedbackResponse": {
         "description": "ICS appointment session feedback",
         "properties": {
+          "additionalSupportNeeds": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "appointmentIcsId": {
             "format": "uuid",
             "type": "string"
@@ -664,18 +670,6 @@
             ]
           },
           "issuesOrConcernsNotifyProbationPractitioner": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "newlyIdentifiedAdditionalSupportNeedsDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "newlyIdentifiedAdditionalSupportNeedsIdentified": {
             "type": [
               "boolean",
               "null"
@@ -1911,13 +1905,9 @@
             ]
           },
           "newlyIdentifiedAdditionalSupportNeeds": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/NewlyIdentifiedAdditionalSupportNeedsRequest"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "nextSteps": {
@@ -2767,23 +2757,6 @@
             ]
           },
           "needsInterpreter": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          }
-        },
-        "type": "object"
-      },
-      "NewlyIdentifiedAdditionalSupportNeedsRequest": {
-        "properties": {
-          "newlyIdentifiedAdditionalSupportNeedsDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "newlyIdentifiedAdditionalSupportNeedsIdentified": {
             "type": [
               "boolean",
               "null"
