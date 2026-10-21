@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsOrder
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedNeed
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedOutcome
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedSelectedNeed
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStepQuestionDto
@@ -128,20 +129,33 @@ class ActionPlanService(
   }
 
   @Transactional(readOnly = true)
-  fun getNeedsAndOutcomesForActionPlan(): ActionPlanSelectANeedResponse = ActionPlanSelectANeedResponse(
-    needs = needRepository.findAllByOrderByOrderNumberAsc().map { need ->
-      ActionPlanSelectANeedNeed(
-        id = need.id,
-        label = need.label,
-        outcomes = need.referenceDataOutcomes.map { outcome ->
-          ActionPlanSelectANeedOutcome(
-            id = outcome.id,
-            text = outcome.text,
+  fun getNeedsAndOutcomesForActionPlan(referralReference: String): ActionPlanSelectANeedResponse {
+    val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
+    val needs = needRepository.findAllByOrderByOrderNumberAsc()
+    val selectedNeeds = needRepository.findSelectedForReferralIdOrderByOrderNumberAsc(actionPlanData.referral.id)
+
+    return ActionPlanSelectANeedResponse(
+      needs = needs.map { need ->
+        ActionPlanSelectANeedNeed(
+          id = need.id,
+          label = need.label,
+          outcomes = need.referenceDataOutcomes.map { outcome ->
+            ActionPlanSelectANeedOutcome(
+              id = outcome.id,
+              text = outcome.text,
+            )
+          },
+        )
+      },
+      selectedNeeds = selectedNeeds
+        .map { selectedNeed ->
+          ActionPlanSelectANeedSelectedNeed(
+            id = selectedNeed.id,
+            label = selectedNeed.label,
           )
         },
-      )
-    },
-  )
+    )
+  }
 
   @Transactional(readOnly = true)
   fun getSessionDeliveryDetailsForReferral(referralReference: String): ActionPlanSessionDeliveryDetailsResponse {
@@ -180,6 +194,19 @@ class ActionPlanService(
       actionPlanId = data.actionPlan.id,
       referral = data.referral,
       steps = listOf(data.step),
+    )
+  }
+
+  @Transactional(readOnly = true)
+  fun getSessionDeliveryCheckYourAnswersForReferral(
+    referralReference: String,
+    isServiceEndDateChanged: Boolean,
+  ): ActionPlanSessionDeliveryDetailsResponse {
+    val data = actionPlanDataFetcher.getCheckYourAnswersForReferral(referralReference, isServiceEndDateChanged)
+    return buildQuestionResponse(
+      actionPlanId = data.actionPlan.id,
+      referral = data.referral,
+      steps = data.steps,
     )
   }
 
@@ -432,7 +459,7 @@ class ActionPlanService(
     val questionResponseChangeBatchId = UUID.randomUUID()
     val answers = actionPlanQuestionWriter.answersForActionPlanAndQuestions(actionPlan.id, listOf(question)).single()
     val numberOfActiveAnswers = actionPlanQuestionWriter.answersForActionPlan(actionPlan.id).size
-    val change = answers.replaceFirstOutcome(request.outcomeId, numberOfActiveAnswers + 1)
+    val change = answers.replaceFirstOutcome(outcome.text, numberOfActiveAnswers + 1)
     if (change is ActionPlanQuestionAnswers.Change.Update) {
       actionPlanActivityRepository.deleteByActionPlanStepQuestionAnswerHeaderId(change.current.headerId)
     }
@@ -460,6 +487,51 @@ class ActionPlanService(
     return ActionPlanActionResponse(
       success = true,
       message = "Action submitted successfully",
+    )
+  }
+
+  @Transactional
+  fun deleteActionForReferral(
+    referralReference: String,
+    actionId: UUID,
+    changedBy: String,
+  ): ActionPlanActionResponse {
+    val changedAt = OffsetDateTime.now()
+    val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
+    val actionPlan = actionPlanData.actionPlan
+    val activeAnswers = actionPlanQuestionWriter.answersForActionPlan(actionPlan.id)
+
+    val targetAction = activeAnswers
+      .firstOrNull { it.id == actionId }
+      ?: throw NotFoundException("Action not found with id=$actionId")
+
+    val question = actionPlanStepQuestionRepository.findById(targetAction.actionPlanStepQuestionId)
+      .orElseThrow { NotFoundException("Question not found for action $actionId") }
+
+    val answers = actionPlanQuestionWriter.answersForActionPlanAndQuestions(actionPlan.id, listOf(question)).single()
+    val currentAnswer = answers.currentAnswers.firstOrNull { it.headerId == actionId }
+      ?: throw NotFoundException("Action not found with id=$actionId")
+
+    actionPlanActivityRepository.deleteByActionPlanStepQuestionAnswerHeaderId(actionId)
+    actionPlanQuestionWriter.write(
+      answers,
+      listOf(ActionPlanQuestionAnswers.Change.Delete(currentAnswer)),
+      changedBy,
+      changedAt,
+      UUID.randomUUID(),
+    )
+
+    actionPlanQuestionWriter.reorderActionPlanActions(actionPlan.id)
+
+    logger.info(
+      "Successfully deleted action for referral={} with actionId={}",
+      referralReference,
+      actionId,
+    )
+
+    return ActionPlanActionResponse(
+      success = true,
+      message = "Action deleted successfully",
     )
   }
 

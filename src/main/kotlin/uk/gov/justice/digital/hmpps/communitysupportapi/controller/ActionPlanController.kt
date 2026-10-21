@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -9,11 +10,13 @@ import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanActionRequest
@@ -25,6 +28,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ActionPlanService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.util.UUID
 
 @RestController
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
@@ -113,9 +117,12 @@ class ActionPlanController(
     ],
   )
   @GetMapping("/bff/referral/action-plan/select-a-need")
-  fun getNeedsAndOutcomes(): ResponseEntity<ActionPlanSelectANeedResponse> {
-    log.info("Fetching select-a-need data")
-    return ResponseEntity.ok(actionPlanService.getNeedsAndOutcomesForActionPlan())
+  fun getNeedsAndOutcomes(
+    @Parameter(description = "Referral reference used to return needs already added to the referral", required = true)
+    @RequestParam referralReference: String,
+  ): ResponseEntity<ActionPlanSelectANeedResponse> {
+    log.info("Fetching select-a-need data for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.getNeedsAndOutcomesForActionPlan(referralReference))
   }
 
   @Operation(summary = "Get the session delivery details with questions and saved answers for an action plan")
@@ -284,6 +291,43 @@ class ActionPlanController(
     return ResponseEntity.ok(actionPlanService.getPersonInvolvementForReferral(referralReference))
   }
 
+  @Operation(
+    summary = "Get the check your answers questions and saved answers of the service delivery details",
+  )
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Session Delivery Check your answers questions and saved answers returned",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanSessionDeliveryDetailsResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Missing or invalid isServiceEndDateChanged query parameter",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{referralReference}/action-plan/session-delivery-details/check-your-answers")
+  fun getSessionDeliveryCheckYourAnswers(
+    @PathVariable referralReference: String,
+    @Parameter(description = "Include change-service-end-date questions when the current frontend session answer requires a date change", required = true)
+    @RequestParam isServiceEndDateChanged: Boolean,
+  ): ResponseEntity<ActionPlanSessionDeliveryDetailsResponse> {
+    log.info("Fetching session delivery details for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.getSessionDeliveryCheckYourAnswersForReferral(referralReference, isServiceEndDateChanged))
+  }
+
   @Operation(summary = "Submit a need, outcome, and activities for an action plan")
   @ApiResponses(
     value = [
@@ -318,5 +362,36 @@ class ActionPlanController(
     val changedBy = user.hmppsAuthUsername
     log.info("Submitting action for referral={} with need={}", referralReference, request.needId)
     return ResponseEntity.ok(actionPlanService.submitActionForReferral(referralReference, request, changedBy))
+  }
+
+  @Operation(summary = "Delete an action from an action plan")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Action deleted successfully",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanActionResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral or action not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @DeleteMapping("/referral/{referralReference}/action-plan/action/{actionId}")
+  fun deleteAction(
+    @PathVariable referralReference: String,
+    @PathVariable actionId: UUID,
+  ): ResponseEntity<ActionPlanActionResponse> {
+    val user = userMapper.fromToken(authenticationHolder)
+    val changedBy = user.hmppsAuthUsername
+    log.info("Deleting action={} for referral={}", actionId, referralReference)
+    return ResponseEntity.ok(actionPlanService.deleteActionForReferral(referralReference, actionId, changedBy))
   }
 }

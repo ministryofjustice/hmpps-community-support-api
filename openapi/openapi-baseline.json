@@ -129,10 +129,33 @@
               "$ref": "#/components/schemas/ActionPlanSelectANeedNeed"
             },
             "type": "array"
+          },
+          "selectedNeeds": {
+            "items": {
+              "$ref": "#/components/schemas/ActionPlanSelectANeedSelectedNeed"
+            },
+            "type": "array"
           }
         },
         "required": [
-          "needs"
+          "needs",
+          "selectedNeeds"
+        ],
+        "type": "object"
+      },
+      "ActionPlanSelectANeedSelectedNeed": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
         ],
         "type": "object"
       },
@@ -551,6 +574,7 @@
             "enum": [
               "PHONE_CALL",
               "VIDEO_CALL",
+              "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
               "IN_PERSON_OTHER_LOCATION"
             ],
@@ -593,6 +617,7 @@
             "enum": [
               "PHONE_CALL",
               "VIDEO_CALL",
+              "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
               "IN_PERSON_OTHER_LOCATION"
             ],
@@ -639,6 +664,18 @@
             ]
           },
           "issuesOrConcernsNotifyProbationPractitioner": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "newlyIdentifiedAdditionalSupportNeedsDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "newlyIdentifiedAdditionalSupportNeedsIdentified": {
             "type": [
               "boolean",
               "null"
@@ -843,6 +880,12 @@
           "createdAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "meetAtTheGate": {
+            "type": [
+              "boolean",
+              "null"
+            ]
           },
           "referralFirstName": {
             "type": "string"
@@ -1763,8 +1806,42 @@
         },
         "type": "object"
       },
+      "CreateAppointmentReferenceDataBffDto": {
+        "properties": {
+          "appointmentTypes": {
+            "items": {
+              "$ref": "#/components/schemas/CreateAppointmentTypeOptionDto"
+            },
+            "type": "array"
+          },
+          "probationOfficeLocations": {
+            "items": {
+              "$ref": "#/components/schemas/ProbationOfficeSummary"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "appointmentTypes",
+          "probationOfficeLocations"
+        ],
+        "type": "object"
+      },
       "CreateAppointmentRequest": {
         "properties": {
+          "appointmentType": {
+            "enum": [
+              "ICS",
+              "CONTACT_SESSION",
+              "POST_RELEASE_SESSION",
+              "PRE_RELEASE_SESSION",
+              "HANDOVER_SESSION"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "changeAppointmentDetails": {
             "oneOf": [
               {
@@ -1778,6 +1855,12 @@
           "date": {
             "format": "date",
             "type": "string"
+          },
+          "meetAtTheGate": {
+            "type": [
+              "boolean",
+              "null"
+            ]
           },
           "sessionCommunication": {
             "items": {
@@ -1800,12 +1883,37 @@
         ],
         "type": "object"
       },
+      "CreateAppointmentTypeOptionDto": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "value"
+        ],
+        "type": "object"
+      },
       "CreateIcsFeedbackRequest": {
         "properties": {
           "issuesAndConcerns": {
             "oneOf": [
               {
                 "$ref": "#/components/schemas/IssuesAndConcernsRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "newlyIdentifiedAdditionalSupportNeeds": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NewlyIdentifiedAdditionalSupportNeedsRequest"
               },
               {
                 "type": "null"
@@ -2667,6 +2775,23 @@
         },
         "type": "object"
       },
+      "NewlyIdentifiedAdditionalSupportNeedsRequest": {
+        "properties": {
+          "newlyIdentifiedAdditionalSupportNeedsDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "newlyIdentifiedAdditionalSupportNeedsIdentified": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "NextStepsRequest": {
         "properties": {
           "actionsBeforeNextSession": {
@@ -3377,21 +3502,38 @@
       },
       "ReferralAppointmentSummaryDto": {
         "properties": {
+          "appointmentDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "appointmentStatus": {
+            "enum": [
+              "SCHEDULED",
+              "NEEDS_FEEDBACK",
+              "COMPLETED",
+              "CHANGED",
+              "DID_NOT_ATTEND",
+              "DID_NOT_HAPPEN"
+            ],
+            "type": "string"
+          },
+          "appointmentTime": {
+            "$ref": "#/components/schemas/AppointmentTimeResponse"
+          },
           "id": {
             "format": "uuid",
             "type": "string"
           },
           "label": {
             "type": "string"
-          },
-          "time": {
-            "type": "string"
           }
         },
         "required": [
+          "appointmentDate",
+          "appointmentStatus",
+          "appointmentTime",
           "id",
-          "label",
-          "time"
+          "label"
         ],
         "type": "object"
       },
@@ -4139,6 +4281,7 @@
             "enum": [
               "PHONE",
               "VIDEO",
+              "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
               "IN_PERSON_OTHER_LOCATION"
             ],
@@ -5422,6 +5565,17 @@
     "/bff/referral/action-plan/select-a-need": {
       "get": {
         "operationId": "getNeedsAndOutcomes",
+        "parameters": [
+          {
+            "description": "Referral reference used to return needs already added to the referral",
+            "in": "query",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -5530,6 +5684,43 @@
           }
         },
         "summary": "Get referral appointments for the appointments tab",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/referral/{caseReference}/create-an-appointment/appointment-type": {
+      "get": {
+        "operationId": "getCreateAppointmentReferenceData",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAppointmentReferenceDataBffDto"
+                }
+              }
+            },
+            "description": "Create appointment data found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get create appointment page data for a referral",
         "tags": [
           "appointment-controller"
         ]
@@ -5838,6 +6029,58 @@
           }
         },
         "summary": "Get the update service end date questions and saved answers of the service delivery details",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/bff/referral/{referralReference}/action-plan/session-delivery-details/check-your-answers": {
+      "get": {
+        "operationId": "getSessionDeliveryCheckYourAnswers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Include change-service-end-date questions when the current frontend session answer requires a date change",
+            "in": "query",
+            "name": "isServiceEndDateChanged",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSessionDeliveryDetailsResponse"
+                }
+              }
+            },
+            "description": "Session Delivery Check your answers questions and saved answers returned"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Missing or invalid isServiceEndDateChanged query parameter"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get the check your answers questions and saved answers of the service delivery details",
         "tags": [
           "action-plan-controller"
         ]
@@ -6509,6 +6752,59 @@
         ]
       }
     },
+    "/referral/{caseIdentifier}/appointment": {
+      "post": {
+        "operationId": "createAppointment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseIdentifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAppointmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentIcsResponse"
+                }
+              }
+            },
+            "description": "Appointment created successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Invalid request body"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Book an appointment of a given type for a referral",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
     "/referral/{caseIdentifier}/ics": {
       "post": {
         "operationId": "createIcsAppointment",
@@ -6842,6 +7138,52 @@
           }
         },
         "summary": "Submit a need, outcome, and activities for an action plan",
+        "tags": [
+          "action-plan-controller"
+        ]
+      }
+    },
+    "/referral/{referralReference}/action-plan/action/{actionId}": {
+      "delete": {
+        "operationId": "deleteAction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanActionResponse"
+                }
+              }
+            },
+            "description": "Action deleted successfully"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral or action not found"
+          }
+        },
+        "summary": "Delete an action from an action plan",
         "tags": [
           "action-plan-controller"
         ]

@@ -128,6 +128,8 @@ class AppointmentTestSupport(
     notifyProbationPractitioner: Boolean? = false,
     plannedForNextSession: String? = "Continue with action plan",
     actionsBeforeNextSession: String? = "Complete CV template",
+    newlyIdentifiedAdditionalSupportNeedsIdentified: Boolean? = null,
+    newlyIdentifiedAdditionalSupportNeedsDetails: String? = null,
   ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
     .withDidSessionHappen(didSessionHappen)
     .withHowSessionTookPlace(howSessionTookPlace)
@@ -144,6 +146,8 @@ class AppointmentTestSupport(
     .withNotifyProbationPractitioner(notifyProbationPractitioner)
     .withPlannedForNextSession(plannedForNextSession)
     .withActionsBeforeNextSession(actionsBeforeNextSession)
+    .withNewlyIdentifiedAdditionalSupportNeedsIdentified(newlyIdentifiedAdditionalSupportNeedsIdentified)
+    .withNewlyIdentifiedAdditionalSupportNeedsDetails(newlyIdentifiedAdditionalSupportNeedsDetails)
     .create()
 
   fun createIcsFeedback(

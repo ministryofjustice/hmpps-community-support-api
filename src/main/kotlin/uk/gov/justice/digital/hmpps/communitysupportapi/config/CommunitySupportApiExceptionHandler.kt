@@ -11,8 +11,10 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.servlet.resource.NoResourceFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.AlreadyReportedException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
@@ -56,6 +58,17 @@ class CommunitySupportApiExceptionHandler {
         ),
       ).also { log.info("MethodArgumentNotValid exception: {}", e.message) }
   }
+
+  @ExceptionHandler(MissingServletRequestParameterException::class, MethodArgumentTypeMismatchException::class)
+  fun handleRequestParameterException(e: Exception): ResponseEntity<ErrorResponse> = ResponseEntity
+    .status(BAD_REQUEST)
+    .body(
+      ErrorResponse(
+        status = BAD_REQUEST,
+        userMessage = "Bad request: ${e.message}",
+        developerMessage = e.message,
+      ),
+    ).also { log.info("Request parameter exception: {}", e.message) }
 
   @ExceptionHandler(NoResourceFoundException::class)
   fun handleNoResourceFoundException(e: NoResourceFoundException): ResponseEntity<ErrorResponse> = ResponseEntity

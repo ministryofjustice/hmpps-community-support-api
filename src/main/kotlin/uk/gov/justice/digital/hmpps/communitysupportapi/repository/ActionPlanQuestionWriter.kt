@@ -96,6 +96,17 @@ class ActionPlanQuestionWriter(
     headerId
   }
 
+  fun reorderActionPlanActions(actionPlanId: UUID) {
+    headers.findAllByActionPlanIdAndDeletedAtIsNull(actionPlanId)
+      .sortedBy { it.orderNumber }
+      .forEachIndexed { index, header ->
+        val expectedOrderNumber = index + 1
+        if (header.orderNumber != expectedOrderNumber) {
+          headers.save(header.updateOrderNumber(expectedOrderNumber))
+        }
+      }
+  }
+
   private fun saveDetails(
     headerId: UUID,
     revisionNumber: Int,
