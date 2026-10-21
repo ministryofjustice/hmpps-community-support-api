@@ -1327,7 +1327,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return inProgress for addDetailsOfAnyAdditionalSupportNeedsCompleted when additionalSupportNeeds is partially complete`() {
+    fun `should return notStarted for addDetailsOfAnyAdditionalSupportNeedsCompleted when additionalSupportNeeds is partially complete`() {
       val testUser = referralHelper.createTestUser()
       val person = referralHelper.createPerson(identifier = "X123456")
       val savedReferral = referralHelper.createReferral(person = person, submittedBy = testUser)
@@ -1352,7 +1352,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.inProgress()
+          body.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
         }
     }
 
@@ -1441,7 +1441,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return in progress for addAdditionalInformationCompleted when target date and reason exist without service days`() {
+    fun `should return not started for addAdditionalInformationCompleted when target date and reason exist without service days`() {
       val testUser = referralHelper.createTestUser()
       val person = referralHelper.createPerson(identifier = "X123456")
       val savedReferral = referralHelper.createReferral(
@@ -1461,7 +1461,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.addAdditionalInformationStatus shouldBe TaskListStatusItem.inProgress()
+          body.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
         }
     }
 

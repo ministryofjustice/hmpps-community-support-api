@@ -73,14 +73,12 @@ data class TaskListStatusResponseDto(
 
     private fun getCriminogenicNeedsStatus(criminogenicNeeds: ReferralCriminogenicNeeds?): TaskListStatusItem = criminogenicNeeds?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
-    private fun getAdditionalSupportNeedsStatus(additionalSupportNeeds: PersonAdditionalSupportNeeds?): TaskListStatusItem {
-      return additionalSupportNeeds?.let {
-        if (it.additionalSupportNeeded != null && it.interpreterNeeded != null) {
-          return TaskListStatusItem.completed()
-        }
-        return TaskListStatusItem.inProgress()
-      } ?: TaskListStatusItem.notStarted()
-    }
+    private fun getAdditionalSupportNeedsStatus(additionalSupportNeeds: PersonAdditionalSupportNeeds?): TaskListStatusItem =
+      if (additionalSupportNeeds?.additionalSupportNeeded != null && additionalSupportNeeds?.interpreterNeeded != null) {
+        TaskListStatusItem.completed()
+      } else {
+        TaskListStatusItem.notStarted()
+      }
 
     private fun getRiskInfoStatus(riskInfo: RiskInformation?): TaskListStatusItem = riskInfo?.let { return TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
@@ -98,7 +96,7 @@ data class TaskListStatusResponseDto(
       return when (populatedFieldCount) {
         3 -> TaskListStatusItem.completed()
         0 -> TaskListStatusItem.notStarted()
-        else -> TaskListStatusItem.inProgress()
+        else -> TaskListStatusItem.notStarted()
       }
     }
 
@@ -128,7 +126,6 @@ data class TaskListStatusItem(
   companion object {
     fun completed() = TaskListStatusItem(true, "Completed", "govuk-tag--green")
     fun notStarted() = TaskListStatusItem(false, "Not started", "govuk-tag--grey")
-    fun inProgress() = TaskListStatusItem(false, "In progress", "govuk-tag--light-blue")
     fun cannotStart() = TaskListStatusItem(false, "Cannot Start Yet", null)
   }
 }

@@ -72,21 +72,21 @@ class TaskListStatusResponseDtoTest {
     }
 
     @Test
-    fun `returns inProgress when additionalSupportNeeded is null`() {
+    fun `returns notStarted when additionalSupportNeeded is null`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = null, interpreterNeeded = null)
 
       val result = TaskListStatusResponseDto.from(referral, person, supportNeeds, null, null, null)
 
-      result.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.inProgress()
+      result.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
-    fun `returns inProgress when additionalSupportNeeded is true but interpreterNeeded is null`() {
+    fun `returns notStarted when additionalSupportNeeded is true but interpreterNeeded is null`() {
       val supportNeeds = buildSupportNeeds(additionalSupportNeeded = true, interpreterNeeded = null)
 
       val result = TaskListStatusResponseDto.from(referral, person, supportNeeds, null, null, null)
 
-      result.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.inProgress()
+      result.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
@@ -204,7 +204,7 @@ class TaskListStatusResponseDtoTest {
     }
 
     @Test
-    fun `returns inProgress when only target date exists`() {
+    fun `returns notStarted when only target date exists`() {
       val result = TaskListStatusResponseDto.from(
         buildReferralWithAdditionalInformation(
           targetServiceCompletionDate = OffsetDateTime.now(),
@@ -216,11 +216,11 @@ class TaskListStatusResponseDtoTest {
         null,
       )
 
-      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.inProgress()
+      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
-    fun `returns inProgress when only reason exists`() {
+    fun `returns notStarted when only reason exists`() {
       val result = TaskListStatusResponseDto.from(
         buildReferralWithAdditionalInformation(
           targetServiceCompletionDateReason = "Some reason",
@@ -232,11 +232,11 @@ class TaskListStatusResponseDtoTest {
         null,
       )
 
-      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.inProgress()
+      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
-    fun `returns inProgress when only service days exists`() {
+    fun `returns notStarted when only service days exists`() {
       val result = TaskListStatusResponseDto.from(
         buildReferralWithAdditionalInformation(
           serviceDays = 20,
@@ -248,11 +248,11 @@ class TaskListStatusResponseDtoTest {
         null,
       )
 
-      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.inProgress()
+      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
-    fun `returns inProgress when target date and reason exist without service days`() {
+    fun `returns notStarted when target date and reason exist without service days`() {
       val result = TaskListStatusResponseDto.from(
         buildReferralWithAdditionalInformation(
           targetServiceCompletionDate = OffsetDateTime.now(),
@@ -265,11 +265,11 @@ class TaskListStatusResponseDtoTest {
         null,
       )
 
-      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.inProgress()
+      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
-    fun `returns inProgress when target date and service days exist without reason`() {
+    fun `returns notStarted when target date and service days exist without reason`() {
       val result = TaskListStatusResponseDto.from(
         buildReferralWithAdditionalInformation(
           targetServiceCompletionDate = OffsetDateTime.now(),
@@ -282,11 +282,11 @@ class TaskListStatusResponseDtoTest {
         null,
       )
 
-      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.inProgress()
+      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
-    fun `returns inProgress when reason and service days exist without target date`() {
+    fun `returns notStarted when reason and service days exist without target date`() {
       val result = TaskListStatusResponseDto.from(
         buildReferralWithAdditionalInformation(
           targetServiceCompletionDateReason = "Some reason",
@@ -299,7 +299,7 @@ class TaskListStatusResponseDtoTest {
         null,
       )
 
-      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.inProgress()
+      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
@@ -464,14 +464,6 @@ class TaskListStatusResponseDtoTest {
       item.tag shouldBe "govuk-tag--grey"
     }
 
-    @Test
-    fun `inProgress returns completed false with light-blue tag`() {
-      val item = TaskListStatusItem.inProgress()
-
-      item.completed shouldBe false
-      item.statusText shouldBe "In progress"
-      item.tag shouldBe "govuk-tag--light-blue"
-    }
   }
 
   private fun buildSupportNeeds(additionalSupportNeeded: Boolean?, interpreterNeeded: Boolean?) = PersonAdditionalSupportNeeds(
