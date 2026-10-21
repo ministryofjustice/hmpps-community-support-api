@@ -982,10 +982,9 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     strengthsIdentified: String? = "Good communication",
     issuesConcernsIdentified: String? = null,
     notifyProbationPractitioner: Boolean? = false,
+    newlyIdentifiedAdditionalSupportNeeds: String? = null,
     plannedForNextSession: String? = "Continue with action plan",
     actionsBeforeNextSession: String? = "Complete referral details",
-    newlyIdentifiedAdditionalSupportNeedsIdentified: Boolean? = null,
-    newlyIdentifiedAdditionalSupportNeedsDetails: String? = null,
   ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
     .withDidSessionHappen(didSessionHappen)
     .withDidPersonAttend(didPersonAttend)
@@ -998,8 +997,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     .withStrengthsIdentified(strengthsIdentified)
     .withIssuesConcernsIdentified(issuesConcernsIdentified)
     .withNotifyProbationPractitioner(notifyProbationPractitioner)
-    .withNewlyIdentifiedAdditionalSupportNeedsIdentified(newlyIdentifiedAdditionalSupportNeedsIdentified)
-    .withNewlyIdentifiedAdditionalSupportNeedsDetails(newlyIdentifiedAdditionalSupportNeedsDetails)
+    .withNewlyIdentifiedAdditionalSupportNeeds(newlyIdentifiedAdditionalSupportNeeds)
     .withPlannedForNextSession(plannedForNextSession)
     .withActionsBeforeNextSession(actionsBeforeNextSession)
     .create()
@@ -1026,8 +1024,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         strengthsIdentified = "Excellent communication",
         issuesConcernsIdentified = "Risk of housing loss",
         notifyProbationPractitioner = true,
-        newlyIdentifiedAdditionalSupportNeedsIdentified = true,
-        newlyIdentifiedAdditionalSupportNeedsDetails = "Requires large-print materials and interpreter",
+        newlyIdentifiedAdditionalSupportNeeds = "Requires large-print materials and interpreter",
         plannedForNextSession = "Review housing options",
         actionsBeforeNextSession = "Contact housing officer",
       )
@@ -1048,8 +1045,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(saved.sessionFeedbackStrengthsIdentified).isEqualTo("Excellent communication")
       assertThat(saved.issuesConcernsIdentified).isEqualTo("Risk of housing loss")
       assertThat(saved.issuesConcernsNotifyProbationPractitioner).isTrue()
-      assertThat(saved.additionalSupportNeedsIdentified).isTrue()
-      assertThat(saved.additionalSupportNeedsDetails).isEqualTo("Requires large-print materials and interpreter")
+      assertThat(saved.additionalSupportNeeds).isEqualTo("Requires large-print materials and interpreter")
       assertThat(saved.nextStepsPlannedForNextSession).isEqualTo("Review housing options")
       assertThat(saved.nextStepsActionsBeforeNextSession).isEqualTo("Contact housing officer")
 
