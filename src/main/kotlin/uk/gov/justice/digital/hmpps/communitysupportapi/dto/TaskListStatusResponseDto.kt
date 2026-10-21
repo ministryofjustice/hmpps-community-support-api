@@ -126,7 +126,7 @@ data class TaskListStatusItem(
   val tag: String? = null,
 ) {
   companion object {
-    fun completed() = TaskListStatusItem(true, "Completed", "govuk-tag--blue")
+    fun completed() = TaskListStatusItem(true, "Completed", "govuk-tag--green")
     fun notStarted() = TaskListStatusItem(false, "Not started", "govuk-tag--grey")
     fun inProgress() = TaskListStatusItem(false, "In progress", "govuk-tag--light-blue")
     fun cannotStart() = TaskListStatusItem(false, "Cannot Start Yet", null)
