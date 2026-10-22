@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.model.ActionPlanQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanNeedsAndOutcomesViewRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanQuestionWriter
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionAnswerHeaderRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanStepQuestionRepository
@@ -57,6 +58,7 @@ class ActionPlanService(
   private val placeholderFactory: PlaceholderFactory,
   private val actionPlanQuestionWriter: ActionPlanQuestionWriter,
   private val actionPlanNeedsAndOutcomesViewRepository: ActionPlanNeedsAndOutcomesViewRepository,
+  private val actionPlanRepository: ActionPlanRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ActionPlanService::class.java)
@@ -116,6 +118,7 @@ class ActionPlanService(
         // Only swap if requested need not already at the top of the list
         if (requestAnswer != null && requestAnswer.orderNumber > 1) {
           swapOrderOfNeeds(requestAnswer, answers[(requestAnswer.orderNumber - 1) - 1])
+          actionPlanRepository.save(actionPlanData.actionPlan.updateUpdatedAt(OffsetDateTime.now()))
         }
       }
 
@@ -123,6 +126,7 @@ class ActionPlanService(
         // Only swap if requested need not already at the bottom of the list
         if (requestAnswer != null && requestAnswer.orderNumber <= answers.size - 1) {
           swapOrderOfNeeds(requestAnswer, answers[(requestAnswer.orderNumber - 1) + 1])
+          actionPlanRepository.save(actionPlanData.actionPlan.updateUpdatedAt(OffsetDateTime.now()))
         }
       }
     }
@@ -476,6 +480,7 @@ class ActionPlanService(
         ),
       )
     }
+    actionPlanRepository.save(actionPlanData.actionPlan.updateUpdatedAt(OffsetDateTime.now()))
 
     logger.info(
       "Successfully submitted action for referral={} with need={} and outcome={}",
@@ -522,6 +527,7 @@ class ActionPlanService(
     )
 
     actionPlanQuestionWriter.reorderActionPlanActions(actionPlan.id)
+    actionPlanRepository.save(actionPlanData.actionPlan.updateUpdatedAt(OffsetDateTime.now()))
 
     logger.info(
       "Successfully deleted action for referral={} with actionId={}",
