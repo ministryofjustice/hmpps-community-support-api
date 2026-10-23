@@ -21,7 +21,7 @@ import java.util.UUID
  */
 @Entity
 @Table(name = "action_plan")
-class ActionPlan(
+data class ActionPlan(
   @Id
   @Column(name = "id")
   val id: UUID,
@@ -61,4 +61,6 @@ class ActionPlan(
   fun isSubmitted(): Boolean = events
     .map { it.eventType }
     .contains(ActionPlanEventType.SUBMITTED)
+
+  fun updateUpdatedAt(updatedAt: OffsetDateTime) = copy(updatedAt = updatedAt)
 }
