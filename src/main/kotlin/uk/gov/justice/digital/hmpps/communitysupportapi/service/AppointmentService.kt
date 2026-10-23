@@ -5,6 +5,7 @@ import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
@@ -20,6 +21,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointments
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SupportNeed
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayLabel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayString
@@ -388,6 +390,28 @@ class AppointmentService(
       fullName = personName,
       appointmentDetails = appointmentDetails,
       otherAppointmentMethods = appointmentHistory.sessionCommunication,
+    )
+  }
+
+  /**
+   * Returns ICS appointment existing support needs by a referral.
+   */
+  @Transactional(readOnly = true)
+  fun getIcsFeedbackAlreadyAdditionalSupportNeeds(referral: Referral): ExistingSupportNeedsBffResponseDto {
+    val referralFirstName = personRepository.findById(referral.personId)
+    .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }.firstName
+
+//    val icsFeedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
+//      .orElseThrow { NotFoundException("ICS feedback not found for id $icsFeedbackId") }
+
+    val listOfSupportNeeds = listOf(
+      SupportNeed("First Name", ""),
+      SupportNeed("Second Name", "Second Details"),
+      SupportNeed("Third Name", "Third Details")
+    )
+
+    return ExistingSupportNeedsBffResponseDto(
+      listOfSupportNeeds, referralFirstName
     )
   }
 

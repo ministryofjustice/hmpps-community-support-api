@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReferenceDataBffDto
@@ -26,6 +27,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackReq
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
+import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralLookupService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -38,6 +42,8 @@ class AppointmentController(
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
   private val referralLookupService: ReferralLookupService,
+  private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
+  private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentController::class.java)
@@ -278,6 +284,39 @@ class AppointmentController(
 
     return ResponseEntity.ok(
       appointmentService.getIcsFeedbackSessionDetails(referral),
+    )
+  }
+
+
+  @Operation(summary = "Get Already identified support needs")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Already identified support needs found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ExistingSupportNeedsBffResponseDto::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Already identified support needs foun",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{caseReference}/existing_support_needs")
+  fun getIcsFeedbackSession2(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<ExistingSupportNeedsBffResponseDto> {
+    log.info("GET /bff/referral/{}/existing_support_needs", caseReference)
+
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    val referralId = referral.id
+    val personAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
+      ?: throw NotFoundException("Additional support needs not found for referral $referralId")
+
+
+    return ResponseEntity.ok(
+      appointmentService.getIcsFeedbackAlreadyAdditionalSupportNeeds(referral)
     )
   }
 }
