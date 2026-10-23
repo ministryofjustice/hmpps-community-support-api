@@ -87,8 +87,11 @@ class AppointmentIcsFeedback(
   @Column(name = "issues_concerns_notify_probation_practitioner")
   val issuesConcernsNotifyProbationPractitioner: Boolean? = null,
 
-  @Column(name = "additional_support_needs", columnDefinition = "TEXT")
-  val additionalSupportNeeds: String? = null,
+  @Column(name = "additional_needs_did_you_identify")
+  val additionalNeedsDidYouIdentity: Boolean? = null,
+
+  @Column(name = "additional_needs_identity_details", columnDefinition = "TEXT")
+  val additionalNeedsIdentityDetails: String? = null,
 
   @Column(name = "next_steps_planned_for_next_session", columnDefinition = "TEXT")
   val nextStepsPlannedForNextSession: String? = null,
