@@ -447,12 +447,12 @@ class TaskListStatusResponseDtoTest {
   inner class TaskListStatusItemFactories {
 
     @Test
-    fun `completed returns completed true with blue tag`() {
+    fun `completed returns completed true with green tag`() {
       val item = TaskListStatusItem.completed()
 
       item.completed shouldBe true
       item.statusText shouldBe "Completed"
-      item.tag shouldBe "govuk-tag--blue"
+      item.tag shouldBe "govuk-tag--green"
     }
 
     @Test
