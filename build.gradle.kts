@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.12"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.13"
   kotlin("plugin.spring") version "2.4.21"
   kotlin("plugin.jpa") version "2.4.21"
 }
@@ -29,7 +29,7 @@ dependencies {
   // security
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
-  implementation("org.springframework.security:spring-security-crypto:7.1.1")
+  implementation("org.springframework.security:spring-security-crypto:7.1.2")
   implementation("com.nimbusds:oauth2-oidc-sdk:11.38.2")
 
   // csv
