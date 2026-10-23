@@ -1014,7 +1014,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
           ActionPlanStepQuestionChoiceFactory()
             .withActionPlanStepQuestionId(question.id)
             .withOrderNumber(2)
-            .withLabel("No, I need to change the date")
+            .withLabel("No")
             .withValue("NO")
             .create(),
         )
@@ -1055,7 +1055,7 @@ class ActionPlanControllerIntegrationTest : IntegrationTestBase() {
             body.questions[0].label shouldBe "Is the service end date still ${serviceEndDate.format(FULL_MONTH_DATE_FORMAT)}?"
             body.questions[0].answerType shouldBe ActionPlanQuestionAnswerType.RADIO
             body.questions[0].maximumNumberOfResponses shouldBe 1
-            body.questions[0].choices?.map { it.label } shouldBe listOf("Yes", "No, I need to change the date")
+            body.questions[0].choices?.map { it.label } shouldBe listOf("Yes", "No")
             body.questions[0].choices?.map { it.value } shouldBe listOf("YES", "NO")
             body.questions[0].savedResponses.map { it.value } shouldBe listOf("NO")
           }
