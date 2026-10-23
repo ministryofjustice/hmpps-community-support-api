@@ -68,6 +68,10 @@ data class IssuesAndConcernsRequest(
   val identified: String? = null,
   val notifyProbationPractitioner: Boolean? = null,
 )
+data class IdentifiedAdditionalNeedsRequest(
+  val didYouIdentity: Boolean? = null,
+  val identityDetails: String? = null,
+)
 
 data class NextStepsRequest(
   val plannedForNextSession: String? = null,
@@ -79,7 +83,7 @@ data class CreateIcsFeedbackRequest(
   val sessionDetails: SessionDetailsRequest? = null,
   val sessionFeedback: SessionFeedbackRequest? = null,
   val issuesAndConcerns: IssuesAndConcernsRequest? = null,
-  val newlyIdentifiedAdditionalSupportNeeds: String? = null,
+  val identifiedAdditionalNeeds: IdentifiedAdditionalNeedsRequest? = null,
   val nextSteps: NextStepsRequest? = null,
 )
 
@@ -120,7 +124,8 @@ data class AppointmentIcsFeedbackResponse(
   val issuesOrConcernsNotifyProbationPractitioner: Boolean?,
 
   // Section 5 – Additional support needs
-  val additionalSupportNeeds: String?,
+  val additionalNeedsDidYouIdentity: Boolean?,
+  val additionalNeedsIdentityDetails: String?,
 
   // Section 6 – Next steps
   val nextStepsPlannedForNextSession: String?,
@@ -158,7 +163,8 @@ data class AppointmentIcsFeedbackResponse(
       sessionFeedbackStrengthsIdentified = feedback.sessionFeedbackStrengthsIdentified,
       issuesOrConcernsIdentified = feedback.issuesConcernsIdentified,
       issuesOrConcernsNotifyProbationPractitioner = feedback.issuesConcernsNotifyProbationPractitioner,
-      additionalSupportNeeds = feedback.additionalSupportNeeds,
+      additionalNeedsDidYouIdentity = feedback.additionalNeedsDidYouIdentity,
+      additionalNeedsIdentityDetails = feedback.additionalNeedsIdentityDetails,
       nextStepsPlannedForNextSession = feedback.nextStepsPlannedForNextSession,
       nextStepsActionsBeforeNextSession = feedback.nextStepsActionsBeforeNextSession,
       sessionFeedbackAppointmentDetails = sessionFeedbackAppointmentDetails,

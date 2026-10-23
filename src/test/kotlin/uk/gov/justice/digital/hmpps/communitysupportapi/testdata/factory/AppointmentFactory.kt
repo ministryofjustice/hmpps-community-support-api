@@ -187,7 +187,7 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
       identified = issuesConcernsIdentified,
       notifyProbationPractitioner = notifyProbationPractitioner,
     ),
-    newlyIdentifiedAdditionalSupportNeeds = newlyIdentifiedAdditionalSupportNeeds,
+    identifiedAdditionalNeeds = newlyIdentifiedAdditionalSupportNeeds,
     nextSteps = NextStepsRequest(
       plannedForNextSession = plannedForNextSession,
       actionsBeforeNextSession = actionsBeforeNextSession,
