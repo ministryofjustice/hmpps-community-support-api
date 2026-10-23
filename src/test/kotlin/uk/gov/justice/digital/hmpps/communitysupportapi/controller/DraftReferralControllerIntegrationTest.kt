@@ -1319,7 +1319,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
           body.confirmPersonalDetailsStatus shouldBe TaskListStatusItem.completed()
           body.checkRiskInformationStatus shouldBe TaskListStatusItem.notStarted()
           body.selectThePersonsNeedsStatus shouldBe TaskListStatusItem.notStarted()
-          body.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
+          body.addAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
           body.selectAnAreaForReferralStatus shouldBe TaskListStatusItem.notStarted()
           body.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
           body.contactDetailsStatus shouldBe ContactDetailsDto(false, TaskListStatusItem.notStarted())
@@ -1352,7 +1352,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
+          body.addAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
         }
     }
 
@@ -1383,7 +1383,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.completed()
+          body.addAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.completed()
         }
     }
 

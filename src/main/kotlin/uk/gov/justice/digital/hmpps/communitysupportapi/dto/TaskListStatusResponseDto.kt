@@ -14,7 +14,7 @@ data class TaskListStatusResponseDto(
   val confirmPersonalDetailsStatus: TaskListStatusItem,
   val checkRiskInformationStatus: TaskListStatusItem,
   val selectThePersonsNeedsStatus: TaskListStatusItem,
-  val addDetailsOfAnyAdditionalSupportNeedsStatus: TaskListStatusItem,
+  val addAdditionalSupportNeedsStatus: TaskListStatusItem,
   val addAdditionalInformationStatus: TaskListStatusItem,
   val selectAnAreaForReferralStatus: TaskListStatusItem,
   val contactDetailsStatus: ContactDetailsDto,
@@ -35,7 +35,7 @@ data class TaskListStatusResponseDto(
       val confirmPersonalDetailsStatus = TaskListStatusItem.completed()
       val checkRiskInformationStatus = getRiskInfoStatus(riskInfo)
       val selectThePersonsNeedsStatus = getCriminogenicNeedsStatus(criminogenicNeeds)
-      val addDetailsOfAnyAdditionalSupportNeedsStatus = getAdditionalSupportNeedsStatus(additionalSupportNeeds)
+      val addAdditionalSupportNeedsStatus = getAdditionalSupportNeedsStatus(additionalSupportNeeds)
       val addAdditionalInformationStatus = getAdditionalInformationStatus(referral)
       val selectAnAreaForReferralStatus = getCommunityServiceProviderStatus(referenceDataCommunityServiceProvider)
       val contactDetailsStatus = getContactDetailsStatus(communityManager, probationPractitionerDetails)
@@ -43,7 +43,7 @@ data class TaskListStatusResponseDto(
         confirmPersonalDetailsStatus,
         checkRiskInformationStatus,
         selectThePersonsNeedsStatus,
-        addDetailsOfAnyAdditionalSupportNeedsStatus,
+        addAdditionalSupportNeedsStatus,
         addAdditionalInformationStatus,
         selectAnAreaForReferralStatus,
         contactDetailsStatus.status,
@@ -61,7 +61,7 @@ data class TaskListStatusResponseDto(
         confirmPersonalDetailsStatus,
         checkRiskInformationStatus,
         selectThePersonsNeedsStatus,
-        addDetailsOfAnyAdditionalSupportNeedsStatus,
+        addAdditionalSupportNeedsStatus,
         addAdditionalInformationStatus,
         selectAnAreaForReferralStatus,
         contactDetailsStatus,

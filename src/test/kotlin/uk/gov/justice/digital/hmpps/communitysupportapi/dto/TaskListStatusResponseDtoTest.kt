@@ -68,7 +68,7 @@ class TaskListStatusResponseDtoTest {
     fun `returns notStarted when no additionalSupportNeeds record exists`() {
       val result = TaskListStatusResponseDto.from(referral, person, null, null, null, null)
 
-      result.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
+      result.addAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
@@ -77,7 +77,7 @@ class TaskListStatusResponseDtoTest {
 
       val result = TaskListStatusResponseDto.from(referral, person, supportNeeds, null, null, null)
 
-      result.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
+      result.addAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
@@ -86,7 +86,7 @@ class TaskListStatusResponseDtoTest {
 
       val result = TaskListStatusResponseDto.from(referral, person, supportNeeds, null, null, null)
 
-      result.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
+      result.addAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
@@ -95,7 +95,7 @@ class TaskListStatusResponseDtoTest {
 
       val result = TaskListStatusResponseDto.from(referral, person, supportNeeds, null, null, null)
 
-      result.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.completed()
+      result.addAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.completed()
     }
 
     @Test
@@ -104,7 +104,7 @@ class TaskListStatusResponseDtoTest {
 
       val result = TaskListStatusResponseDto.from(referral, person, supportNeeds, null, null, null)
 
-      result.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.completed()
+      result.addAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.completed()
     }
 
     @Test
@@ -113,7 +113,7 @@ class TaskListStatusResponseDtoTest {
 
       val result = TaskListStatusResponseDto.from(referral, person, supportNeeds, null, null, null)
 
-      result.addDetailsOfAnyAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.completed()
+      result.addAdditionalSupportNeedsStatus shouldBe TaskListStatusItem.completed()
     }
   }
 
