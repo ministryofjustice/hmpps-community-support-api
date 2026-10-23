@@ -463,7 +463,6 @@ class TaskListStatusResponseDtoTest {
       item.statusText shouldBe "Not started"
       item.tag shouldBe "govuk-tag--grey"
     }
-
   }
 
   private fun buildSupportNeeds(additionalSupportNeeded: Boolean?, interpreterNeeded: Boolean?) = PersonAdditionalSupportNeeds(

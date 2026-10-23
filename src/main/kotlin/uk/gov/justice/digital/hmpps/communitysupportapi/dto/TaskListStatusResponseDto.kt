@@ -73,12 +73,11 @@ data class TaskListStatusResponseDto(
 
     private fun getCriminogenicNeedsStatus(criminogenicNeeds: ReferralCriminogenicNeeds?): TaskListStatusItem = criminogenicNeeds?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
-    private fun getAdditionalSupportNeedsStatus(additionalSupportNeeds: PersonAdditionalSupportNeeds?): TaskListStatusItem =
-      if (additionalSupportNeeds?.additionalSupportNeeded != null && additionalSupportNeeds?.interpreterNeeded != null) {
-        TaskListStatusItem.completed()
-      } else {
-        TaskListStatusItem.notStarted()
-      }
+    private fun getAdditionalSupportNeedsStatus(additionalSupportNeeds: PersonAdditionalSupportNeeds?): TaskListStatusItem = if (additionalSupportNeeds?.additionalSupportNeeded != null && additionalSupportNeeds?.interpreterNeeded != null) {
+      TaskListStatusItem.completed()
+    } else {
+      TaskListStatusItem.notStarted()
+    }
 
     private fun getRiskInfoStatus(riskInfo: RiskInformation?): TaskListStatusItem = riskInfo?.let { return TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
