@@ -11,15 +11,14 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 
 data class TaskListStatusResponseDto(
   val fullName: String,
-  val confirmPersonalDetailsCompleted: TaskListStatusItem,
-  val checkRiskInformationCompleted: TaskListStatusItem,
-  val selectThePersonsNeedsCompleted: TaskListStatusItem,
-  val addDetailsOfAnyAdditionalSupportNeedsCompleted: TaskListStatusItem,
-  val addAdditionalInformationCompleted: TaskListStatusItem,
-  val addDetailsOfMainPointOfContactCompleted: TaskListStatusItem,
-  val selectAnAreaForReferralCompleted: TaskListStatusItem,
-  val checkProbationPractitionerDetailsCompleted: TaskListStatusItem?,
-  val addMainPointOfContactCompleted: TaskListStatusItem?,
+  val confirmPersonalDetailsStatus: TaskListStatusItem,
+  val checkRiskInformationStatus: TaskListStatusItem,
+  val selectThePersonsNeedsStatus: TaskListStatusItem,
+  val addAdditionalSupportNeedsStatus: TaskListStatusItem,
+  val addAdditionalInformationStatus: TaskListStatusItem,
+  val selectAnAreaForReferralStatus: TaskListStatusItem,
+  val contactDetailsStatus: ContactDetailsDto,
+  val checkYourAnswersStatus: TaskListStatusItem,
 ) {
   companion object {
     fun from(
@@ -31,30 +30,53 @@ data class TaskListStatusResponseDto(
       referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider?,
       communityManager: CommunityManagerDto? = null,
       probationPractitionerDetails: ProbationPractitionerDetails? = null,
-    ) = TaskListStatusResponseDto(
-      fullName = person.firstName + " " + person.lastName,
-      TaskListStatusItem.notStarted(),
-      getRiskInfoStatus(riskInfo),
-      getCriminogenicNeedsStatus(criminogenicNeeds),
-      getAdditionalSupportNeedsStatus(additionalSupportNeeds),
-      getAdditionalInformationStatus(referral),
-      TaskListStatusItem.notStarted(),
-      getCommunityServiceProviderStatus(referenceDataCommunityServiceProvider),
-      checkProbationPractitionerDetailsStatus(communityManager, probationPractitionerDetails),
-      getAddMainPointOfContactStatusStatus(communityManager, probationPractitionerDetails),
-    )
+    ): TaskListStatusResponseDto {
+      val fullName = person.firstName + " " + person.lastName
+      val confirmPersonalDetailsStatus = TaskListStatusItem.completed()
+      val checkRiskInformationStatus = getRiskInfoStatus(riskInfo)
+      val selectThePersonsNeedsStatus = getCriminogenicNeedsStatus(criminogenicNeeds)
+      val addAdditionalSupportNeedsStatus = getAdditionalSupportNeedsStatus(additionalSupportNeeds)
+      val addAdditionalInformationStatus = getAdditionalInformationStatus(referral)
+      val selectAnAreaForReferralStatus = getCommunityServiceProviderStatus(referenceDataCommunityServiceProvider)
+      val contactDetailsStatus = getContactDetailsStatus(communityManager, probationPractitionerDetails)
+      val canStartCheckAnswers = listOf(
+        confirmPersonalDetailsStatus,
+        checkRiskInformationStatus,
+        selectThePersonsNeedsStatus,
+        addAdditionalSupportNeedsStatus,
+        addAdditionalInformationStatus,
+        selectAnAreaForReferralStatus,
+        contactDetailsStatus.status,
+      )
+        .all { it.completed }
+
+      val checkYourAnswersStatus = if (canStartCheckAnswers) {
+        TaskListStatusItem.notStarted()
+      } else {
+        TaskListStatusItem.cannotStart()
+      }
+
+      return TaskListStatusResponseDto(
+        fullName,
+        confirmPersonalDetailsStatus,
+        checkRiskInformationStatus,
+        selectThePersonsNeedsStatus,
+        addAdditionalSupportNeedsStatus,
+        addAdditionalInformationStatus,
+        selectAnAreaForReferralStatus,
+        contactDetailsStatus,
+        checkYourAnswersStatus,
+      )
+    }
 
     private fun getCommunityServiceProviderStatus(referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider?): TaskListStatusItem = referenceDataCommunityServiceProvider?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
     private fun getCriminogenicNeedsStatus(criminogenicNeeds: ReferralCriminogenicNeeds?): TaskListStatusItem = criminogenicNeeds?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
-    private fun getAdditionalSupportNeedsStatus(additionalSupportNeeds: PersonAdditionalSupportNeeds?): TaskListStatusItem {
-      return additionalSupportNeeds?.let {
-        if (it.additionalSupportNeeded != null && it.interpreterNeeded != null) {
-          return TaskListStatusItem.completed()
-        }
-        return TaskListStatusItem.inProgress()
-      } ?: TaskListStatusItem.notStarted()
+    private fun getAdditionalSupportNeedsStatus(additionalSupportNeeds: PersonAdditionalSupportNeeds?): TaskListStatusItem = if (additionalSupportNeeds?.additionalSupportNeeded != null && additionalSupportNeeds?.interpreterNeeded != null) {
+      TaskListStatusItem.completed()
+    } else {
+      TaskListStatusItem.notStarted()
     }
 
     private fun getRiskInfoStatus(riskInfo: RiskInformation?): TaskListStatusItem = riskInfo?.let { return TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
@@ -73,26 +95,18 @@ data class TaskListStatusResponseDto(
       return when (populatedFieldCount) {
         3 -> TaskListStatusItem.completed()
         0 -> TaskListStatusItem.notStarted()
-        else -> TaskListStatusItem.inProgress()
+        else -> TaskListStatusItem.notStarted()
       }
     }
 
-    private fun checkProbationPractitionerDetailsStatus(
+    private fun getContactDetailsStatus(
       communityManagerDto: CommunityManagerDto?,
       savedProbationPractitionerDetails: ProbationPractitionerDetails?,
-    ): TaskListStatusItem? {
-      if (communityManagerDto == null || isUnallocated(communityManagerDto)) return null
-      if (savedProbationPractitionerDetails == null) return TaskListStatusItem.notStarted()
-      if (savedProbationPractitionerDetails.ppDetailsFoundAndCorrect == false) return null
-      return TaskListStatusItem.completed()
-    }
-
-    private fun getAddMainPointOfContactStatusStatus(
-      communityManagerDto: CommunityManagerDto?,
-      savedProbationPractitionerDetails: ProbationPractitionerDetails?,
-    ): TaskListStatusItem? {
-      if (communityManagerDto != null && !isUnallocated(communityManagerDto) && savedProbationPractitionerDetails?.ppDetailsFoundAndCorrect != false) return null
-      return savedProbationPractitionerDetails?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
+    ): ContactDetailsDto = when {
+      communityManagerDto == null -> ContactDetailsDto(false, TaskListStatusItem.notStarted())
+      savedProbationPractitionerDetails == null -> ContactDetailsDto(!isUnallocated(communityManagerDto), TaskListStatusItem.notStarted())
+      isUnallocated(communityManagerDto) -> ContactDetailsDto(false, TaskListStatusItem.completed())
+      else -> ContactDetailsDto(savedProbationPractitionerDetails.ppDetailsFoundAndCorrect != false, TaskListStatusItem.completed())
     }
 
     private fun isUnallocated(communityManagerDto: CommunityManagerDto): Boolean {
@@ -109,8 +123,10 @@ data class TaskListStatusItem(
   val tag: String? = null,
 ) {
   companion object {
-    fun completed() = TaskListStatusItem(true, "Completed", "govuk-tag--blue")
+    fun completed() = TaskListStatusItem(true, "Completed", "govuk-tag--green")
     fun notStarted() = TaskListStatusItem(false, "Not started", "govuk-tag--grey")
-    fun inProgress() = TaskListStatusItem(false, "In progress", "govuk-tag--light-blue")
+    fun cannotStart() = TaskListStatusItem(false, "Cannot Start Yet", null)
   }
 }
+
+data class ContactDetailsDto(val isProbationPractitioner: Boolean, val status: TaskListStatusItem)
