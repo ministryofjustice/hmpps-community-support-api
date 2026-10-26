@@ -393,21 +393,15 @@ class AppointmentService(
     )
   }
 
-  /**
-   * Returns ICS appointment existing support needs by a referral.
-   */
   @Transactional(readOnly = true)
   fun getIcsFeedbackAlreadyAdditionalSupportNeeds(referral: Referral): ExistingSupportNeedsBffResponseDto {
     val referralFirstName = personRepository.findById(referral.personId)
     .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }.firstName
 
-//    val icsFeedback = appointmentIcsFeedbackRepository.findById(icsFeedbackId)
-//      .orElseThrow { NotFoundException("ICS feedback not found for id $icsFeedbackId") }
 
     val listOfSupportNeeds = listOf(
-      SupportNeed("First Name", ""),
-      SupportNeed("Second Name", "Second Details"),
-      SupportNeed("Third Name", "Third Details")
+      SupportNeed("First Need", "First need details"),
+      SupportNeed("Second Need", "Second need Details"),
     )
 
     return ExistingSupportNeedsBffResponseDto(
