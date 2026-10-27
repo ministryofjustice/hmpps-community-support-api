@@ -982,8 +982,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     strengthsIdentified: String? = "Good communication",
     issuesConcernsIdentified: String? = null,
     notifyProbationPractitioner: Boolean? = false,
-    additionalDidYouIdentify: Boolean?= false,
-    additionalNeedsIdentifyDetails: String?= null,
+    additionalSupportNeedsIdentified: Boolean?= false,
+    additionalSupportNeedsDetails: String?= null,
     plannedForNextSession: String? = "Continue with action plan",
     actionsBeforeNextSession: String? = "Complete referral details",
   ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
@@ -998,8 +998,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     .withStrengthsIdentified(strengthsIdentified)
     .withIssuesConcernsIdentified(issuesConcernsIdentified)
     .withNotifyProbationPractitioner(notifyProbationPractitioner)
-    .withAdditionalNeedsDidYouIdentify(additionalDidYouIdentify)
-    .withAdditionalNeedsIdentifyDetails(additionalNeedsIdentifyDetails)
+    .withAdditionalSupportNeedsIdentified(additionalSupportNeedsIdentified)
+    .withAdditionalNeedsIdentifyDetails(additionalSupportNeedsDetails)
     .withPlannedForNextSession(plannedForNextSession)
     .withActionsBeforeNextSession(actionsBeforeNextSession)
     .create()
@@ -1026,8 +1026,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         strengthsIdentified = "Excellent communication",
         issuesConcernsIdentified = "Risk of housing loss",
         notifyProbationPractitioner = true,
-        additionalDidYouIdentify = true,
-        additionalNeedsIdentifyDetails = "Requires large-print materials and interpreter",
+        additionalSupportNeedsIdentified = true,
+        additionalSupportNeedsDetails = "Requires large-print materials and interpreter",
         plannedForNextSession = "Review housing options",
         actionsBeforeNextSession = "Contact housing officer",
       )
@@ -1048,8 +1048,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(saved.sessionFeedbackStrengthsIdentified).isEqualTo("Excellent communication")
       assertThat(saved.issuesConcernsIdentified).isEqualTo("Risk of housing loss")
       assertThat(saved.issuesConcernsNotifyProbationPractitioner).isTrue()
-      assertThat(saved.additionalNeedsDidYouIdentify).isTrue()
-      assertThat(saved.additionalNeedsIdentifyDetails).isEqualTo("Requires large-print materials and interpreter")
+      assertThat(saved.additionalSupportNeedsIdentified).isTrue()
+      assertThat(saved.additionalSupportNeedsDetails).isEqualTo("Requires large-print materials and interpreter")
       assertThat(saved.nextStepsPlannedForNextSession).isEqualTo("Review housing options")
       assertThat(saved.nextStepsActionsBeforeNextSession).isEqualTo("Contact housing officer")
 

@@ -30,8 +30,8 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
   private var issuesConcernsNotifyProbationPractitioner: Boolean? = false
 
   // Section 5 – Additional support needs
-  private var additionalNeedsDidYouIdentify: Boolean? = false
-  private var additionalNeedsIdentifyDetails: String? = null
+  private var additionalSupportNeedsIdentified: Boolean? = false
+  private var additionalSupportNeedsDetails: String? = null
 
   // Section 6 – Next steps
   private var nextStepsPlannedForNextSession: String? = "Continue with action plan"
@@ -81,12 +81,12 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
     this.sessionFeedbackStrengthsIdentified = strengths
   }
 
-  fun withAdditionalNeedsDidYouIdentify(additionalNeedsDidYouIdentify: Boolean?) = apply {
-    this.additionalNeedsDidYouIdentify = additionalNeedsDidYouIdentify
+  fun withAdditionalSupportNeedsIdentified(additionalSupportNeedsIdentified: Boolean?) = apply {
+    this.additionalSupportNeedsIdentified = additionalSupportNeedsIdentified
   }
 
-  fun withAdditionalNeedsIdentifyDetails(additionalNeedsIdentifyDetails: String?) = apply {
-    this.additionalNeedsIdentifyDetails = additionalNeedsIdentifyDetails
+  fun withAdditionalNeedsIdentifyDetails(additionalSupportNeedsDetails: String?) = apply {
+    this.additionalSupportNeedsDetails = additionalSupportNeedsDetails
   }
 
   override fun create(): AppointmentIcsFeedback = AppointmentIcsFeedback(
@@ -106,8 +106,8 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
     sessionFeedbackStrengthsIdentified = sessionFeedbackStrengthsIdentified,
     issuesConcernsIdentified = issuesConcernsIdentified,
     issuesConcernsNotifyProbationPractitioner = issuesConcernsNotifyProbationPractitioner,
-    additionalNeedsDidYouIdentify = additionalNeedsDidYouIdentify,
-    additionalNeedsIdentifyDetails = additionalNeedsIdentifyDetails,
+    additionalSupportNeedsIdentified = additionalSupportNeedsIdentified,
+    additionalSupportNeedsDetails = additionalSupportNeedsDetails,
     nextStepsPlannedForNextSession = nextStepsPlannedForNextSession,
     nextStepsActionsBeforeNextSession = nextStepsActionsBeforeNextSession,
     createdBy = createdBy,
