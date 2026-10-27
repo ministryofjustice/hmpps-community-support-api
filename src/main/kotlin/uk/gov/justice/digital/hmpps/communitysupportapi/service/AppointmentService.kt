@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointments
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SupportNeed
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayLabel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayString
@@ -51,6 +50,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -68,6 +68,7 @@ class AppointmentService(
   private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
   private val personRepository: PersonRepository,
   private val referralLookupService: ReferralLookupService,
+  private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
@@ -393,19 +394,28 @@ class AppointmentService(
     )
   }
 
+  /**
+   * Returns ICS appointment existing support needs by a referral.
+   */
   @Transactional(readOnly = true)
   fun getIcsFeedbackAlreadyAdditionalSupportNeeds(referral: Referral): ExistingSupportNeedsBffResponseDto {
     val referralFirstName = personRepository.findById(referral.personId)
     .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }.firstName
-
-
-    val listOfSupportNeeds = listOf(
-      SupportNeed("First Need", "First need details"),
-      SupportNeed("Second Need", "Second need Details"),
-    )
+    val referralId = referral.id
+    val personAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
+      ?: throw NotFoundException("Existing support needs not found for referral $referralId")
 
     return ExistingSupportNeedsBffResponseDto(
-      listOfSupportNeeds, referralFirstName
+      personAdditionalSupportNeeds.physicalHealthDetails,
+      personAdditionalSupportNeeds.mentalEmotionalHealthDetails,
+      personAdditionalSupportNeeds.neurodiversityDetails,
+      personAdditionalSupportNeeds.locationTravelDetails,
+      personAdditionalSupportNeeds.caringResponsibilitiesDetails,
+      personAdditionalSupportNeeds.employmentResponsibilitiesDetails,
+      personAdditionalSupportNeeds.diversityDetails,
+      personAdditionalSupportNeeds.anythingElseDetails,
+      personAdditionalSupportNeeds.interpreterLanguage,
+      referralFirstName
     )
   }
 

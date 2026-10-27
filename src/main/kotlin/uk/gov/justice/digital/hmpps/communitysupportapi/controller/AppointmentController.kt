@@ -27,7 +27,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackReq
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
-import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
@@ -41,9 +40,7 @@ class AppointmentController(
   private val appointmentService: AppointmentService,
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
-  private val referralLookupService: ReferralLookupService,
-  private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
-  private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
+  private val referralLookupService: ReferralLookupService
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentController::class.java)
@@ -288,35 +285,29 @@ class AppointmentController(
   }
 
 
-  @Operation(summary = "Get Already identified support needs")
+  @Operation(summary = "Get Existing support needs")
   @ApiResponses(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "Already identified support needs found",
+        description = "Existing support needs found",
         content = [Content(mediaType = "application/json", schema = Schema(implementation = ExistingSupportNeedsBffResponseDto::class))],
       ),
       ApiResponse(
         responseCode = "404",
-        description = "Already identified support needs foun",
+        description = "Existing support needs found",
         content = [Content(mediaType = "application/json")],
       ),
     ],
   )
   @GetMapping("/bff/referral/{caseReference}/existing_support_needs")
-  fun getIcsFeedbackSession2(
+  fun getExistingSupportNeeds(
     @PathVariable caseReference: String,
   ): ResponseEntity<ExistingSupportNeedsBffResponseDto> {
     log.info("GET /bff/referral/{}/existing_support_needs", caseReference)
-
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    val referralId = referral.id
-    val personAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
-      ?: throw NotFoundException("Additional support needs not found for referral $referralId")
 
-
-    return ResponseEntity.ok(
-      appointmentService.getIcsFeedbackAlreadyAdditionalSupportNeeds(referral)
+    return ResponseEntity.ok(appointmentService.getIcsFeedbackAlreadyAdditionalSupportNeeds(referral)
     )
   }
 }

@@ -1,11 +1,14 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
-data class SupportNeed(
-val needName: String,
-val needDetails: String
-)
-
 data class ExistingSupportNeedsBffResponseDto(
-  val supportNeeds: List<SupportNeed>? = null,
+  val physicalHealthDetails: String? = null,
+  val mentalEmotionalHealthDetails: String?= null,
+  val neurodiversityDetails: String?= null,
+  val locationTravelDetails: String?= null,
+  val caringResponsibilitiesDetails: String?= null,
+  val employmentResponsibilitiesDetails: String?= null,
+  val diversityDetails: String?= null,
+  val anythingElseDetails: String?= null,
+  val interpreterLanguage: String?= null,
   val referralFirstName: String,
 )
