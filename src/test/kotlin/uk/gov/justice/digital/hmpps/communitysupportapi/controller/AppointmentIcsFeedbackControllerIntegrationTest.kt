@@ -193,7 +193,8 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
         strengthsIdentified = "Excellent communication skills",
         issuesConcernsIdentified = "Risk of housing loss",
         notifyProbationPractitioner = true,
-        newlyIdentifiedAdditionalSupportNeeds = "Requires large-print materials and interpreter",
+        additionalNeedsDidYouIdentify = true,
+        additionalNeedsIdentifyDetails = "Requires large-print materials and interpreter",
         plannedForNextSession = "Review housing options",
         actionsBeforeNextSession = "Contact housing officer",
       )
@@ -780,7 +781,8 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
         strengthsIdentified = "Excellent communication skills",
         issuesConcernsIdentified = "Risk of housing loss",
         notifyProbationPractitioner = true,
-        newlyIdentifiedAdditionalSupportNeeds = "Requires large-print materials and interpreter",
+        additionalNeedsDidYouIdentify = true,
+        additionalNeedsIdentifyDetails = "Requires large-print materials and interpreter",
         plannedForNextSession = "Review housing options",
         actionsBeforeNextSession = "Contact housing officer",
       )

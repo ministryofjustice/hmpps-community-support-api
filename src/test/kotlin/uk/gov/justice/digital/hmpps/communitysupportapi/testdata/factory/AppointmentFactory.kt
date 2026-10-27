@@ -143,7 +143,8 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   private var notifyProbationPractitioner: Boolean? = false
 
   // Section 5 – Additional support needs
-  private var newlyIdentifiedAdditionalSupportNeeds: String? = null
+  private var additionalNeedsDidYouIdentify: Boolean? = false
+  private var additionalNeedsIdentifyDetails: String? = null
 
   // Section 6 – Next steps
   private var plannedForNextSession: String? = "Continue with action plan"
@@ -162,7 +163,8 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   fun withStrengthsIdentified(value: String?) = apply { strengthsIdentified = value }
   fun withIssuesConcernsIdentified(value: String?) = apply { issuesConcernsIdentified = value }
   fun withNotifyProbationPractitioner(value: Boolean?) = apply { notifyProbationPractitioner = value }
-  fun withNewlyIdentifiedAdditionalSupportNeeds(value: String?) = apply { newlyIdentifiedAdditionalSupportNeeds = value }
+  fun withAdditionalNeedsDidYouIdentify(value: Boolean?) = apply { additionalNeedsDidYouIdentify = value }
+  fun withAdditionalNeedsIdentifyDetails(value: String?) = apply { additionalNeedsIdentifyDetails = value }
   fun withPlannedForNextSession(value: String?) = apply { plannedForNextSession = value }
   fun withActionsBeforeNextSession(value: String?) = apply { actionsBeforeNextSession = value }
 

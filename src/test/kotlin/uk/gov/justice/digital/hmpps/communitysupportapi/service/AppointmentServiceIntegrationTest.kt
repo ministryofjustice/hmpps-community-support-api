@@ -982,7 +982,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     strengthsIdentified: String? = "Good communication",
     issuesConcernsIdentified: String? = null,
     notifyProbationPractitioner: Boolean? = false,
-    newlyIdentifiedAdditionalSupportNeeds: String? = null,
+    additionalDidYouIdentify: Boolean?= false,
+    additionalNeedsIdentifyDetails: String?= null,
     plannedForNextSession: String? = "Continue with action plan",
     actionsBeforeNextSession: String? = "Complete referral details",
   ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
@@ -997,7 +998,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     .withStrengthsIdentified(strengthsIdentified)
     .withIssuesConcernsIdentified(issuesConcernsIdentified)
     .withNotifyProbationPractitioner(notifyProbationPractitioner)
-    .withNewlyIdentifiedAdditionalSupportNeeds(newlyIdentifiedAdditionalSupportNeeds)
+    .withAdditionalNeedsDidYouIdentify(additionalDidYouIdentify)
+    .withAdditionalNeedsIdentifyDetails(additionalNeedsIdentifyDetails)
     .withPlannedForNextSession(plannedForNextSession)
     .withActionsBeforeNextSession(actionsBeforeNextSession)
     .create()
@@ -1024,7 +1026,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         strengthsIdentified = "Excellent communication",
         issuesConcernsIdentified = "Risk of housing loss",
         notifyProbationPractitioner = true,
-        newlyIdentifiedAdditionalSupportNeeds = "Requires large-print materials and interpreter",
+        additionalDidYouIdentify = true,
+        additionalNeedsIdentifyDetails = "Requires large-print materials and interpreter",
         plannedForNextSession = "Review housing options",
         actionsBeforeNextSession = "Contact housing officer",
       )

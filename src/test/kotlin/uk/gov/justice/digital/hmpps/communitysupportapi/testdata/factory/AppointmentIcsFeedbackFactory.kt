@@ -29,6 +29,11 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
   private var issuesConcernsIdentified: String? = null
   private var issuesConcernsNotifyProbationPractitioner: Boolean? = false
 
+  // Section 5 – Additional support needs
+  private var additionalNeedsDidYouIdentify: Boolean? = false
+  private var additionalNeedsIdentifyDetails: String? = null
+
+  // Section 6 – Next steps
   private var nextStepsPlannedForNextSession: String? = "Continue with action plan"
   private var nextStepsActionsBeforeNextSession: String? = "Complete CV template"
 
@@ -76,6 +81,14 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
     this.sessionFeedbackStrengthsIdentified = strengths
   }
 
+  fun withAdditionalNeedsDidYouIdentify(additionalNeedsDidYouIdentify: Boolean?) = apply {
+    this.additionalNeedsDidYouIdentify = additionalNeedsDidYouIdentify
+  }
+
+  fun withAdditionalNeedsIdentifyDetails(additionalNeedsIdentifyDetails: String?) = apply {
+    this.additionalNeedsIdentifyDetails = additionalNeedsIdentifyDetails
+  }
+
   override fun create(): AppointmentIcsFeedback = AppointmentIcsFeedback(
     id = id,
     appointmentIcs = appointmentIcs ?: error("AppointmentHistory must be provided"),
@@ -93,6 +106,8 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
     sessionFeedbackStrengthsIdentified = sessionFeedbackStrengthsIdentified,
     issuesConcernsIdentified = issuesConcernsIdentified,
     issuesConcernsNotifyProbationPractitioner = issuesConcernsNotifyProbationPractitioner,
+    additionalNeedsDidYouIdentify = additionalNeedsDidYouIdentify,
+    additionalNeedsIdentifyDetails = additionalNeedsIdentifyDetails,
     nextStepsPlannedForNextSession = nextStepsPlannedForNextSession,
     nextStepsActionsBeforeNextSession = nextStepsActionsBeforeNextSession,
     createdBy = createdBy,
