@@ -88,10 +88,10 @@ class AppointmentIcsFeedback(
   val issuesConcernsNotifyProbationPractitioner: Boolean? = null,
 
   @Column(name = "additional_needs_did_you_identify")
-  val additionalNeedsDidYouIdentity: Boolean? = null,
+  val additionalNeedsDidYouIdentify: Boolean? = null,
 
-  @Column(name = "additional_needs_identity_details", columnDefinition = "TEXT")
-  val additionalNeedsIdentityDetails: String? = null,
+  @Column(name = "additional_needs_identify_details", columnDefinition = "TEXT")
+  val additionalNeedsIdentifyDetails: String? = null,
 
   @Column(name = "next_steps_planned_for_next_session", columnDefinition = "TEXT")
   val nextStepsPlannedForNextSession: String? = null,

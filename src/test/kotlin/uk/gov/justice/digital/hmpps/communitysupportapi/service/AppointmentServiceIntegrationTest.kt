@@ -1045,8 +1045,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(saved.sessionFeedbackStrengthsIdentified).isEqualTo("Excellent communication")
       assertThat(saved.issuesConcernsIdentified).isEqualTo("Risk of housing loss")
       assertThat(saved.issuesConcernsNotifyProbationPractitioner).isTrue()
-      assertThat(saved.additionalNeedsDidYouIdentity).isTrue()
-      assertThat(saved.additionalNeedsIdentityDetails).isEqualTo("Requires large-print materials and interpreter")
+      assertThat(saved.additionalNeedsDidYouIdentify).isTrue()
+      assertThat(saved.additionalNeedsIdentifyDetails).isEqualTo("Requires large-print materials and interpreter")
       assertThat(saved.nextStepsPlannedForNextSession).isEqualTo("Review housing options")
       assertThat(saved.nextStepsActionsBeforeNextSession).isEqualTo("Contact housing officer")
 
