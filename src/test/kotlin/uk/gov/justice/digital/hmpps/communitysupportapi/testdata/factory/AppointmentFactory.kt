@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IdentifiedAdditionalNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IssuesAndConcernsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NextStepsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
@@ -187,7 +188,7 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
       identified = issuesConcernsIdentified,
       notifyProbationPractitioner = notifyProbationPractitioner,
     ),
-    identifiedAdditionalNeeds = newlyIdentifiedAdditionalSupportNeeds,
+    identifiedAdditionalNeeds = IdentifiedAdditionalNeedsRequest(),
     nextSteps = NextStepsRequest(
       plannedForNextSession = plannedForNextSession,
       actionsBeforeNextSession = actionsBeforeNextSession,
