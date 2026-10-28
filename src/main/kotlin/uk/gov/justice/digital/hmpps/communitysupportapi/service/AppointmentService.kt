@@ -68,7 +68,7 @@ class AppointmentService(
   private val appointmentIcsFeedbackRepository: AppointmentIcsFeedbackRepository,
   private val personRepository: PersonRepository,
   private val referralLookupService: ReferralLookupService,
-  private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository
+  private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
@@ -400,7 +400,7 @@ class AppointmentService(
   @Transactional(readOnly = true)
   fun getIcsFeedbackAlreadyAdditionalSupportNeeds(referral: Referral): ExistingSupportNeedsBffResponseDto {
     val referralFirstName = personRepository.findById(referral.personId)
-    .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }.firstName
+      .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }.firstName
     val referralId = referral.id
     val personAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
       ?: throw NotFoundException("Existing support needs not found for referral $referralId")
@@ -415,7 +415,7 @@ class AppointmentService(
       personAdditionalSupportNeeds.diversityDetails,
       personAdditionalSupportNeeds.anythingElseDetails,
       personAdditionalSupportNeeds.interpreterLanguage,
-      referralFirstName
+      referralFirstName,
     )
   }
 

@@ -38,7 +38,7 @@ class AppointmentController(
   private val appointmentService: AppointmentService,
   private val userMapper: UserMapper,
   private val authenticationHolder: HmppsAuthenticationHolder,
-  private val referralLookupService: ReferralLookupService
+  private val referralLookupService: ReferralLookupService,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentController::class.java)
@@ -282,7 +282,6 @@ class AppointmentController(
     )
   }
 
-
   @Operation(summary = "Get Existing support needs")
   @ApiResponses(
     value = [
@@ -305,7 +304,8 @@ class AppointmentController(
     log.info("GET /bff/referral/{}/existing_support_needs", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
 
-    return ResponseEntity.ok(appointmentService.getIcsFeedbackAlreadyAdditionalSupportNeeds(referral)
+    return ResponseEntity.ok(
+      appointmentService.getIcsFeedbackAlreadyAdditionalSupportNeeds(referral),
     )
   }
 }
