@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointments
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayLabel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayString
@@ -405,7 +406,7 @@ class AppointmentService(
     val personAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
       ?: throw NotFoundException("Existing support needs not found for referral $referralId")
 
-    return ExistingSupportNeedsBffResponseDto(
+    val supportNeeds = SupportNeeds(
       personAdditionalSupportNeeds.physicalHealthDetails,
       personAdditionalSupportNeeds.mentalEmotionalHealthDetails,
       personAdditionalSupportNeeds.neurodiversityDetails,
@@ -414,8 +415,11 @@ class AppointmentService(
       personAdditionalSupportNeeds.employmentResponsibilitiesDetails,
       personAdditionalSupportNeeds.diversityDetails,
       personAdditionalSupportNeeds.anythingElseDetails,
-      personAdditionalSupportNeeds.interpreterLanguage,
+      personAdditionalSupportNeeds.interpreterLanguage
+    )
+    return ExistingSupportNeedsBffResponseDto(
       referralFirstName,
+      supportNeeds
     )
   }
 
@@ -521,8 +525,7 @@ class AppointmentService(
       sessionFeedbackStrengthsIdentified = request.sessionFeedback?.strengthsIdentified,
       issuesConcernsIdentified = request.issuesAndConcerns?.identified,
       issuesConcernsNotifyProbationPractitioner = request.issuesAndConcerns?.notifyProbationPractitioner,
-      additionalSupportNeedsIdentified = request.identifiedAdditionalNeeds?.identified,
-      additionalSupportNeedsDetails = request.identifiedAdditionalNeeds?.details,
+      additionalSupportNeeds = request.newlyIdentifiedAdditionalSupportNeeds,
       nextStepsPlannedForNextSession = request.nextSteps?.plannedForNextSession,
       nextStepsActionsBeforeNextSession = request.nextSteps?.actionsBeforeNextSession,
       createdBy = submittedBy,

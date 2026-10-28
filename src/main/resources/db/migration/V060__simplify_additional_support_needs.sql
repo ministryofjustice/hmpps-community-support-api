@@ -7,5 +7,3 @@ ALTER TABLE appointment_ics_feedback
     RENAME COLUMN additional_support_needs_details TO additional_support_needs;
 
 COMMENT ON COLUMN appointment_ics_feedback.additional_support_needs IS 'Additional support needs identified for the person during the session';
-
--- Revert this changes in next version (V063)

@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory
 
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IdentifiedAdditionalNeedsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IssuesAndConcernsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NextStepsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
@@ -143,8 +142,7 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   private var notifyProbationPractitioner: Boolean? = false
 
   // Section 5 – Additional support needs
-  private var additionalSupportNeedsIdentified: Boolean? = false
-  private var additionalSupportNeedsDetails: String? = null
+  private var newlyIdentifiedAdditionalSupportNeeds: String? = null
 
   // Section 6 – Next steps
   private var plannedForNextSession: String? = "Continue with action plan"
@@ -163,8 +161,7 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   fun withStrengthsIdentified(value: String?) = apply { strengthsIdentified = value }
   fun withIssuesConcernsIdentified(value: String?) = apply { issuesConcernsIdentified = value }
   fun withNotifyProbationPractitioner(value: Boolean?) = apply { notifyProbationPractitioner = value }
-  fun withAdditionalSupportNeedsIdentified(value: Boolean?) = apply { additionalSupportNeedsIdentified = value }
-  fun withAdditionalNeedsIdentifyDetails(value: String?) = apply { additionalSupportNeedsDetails = value }
+  fun withNewlyIdentifiedAdditionalSupportNeeds(value: String?) = apply { newlyIdentifiedAdditionalSupportNeeds = value }
   fun withPlannedForNextSession(value: String?) = apply { plannedForNextSession = value }
   fun withActionsBeforeNextSession(value: String?) = apply { actionsBeforeNextSession = value }
 
@@ -190,10 +187,7 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
       identified = issuesConcernsIdentified,
       notifyProbationPractitioner = notifyProbationPractitioner,
     ),
-    identifiedAdditionalNeeds = IdentifiedAdditionalNeedsRequest(
-      identified = additionalSupportNeedsIdentified,
-      details = additionalSupportNeedsDetails,
-    ),
+    newlyIdentifiedAdditionalSupportNeeds = newlyIdentifiedAdditionalSupportNeeds,
     nextSteps = NextStepsRequest(
       plannedForNextSession = plannedForNextSession,
       actionsBeforeNextSession = actionsBeforeNextSession,
