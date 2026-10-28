@@ -415,11 +415,11 @@ class AppointmentService(
       personAdditionalSupportNeeds.employmentResponsibilitiesDetails,
       personAdditionalSupportNeeds.diversityDetails,
       personAdditionalSupportNeeds.anythingElseDetails,
-      personAdditionalSupportNeeds.interpreterLanguage
+      personAdditionalSupportNeeds.interpreterLanguage,
     )
     return ExistingSupportNeedsBffResponseDto(
       referralFirstName,
-      supportNeeds
+      supportNeeds,
     )
   }
 
