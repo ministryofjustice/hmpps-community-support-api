@@ -982,8 +982,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     strengthsIdentified: String? = "Good communication",
     issuesConcernsIdentified: String? = null,
     notifyProbationPractitioner: Boolean? = false,
-    additionalSupportNeedsIdentified: Boolean?= false,
-    additionalSupportNeedsDetails: String?= null,
+    additionalSupportNeedsIdentified: Boolean? = false,
+    additionalSupportNeedsDetails: String? = null,
     plannedForNextSession: String? = "Continue with action plan",
     actionsBeforeNextSession: String? = "Complete referral details",
   ): CreateIcsFeedbackRequest = CreateIcsFeedbackRequestFactory()
