@@ -288,7 +288,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           val body = result.responseBody!!
           assertThat(body.sessionDetailsWasPersonLate).isFalse()
           assertThat(body.sessionDetailsLateReason).isNull()
-          assertThat(body.additionalSupportNeedsIdentified).isNull()
+          assertThat(body.additionalSupportNeedsIdentified).isFalse()
           assertThat(body.additionalSupportNeedsDetails).isNull()
         }
     }
