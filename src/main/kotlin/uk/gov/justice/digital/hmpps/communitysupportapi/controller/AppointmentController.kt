@@ -297,11 +297,11 @@ class AppointmentController(
       ),
     ],
   )
-  @GetMapping("/bff/referral/{caseReference}/existing_support_needs")
+  @GetMapping("/bff/referral/{caseReference}/existing-support-needs")
   fun getExistingSupportNeeds(
     @PathVariable caseReference: String,
   ): ResponseEntity<ExistingSupportNeedsBffResponseDto> {
-    log.info("GET /bff/referral/{}/existing_support_needs", caseReference)
+    log.info("GET /bff/referral/{}/existing-support-needs", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
 
     return ResponseEntity.ok(
