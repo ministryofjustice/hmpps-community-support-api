@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
+import io.kotest.matchers.shouldBe
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -17,6 +18,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
@@ -35,8 +37,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.CRN
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.LocalDateTime
 import java.util.UUID
@@ -63,6 +70,12 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var appointmentHelper: AppointmentTestSupport
+
+  @Autowired
+  private lateinit var personRepository: PersonRepository
+
+  @Autowired
+  private lateinit var personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
@@ -809,6 +822,78 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           assertThat(body.additionalSupportNeeds).isEqualTo("Requires large-print materials and interpreter")
           assertThat(body.nextStepsPlannedForNextSession).isEqualTo("Review housing options")
           assertThat(body.nextStepsActionsBeforeNextSession).isEqualTo("Contact housing officer")
+        }
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /bff/referral/{caseReference}/existing-support-needs")
+  inner class GetExistingSupportNeedsEndpoint {
+
+    @Test
+    fun `should return 401 unauthorized when no token provided`() {
+      assertUnauthorized(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+    }
+
+    @Test
+    fun `should return 403 forbidden when no roles provided`() {
+      assertForbiddenNoRole(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+    }
+
+    @Test
+    fun `should return 403 forbidden when wrong role provided`() {
+      assertForbiddenWrongRole(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+    }
+
+    @Test
+    fun `should return 404 when referral case reference is not found`() {
+      assertNotFound(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+    }
+
+    @Test
+    fun `should return 200 with correct existing support needs details`() {
+      val person = referralHelper.createPerson(identifier = CRN)
+      person.additionalDetails = PersonAdditionalDetailsFactory()
+        .withPerson(person)
+        .withEthnicity("White")
+        .withPreferredLanguage("")
+        .withNeurodiverseConditions("None")
+        .withReligionOrBelief("Christianity")
+        .withAddress("1, Test Street, Testville, TE1 1ST")
+        .withPhoneNumber("01234567890")
+        .withEmailAddress("john.smith@example.com")
+        .create()
+      personRepository.save(person)
+      val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+
+      val supportNeeds = PersonAdditionalSupportNeedsFactory()
+        .withReferral(referral)
+        .withPerson(person)
+        .withCreatedBy(testUser.id)
+        .withAdditionalSupportNeeded(true)
+        .withCaringResponsibilitiesDetails("Lorem ipsum dolor sit amet")
+        .create()
+      personAdditionalSupportNeedsRepository.save(supportNeeds)
+
+      webTestClient.get()
+        .uri("/bff/referral/${referral.referenceNumber}/existing-support-needs")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ExistingSupportNeedsBffResponseDto>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          body.referralFirstName shouldBe "John"
+          body.supportNeeds.physicalHealthDetails shouldBe null
+          body.supportNeeds.mentalEmotionalHealthDetails shouldBe null
+          body.supportNeeds.neurodiversityDetails shouldBe null
+          body.supportNeeds.locationTravelDetails shouldBe null
+          body.supportNeeds.caringResponsibilitiesDetails shouldBe "Lorem ipsum dolor sit amet"
+          body.supportNeeds.employmentResponsibilitiesDetails shouldBe null
+          body.supportNeeds.diversityDetails shouldBe null
+          body.supportNeeds.anythingElseDetails shouldBe null
+          body.supportNeeds.interpreterLanguage shouldBe null
         }
     }
   }
