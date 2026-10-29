@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanNeedsOrder
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANeedResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSubmitResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ActionPlanService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -393,5 +394,33 @@ class ActionPlanController(
     val changedBy = user.hmppsAuthUsername
     log.info("Deleting action={} for referral={}", actionId, referralReference)
     return ResponseEntity.ok(actionPlanService.deleteActionForReferral(referralReference, actionId, changedBy))
+  }
+
+  @Operation(summary = "Submit an action plan")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Action plan submitted successfully",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ActionPlanSubmitResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral or action not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PostMapping("/referral/{referralReference}/action-plan")
+  fun submitActionPlan(
+    @PathVariable referralReference: String,
+  ): ResponseEntity<ActionPlanSubmitResponse> {
+    log.info("Submitting action plan for referral={}", referralReference)
+    return ResponseEntity.ok(actionPlanService.submitActionPlanForReferral(referralReference))
   }
 }

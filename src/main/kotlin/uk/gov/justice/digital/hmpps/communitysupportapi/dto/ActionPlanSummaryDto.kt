@@ -8,6 +8,7 @@ data class ActionPlanSummaryDto(
   val personDetails: ActionPlanSummaryPersonDetails,
   val needs: List<ActionPlanSummaryNeed>,
   val lastUpdatedAt: OffsetDateTime,
+  val isSubmitted: Boolean,
 ) {
   data class ActionPlanSummaryPersonDetails(
     val firstName: String,

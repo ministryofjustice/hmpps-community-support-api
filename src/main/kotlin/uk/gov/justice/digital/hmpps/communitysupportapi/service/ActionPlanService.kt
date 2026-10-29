@@ -15,12 +15,14 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSelectANee
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSessionDeliveryDetailsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStepQuestionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSubmitResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.QuestionChoice
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryDetailsQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDeliveryQuestion
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanActivity
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanQuestionType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanStepQuestionAnswerHeader
@@ -31,6 +33,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ActionPlanQuestionAnswers
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanActivityRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanNeedsAndOutcomesViewRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanQuestionWriter
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanRepository
@@ -59,6 +62,7 @@ class ActionPlanService(
   private val actionPlanQuestionWriter: ActionPlanQuestionWriter,
   private val actionPlanNeedsAndOutcomesViewRepository: ActionPlanNeedsAndOutcomesViewRepository,
   private val actionPlanRepository: ActionPlanRepository,
+  private val actionPlanEventRepository: ActionPlanEventRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ActionPlanService::class.java)
@@ -94,6 +98,7 @@ class ActionPlanService(
       personDetails = ActionPlanSummaryDto.ActionPlanSummaryPersonDetails(person.firstName, person.lastName),
       needs = needs,
       lastUpdatedAt = actionPlan.updatedAt,
+      isSubmitted = actionPlan.isSubmitted(),
     )
   }
 
@@ -538,6 +543,24 @@ class ActionPlanService(
     return ActionPlanActionResponse(
       success = true,
       message = "Action deleted successfully",
+    )
+  }
+
+  @Transactional
+  fun submitActionPlanForReferral(
+    referralReference: String,
+  ): ActionPlanSubmitResponse {
+    val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
+    actionPlanEventRepository.save(ActionPlanEvent.actionPlanSubmittedEventForActionPlan(actionPlanData.actionPlan.id))
+
+    logger.info(
+      "Successfully submitted action plan for referral={}",
+      referralReference,
+    )
+
+    return ActionPlanSubmitResponse(
+      success = true,
+      message = "Action plan submitted successfully",
     )
   }
 
