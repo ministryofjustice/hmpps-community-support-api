@@ -1771,6 +1771,21 @@
         ],
         "type": "object"
       },
+      "ContactDetailsDto": {
+        "properties": {
+          "isProbationPractitioner": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskListStatusItem"
+          }
+        },
+        "required": [
+          "isProbationPractitioner",
+          "status"
+        ],
+        "type": "object"
+      },
       "ContactDetailsTableDataDto": {
         "properties": {
           "address": {
@@ -4334,60 +4349,44 @@
       },
       "TaskListStatusResponseDto": {
         "properties": {
-          "addAdditionalInformationCompleted": {
+          "addAdditionalInformationStatus": {
             "$ref": "#/components/schemas/TaskListStatusItem"
           },
-          "addDetailsOfAnyAdditionalSupportNeedsCompleted": {
+          "addAdditionalSupportNeedsStatus": {
             "$ref": "#/components/schemas/TaskListStatusItem"
           },
-          "addDetailsOfMainPointOfContactCompleted": {
+          "checkRiskInformationStatus": {
             "$ref": "#/components/schemas/TaskListStatusItem"
           },
-          "addMainPointOfContactCompleted": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/TaskListStatusItem"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "checkProbationPractitionerDetailsCompleted": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/TaskListStatusItem"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "checkRiskInformationCompleted": {
+          "checkYourAnswersStatus": {
             "$ref": "#/components/schemas/TaskListStatusItem"
           },
-          "confirmPersonalDetailsCompleted": {
+          "confirmPersonalDetailsStatus": {
             "$ref": "#/components/schemas/TaskListStatusItem"
+          },
+          "contactDetailsStatus": {
+            "$ref": "#/components/schemas/ContactDetailsDto"
           },
           "fullName": {
             "type": "string"
           },
-          "selectAnAreaForReferralCompleted": {
+          "selectAnAreaForReferralStatus": {
             "$ref": "#/components/schemas/TaskListStatusItem"
           },
-          "selectThePersonsNeedsCompleted": {
+          "selectThePersonsNeedsStatus": {
             "$ref": "#/components/schemas/TaskListStatusItem"
           }
         },
         "required": [
-          "addAdditionalInformationCompleted",
-          "addDetailsOfAnyAdditionalSupportNeedsCompleted",
-          "addDetailsOfMainPointOfContactCompleted",
-          "checkRiskInformationCompleted",
-          "confirmPersonalDetailsCompleted",
+          "addAdditionalInformationStatus",
+          "addAdditionalSupportNeedsStatus",
+          "checkRiskInformationStatus",
+          "checkYourAnswersStatus",
+          "confirmPersonalDetailsStatus",
+          "contactDetailsStatus",
           "fullName",
-          "selectAnAreaForReferralCompleted",
-          "selectThePersonsNeedsCompleted"
+          "selectAnAreaForReferralStatus",
+          "selectThePersonsNeedsStatus"
         ],
         "type": "object"
       },
