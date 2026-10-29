@@ -271,6 +271,7 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(1, result.needs[0].orderNumber)
       assertEquals(firstAnswer.id, result.needs[1].outcomes[0].id)
       assertEquals(2, result.needs[1].orderNumber)
+      assertTrue(actionPlan.updatedAt.isBefore(result.lastUpdatedAt))
     }
 
     @Test
@@ -307,6 +308,7 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(1, result.needs[0].orderNumber)
       assertEquals(firstAnswer.id, result.needs[1].outcomes[0].id)
       assertEquals(2, result.needs[1].orderNumber)
+      assertTrue(actionPlan.updatedAt.isBefore(result.lastUpdatedAt))
     }
   }
 
@@ -1160,6 +1162,7 @@ class ActionPlanServiceIntegrationTest :
 
         val summary = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
         assertTrue(summary.needs.isEmpty())
+        assertTrue(actionPlan.updatedAt.isBefore(summary.lastUpdatedAt))
       }
 
       @Test
@@ -1174,6 +1177,9 @@ class ActionPlanServiceIntegrationTest :
 
         assertTrue(response.success)
         assertEquals("Action deleted successfully", response.message)
+
+        val updatedActionPlan = actionPlanRepository.findByReferralId(referral.id)
+        assertTrue(actionPlan.updatedAt.isBefore(updatedActionPlan?.updatedAt))
 
         val remainingHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
           .sortedBy { it.orderNumber }
@@ -1196,6 +1202,9 @@ class ActionPlanServiceIntegrationTest :
         assertTrue(response.success)
         assertEquals("Action deleted successfully", response.message)
 
+        val updatedActionPlan = actionPlanRepository.findByReferralId(referral.id)
+        assertTrue(actionPlan.updatedAt.isBefore(updatedActionPlan?.updatedAt))
+
         val remainingHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
           .sortedBy { it.orderNumber }
 
@@ -1216,6 +1225,9 @@ class ActionPlanServiceIntegrationTest :
 
         assertTrue(response.success)
         assertEquals("Action deleted successfully", response.message)
+
+        val updatedActionPlan = actionPlanRepository.findByReferralId(referral.id)
+        assertTrue(actionPlan.updatedAt.isBefore(updatedActionPlan?.updatedAt))
 
         val remainingHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
         assertEquals(1, remainingHeaders.size)
@@ -1243,6 +1255,9 @@ class ActionPlanServiceIntegrationTest :
 
         assertTrue(response.success)
         assertEquals("Action submitted successfully", response.message)
+
+        val updatedActionPlan = actionPlanRepository.findByReferralId(referral.id)
+        assertTrue(actionPlan.updatedAt.isBefore(updatedActionPlan?.updatedAt))
 
         val headers = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
         assertEquals(1, headers.size)
