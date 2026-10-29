@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointments
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayLabel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayString
@@ -406,7 +405,7 @@ class AppointmentService(
     val personAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
       ?: throw NotFoundException("Existing support needs not found for referral $referralId")
 
-    val supportNeeds = SupportNeeds(
+    return ExistingSupportNeedsBffResponseDto(
       personAdditionalSupportNeeds.physicalHealthDetails,
       personAdditionalSupportNeeds.mentalEmotionalHealthDetails,
       personAdditionalSupportNeeds.neurodiversityDetails,
@@ -416,10 +415,6 @@ class AppointmentService(
       personAdditionalSupportNeeds.diversityDetails,
       personAdditionalSupportNeeds.anythingElseDetails,
       personAdditionalSupportNeeds.interpreterLanguage,
-    )
-    return ExistingSupportNeedsBffResponseDto(
-      referralFirstName,
-      supportNeeds,
     )
   }
 
