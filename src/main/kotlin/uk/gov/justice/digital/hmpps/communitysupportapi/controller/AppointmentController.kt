@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsRespon
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReferenceDataBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
@@ -278,6 +279,33 @@ class AppointmentController(
 
     return ResponseEntity.ok(
       appointmentService.getIcsFeedbackSessionDetails(referral),
+    )
+  }
+
+  @Operation(summary = "Get Existing support needs")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Existing support needs found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ExistingSupportNeedsBffResponseDto::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Existing support needs found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{caseReference}/existing_support_needs")
+  fun getExistingSupportNeeds(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<ExistingSupportNeedsBffResponseDto> {
+    log.info("GET /bff/referral/{}/existing_support_needs", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+
+    return ResponseEntity.ok(
+      appointmentService.getIcsFeedbackAlreadyAdditionalSupportNeeds(referral),
     )
   }
 }
