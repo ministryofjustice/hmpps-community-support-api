@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpMethod
 import org.springframework.http.HttpMethod.GET
 import org.springframework.http.HttpMethod.POST
 import org.springframework.http.MediaType
@@ -77,7 +76,6 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository
-
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
@@ -828,76 +826,75 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
     }
   }
 
-@Nested
-@DisplayName("GET /bff/referral/{caseReference}/existing-support-needs")
-inner class GetExistingSupportNeedsEndpoint {
+  @Nested
+  @DisplayName("GET /bff/referral/{caseReference}/existing-support-needs")
+  inner class GetExistingSupportNeedsEndpoint {
 
-  @Test
-  fun `should return 401 unauthorized when no token provided`() {
-    assertUnauthorized(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
-  }
+    @Test
+    fun `should return 401 unauthorized when no token provided`() {
+      assertUnauthorized(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+    }
 
-  @Test
-  fun `should return 403 forbidden when no roles provided`() {
-    assertForbiddenNoRole(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
-  }
+    @Test
+    fun `should return 403 forbidden when no roles provided`() {
+      assertForbiddenNoRole(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+    }
 
-  @Test
-  fun `should return 403 forbidden when wrong role provided`() {
-    assertForbiddenWrongRole(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
-  }
+    @Test
+    fun `should return 403 forbidden when wrong role provided`() {
+      assertForbiddenWrongRole(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+    }
 
-  @Test
-  fun `should return 404 when referral case reference is not found`() {
-    assertNotFound(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
-  }
+    @Test
+    fun `should return 404 when referral case reference is not found`() {
+      assertNotFound(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+    }
 
-  @Test
-  fun `should return 200 with correct existing support needs details`() {
-    val person = referralHelper.createPerson(identifier = CRN)
-    person.additionalDetails = PersonAdditionalDetailsFactory()
-      .withPerson(person)
-      .withEthnicity("White")
-      .withPreferredLanguage("")
-      .withNeurodiverseConditions("None")
-      .withReligionOrBelief("Christianity")
-      .withAddress("1, Test Street, Testville, TE1 1ST")
-      .withPhoneNumber("01234567890")
-      .withEmailAddress("john.smith@example.com")
-      .create()
-    personRepository.save(person)
-    val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
+    @Test
+    fun `should return 200 with correct existing support needs details`() {
+      val person = referralHelper.createPerson(identifier = CRN)
+      person.additionalDetails = PersonAdditionalDetailsFactory()
+        .withPerson(person)
+        .withEthnicity("White")
+        .withPreferredLanguage("")
+        .withNeurodiverseConditions("None")
+        .withReligionOrBelief("Christianity")
+        .withAddress("1, Test Street, Testville, TE1 1ST")
+        .withPhoneNumber("01234567890")
+        .withEmailAddress("john.smith@example.com")
+        .create()
+      personRepository.save(person)
+      val referral = referralHelper.createDraftReferral(person, createdBy = testUser.id)
 
-    val supportNeeds = PersonAdditionalSupportNeedsFactory()
-      .withReferral(referral)
-      .withPerson(person)
-      .withCreatedBy(testUser.id)
-      .withAdditionalSupportNeeded(true)
-      .withCaringResponsibilitiesDetails("Lorem ipsum dolor sit amet")
-      .create()
-    personAdditionalSupportNeedsRepository.save(supportNeeds)
+      val supportNeeds = PersonAdditionalSupportNeedsFactory()
+        .withReferral(referral)
+        .withPerson(person)
+        .withCreatedBy(testUser.id)
+        .withAdditionalSupportNeeded(true)
+        .withCaringResponsibilitiesDetails("Lorem ipsum dolor sit amet")
+        .create()
+      personAdditionalSupportNeedsRepository.save(supportNeeds)
 
-    webTestClient.get()
-      .uri("/bff/referral/${referral.referenceNumber}/existing-support-needs")
-      .headers(setAuthorisation())
-      .exchange()
-      .expectStatus()
-      .isOk
-      .expectBody<ExistingSupportNeedsBffResponseDto>()
-      .consumeWith { result ->
-        val body = result.responseBody!!
-        body.referralFirstName shouldBe "John"
-        body.supportNeeds.physicalHealthDetails shouldBe null
-        body.supportNeeds.mentalEmotionalHealthDetails shouldBe null
-        body.supportNeeds.neurodiversityDetails shouldBe null
-        body.supportNeeds.locationTravelDetails shouldBe null
-        body.supportNeeds.caringResponsibilitiesDetails shouldBe "Lorem ipsum dolor sit amet"
-        body.supportNeeds.employmentResponsibilitiesDetails shouldBe null
-        body.supportNeeds.diversityDetails shouldBe null
-        body.supportNeeds.anythingElseDetails shouldBe null
-        body.supportNeeds.interpreterLanguage shouldBe null
-      }
+      webTestClient.get()
+        .uri("/bff/referral/${referral.referenceNumber}/existing-support-needs")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody<ExistingSupportNeedsBffResponseDto>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          body.referralFirstName shouldBe "John"
+          body.supportNeeds.physicalHealthDetails shouldBe null
+          body.supportNeeds.mentalEmotionalHealthDetails shouldBe null
+          body.supportNeeds.neurodiversityDetails shouldBe null
+          body.supportNeeds.locationTravelDetails shouldBe null
+          body.supportNeeds.caringResponsibilitiesDetails shouldBe "Lorem ipsum dolor sit amet"
+          body.supportNeeds.employmentResponsibilitiesDetails shouldBe null
+          body.supportNeeds.diversityDetails shouldBe null
+          body.supportNeeds.anythingElseDetails shouldBe null
+          body.supportNeeds.interpreterLanguage shouldBe null
+        }
     }
   }
-
 }

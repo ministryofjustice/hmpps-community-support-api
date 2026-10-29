@@ -305,7 +305,7 @@ class AppointmentController(
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
 
     return ResponseEntity.ok(
-      appointmentService.getIcsFeedbackExistingAdditionalSupportNeeds(referral),
+      appointmentService.getReferralExistingAdditionalSupportNeeds(referral),
     )
   }
 }
