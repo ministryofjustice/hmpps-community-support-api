@@ -224,8 +224,26 @@
         ],
         "type": "object"
       },
+      "ActionPlanSubmitResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message",
+          "success"
+        ],
+        "type": "object"
+      },
       "ActionPlanSummaryDto": {
         "properties": {
+          "isSubmitted": {
+            "type": "boolean"
+          },
           "lastUpdatedAt": {
             "format": "date-time",
             "type": "string"
@@ -241,6 +259,7 @@
           }
         },
         "required": [
+          "isSubmitted",
           "lastUpdatedAt",
           "needs",
           "personDetails"
@@ -2640,6 +2659,21 @@
         ],
         "type": "object"
       },
+      "ExistingSupportNeedsBffResponseDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          },
+          "supportNeeds": {
+            "$ref": "#/components/schemas/SupportNeeds"
+          }
+        },
+        "required": [
+          "referralFirstName",
+          "supportNeeds"
+        ],
+        "type": "object"
+      },
       "IcsFeedbackSessionDto": {
         "properties": {
           "appointmentDetails": {
@@ -4326,6 +4360,65 @@
         ],
         "type": "object"
       },
+      "SupportNeeds": {
+        "properties": {
+          "anythingElseDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "caringResponsibilitiesDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "diversityDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "employmentResponsibilitiesDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interpreterLanguage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "locationTravelDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mentalEmotionalHealthDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "neurodiversityDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "physicalHealthDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "TaskListStatusItem": {
         "properties": {
           "completed": {
@@ -5698,6 +5791,43 @@
         ]
       }
     },
+    "/bff/referral/{caseReference}/existing-support-needs": {
+      "get": {
+        "operationId": "getExistingSupportNeeds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExistingSupportNeedsBffResponseDto"
+                }
+              }
+            },
+            "description": "Existing support needs found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Existing support needs found"
+          }
+        },
+        "summary": "Get Existing support needs",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
     "/bff/referral/{caseReference}/ics": {
       "get": {
         "operationId": "getIcsAppointments",
@@ -7059,6 +7189,43 @@
         "summary": "Update service end date page data",
         "tags": [
           "draft-referral-controller"
+        ]
+      }
+    },
+    "/referral/{referralReference}/action-plan": {
+      "post": {
+        "operationId": "submitActionPlan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionPlanSubmitResponse"
+                }
+              }
+            },
+            "description": "Action plan submitted successfully"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral or action not found"
+          }
+        },
+        "summary": "Submit an action plan",
+        "tags": [
+          "action-plan-controller"
         ]
       }
     },
