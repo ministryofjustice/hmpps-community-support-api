@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataRegi
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralOffenceSentence
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -309,12 +310,34 @@ class TaskListStatusResponseDtoTest {
           targetServiceCompletionDate = OffsetDateTime.now(),
           targetServiceCompletionDateReason = "Some reason",
           serviceDays = 20,
+          hasAdditionalInformationForTheDeliveryPartner = true,
         ),
         person,
         null,
         null,
         null,
         null,
+        offenceSentence = buildOffenceSentence(hasLicenceConditionsOrZones = true),
+      )
+
+      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.completed()
+    }
+
+    @Test
+    fun `counts false hasLicenceConditionsOrZones as an answered field`() {
+      val result = TaskListStatusResponseDto.from(
+        buildReferralWithAdditionalInformation(
+          targetServiceCompletionDate = OffsetDateTime.now(),
+          targetServiceCompletionDateReason = "Some reason",
+          serviceDays = 20,
+          hasAdditionalInformationForTheDeliveryPartner = true,
+        ),
+        person,
+        null,
+        null,
+        null,
+        null,
+        offenceSentence = buildOffenceSentence(hasLicenceConditionsOrZones = false),
       )
 
       result.addAdditionalInformationStatus shouldBe TaskListStatusItem.completed()
@@ -478,6 +501,7 @@ class TaskListStatusResponseDtoTest {
     targetServiceCompletionDate: OffsetDateTime? = null,
     targetServiceCompletionDateReason: String? = null,
     serviceDays: Int? = null,
+    hasAdditionalInformationForTheDeliveryPartner: Boolean? = null,
   ) = Referral(
     id = referral.id,
     personId = referral.personId,
@@ -490,6 +514,16 @@ class TaskListStatusResponseDtoTest {
     targetServiceCompletionDate = targetServiceCompletionDate,
     targetServiceCompletionDateReason = targetServiceCompletionDateReason,
     serviceDays = serviceDays,
+    hasAdditionalInformationForTheDeliveryPartner = hasAdditionalInformationForTheDeliveryPartner,
+  )
+
+  private fun buildOffenceSentence(hasLicenceConditionsOrZones: Boolean?) = ReferralOffenceSentence(
+    id = UUID.randomUUID(),
+    referralId = referralId,
+    personId = personId,
+    hasLicenceConditionsOrZones = hasLicenceConditionsOrZones,
+    createdAt = OffsetDateTime.now(),
+    createdBy = userId,
   )
 
   private fun buildRiskInfo() = RiskInformation(

@@ -7,10 +7,11 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractiti
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataCommunityServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralOffenceSentence
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 
 data class TaskListStatusResponseDto(
-  val fullName: String,
+  val refereeName: RefereeNameDto,
   val confirmPersonalDetailsStatus: TaskListStatusItem,
   val checkRiskInformationStatus: TaskListStatusItem,
   val selectThePersonsNeedsStatus: TaskListStatusItem,
@@ -30,13 +31,13 @@ data class TaskListStatusResponseDto(
       referenceDataCommunityServiceProvider: ReferenceDataCommunityServiceProvider?,
       communityManager: CommunityManagerDto? = null,
       probationPractitionerDetails: ProbationPractitionerDetails? = null,
+      offenceSentence: ReferralOffenceSentence? = null,
     ): TaskListStatusResponseDto {
-      val fullName = person.firstName + " " + person.lastName
       val confirmPersonalDetailsStatus = TaskListStatusItem.completed()
       val checkRiskInformationStatus = getRiskInfoStatus(riskInfo)
       val selectThePersonsNeedsStatus = getCriminogenicNeedsStatus(criminogenicNeeds)
       val addAdditionalSupportNeedsStatus = getAdditionalSupportNeedsStatus(additionalSupportNeeds)
-      val addAdditionalInformationStatus = getAdditionalInformationStatus(referral)
+      val addAdditionalInformationStatus = getAdditionalInformationStatus(referral, offenceSentence)
       val selectAnAreaForReferralStatus = getCommunityServiceProviderStatus(referenceDataCommunityServiceProvider)
       val contactDetailsStatus = getContactDetailsStatus(communityManager, probationPractitionerDetails)
       val canStartCheckAnswers = listOf(
@@ -57,7 +58,7 @@ data class TaskListStatusResponseDto(
       }
 
       return TaskListStatusResponseDto(
-        fullName,
+        RefereeNameDto(firstName = person.firstName, lastName = person.lastName),
         confirmPersonalDetailsStatus,
         checkRiskInformationStatus,
         selectThePersonsNeedsStatus,
@@ -81,21 +82,25 @@ data class TaskListStatusResponseDto(
 
     private fun getRiskInfoStatus(riskInfo: RiskInformation?): TaskListStatusItem = riskInfo?.let { return TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
-    private fun getAdditionalInformationStatus(referral: Referral): TaskListStatusItem {
+    private fun getAdditionalInformationStatus(referral: Referral, offenceSentence: ReferralOffenceSentence?): TaskListStatusItem {
       val hasTargetServiceCompletionDate = referral.targetServiceCompletionDate != null
       val hasTargetServiceCompletionDateReason = !referral.targetServiceCompletionDateReason.isNullOrBlank()
       val hasServiceDays = referral.serviceDays != null
+      val hasAdditionalInformationForTheDeliveryPartner = referral.hasAdditionalInformationForTheDeliveryPartner != null
+      val hasLicenceConditionsOrZones = offenceSentence?.hasLicenceConditionsOrZones != null
 
       val populatedFieldCount = listOf(
         hasTargetServiceCompletionDate,
         hasTargetServiceCompletionDateReason,
         hasServiceDays,
-      ).count { it }
+        hasAdditionalInformationForTheDeliveryPartner,
+        hasLicenceConditionsOrZones,
+      ).count { it == true }
 
-      return when (populatedFieldCount) {
-        3 -> TaskListStatusItem.completed()
-        0 -> TaskListStatusItem.notStarted()
-        else -> TaskListStatusItem.notStarted()
+      return if (populatedFieldCount == 5) {
+        TaskListStatusItem.completed()
+      } else {
+        TaskListStatusItem.notStarted()
       }
     }
 

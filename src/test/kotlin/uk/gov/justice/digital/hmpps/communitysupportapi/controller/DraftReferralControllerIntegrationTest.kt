@@ -28,12 +28,14 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ContactDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ProbationPractitionerDetailsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RefereeNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SelectionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralOffenceSentence
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -1315,7 +1317,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.fullName shouldBe "John Smith"
+          body.refereeName shouldBe RefereeNameDto(firstName = "John", lastName = "Smith")
           body.confirmPersonalDetailsStatus shouldBe TaskListStatusItem.completed()
           body.checkRiskInformationStatus shouldBe TaskListStatusItem.notStarted()
           body.selectThePersonsNeedsStatus shouldBe TaskListStatusItem.notStarted()
@@ -1474,7 +1476,18 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         submittedBy = testUser,
         serviceDays = 40,
       )
+      savedReferral.hasAdditionalInformationForTheDeliveryPartner = false
       referralRepository.save(savedReferral)
+      referralOffenceSentenceRepository.save(
+        ReferralOffenceSentence(
+          id = UUID.randomUUID(),
+          referralId = savedReferral.id,
+          personId = person.id,
+          hasLicenceConditionsOrZones = false,
+          createdAt = OffsetDateTime.now(),
+          createdBy = testUser.id,
+        ),
+      )
 
       referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
 
