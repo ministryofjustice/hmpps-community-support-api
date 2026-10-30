@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffR
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ProbationPractitionerDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RefereeNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SelectionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
@@ -1315,7 +1316,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .consumeWith { response ->
           val body = response.responseBody!!
 
-          body.fullName shouldBe "John Smith"
+          body.refereeName shouldBe RefereeNameDto(firstName = "John", lastName = "Smith")
           body.confirmPersonalDetailsStatus shouldBe TaskListStatusItem.completed()
           body.checkRiskInformationStatus shouldBe TaskListStatusItem.notStarted()
           body.selectThePersonsNeedsStatus shouldBe TaskListStatusItem.notStarted()

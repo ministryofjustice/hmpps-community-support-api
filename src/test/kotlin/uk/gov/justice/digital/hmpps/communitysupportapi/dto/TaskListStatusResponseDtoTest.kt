@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataRegi
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataServiceProvider
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralOffenceSentence
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.RiskInformation
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -315,6 +316,32 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
+      )
+
+      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.completed()
+    }
+
+    @Test
+    fun `counts false hasLicenceConditionsOrZones as an answered field`() {
+      val offenceSentence = ReferralOffenceSentence(
+        id = UUID.randomUUID(),
+        referralId = referralId,
+        personId = personId,
+        hasLicenceConditionsOrZones = false,
+        createdAt = OffsetDateTime.now(),
+        createdBy = userId,
+      )
+      val result = TaskListStatusResponseDto.from(
+        buildReferralWithAdditionalInformation(
+          targetServiceCompletionDate = OffsetDateTime.now(),
+          targetServiceCompletionDateReason = "Some reason",
+        ),
+        person,
+        null,
+        null,
+        null,
+        null,
+        offenceSentence = offenceSentence,
       )
 
       result.addAdditionalInformationStatus shouldBe TaskListStatusItem.completed()

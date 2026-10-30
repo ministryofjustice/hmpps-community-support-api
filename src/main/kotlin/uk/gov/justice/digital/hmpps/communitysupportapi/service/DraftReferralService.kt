@@ -303,6 +303,7 @@ class DraftReferralService(
     val communityManager = getCommunityManagerFromNDelius(referralId)
 
     val probationPractitionerDetails = probationPractitionerDetailsRepository.findByReferralId(referralId)
+    val offenceSentence = referralOffenceSentenceRepository.findByReferralId(referralId)
 
     return TaskListStatusResponseDto.from(
       referral,
@@ -313,6 +314,7 @@ class DraftReferralService(
       communityServiceProvider,
       communityManager,
       probationPractitionerDetails,
+      offenceSentence,
     )
   }
 
