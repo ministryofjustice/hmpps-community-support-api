@@ -884,16 +884,15 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<ExistingSupportNeedsBffResponseDto>()
         .consumeWith { result ->
           val body = result.responseBody!!
-          body.referralFirstName shouldBe "John"
-          body.supportNeeds.physicalHealthDetails shouldBe null
-          body.supportNeeds.mentalEmotionalHealthDetails shouldBe null
-          body.supportNeeds.neurodiversityDetails shouldBe null
-          body.supportNeeds.locationTravelDetails shouldBe null
-          body.supportNeeds.caringResponsibilitiesDetails shouldBe "Lorem ipsum dolor sit amet"
-          body.supportNeeds.employmentResponsibilitiesDetails shouldBe null
-          body.supportNeeds.diversityDetails shouldBe null
-          body.supportNeeds.anythingElseDetails shouldBe null
-          body.supportNeeds.interpreterLanguage shouldBe null
+          body.physicalHealthDetails shouldBe null
+          body.mentalEmotionalHealthDetails shouldBe null
+          body.neurodiversityDetails shouldBe null
+          body.locationTravelDetails shouldBe null
+          body.caringResponsibilitiesDetails shouldBe "Lorem ipsum dolor sit amet"
+          body.employmentResponsibilitiesDetails shouldBe null
+          body.diversityDetails shouldBe null
+          body.anythingElseDetails shouldBe null
+          body.interpreterLanguage shouldBe null
         }
     }
   }
