@@ -310,12 +310,14 @@ class TaskListStatusResponseDtoTest {
           targetServiceCompletionDate = OffsetDateTime.now(),
           targetServiceCompletionDateReason = "Some reason",
           serviceDays = 20,
+          hasAdditionalInformationForTheDeliveryPartner = true,
         ),
         person,
         null,
         null,
         null,
         null,
+        offenceSentence = buildOffenceSentence(hasLicenceConditionsOrZones = true),
       )
 
       result.addAdditionalInformationStatus shouldBe TaskListStatusItem.completed()
@@ -323,25 +325,19 @@ class TaskListStatusResponseDtoTest {
 
     @Test
     fun `counts false hasLicenceConditionsOrZones as an answered field`() {
-      val offenceSentence = ReferralOffenceSentence(
-        id = UUID.randomUUID(),
-        referralId = referralId,
-        personId = personId,
-        hasLicenceConditionsOrZones = false,
-        createdAt = OffsetDateTime.now(),
-        createdBy = userId,
-      )
       val result = TaskListStatusResponseDto.from(
         buildReferralWithAdditionalInformation(
           targetServiceCompletionDate = OffsetDateTime.now(),
           targetServiceCompletionDateReason = "Some reason",
+          serviceDays = 20,
+          hasAdditionalInformationForTheDeliveryPartner = true,
         ),
         person,
         null,
         null,
         null,
         null,
-        offenceSentence = offenceSentence,
+        offenceSentence = buildOffenceSentence(hasLicenceConditionsOrZones = false),
       )
 
       result.addAdditionalInformationStatus shouldBe TaskListStatusItem.completed()
@@ -505,6 +501,7 @@ class TaskListStatusResponseDtoTest {
     targetServiceCompletionDate: OffsetDateTime? = null,
     targetServiceCompletionDateReason: String? = null,
     serviceDays: Int? = null,
+    hasAdditionalInformationForTheDeliveryPartner: Boolean? = null,
   ) = Referral(
     id = referral.id,
     personId = referral.personId,
@@ -517,6 +514,16 @@ class TaskListStatusResponseDtoTest {
     targetServiceCompletionDate = targetServiceCompletionDate,
     targetServiceCompletionDateReason = targetServiceCompletionDateReason,
     serviceDays = serviceDays,
+    hasAdditionalInformationForTheDeliveryPartner = hasAdditionalInformationForTheDeliveryPartner,
+  )
+
+  private fun buildOffenceSentence(hasLicenceConditionsOrZones: Boolean?) = ReferralOffenceSentence(
+    id = UUID.randomUUID(),
+    referralId = referralId,
+    personId = personId,
+    hasLicenceConditionsOrZones = hasLicenceConditionsOrZones,
+    createdAt = OffsetDateTime.now(),
+    createdBy = userId,
   )
 
   private fun buildRiskInfo() = RiskInformation(
