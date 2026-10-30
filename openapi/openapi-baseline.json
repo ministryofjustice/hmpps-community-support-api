@@ -2640,6 +2640,21 @@
         ],
         "type": "object"
       },
+      "ExistingSupportNeedsBffResponseDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          },
+          "supportNeeds": {
+            "$ref": "#/components/schemas/SupportNeeds"
+          }
+        },
+        "required": [
+          "referralFirstName",
+          "supportNeeds"
+        ],
+        "type": "object"
+      },
       "IcsFeedbackSessionDto": {
         "properties": {
           "appointmentDetails": {
@@ -4326,6 +4341,65 @@
         ],
         "type": "object"
       },
+      "SupportNeeds": {
+        "properties": {
+          "anythingElseDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "caringResponsibilitiesDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "diversityDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "employmentResponsibilitiesDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interpreterLanguage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "locationTravelDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mentalEmotionalHealthDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "neurodiversityDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "physicalHealthDetails": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "TaskListStatusItem": {
         "properties": {
           "completed": {
@@ -5693,6 +5767,43 @@
           }
         },
         "summary": "Get create appointment page data for a referral",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/referral/{caseReference}/existing_support_needs": {
+      "get": {
+        "operationId": "getExistingSupportNeeds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExistingSupportNeedsBffResponseDto"
+                }
+              }
+            },
+            "description": "Existing support needs found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Existing support needs found"
+          }
+        },
+        "summary": "Get Existing support needs",
         "tags": [
           "appointment-controller"
         ]
