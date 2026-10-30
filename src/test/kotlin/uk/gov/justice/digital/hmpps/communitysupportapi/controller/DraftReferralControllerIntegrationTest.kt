@@ -35,6 +35,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralCriminogenicNeeds
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralOffenceSentence
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralProviderAssignment
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
@@ -1475,7 +1476,18 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         submittedBy = testUser,
         serviceDays = 40,
       )
+      savedReferral.hasAdditionalInformationForTheDeliveryPartner = false
       referralRepository.save(savedReferral)
+      referralOffenceSentenceRepository.save(
+        ReferralOffenceSentence(
+          id = UUID.randomUUID(),
+          referralId = savedReferral.id,
+          personId = person.id,
+          hasLicenceConditionsOrZones = false,
+          createdAt = OffsetDateTime.now(),
+          createdBy = testUser.id,
+        ),
+      )
 
       referralHelper.stubCommunityManagerForReferral(person, communityManager = null)
 
