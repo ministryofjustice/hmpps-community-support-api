@@ -287,7 +287,7 @@ class TaskListStatusResponseDtoTest {
     }
 
     @Test
-    fun `returns notStarted when reason and service days exist without target date`() {
+    fun `returns notStarted when hasAdditionalInformationForTheDeliveryPartner doesn't exist`() {
       val result = TaskListStatusResponseDto.from(
         buildReferralWithAdditionalInformation(
           targetServiceCompletionDateReason = "Some reason",
@@ -298,13 +298,14 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
+        offenceSentence = buildOffenceSentence(hasLicenceConditionsOrZones = true)
       )
 
       result.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
     }
 
     @Test
-    fun `returns completed when target date reason and service days exist`() {
+    fun `returns completed when all additional information fields exist`() {
       val result = TaskListStatusResponseDto.from(
         buildReferralWithAdditionalInformation(
           targetServiceCompletionDate = OffsetDateTime.now(),
@@ -322,27 +323,6 @@ class TaskListStatusResponseDtoTest {
 
       result.addAdditionalInformationStatus shouldBe TaskListStatusItem.completed()
     }
-
-    @Test
-    fun `counts false hasLicenceConditionsOrZones as an answered field`() {
-      val result = TaskListStatusResponseDto.from(
-        buildReferralWithAdditionalInformation(
-          targetServiceCompletionDate = OffsetDateTime.now(),
-          targetServiceCompletionDateReason = "Some reason",
-          serviceDays = 20,
-          hasAdditionalInformationForTheDeliveryPartner = true,
-        ),
-        person,
-        null,
-        null,
-        null,
-        null,
-        offenceSentence = buildOffenceSentence(hasLicenceConditionsOrZones = false),
-      )
-
-      result.addAdditionalInformationStatus shouldBe TaskListStatusItem.completed()
-    }
-  }
 
   @Nested
   inner class ProbationPractitionerDetailsStatus {
