@@ -298,7 +298,7 @@ class TaskListStatusResponseDtoTest {
         null,
         null,
         null,
-        offenceSentence = buildOffenceSentence(hasLicenceConditionsOrZones = true)
+        offenceSentence = buildOffenceSentence(hasLicenceConditionsOrZones = true),
       )
 
       result.addAdditionalInformationStatus shouldBe TaskListStatusItem.notStarted()
@@ -323,6 +323,7 @@ class TaskListStatusResponseDtoTest {
 
       result.addAdditionalInformationStatus shouldBe TaskListStatusItem.completed()
     }
+  }
 
   @Nested
   inner class ProbationPractitionerDetailsStatus {
