@@ -74,7 +74,7 @@ data class TaskListStatusResponseDto(
 
     private fun getCriminogenicNeedsStatus(criminogenicNeeds: ReferralCriminogenicNeeds?): TaskListStatusItem = criminogenicNeeds?.let { TaskListStatusItem.completed() } ?: TaskListStatusItem.notStarted()
 
-    private fun getAdditionalSupportNeedsStatus(additionalSupportNeeds: PersonAdditionalSupportNeeds?): TaskListStatusItem = if (additionalSupportNeeds?.additionalSupportNeeded != null && additionalSupportNeeds?.interpreterNeeded != null) {
+    private fun getAdditionalSupportNeedsStatus(additionalSupportNeeds: PersonAdditionalSupportNeeds?): TaskListStatusItem = if (additionalSupportNeeds?.additionalSupportNeeded != null && additionalSupportNeeds.interpreterNeeded != null) {
       TaskListStatusItem.completed()
     } else {
       TaskListStatusItem.notStarted()
