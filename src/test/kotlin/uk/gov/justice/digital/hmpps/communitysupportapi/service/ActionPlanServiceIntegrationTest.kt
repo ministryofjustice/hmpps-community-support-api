@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -1138,6 +1139,21 @@ class ActionPlanServiceIntegrationTest :
       )
     }
 
+    @Test
+    fun `should create a submitted event when submitting an action plan`() {
+      val (referral, _, _) = createActionPlanWithActions(2)
+      val beforeSummary = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
+      assertFalse(beforeSummary.isSubmitted)
+
+      val response = actionPlanService.submitActionPlanForReferral(referral.referenceNumber!!)
+
+      assertTrue(response.success)
+      assertEquals("Action plan submitted successfully", response.message)
+
+      val summary = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
+      assertTrue(summary.isSubmitted)
+    }
+
     @Nested
     @DisplayName("deleteActionForReferral")
     inner class DeleteActionForReferral {
@@ -1269,50 +1285,50 @@ class ActionPlanServiceIntegrationTest :
         val actions = actionPlanActivityRepository.findByActionPlanStepQuestionAnswerHeaderId(headers[0].id)
         assertEquals(1, actions.size)
       }
+    }
 
-      private fun createActionPlanWithActions(actionCount: Int): Triple<Referral, ActionPlan, List<ActionPlanStepQuestionAnswerHeader>> {
-        val person = referralHelper.createPerson(
-          firstName = "Chris",
-          lastName = "Taylor",
-          identifier = "X${UUID.randomUUID().toString().replace("-", "").take(6).uppercase()}",
+    private fun createActionPlanWithActions(actionCount: Int): Triple<Referral, ActionPlan, List<ActionPlanStepQuestionAnswerHeader>> {
+      val person = referralHelper.createPerson(
+        firstName = "Chris",
+        lastName = "Taylor",
+        identifier = "X${UUID.randomUUID().toString().replace("-", "").take(6).uppercase()}",
+      )
+      val referral =
+        referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
+      val actionPlanTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
+        ?: throw NotFoundException("Cannot find Global ActionPlan")
+      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
+
+      val need = needRepository.findAllByOrderByOrderNumberAsc().first()
+
+      val outcomeQuestion = getOutcomeQuestion(actionPlan.actionPlanTemplateId, need.id)
+
+      val headers = (1..actionCount).map { orderNumber ->
+        val header = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(
+          actionPlan.id,
+          outcomeQuestion.id,
+          orderNumber = orderNumber,
+          createdBy = user.id.toString(),
         )
-        val referral =
-          referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
-        val actionPlanTemplate = actionPlanTemplateRepository.getGlobalActionPlanTemplate()
-          ?: throw NotFoundException("Cannot find Global ActionPlan")
-        val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = actionPlanTemplate.id)
-
-        val need = needRepository.findAllByOrderByOrderNumberAsc().first()
-
-        val outcomeQuestion = getOutcomeQuestion(actionPlan.actionPlanTemplateId, need.id)
-
-        val headers = (1..actionCount).map { orderNumber ->
-          val header = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(
-            actionPlan.id,
-            outcomeQuestion.id,
-            orderNumber = orderNumber,
-            createdBy = user.id.toString(),
-          )
-          actionPlanHelper.createActionPlanStepQuestionAnswerDetails(
-            header.id,
-            content = "Outcome $orderNumber",
-            createdBy = user.id.toString(),
-          )
-          actionPlanHelper.createActionPlanActivity(header.id)
-          header
-        }
-
-        return Triple(referral, actionPlan, headers)
+        actionPlanHelper.createActionPlanStepQuestionAnswerDetails(
+          header.id,
+          content = "Outcome $orderNumber",
+          createdBy = user.id.toString(),
+        )
+        actionPlanHelper.createActionPlanActivity(header.id)
+        header
       }
 
-      private fun getOutcomeQuestion(actionPlanTemplateId: UUID, needId: UUID): ReferenceDataActionPlanStepQuestion {
-        val needStep = actionPlanStepRepository
-          .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
-          .first { it.stepType == ActionPlanStepType.NEED }
-        return actionPlanStepQuestionRepository
-          .findAllByActionPlanStepIdInOrderByOrderNumberAsc(listOf(needStep.id))
-          .first { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == needId }
-      }
+      return Triple(referral, actionPlan, headers)
+    }
+
+    private fun getOutcomeQuestion(actionPlanTemplateId: UUID, needId: UUID): ReferenceDataActionPlanStepQuestion {
+      val needStep = actionPlanStepRepository
+        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
+        .first { it.stepType == ActionPlanStepType.NEED }
+      return actionPlanStepQuestionRepository
+        .findAllByActionPlanStepIdInOrderByOrderNumberAsc(listOf(needStep.id))
+        .first { it.questionType == ActionPlanQuestionType.OUTCOME && it.needId == needId }
     }
 
     private fun createSessionDeliveryStep(actionPlanTemplateId: UUID) = actionPlanStepRepository.save(

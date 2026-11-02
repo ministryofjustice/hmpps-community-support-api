@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
-data class SupportNeeds(
+
+data class ExistingSupportNeedsBffResponseDto(
   val physicalHealthDetails: String? = null,
   val mentalEmotionalHealthDetails: String? = null,
   val neurodiversityDetails: String? = null,
@@ -9,9 +10,4 @@ data class SupportNeeds(
   val diversityDetails: String? = null,
   val anythingElseDetails: String? = null,
   val interpreterLanguage: String? = null,
-)
-
-data class ExistingSupportNeedsBffResponseDto(
-  val referralFirstName: String,
-  val supportNeeds: SupportNeeds,
 )

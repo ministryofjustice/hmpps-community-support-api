@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointments
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNameDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SupportNeeds
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayLabel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayString
@@ -399,14 +398,14 @@ class AppointmentService(
    * Returns ICS appointment existing support needs by a referral.
    */
   @Transactional(readOnly = true)
-  fun getIcsFeedbackAlreadyAdditionalSupportNeeds(referral: Referral): ExistingSupportNeedsBffResponseDto {
+  fun getReferralExistingAdditionalSupportNeeds(referral: Referral): ExistingSupportNeedsBffResponseDto {
     val referralFirstName = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }.firstName
     val referralId = referral.id
     val personAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
       ?: throw NotFoundException("Existing support needs not found for referral $referralId")
 
-    val supportNeeds = SupportNeeds(
+    return ExistingSupportNeedsBffResponseDto(
       personAdditionalSupportNeeds.physicalHealthDetails,
       personAdditionalSupportNeeds.mentalEmotionalHealthDetails,
       personAdditionalSupportNeeds.neurodiversityDetails,
@@ -416,10 +415,6 @@ class AppointmentService(
       personAdditionalSupportNeeds.diversityDetails,
       personAdditionalSupportNeeds.anythingElseDetails,
       personAdditionalSupportNeeds.interpreterLanguage,
-    )
-    return ExistingSupportNeedsBffResponseDto(
-      referralFirstName,
-      supportNeeds,
     )
   }
 

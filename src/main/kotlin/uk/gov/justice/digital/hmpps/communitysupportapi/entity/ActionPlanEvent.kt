@@ -48,5 +48,11 @@ class ActionPlanEvent(
       eventType = ActionPlanEventType.CREATED,
       createdAt = time,
     )
+    fun actionPlanSubmittedEventForActionPlan(actionPlanId: UUID, time: OffsetDateTime = OffsetDateTime.now()): ActionPlanEvent = ActionPlanEvent(
+      id = UUID.randomUUID(),
+      actionPlanId = actionPlanId,
+      eventType = ActionPlanEventType.SUBMITTED,
+      createdAt = time,
+    )
   }
 }
