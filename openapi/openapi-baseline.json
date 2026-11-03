@@ -4445,8 +4445,8 @@
           "contactDetailsStatus": {
             "$ref": "#/components/schemas/ContactDetailsDto"
           },
-          "fullName": {
-            "type": "string"
+          "refereeName": {
+            "$ref": "#/components/schemas/RefereeNameDto"
           },
           "selectAnAreaForReferralStatus": {
             "$ref": "#/components/schemas/TaskListStatusItem"
@@ -4462,7 +4462,7 @@
           "checkYourAnswersStatus",
           "confirmPersonalDetailsStatus",
           "contactDetailsStatus",
-          "fullName",
+          "refereeName",
           "selectAnAreaForReferralStatus",
           "selectThePersonsNeedsStatus"
         ],
