@@ -75,9 +75,10 @@ class AppointmentService(
 
     private val SUPPORTED_CREATE_APPOINTMENT_TYPES = listOf(
       AppointmentType.CONTACT_SESSION,
-      AppointmentType.PRE_RELEASE_SESSION,
-      AppointmentType.POST_RELEASE_SESSION,
+      AppointmentType.ICS,
       AppointmentType.HANDOVER_SESSION,
+      AppointmentType.POST_RELEASE_SESSION,
+      AppointmentType.PRE_RELEASE_SESSION,
     )
 
     private val CREATE_APPOINTMENT_TYPE_OPTIONS = SUPPORTED_CREATE_APPOINTMENT_TYPES.map {
@@ -615,9 +616,9 @@ class AppointmentService(
 }
 
 private fun AppointmentType.toCreateAppointmentValue(): String = when (this) {
+  AppointmentType.ICS -> "ics"
   AppointmentType.CONTACT_SESSION -> "contact"
   AppointmentType.PRE_RELEASE_SESSION -> "pre-release"
   AppointmentType.POST_RELEASE_SESSION -> "post-release"
   AppointmentType.HANDOVER_SESSION -> "handover"
-  AppointmentType.ICS -> error("ICS is not supported when creating referral appointments")
 }

@@ -598,15 +598,17 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
           assertThat(body.appointmentTypes.map { it.name }).containsExactly(
             "Contact session",
-            "Pre-release session",
-            "Post-release session",
+            "Initial contact session",
             "Handover session",
+            "Post-release session",
+            "Pre-release session",
           )
           assertThat(body.appointmentTypes.map { it.value }).containsExactly(
             "contact",
-            "pre-release",
-            "post-release",
+            "ics",
             "handover",
+            "post-release",
+            "pre-release",
           )
 
           assertThat(body.probationOfficeLocations).isNotEmpty

@@ -162,7 +162,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return the four supported appointment types and probation office locations`() {
+    fun `should return the five supported appointment types and probation office locations`() {
       val response = appointmentService.getCreateAppointmentReferenceData(caseReference)
 
       assertThat(response.appointmentTypes).containsExactly(
@@ -171,18 +171,23 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
           value = "contact",
         ),
         CreateAppointmentTypeOptionDto(
-          name = "Pre-release session",
-          value = "pre-release",
+          name = "Initial contact session",
+          value = "ics",
+        ),
+        CreateAppointmentTypeOptionDto(
+          name = "Handover session",
+          value = "handover",
         ),
         CreateAppointmentTypeOptionDto(
           name = "Post-release session",
           value = "post-release",
         ),
         CreateAppointmentTypeOptionDto(
-          name = "Handover session",
-          value = "handover",
+          name = "Pre-release session",
+          value = "pre-release",
         ),
       )
+
       assertThat(response.probationOfficeLocations).isNotEmpty
       assertThat(response.probationOfficeLocations.map { it.name })
         .isEqualTo(response.probationOfficeLocations.map { it.name }.sorted())
