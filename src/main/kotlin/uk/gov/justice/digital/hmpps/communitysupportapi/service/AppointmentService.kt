@@ -14,13 +14,16 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReq
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentTypeOptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanceBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsPersonDetailsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNameDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodType
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toAppointmentTimeResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayLabel
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toDisplayString
@@ -368,19 +371,7 @@ class AppointmentService(
       .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }
       .let { "${it.firstName} ${it.lastName}" }
 
-    val appointments = appointmentRepository
-      .findAllByReferralId(referral.id)
-      .orEmpty()
-      .filter { it.type == AppointmentType.ICS }
-      .ifEmpty { throw NotFoundException("No ICS appointments found for referral reference number: ${referral.referenceNumber}") }
-
-    val appointmentHistory = appointments
-      .flatMap { it.appointmentHistory }
-      .maxWithOrNull(
-        compareBy<AppointmentHistory> { it.appointmentDateTime }
-          .thenBy { it.createdAt },
-      )
-      ?: throw NotFoundException("ICS appointment not found for referral reference number: ${referral.referenceNumber}")
+    val appointmentHistory = getLatestIcsAppointmentHistory(referral)
 
     val appointmentDetails = AppointmentDetailsDto(
       method = appointmentHistory.appointmentDelivery?.method,
@@ -394,6 +385,55 @@ class AppointmentService(
       otherAppointmentMethods = appointmentHistory.sessionCommunication,
     )
   }
+
+  /**
+   * Returns the latest ICS appointment history entry for a referral.
+   */
+  private fun getLatestIcsAppointmentHistory(referral: Referral): AppointmentHistory {
+    val appointments = appointmentRepository
+      .findAllByReferralId(referral.id)
+      .orEmpty()
+      .filter { it.type == AppointmentType.ICS }
+      .ifEmpty { throw NotFoundException("No ICS appointments found for referral reference number: ${referral.referenceNumber}") }
+
+    return appointments
+      .flatMap { it.appointmentHistory }
+      .maxWithOrNull(
+        compareBy<AppointmentHistory> { it.appointmentDateTime }
+          .thenBy { it.createdAt },
+      )
+      ?: throw NotFoundException("ICS appointment not found for referral reference number: ${referral.referenceNumber}")
+  }
+
+  /**
+   * Returns the referral's first name and the latest ICS appointment date and time for the attendance page.
+   */
+  @Transactional(readOnly = true)
+  fun getIcsFeedbackAttendance(referral: Referral): IcsFeedbackAttendanceBffDto {
+    val referralFirstName = getIcsFeedbackReferralFirstName(referral)
+    val appointmentHistory = getLatestIcsAppointmentHistory(referral)
+
+    return IcsFeedbackAttendanceBffDto(
+      referralFirstName = referralFirstName,
+      date = appointmentHistory.appointmentDateTime.toLocalDate(),
+      time = appointmentHistory.appointmentDateTime.toLocalTime().toAppointmentTimeResponse(),
+    )
+  }
+
+  /**
+   * Returns the referral's first name for the ICS feedback pages.
+   */
+  @Transactional(readOnly = true)
+  fun getIcsFeedbackReferralFirstName(referral: Referral): String = personRepository.findById(referral.personId)
+    .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }
+    .firstName
+
+  /**
+   * Returns the session method of the latest ICS appointment for a referral.
+   */
+  @Transactional(readOnly = true)
+  fun getIcsFeedbackSessionMethod(referral: Referral): SessionMethod = getIcsAppointmentsByReferral(referral.id).firstOrNull()?.sessionMethod
+    ?: throw NotFoundException("No ICS appointments found for referral reference number: ${referral.referenceNumber}")
 
   /**
    * Returns ICS appointment existing support needs by a referral.

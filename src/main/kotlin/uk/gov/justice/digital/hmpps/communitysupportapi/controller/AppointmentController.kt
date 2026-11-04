@@ -24,7 +24,16 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRef
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanceBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackCheckAnswersBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackDidSessionTakePlaceBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackHowTheyTriedToContactThePersonBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIdentifiedAdditionalNeedsBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIssuesOrConcernsBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackNextStepsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionFeedbackBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackWhyDidSessionNotHappenBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
@@ -280,6 +289,186 @@ class AppointmentController(
     return ResponseEntity.ok(
       appointmentService.getIcsFeedbackSessionDetails(referral),
     )
+  }
+
+  @Operation(summary = "Get session method for the ICS feedback did-session-take-place page")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Session method found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackDidSessionTakePlaceBffDto::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/bff/ics-feedback/{caseReference}/did-session-take-place")
+  fun getIcsFeedbackDidSessionTakePlace(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsFeedbackDidSessionTakePlaceBffDto> {
+    log.info("GET /bff/ics-feedback/{}/did-session-take-place", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(IcsFeedbackDidSessionTakePlaceBffDto(appointmentService.getIcsFeedbackSessionMethod(referral)))
+  }
+
+  @Operation(summary = "Get referral first name, appointment date and time for the ICS feedback attendance page")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Attendance page details found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackAttendanceBffDto::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/bff/ics-feedback/{caseReference}/attendance")
+  fun getIcsFeedbackAttendance(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsFeedbackAttendanceBffDto> {
+    log.info("GET /bff/ics-feedback/{}/attendance", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(appointmentService.getIcsFeedbackAttendance(referral))
+  }
+
+  @Operation(summary = "Get referral first name for the ICS feedback session feedback page")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral first name found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackSessionFeedbackBffDto::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/bff/ics-feedback/{caseReference}/session-feedback")
+  fun getIcsFeedbackSessionFeedback(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsFeedbackSessionFeedbackBffDto> {
+    log.info("GET /bff/ics-feedback/{}/session-feedback", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(IcsFeedbackSessionFeedbackBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+  }
+
+  @Operation(summary = "Get referral first name for the ICS feedback issues or concerns page")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral first name found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackIssuesOrConcernsBffDto::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/bff/ics-feedback/{caseReference}/issues-or-concerns")
+  fun getIcsFeedbackIssuesOrConcerns(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsFeedbackIssuesOrConcernsBffDto> {
+    log.info("GET /bff/ics-feedback/{}/issues-or-concerns", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(IcsFeedbackIssuesOrConcernsBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+  }
+
+  @Operation(summary = "Get referral first name for the ICS feedback identified additional needs page")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral first name found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackIdentifiedAdditionalNeedsBffDto::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/bff/ics-feedback/{caseReference}/identified-additional-needs")
+  fun getIcsFeedbackIdentifiedAdditionalNeeds(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsFeedbackIdentifiedAdditionalNeedsBffDto> {
+    log.info("GET /bff/ics-feedback/{}/identified-additional-needs", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(IcsFeedbackIdentifiedAdditionalNeedsBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+  }
+
+  @Operation(summary = "Get referral first name for the ICS feedback next steps page")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral first name found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackNextStepsBffDto::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/bff/ics-feedback/{caseReference}/next-steps")
+  fun getIcsFeedbackNextSteps(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsFeedbackNextStepsBffDto> {
+    log.info("GET /bff/ics-feedback/{}/next-steps", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(IcsFeedbackNextStepsBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+  }
+
+  @Operation(summary = "Get referral first name for the ICS feedback check answers page")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral first name found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackCheckAnswersBffDto::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/bff/ics-feedback/{caseReference}/check-answers")
+  fun getIcsFeedbackCheckAnswers(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsFeedbackCheckAnswersBffDto> {
+    log.info("GET /bff/ics-feedback/{}/check-answers", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(IcsFeedbackCheckAnswersBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+  }
+
+  @Operation(summary = "Get referral first name for the ICS feedback why session did not happen page")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral first name found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackWhyDidSessionNotHappenBffDto::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/bff/ics-feedback/{caseReference}/why-did-the-session-not-happen")
+  fun getIcsFeedbackWhyDidSessionNotHappen(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsFeedbackWhyDidSessionNotHappenBffDto> {
+    log.info("GET /bff/ics-feedback/{}/why-did-the-session-not-happen", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(IcsFeedbackWhyDidSessionNotHappenBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+  }
+
+  @Operation(summary = "Get referral first name for the ICS feedback how they tried to contact the person page")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral first name found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackHowTheyTriedToContactThePersonBffDto::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/bff/ics-feedback/{caseReference}/how-they-tried-to-contact-the-person")
+  fun getIcsFeedbackHowTheyTriedToContactThePerson(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsFeedbackHowTheyTriedToContactThePersonBffDto> {
+    log.info("GET /bff/ics-feedback/{}/how-they-tried-to-contact-the-person", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(IcsFeedbackHowTheyTriedToContactThePersonBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
   }
 
   @Operation(summary = "Get Existing support needs")
