@@ -113,24 +113,25 @@ class ActionPlanService(
     val actionPlanData = actionPlanDataFetcher.getActionPlanDataForReferral(referralReference)
 
     val answers = getAnswerHeadersByActionPlan(actionPlanData.actionPlan.id, actionPlanData.needSteps)
-    if (answers.none { it.id == request.stepQuestionAnswerHeaderId }) {
+    val requestAnswerIndex = answers.indexOfFirst { it.id == request.stepQuestionAnswerHeaderId }
+    if (requestAnswerIndex < 0) {
       throw Exception("needId (${request.stepQuestionAnswerHeaderId}) in request does not match any needs in the action plan")
     }
-    val requestAnswer = answers.find { it.id == request.stepQuestionAnswerHeaderId }
+    val requestAnswer = answers[requestAnswerIndex]
 
     when (request.action) {
       ActionPlanNeedsOrderRequest.ActionPlanNeedsOrderAction.UP -> {
         // Only swap if requested need not already at the top of the list
-        if (requestAnswer != null && requestAnswer.orderNumber > 1) {
-          swapOrderOfNeeds(requestAnswer, answers[(requestAnswer.orderNumber - 1) - 1])
+        if (requestAnswerIndex > 0) {
+          swapOrderOfNeeds(requestAnswer, answers[requestAnswerIndex - 1])
           actionPlanRepository.save(actionPlanData.actionPlan.updateUpdatedAt(OffsetDateTime.now()))
         }
       }
 
       ActionPlanNeedsOrderRequest.ActionPlanNeedsOrderAction.DOWN -> {
         // Only swap if requested need not already at the bottom of the list
-        if (requestAnswer != null && requestAnswer.orderNumber <= answers.size - 1) {
-          swapOrderOfNeeds(requestAnswer, answers[(requestAnswer.orderNumber - 1) + 1])
+        if (requestAnswerIndex < answers.lastIndex) {
+          swapOrderOfNeeds(requestAnswer, answers[requestAnswerIndex + 1])
           actionPlanRepository.save(actionPlanData.actionPlan.updateUpdatedAt(OffsetDateTime.now()))
         }
       }
