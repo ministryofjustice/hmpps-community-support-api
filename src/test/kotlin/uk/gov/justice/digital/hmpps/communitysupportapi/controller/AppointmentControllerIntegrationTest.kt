@@ -951,34 +951,50 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       "how-they-tried-to-contact-the-person",
     )
 
-    private val icsPages = referralFirstNamePages + listOf("did-session-take-place", "attendance")
-
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      icsPages.forEach {
+      referralFirstNamePages.forEach {
         assertUnauthorized(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/$it")
       }
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      icsPages.forEach {
+      referralFirstNamePages.forEach {
         assertForbiddenNoRole(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/$it")
       }
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      icsPages.forEach {
+      referralFirstNamePages.forEach {
         assertForbiddenWrongRole(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/$it")
       }
     }
 
     @Test
     fun `should return 404 when referral case reference is not found`() {
-      icsPages.forEach {
+      referralFirstNamePages.forEach {
         assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${UUID.randomUUID()}/$it")
       }
+    }
+
+    @Test
+    fun `should enforce authorization for did-session-take-place`() {
+      val path = "/bff/ics-feedback/${referral.referenceNumber}/did-session-take-place"
+      assertUnauthorized(HttpMethod.GET, path)
+      assertForbiddenNoRole(HttpMethod.GET, path)
+      assertForbiddenWrongRole(HttpMethod.GET, path)
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${UUID.randomUUID()}/did-session-take-place")
+    }
+
+    @Test
+    fun `should enforce authorization for attendance`() {
+      val path = "/bff/ics-feedback/${referral.referenceNumber}/attendance"
+      assertUnauthorized(HttpMethod.GET, path)
+      assertForbiddenNoRole(HttpMethod.GET, path)
+      assertForbiddenWrongRole(HttpMethod.GET, path)
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${UUID.randomUUID()}/attendance")
     }
 
     @Test
