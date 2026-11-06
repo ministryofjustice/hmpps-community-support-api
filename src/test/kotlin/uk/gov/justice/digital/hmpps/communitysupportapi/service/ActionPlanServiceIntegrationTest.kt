@@ -311,6 +311,43 @@ class ActionPlanServiceIntegrationTest :
       assertEquals(2, result.needs[1].orderNumber)
       assertTrue(actionPlan.updatedAt.isBefore(result.lastUpdatedAt))
     }
+
+    @Test
+    fun `should correctly reorder needs with non sequential order numbers`() {
+      // Given
+      val person = referralHelper.createPerson(firstName = "Sam", lastName = "Green")
+      val referral =
+        referralHelper.createReferral(person = person, referenceNumber = randomReferralReference(), submittedBy = user)
+      val actionPlan = actionPlanHelper.createActionPlan(referralId = referral.id, templateId = globalTemplate.id)
+      val needs = needRepository.findAllByOrderByOrderNumberAsc()
+
+      val firstOutcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, needs[0].id)
+      val firstAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, firstOutcomeQuestion.id, orderNumber = 10, createdBy = user.id.toString())
+
+      val secondOutcomeQuestion = findOutcomeQuestionForNeed(globalTemplate.id, needs[1].id)
+      val secondAnswer = actionPlanHelper.createActionPlanStepQuestionAnswerHeader(actionPlan.id, secondOutcomeQuestion.id, orderNumber = 20, createdBy = user.id.toString())
+
+      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(firstAnswer.id, content = "First outcome", createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanStepQuestionAnswerDetails(secondAnswer.id, content = "Second outcome", createdBy = user.id.toString())
+      actionPlanHelper.createActionPlanActivity(firstAnswer.id)
+      actionPlanHelper.createActionPlanActivity(secondAnswer.id)
+
+      val needsOrderRequest = ActionPlanNeedsOrderRequest(
+        secondAnswer.id,
+        ActionPlanNeedsOrderRequest.ActionPlanNeedsOrderAction.UP,
+      )
+
+      // when
+      actionPlanService.updateNeedsOrder(referral.referenceNumber!!, needsOrderRequest)
+      val result = actionPlanService.getActionPlanSummaryForReferral(referral.referenceNumber!!)
+
+      // then
+      assertEquals(secondAnswer.id, result.needs[0].outcomes[0].id)
+      assertEquals(10, result.needs[0].orderNumber)
+      assertEquals(firstAnswer.id, result.needs[1].outcomes[0].id)
+      assertEquals(20, result.needs[1].orderNumber)
+      assertTrue(actionPlan.updatedAt.isBefore(result.lastUpdatedAt))
+    }
   }
 
   @Nested
