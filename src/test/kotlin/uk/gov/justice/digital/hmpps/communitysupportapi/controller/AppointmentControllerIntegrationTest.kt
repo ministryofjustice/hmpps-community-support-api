@@ -938,6 +938,149 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("GET /bff/ics-feedback/{caseReference}/*")
+  inner class GetIcsFeedbackPagesEndpoints {
+
+    private val referralFirstNamePages = listOf(
+      "session-feedback",
+      "issues-or-concerns",
+      "identified-additional-needs",
+      "next-steps",
+      "check-answers",
+      "why-did-the-session-not-happen",
+      "how-they-tried-to-contact-the-person",
+    )
+
+    @Test
+    fun `should return 401 unauthorized when no token provided`() {
+      referralFirstNamePages.forEach {
+        assertUnauthorized(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/$it")
+      }
+    }
+
+    @Test
+    fun `should return 403 forbidden when no roles provided`() {
+      referralFirstNamePages.forEach {
+        assertForbiddenNoRole(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/$it")
+      }
+    }
+
+    @Test
+    fun `should return 403 forbidden when wrong role provided`() {
+      referralFirstNamePages.forEach {
+        assertForbiddenWrongRole(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/$it")
+      }
+    }
+
+    @Test
+    fun `should return 404 when referral case reference is not found`() {
+      referralFirstNamePages.forEach {
+        assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${UUID.randomUUID()}/$it")
+      }
+    }
+
+    @Test
+    fun `should enforce authorization for did-session-take-place`() {
+      val path = "/bff/ics-feedback/${referral.referenceNumber}/did-session-take-place"
+      assertUnauthorized(HttpMethod.GET, path)
+      assertForbiddenNoRole(HttpMethod.GET, path)
+      assertForbiddenWrongRole(HttpMethod.GET, path)
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${UUID.randomUUID()}/did-session-take-place")
+    }
+
+    @Test
+    fun `should enforce authorization for attendance`() {
+      val path = "/bff/ics-feedback/${referral.referenceNumber}/attendance"
+      assertUnauthorized(HttpMethod.GET, path)
+      assertForbiddenNoRole(HttpMethod.GET, path)
+      assertForbiddenWrongRole(HttpMethod.GET, path)
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${UUID.randomUUID()}/attendance")
+    }
+
+    @Test
+    fun `should return 200 with referral first name for each referral first name page`() {
+      referralFirstNamePages.forEach { page ->
+        webTestClient.get()
+          .uri("/bff/ics-feedback/${referral.referenceNumber}/$page")
+          .headers(setAuthorisation())
+          .exchange()
+          .expectStatus()
+          .isOk
+          .expectBody()
+          .jsonPath("$.referralFirstName").isEqualTo("Alex")
+      }
+    }
+
+    @Test
+    fun `should return 404 for attendance when no ICS appointment exists`() {
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/attendance")
+    }
+
+    @Test
+    fun `should return 200 with first name, date and time for attendance`() {
+      val referral = referralRepository.findById(referral.id).orElseThrow()
+      val appointment = appointmentHelper.createAppointment(referral)
+      val appointmentDateTime = LocalDateTime.of(2026, 3, 27, 15, 0)
+      val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL, "Zoom link")
+
+      appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        appointmentDateTime,
+        appointmentDateTime.minusDays(1),
+        listOf("Email"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      webTestClient.get()
+        .uri("/bff/ics-feedback/${referral.referenceNumber}/attendance")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody()
+        .jsonPath("$.referralFirstName").isEqualTo("Alex")
+        .jsonPath("$.date").isEqualTo("2026-03-27")
+        .jsonPath("$.time.hour").isEqualTo(3)
+        .jsonPath("$.time.minute").isEqualTo(0)
+        .jsonPath("$.time.amPm").isEqualTo("pm")
+    }
+
+    @Test
+    fun `should return 404 for did-session-take-place when no ICS appointment exists`() {
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/did-session-take-place")
+    }
+
+    @Test
+    fun `should return 200 with session method for did-session-take-place`() {
+      val referral = referralRepository.findById(referral.id).orElseThrow()
+      val appointment = appointmentHelper.createAppointment(referral)
+      val appointmentDateTime = LocalDateTime.of(2026, 3, 27, 15, 0)
+      val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL, "Zoom link")
+
+      appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        appointmentDateTime,
+        appointmentDateTime.minusDays(1),
+        listOf("Email"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      webTestClient.get()
+        .uri("/bff/ics-feedback/${referral.referenceNumber}/did-session-take-place")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody()
+        .jsonPath("$.sessionMethod.type").isEqualTo("VIDEO")
+    }
+  }
+
+  @Nested
   @DisplayName("GET /bff/referral/{caseReference}/appointments")
   inner class ReferralAppointmentsEndPoint {
     val caseReference = "AA1234DD"
