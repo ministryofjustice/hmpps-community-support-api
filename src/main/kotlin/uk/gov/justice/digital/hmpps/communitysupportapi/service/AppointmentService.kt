@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentTyp
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanceBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackCheckAnswersBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentSummaryDto
@@ -433,6 +434,20 @@ class AppointmentService(
       referralFirstName = referralFirstName,
       date = appointmentHistory.appointmentDateTime.toLocalDate(),
       time = appointmentHistory.appointmentDateTime.toLocalTime().toAppointmentTimeResponse(),
+    )
+  }
+
+  /**
+   * Returns the referral's first name and latest ICS appointment ID for the check answers page.
+   */
+  @Transactional(readOnly = true)
+  fun getIcsFeedbackCheckAnswers(referral: Referral): IcsFeedbackCheckAnswersBffDto {
+    val referralFirstName = getIcsFeedbackReferralFirstName(referral)
+    val appointmentHistory = getLatestIcsAppointmentHistory(referral)
+
+    return IcsFeedbackCheckAnswersBffDto(
+      referralFirstName = referralFirstName,
+      appointmentIcsId = appointmentHistory.id,
     )
   }
 

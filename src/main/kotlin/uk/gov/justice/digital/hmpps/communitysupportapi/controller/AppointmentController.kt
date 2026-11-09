@@ -432,15 +432,15 @@ class AppointmentController(
     return ResponseEntity.ok(IcsFeedbackNextStepsBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
   }
 
-  @Operation(summary = "Get referral first name for the ICS feedback check answers page")
+  @Operation(summary = "Get referral first name and ICS appointment ID for the ICS feedback check answers page")
   @ApiResponses(
     value = [
       ApiResponse(
         responseCode = "200",
-        description = "Referral first name found",
+        description = "Check answers page details found",
         content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackCheckAnswersBffDto::class))],
       ),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
     ],
   )
   @GetMapping("/bff/ics-feedback/{caseReference}/check-answers")
@@ -449,7 +449,7 @@ class AppointmentController(
   ): ResponseEntity<IcsFeedbackCheckAnswersBffDto> {
     log.info("GET /bff/ics-feedback/{}/check-answers", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackCheckAnswersBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(appointmentService.getIcsFeedbackCheckAnswers(referral))
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback why session did not happen page")
