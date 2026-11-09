@@ -23,12 +23,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsRespon
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReferenceDataBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanceBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackCheckAnswersBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackDidSessionTakePlaceBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackHowTheyTriedToContactThePersonBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIdentifiedAdditionalNeedsBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIssuesOrConcernsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackNextStepsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
@@ -59,10 +59,23 @@ class AppointmentController(
       ApiResponse(
         responseCode = "201",
         description = "Appointment created successfully",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = AppointmentIcsResponse::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = AppointmentIcsResponse::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content(mediaType = "application/json")]),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "400",
+        description = "Invalid request body",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @PostMapping("/referral/{caseIdentifier}/ics")
@@ -82,10 +95,23 @@ class AppointmentController(
       ApiResponse(
         responseCode = "201",
         description = "Appointment created successfully",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = AppointmentIcsResponse::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = AppointmentIcsResponse::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content(mediaType = "application/json")]),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "400",
+        description = "Invalid request body",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @PostMapping("/referral/{caseIdentifier}/appointment")
@@ -106,11 +132,28 @@ class AppointmentController(
       ApiResponse(
         responseCode = "201",
         description = "Appointment changed successfully",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = AppointmentIcsResponse::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = AppointmentIcsResponse::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content(mediaType = "application/json")]),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
-      ApiResponse(responseCode = "409", description = "The ICS id does not match the latest ICS record", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "400",
+        description = "Invalid request body",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "409",
+        description = "The ICS id does not match the latest ICS record",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @PutMapping("/referral/{caseReference}/ics")
@@ -130,9 +173,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "List of ICS appointments",
-        content = [Content(mediaType = "application/json", array = ArraySchema(schema = Schema(implementation = AppointmentIcsResponse::class)))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            array = ArraySchema(schema = Schema(implementation = AppointmentIcsResponse::class)),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/referral/{caseReference}/ics")
@@ -204,9 +256,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "ICS appointment found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = AppointmentIcsResponse::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = AppointmentIcsResponse::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Appointment not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Appointment not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/referral/{caseReference}/ics/{icsId}")
@@ -224,11 +285,28 @@ class AppointmentController(
       ApiResponse(
         responseCode = "201",
         description = "ICS Appointment feedback submitted successfully",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = AppointmentIcsFeedbackResponse::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = AppointmentIcsFeedbackResponse::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "400", description = "Invalid request body", content = [Content(mediaType = "application/json")]),
-      ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
-      ApiResponse(responseCode = "409", description = "ICS feedback already exists for this appointment", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "400",
+        description = "Invalid request body",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral or ICS appointment not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "409",
+        description = "ICS feedback already exists for this appointment",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @PostMapping("/referral/{caseReference}/ics/{icsId}/feedback")
@@ -250,9 +328,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "ICS feedback found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = AppointmentIcsFeedbackResponse::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = AppointmentIcsFeedbackResponse::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "ICS feedback not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "ICS feedback not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/ics-feedback/{icsFeedbackId}")
@@ -269,7 +356,12 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "ICS feedback session details found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackSessionDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackSessionDto::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "404",
@@ -297,9 +389,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Session method found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackDidSessionTakePlaceBffDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackDidSessionTakePlaceBffDto::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral or ICS appointment not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/ics-feedback/{caseReference}/did-session-take-place")
@@ -308,7 +409,13 @@ class AppointmentController(
   ): ResponseEntity<IcsFeedbackDidSessionTakePlaceBffDto> {
     log.info("GET /bff/ics-feedback/{}/did-session-take-place", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackDidSessionTakePlaceBffDto(appointmentService.getIcsFeedbackSessionMethod(referral)))
+    return ResponseEntity.ok(
+      IcsFeedbackDidSessionTakePlaceBffDto(
+        appointmentService.getIcsFeedbackSessionMethod(
+          referral,
+        ),
+      ),
+    )
   }
 
   @Operation(summary = "Get referral first name, appointment date and time for the ICS feedback attendance page")
@@ -317,9 +424,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Attendance page details found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackAttendanceBffDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackAttendanceBffDto::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral or ICS appointment not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/ics-feedback/{caseReference}/attendance")
@@ -337,9 +453,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Referral first name found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackSessionFeedbackBffDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackSessionFeedbackBffDto::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/ics-feedback/{caseReference}/session-feedback")
@@ -348,7 +473,13 @@ class AppointmentController(
   ): ResponseEntity<IcsFeedbackSessionFeedbackBffDto> {
     log.info("GET /bff/ics-feedback/{}/session-feedback", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackSessionFeedbackBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(
+      IcsFeedbackSessionFeedbackBffDto(
+        appointmentService.getIcsFeedbackReferralFirstName(
+          referral,
+        ),
+      ),
+    )
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback issues or concerns page")
@@ -357,9 +488,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Referral first name found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackIssuesOrConcernsBffDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackIssuesOrConcernsBffDto::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/ics-feedback/{caseReference}/issues-or-concerns")
@@ -368,7 +508,13 @@ class AppointmentController(
   ): ResponseEntity<IcsFeedbackIssuesOrConcernsBffDto> {
     log.info("GET /bff/ics-feedback/{}/issues-or-concerns", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackIssuesOrConcernsBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(
+      IcsFeedbackIssuesOrConcernsBffDto(
+        appointmentService.getIcsFeedbackReferralFirstName(
+          referral,
+        ),
+      ),
+    )
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback identified additional needs page")
@@ -377,9 +523,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Referral first name found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackIdentifiedAdditionalNeedsBffDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackIdentifiedAdditionalNeedsBffDto::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/ics-feedback/{caseReference}/identified-additional-needs")
@@ -388,7 +543,13 @@ class AppointmentController(
   ): ResponseEntity<IcsFeedbackIdentifiedAdditionalNeedsBffDto> {
     log.info("GET /bff/ics-feedback/{}/identified-additional-needs", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackIdentifiedAdditionalNeedsBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(
+      IcsFeedbackIdentifiedAdditionalNeedsBffDto(
+        appointmentService.getIcsFeedbackReferralFirstName(
+          referral,
+        ),
+      ),
+    )
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback next steps page")
@@ -397,9 +558,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Referral first name found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackNextStepsBffDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackNextStepsBffDto::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/ics-feedback/{caseReference}/next-steps")
@@ -417,9 +587,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Referral first name found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackCheckAnswersBffDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackCheckAnswersBffDto::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/ics-feedback/{caseReference}/check-answers")
@@ -437,9 +616,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Referral first name found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackWhyDidSessionNotHappenBffDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackWhyDidSessionNotHappenBffDto::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/ics-feedback/{caseReference}/why-did-the-session-not-happen")
@@ -448,7 +636,13 @@ class AppointmentController(
   ): ResponseEntity<IcsFeedbackWhyDidSessionNotHappenBffDto> {
     log.info("GET /bff/ics-feedback/{}/why-did-the-session-not-happen", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackWhyDidSessionNotHappenBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(
+      IcsFeedbackWhyDidSessionNotHappenBffDto(
+        appointmentService.getIcsFeedbackReferralFirstName(
+          referral,
+        ),
+      ),
+    )
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback how they tried to contact the person page")
@@ -457,9 +651,18 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Referral first name found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackHowTheyTriedToContactThePersonBffDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackHowTheyTriedToContactThePersonBffDto::class),
+          ),
+        ],
       ),
-      ApiResponse(responseCode = "404", description = "Referral not found", content = [Content(mediaType = "application/json")]),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
     ],
   )
   @GetMapping("/bff/ics-feedback/{caseReference}/how-they-tried-to-contact-the-person")
@@ -468,7 +671,13 @@ class AppointmentController(
   ): ResponseEntity<IcsFeedbackHowTheyTriedToContactThePersonBffDto> {
     log.info("GET /bff/ics-feedback/{}/how-they-tried-to-contact-the-person", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackHowTheyTriedToContactThePersonBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(
+      IcsFeedbackHowTheyTriedToContactThePersonBffDto(
+        appointmentService.getIcsFeedbackReferralFirstName(
+          referral,
+        ),
+      ),
+    )
   }
 
   @Operation(summary = "Get Existing support needs")
@@ -477,7 +686,12 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Existing support needs found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ExistingSupportNeedsBffResponseDto::class))],
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto::class),
+          ),
+        ],
       ),
       ApiResponse(
         responseCode = "404",
@@ -486,15 +700,15 @@ class AppointmentController(
       ),
     ],
   )
-  @GetMapping("/bff/referral/{caseReference}/existing-support-needs")
-  fun getExistingSupportNeeds(
+  @GetMapping("/bff/ics-feedback/{caseReference}/identified-additional-support-needs")
+  fun getIdentifiedAdditionalSupportNeeds(
     @PathVariable caseReference: String,
-  ): ResponseEntity<ExistingSupportNeedsBffResponseDto> {
-    log.info("GET /bff/referral/{}/existing-support-needs", caseReference)
+  ): ResponseEntity<IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto> {
+    log.info("GET /bff/ics-feedback/{}/identified-additional-support-needs", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
 
     return ResponseEntity.ok(
-      appointmentService.getReferralExistingAdditionalSupportNeeds(referral),
+      appointmentService.getIcsFeedbackReferralAdditionalSupportNeeds(referral),
     )
   }
 }
