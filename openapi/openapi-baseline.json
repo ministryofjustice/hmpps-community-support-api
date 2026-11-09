@@ -2718,6 +2718,92 @@
         },
         "type": "object"
       },
+      "IcsFeedbackAttendanceBffDto": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "referralFirstName": {
+            "type": "string"
+          },
+          "time": {
+            "$ref": "#/components/schemas/AppointmentTimeResponse"
+          }
+        },
+        "required": [
+          "date",
+          "referralFirstName",
+          "time"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackCheckAnswersBffDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "referralFirstName"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackDidSessionTakePlaceBffDto": {
+        "properties": {
+          "sessionMethod": {
+            "$ref": "#/components/schemas/SessionMethod"
+          }
+        },
+        "required": [
+          "sessionMethod"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackHowTheyTriedToContactThePersonBffDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "referralFirstName"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackIdentifiedAdditionalNeedsBffDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "referralFirstName"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackIssuesOrConcernsBffDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "referralFirstName"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackNextStepsBffDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "referralFirstName"
+        ],
+        "type": "object"
+      },
       "IcsFeedbackSessionDto": {
         "properties": {
           "appointmentDetails": {
@@ -2745,6 +2831,28 @@
         },
         "required": [
           "fullName"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackSessionFeedbackBffDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "referralFirstName"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackWhyDidSessionNotHappenBffDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "referralFirstName"
         ],
         "type": "object"
       },
@@ -5156,6 +5264,339 @@
         "summary": "Get Probation Practitioner details for a draft referral",
         "tags": [
           "draft-referral-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/attendance": {
+      "get": {
+        "operationId": "getIcsFeedbackAttendance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackAttendanceBffDto"
+                }
+              }
+            },
+            "description": "Attendance page details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral or ICS appointment not found"
+          }
+        },
+        "summary": "Get referral first name, appointment date and time for the ICS feedback attendance page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/check-answers": {
+      "get": {
+        "operationId": "getIcsFeedbackCheckAnswers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackCheckAnswersBffDto"
+                }
+              }
+            },
+            "description": "Referral first name found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral first name for the ICS feedback check answers page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/did-session-take-place": {
+      "get": {
+        "operationId": "getIcsFeedbackDidSessionTakePlace",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackDidSessionTakePlaceBffDto"
+                }
+              }
+            },
+            "description": "Session method found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral or ICS appointment not found"
+          }
+        },
+        "summary": "Get session method for the ICS feedback did-session-take-place page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/how-they-tried-to-contact-the-person": {
+      "get": {
+        "operationId": "getIcsFeedbackHowTheyTriedToContactThePerson",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackHowTheyTriedToContactThePersonBffDto"
+                }
+              }
+            },
+            "description": "Referral first name found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral first name for the ICS feedback how they tried to contact the person page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/identified-additional-needs": {
+      "get": {
+        "operationId": "getIcsFeedbackIdentifiedAdditionalNeeds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackIdentifiedAdditionalNeedsBffDto"
+                }
+              }
+            },
+            "description": "Referral first name found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral first name for the ICS feedback identified additional needs page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/issues-or-concerns": {
+      "get": {
+        "operationId": "getIcsFeedbackIssuesOrConcerns",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackIssuesOrConcernsBffDto"
+                }
+              }
+            },
+            "description": "Referral first name found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral first name for the ICS feedback issues or concerns page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/next-steps": {
+      "get": {
+        "operationId": "getIcsFeedbackNextSteps",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackNextStepsBffDto"
+                }
+              }
+            },
+            "description": "Referral first name found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral first name for the ICS feedback next steps page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/session-feedback": {
+      "get": {
+        "operationId": "getIcsFeedbackSessionFeedback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackSessionFeedbackBffDto"
+                }
+              }
+            },
+            "description": "Referral first name found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral first name for the ICS feedback session feedback page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/why-did-the-session-not-happen": {
+      "get": {
+        "operationId": "getIcsFeedbackWhyDidSessionNotHappen",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackWhyDidSessionNotHappenBffDto"
+                }
+              }
+            },
+            "description": "Referral first name found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get referral first name for the ICS feedback why session did not happen page",
+        "tags": [
+          "appointment-controller"
         ]
       }
     },
