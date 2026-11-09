@@ -998,6 +998,15 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `should enforce authorization for session-details`() {
+      val path = "/bff/ics-feedback/${referral.referenceNumber}/session-details"
+      assertUnauthorized(HttpMethod.GET, path)
+      assertForbiddenNoRole(HttpMethod.GET, path)
+      assertForbiddenWrongRole(HttpMethod.GET, path)
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${UUID.randomUUID()}/session-details")
+    }
+
+    @Test
     fun `should return 200 with referral first name for each referral first name page`() {
       referralFirstNamePages.forEach { page ->
         webTestClient.get()
@@ -1035,6 +1044,42 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
       webTestClient.get()
         .uri("/bff/ics-feedback/${referral.referenceNumber}/attendance")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody()
+        .jsonPath("$.referralFirstName").isEqualTo("Alex")
+        .jsonPath("$.date").isEqualTo("2026-03-27")
+        .jsonPath("$.time.hour").isEqualTo(3)
+        .jsonPath("$.time.minute").isEqualTo(0)
+        .jsonPath("$.time.amPm").isEqualTo("pm")
+    }
+
+    @Test
+    fun `should return 404 for session-details when no ICS appointment exists`() {
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/session-details")
+    }
+
+    @Test
+    fun `should return 200 with first name, date and time for session-details`() {
+      val referral = referralRepository.findById(referral.id).orElseThrow()
+      val appointment = appointmentHelper.createAppointment(referral)
+      val appointmentDateTime = LocalDateTime.of(2026, 3, 27, 15, 0)
+      val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL, "Zoom link")
+
+      appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        appointmentDateTime,
+        appointmentDateTime.minusDays(1),
+        listOf("Email"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      webTestClient.get()
+        .uri("/bff/ics-feedback/${referral.referenceNumber}/session-details")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()

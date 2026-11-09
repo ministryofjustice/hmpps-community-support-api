@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentTyp
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanceBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
@@ -414,6 +415,21 @@ class AppointmentService(
     val appointmentHistory = getLatestIcsAppointmentHistory(referral)
 
     return IcsFeedbackAttendanceBffDto(
+      referralFirstName = referralFirstName,
+      date = appointmentHistory.appointmentDateTime.toLocalDate(),
+      time = appointmentHistory.appointmentDateTime.toLocalTime().toAppointmentTimeResponse(),
+    )
+  }
+
+  /**
+   * Returns the referral's first name and the latest ICS appointment date and time for the session details page.
+   */
+  @Transactional(readOnly = true)
+  fun getIcsFeedbackSessionDetailsPage(referral: Referral): IcsFeedbackSessionDetailsBffDto {
+    val referralFirstName = getIcsFeedbackReferralFirstName(referral)
+    val appointmentHistory = getLatestIcsAppointmentHistory(referral)
+
+    return IcsFeedbackSessionDetailsBffDto(
       referralFirstName = referralFirstName,
       date = appointmentHistory.appointmentDateTime.toLocalDate(),
       time = appointmentHistory.appointmentDateTime.toLocalTime().toAppointmentTimeResponse(),
