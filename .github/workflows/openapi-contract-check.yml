@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'kotlin/uk/gov/justice/digital/hmpps/communitysupportapi/**'
 
 permissions:
   contents: read
