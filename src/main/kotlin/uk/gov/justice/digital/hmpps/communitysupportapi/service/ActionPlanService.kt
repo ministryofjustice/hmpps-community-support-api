@@ -383,10 +383,13 @@ class ActionPlanService(
         ?.let { step ->
           val changeServiceEndDateQuestions = actionPlanStepQuestionRepository
             .findAllByActionPlanStepIdInOrderByOrderNumberAsc(listOf(step.id))
-          actionPlanQuestionWriter.answersForActionPlanAndQuestions(actionPlan.id, changeServiceEndDateQuestions)
-            .forEach { answers ->
-              actionPlanQuestionWriter.write(answers, answers.changesFor(emptyList()), changedBy, changedAt, batchId)
-            }
+          actionPlanQuestionWriter.deleteAnswersForActionPlanAndQuestions(
+            actionPlan.id,
+            changeServiceEndDateQuestions,
+            changedBy,
+            changedAt,
+            batchId,
+          )
         }
     }
 

@@ -49,6 +49,24 @@ class ActionPlanQuestionWriter(
     }
   }
 
+  fun deleteAnswersForActionPlanAndQuestions(
+    actionPlanId: UUID,
+    questions: List<ReferenceDataActionPlanStepQuestion>,
+    changedBy: String,
+    changedAt: OffsetDateTime,
+    batchId: UUID,
+  ) {
+    answersForActionPlanAndQuestions(actionPlanId, questions).forEach { answers ->
+      write(
+        answers,
+        answers.currentAnswers.map { ActionPlanQuestionAnswers.Change.Delete(it) },
+        changedBy,
+        changedAt,
+        batchId,
+      )
+    }
+  }
+
   fun write(
     answers: ActionPlanQuestionAnswers,
     changes: List<ActionPlanQuestionAnswers.Change>,
