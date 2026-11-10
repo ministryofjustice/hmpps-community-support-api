@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.kotest.matchers.shouldBe
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -45,6 +48,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentSt
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.prisonsJson
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Clock
 import java.time.Instant
@@ -124,6 +128,26 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
     fun `should return 404 not found for unknown referral id`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
       assertNotFound(POST, "/referral/${UUID.randomUUID()}/ics", buildRequest())
+    }
+
+    @Test
+    fun `should reject a prison method for a new ICS appointment`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val request = buildRequest().copy(
+        sessionMethodRequest = SessionMethodRequest(type = SessionMethodType.IN_PERSON_PRISON, prisonCode = "MDI"),
+      )
+
+      webTestClient.post()
+        .uri("/referral/${referral.id}/ics")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isBadRequest
+        .expectBody()
+        .jsonPath("$.developerMessage")
+        .isEqualTo("Session method IN_PERSON_PRISON is not allowed for appointment type ICS")
+      assertThat(appointmentRepository.findAllByReferralId(referral.id).orEmpty()).isEmpty()
     }
 
     @Test
@@ -291,6 +315,18 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       .bodyValue(request)
       .exchange()
 
+    private fun stubPrisons() {
+      wireMockServer.stubFor(
+        get(urlEqualTo("/api/agencies/prisons"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody(prisonsJson()),
+          ),
+      )
+    }
+
     @Test
     fun `should return 401 unauthorized when no token provided`() {
       assertUnauthorized(POST, "/referral/${referral.id}/appointment")
@@ -334,6 +370,131 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           assertThat(appointmentRepository.findById(body.appointmentId).orElseThrow().type)
             .isEqualTo(AppointmentType.CONTACT_SESSION)
         }
+    }
+
+    @Test
+    fun `should save and retrieve the selected prison for a pre-release session`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      stubPrisons()
+
+      val request = buildTypedRequest(
+        appointmentType = AppointmentType.PRE_RELEASE_SESSION,
+        sessionMethodRequest = SessionMethodRequest(
+          type = SessionMethodType.IN_PERSON_PRISON,
+          prisonCode = "MDI",
+          additionalDetails = "Not the prison name",
+          addressLine1 = "Not a prison address",
+        ),
+        sessionCommunication = emptyList(),
+      )
+      val created = postAppointment(request)
+        .expectStatus()
+        .isCreated
+        .expectBody<AppointmentIcsResponse>()
+        .returnResult().responseBody!!
+
+      with(created.sessionMethod as InPersonAppointment) {
+        assertThat(type).isEqualTo("IN_PERSON_PRISON")
+        assertThat(prisonCode).isEqualTo("MDI")
+        assertThat(prisonName).isEqualTo("Moorland (HMP & YOI)")
+        assertThat(addressLine1).isNull()
+      }
+      assertThat(created.sessionCommunications).isEmpty()
+
+      val history = appointmentIcsRepository.findById(created.appointmentIcsId).orElseThrow()
+      assertThat(history.appointmentDelivery?.method).isEqualTo(AppointmentDeliveryMethod.IN_PERSON_PRISON)
+      assertThat(history.appointmentDelivery?.prisonCode).isEqualTo("MDI")
+      assertThat(history.appointmentDelivery?.methodDetails).isEqualTo("Moorland (HMP & YOI)")
+
+      webTestClient.get()
+        .uri("/bff/referral/${referral.id}/ics/${created.appointmentIcsId}")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<AppointmentIcsResponse>()
+        .consumeWith { result ->
+          with(result.responseBody!!.sessionMethod as InPersonAppointment) {
+            assertThat(prisonCode).isEqualTo("MDI")
+            assertThat(prisonName).isEqualTo("Moorland (HMP & YOI)")
+          }
+        }
+    }
+
+    @Test
+    fun `should reject a missing prison code without creating an appointment`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      for (code in listOf(null, "", "   ")) {
+        postAppointment(
+          buildTypedRequest(
+            appointmentType = AppointmentType.PRE_RELEASE_SESSION,
+            sessionMethodRequest = SessionMethodRequest(type = SessionMethodType.IN_PERSON_PRISON, prisonCode = code),
+          ),
+        )
+          .expectStatus().isBadRequest
+          .expectBody()
+          .jsonPath("$.developerMessage").isEqualTo("prisonCode is required for IN_PERSON_PRISON")
+      }
+      assertThat(appointmentRepository.findAllByReferralId(referral.id).orEmpty()).isEmpty()
+    }
+
+    @Test
+    fun `should reject unknown and inactive prisons without creating an appointment`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      stubPrisons()
+
+      for (code in listOf("UNKNOWN", "ZZGHI")) {
+        postAppointment(
+          buildTypedRequest(
+            appointmentType = AppointmentType.PRE_RELEASE_SESSION,
+            sessionMethodRequest = SessionMethodRequest(type = SessionMethodType.IN_PERSON_PRISON, prisonCode = code),
+          ),
+        )
+          .expectStatus().isBadRequest
+          .expectBody()
+          .jsonPath("$.developerMessage").isEqualTo("Prison $code is not an active prison")
+      }
+      assertThat(appointmentRepository.findAllByReferralId(referral.id).orEmpty()).isEmpty()
+    }
+
+    @Test
+    fun `should reject a prison method for a contact session`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      postAppointment(
+        buildTypedRequest(
+          sessionMethodRequest = SessionMethodRequest(type = SessionMethodType.IN_PERSON_PRISON, prisonCode = "MDI"),
+        ),
+      )
+        .expectStatus().isBadRequest
+        .expectBody()
+        .jsonPath("$.developerMessage")
+        .isEqualTo("Session method IN_PERSON_PRISON is not allowed for appointment type CONTACT_SESSION")
+      assertThat(appointmentRepository.findAllByReferralId(referral.id).orEmpty()).isEmpty()
+    }
+
+    @Test
+    fun `should save pre-release phone and video reasons without session communication`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+
+      for (method in listOf(SessionMethodType.PHONE, SessionMethodType.VIDEO)) {
+        val request = buildTypedRequest(
+          appointmentType = AppointmentType.PRE_RELEASE_SESSION,
+          sessionMethodRequest = SessionMethodRequest(type = method, additionalDetails = "Unable to meet in person"),
+          sessionCommunication = emptyList(),
+        )
+        postAppointment(request)
+          .expectStatus().isCreated
+          .expectBody<AppointmentIcsResponse>()
+          .consumeWith { result ->
+            val body = result.responseBody!!
+            with(body.sessionMethod as VirtualAppointment) {
+              assertThat(type).isEqualTo(method.name)
+              assertThat(whyNotInPersonReason).isEqualTo("Unable to meet in person")
+            }
+            assertThat(body.sessionCommunications).isEmpty()
+          }
+      }
     }
 
     @Test
@@ -473,6 +634,39 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
     fun `should return 404 not found for unknown referral id`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
       assertNotFound(PUT, "/referral/${UUID.randomUUID()}/ics", buildRequest())
+    }
+
+    @Test
+    fun `should reject a prison method without changing an ICS appointment`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val appointment = appointmentHelper.createAppointment(referral)
+      val delivery = appointmentHelper.createAppointmentDelivery()
+      val status = appointmentHelper.createAppointmentStatusHistory(appointment)
+      val history = appointmentHelper.createAppointmentIcs(
+        appointment = appointment,
+        delivery = delivery,
+        user = testUser,
+        communications = listOf("Email"),
+      )
+      val request = buildRequest().copy(
+        sessionMethodRequest = SessionMethodRequest(type = SessionMethodType.IN_PERSON_PRISON, prisonCode = "MDI"),
+      )
+
+      webTestClient.put()
+        .uri("/referral/${referral.id}/ics")
+        .contentType(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation())
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isBadRequest
+        .expectBody()
+        .jsonPath("$.developerMessage")
+        .isEqualTo("Session method IN_PERSON_PRISON is not allowed for appointment type ICS")
+
+      assertThat(appointmentRepository.findAllByReferralId(referral.id).orEmpty()).hasSize(1)
+      assertThat(appointmentStatusHistoryRepository.findTopByAppointmentIdOrderByCreatedAtDesc(appointment.id)?.status)
+        .isEqualTo(status.status)
+      assertThat(appointmentIcsRepository.findById(history.id).orElseThrow().changeReason).isNull()
     }
 
     @Test

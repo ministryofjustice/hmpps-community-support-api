@@ -109,6 +109,7 @@ class AppointmentService(
         SessionMethodType.PHONE,
         SessionMethodType.VIDEO,
         SessionMethodType.IN_PERSON_OTHER_LOCATION,
+        SessionMethodType.IN_PERSON_PRISON,
       ),
       AppointmentType.HANDOVER_SESSION to setOf(
         SessionMethodType.PHONE,
@@ -142,11 +143,21 @@ class AppointmentService(
 
   private fun createAppointmentDelivery(sessionMethodRequest: SessionMethodRequest): AppointmentDelivery {
     val deliveryMethod = sessionMethodRequest.type.toDeliveryMethod()
+    val prison = if (sessionMethodRequest.type == SessionMethodType.IN_PERSON_PRISON) {
+      val code = sessionMethodRequest.prisonCode?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?: throw ValidationException("prisonCode is required for IN_PERSON_PRISON")
+      referenceDataService.getPrisons().firstOrNull { it.code == code }
+        ?: throw ValidationException("Prison $code is not an active prison")
+    } else {
+      null
+    }
 
     return AppointmentDelivery(
       id = UUID.randomUUID(),
       method = deliveryMethod,
-      methodDetails = sessionMethodRequest.additionalDetails,
+      methodDetails = prison?.description ?: sessionMethodRequest.additionalDetails,
+      prisonCode = prison?.code,
       addressLine1 = sessionMethodRequest.addressLine1.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
       addressLine2 = sessionMethodRequest.addressLine2.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
       townOrCity = sessionMethodRequest.townOrCity.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
@@ -254,6 +265,10 @@ class AppointmentService(
       }
     }
 
+    if (sessionMethod.type == SessionMethodType.IN_PERSON_PRISON && sessionMethod.prisonCode.isNullOrBlank()) {
+      throw ValidationException("prisonCode is required for IN_PERSON_PRISON")
+    }
+
     if (type == AppointmentType.POST_RELEASE_SESSION) {
       if (request.meetAtTheGate == null) {
         throw ValidationException("meetAtTheGate is required for appointment type $type")
@@ -315,6 +330,10 @@ class AppointmentService(
     changedBy: ReferralUser,
   ): AppointmentIcsResponse {
     log.info("Changing ICS appointment for referral {}", caseIdentifier)
+
+    if (request.sessionMethodRequest.type == SessionMethodType.IN_PERSON_PRISON) {
+      throw ValidationException("Session method IN_PERSON_PRISON is not allowed for appointment type ICS")
+    }
 
     val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
 

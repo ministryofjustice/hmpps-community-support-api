@@ -16,6 +16,7 @@ enum class AppointmentDeliveryMethod {
   IN_PERSON,
   IN_PERSON_PROBATION_OFFICE,
   IN_PERSON_OTHER_LOCATION,
+  IN_PERSON_PRISON,
 }
 
 @Entity
@@ -30,6 +31,8 @@ class AppointmentDelivery(
 
   @Column(name = "method_details")
   val methodDetails: String? = null,
+  @Column(name = "prison_code")
+  val prisonCode: String? = null,
   /**
    * Address fields – only populated for IN_PERSON_OTHER_LOCATION.
    */
