@@ -23,7 +23,7 @@ data class CreateAppointmentRequest(
   val date: LocalDate,
   val time: AppointmentTimeRequest,
   val sessionMethodRequest: SessionMethodRequest,
-  /** "How was [first name] informed about the session?" – not applicable to HANDOVER_SESSION. */
+  /** "How was [first name] informed about the session?" – not asked for pre-release or handover sessions. */
   val sessionCommunication: List<String> = emptyList(),
   /** "Is this a Meet at the Gate session?" – required for POST_RELEASE_SESSION only. */
   val meetAtTheGate: Boolean? = null,
@@ -46,11 +46,13 @@ data class AppointmentTimeRequest(
 data class SessionMethodRequest(
   /**
    * Matches the UI options.
-   * "PHONE" | "VIDEO" | "IN_PERSON" | "IN_PERSON_PROBATION_OFFICE" | "IN_PERSON_OTHER_LOCATION"
+   * "PHONE" | "VIDEO" | "IN_PERSON" | "IN_PERSON_PROBATION_OFFICE" | "IN_PERSON_OTHER_LOCATION" | "IN_PERSON_PRISON"
    * IN_PERSON (no location recorded) is only valid for HANDOVER_SESSION.
    */
   val type: SessionMethodType,
   val additionalDetails: String? = null,
+  /** Prison agency code – required for IN_PERSON_PRISON. */
+  val prisonCode: String? = null,
   // PDU – only relevant when type is PROBATION_OFFICE
   val pdu: String? = null,
   // Address fields – only relevant when type is IN_PERSON_OTHER_LOCATION
@@ -67,6 +69,7 @@ enum class SessionMethodType {
   IN_PERSON,
   IN_PERSON_PROBATION_OFFICE,
   IN_PERSON_OTHER_LOCATION,
+  IN_PERSON_PRISON,
 }
 
 // ── Session-method sealed hierarchy ──────────────────────────────────────────
@@ -111,10 +114,13 @@ data class VirtualAppointment(
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class InPersonAppointment(
-  /** "IN_PERSON", "IN_PERSON_PROBATION_OFFICE" or "IN_PERSON_OTHER_LOCATION" */
+  /** "IN_PERSON", "IN_PERSON_PROBATION_OFFICE", "IN_PERSON_OTHER_LOCATION" or "IN_PERSON_PRISON" */
   override val type: String,
   // For IN_PERSON_PROBATION_OFFICE cases
   val probationOfficeName: String? = null,
+  // For IN_PERSON_PRISON cases
+  val prisonCode: String? = null,
+  val prisonName: String? = null,
   // Structured address fields – only populated for IN_PERSON_OTHER_LOCATION
   val addressLine1: String? = null,
   val addressLine2: String? = null,
@@ -194,6 +200,13 @@ data class AppointmentIcsResponse(
             townOrCity = delivery.townOrCity,
             county = delivery.county,
             postcode = delivery.postcode,
+          )
+
+        AppointmentDeliveryMethod.IN_PERSON_PRISON ->
+          InPersonAppointment(
+            type = "IN_PERSON_PRISON",
+            prisonCode = delivery.prisonCode,
+            prisonName = delivery.methodDetails,
           )
       }
     }
@@ -285,6 +298,7 @@ fun SessionMethodType.toDeliveryMethod(): AppointmentDeliveryMethod = when (this
   SessionMethodType.IN_PERSON -> AppointmentDeliveryMethod.IN_PERSON
   SessionMethodType.IN_PERSON_PROBATION_OFFICE -> AppointmentDeliveryMethod.IN_PERSON_PROBATION_OFFICE
   SessionMethodType.IN_PERSON_OTHER_LOCATION -> AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION
+  SessionMethodType.IN_PERSON_PRISON -> AppointmentDeliveryMethod.IN_PERSON_PRISON
 }
 
 /**
@@ -297,4 +311,5 @@ fun SessionMethodType.toSessionDisplayString(): String = when (this) {
   SessionMethodType.IN_PERSON -> "In person"
   SessionMethodType.IN_PERSON_PROBATION_OFFICE -> "In person (probation office)"
   SessionMethodType.IN_PERSON_OTHER_LOCATION -> "In person (other location)"
+  SessionMethodType.IN_PERSON_PRISON -> "In person (prison)"
 }
