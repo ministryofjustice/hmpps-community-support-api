@@ -203,7 +203,8 @@ data class AppointmentIcsResponse(
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class ReferralAppointmentsBffResponseDto(
   val personDetails: ReferralAppointmentsPersonDetailsDto,
-  val appointments: List<ReferralAppointmentSummaryDto>,
+  val upcomingAppointments: List<ReferralAppointmentSummaryDto>,
+  val pastAppointments: List<ReferralAppointmentSummaryDto>,
 )
 
 data class ReferralAppointmentsPersonDetailsDto(

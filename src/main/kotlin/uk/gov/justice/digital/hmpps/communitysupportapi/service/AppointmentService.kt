@@ -54,6 +54,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentSt
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import java.time.Clock
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -72,6 +73,7 @@ class AppointmentService(
   private val personRepository: PersonRepository,
   private val referralLookupService: ReferralLookupService,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
+  private val clock: Clock,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
@@ -626,7 +628,7 @@ class AppointmentService(
   }
 
   /**
-   * Returns appointment tab data for a referral, including person details and all appointment summaries.
+   * Returns appointment tab data grouped by whether the start time has passed in UK local time.
    */
   @Transactional(readOnly = true)
   fun getAppointmentsForReferral(caseReference: String): ReferralAppointmentsBffResponseDto {
@@ -635,13 +637,16 @@ class AppointmentService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }
 
-    val appointments = appointmentIcsRepository.findByReferralIdAndTypesOrderByCreatedAtDesc(
+    val now = LocalDateTime.now(clock)
+    val (pastAppointments, upcomingAppointments) = appointmentIcsRepository.findByReferralIdAndTypesOrderByCreatedAtDesc(
       referral.id,
       SUPPORTED_CREATE_APPOINTMENT_TYPES,
     )
-      .map { appointment ->
-        ReferralAppointmentSummaryDto.from(appointment, getLatestAppointmentStatus(appointment.appointment.id))
-      }
+      .partition { it.appointmentDateTime.isBefore(now) }
+
+    fun summaries(appointments: List<AppointmentHistory>): List<ReferralAppointmentSummaryDto> = appointments.map {
+      ReferralAppointmentSummaryDto.from(it, getLatestAppointmentStatus(it.appointment.id))
+    }
 
     return ReferralAppointmentsBffResponseDto(
       personDetails = ReferralAppointmentsPersonDetailsDto(
@@ -650,7 +655,8 @@ class AppointmentService(
         dateOfBirth = person.dateOfBirth.toString(),
         crn = referral.personIdentifier,
       ),
-      appointments = appointments,
+      upcomingAppointments = summaries(upcomingAppointments),
+      pastAppointments = summaries(pastAppointments),
     )
   }
 }
