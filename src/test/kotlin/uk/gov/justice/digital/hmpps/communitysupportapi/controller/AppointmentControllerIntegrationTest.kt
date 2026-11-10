@@ -938,6 +938,115 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("GET /bff/referral-details/{caseReference}/ics-view-or-change")
+  inner class GetIcsViewOrChange {
+    @Test
+    fun `should enforce authorization and return 404 for an unknown referral`() {
+      val path = "/bff/referral-details/${referral.referenceNumber}/ics-view-or-change"
+      assertUnauthorized(HttpMethod.GET, path)
+      assertForbiddenNoRole(HttpMethod.GET, path)
+      assertForbiddenWrongRole(HttpMethod.GET, path)
+      assertNotFound(HttpMethod.GET, "/bff/referral-details/${UUID.randomUUID()}/ics-view-or-change")
+    }
+
+    @Test
+    fun `should return 404 without an ICS appointment`() {
+      assertNotFound(HttpMethod.GET, "/bff/referral-details/${referral.referenceNumber}/ics-view-or-change")
+    }
+
+    @Test
+    fun `should return only page fields from the latest created ICS record`() {
+      val referral = referralRepository.findById(referral.id).orElseThrow()
+      val appointment = appointmentHelper.createAppointment(referral)
+      val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL, "Person requested a call")
+      val createdAt = LocalDateTime.of(2026, 11, 10, 9, 0)
+      appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        createdAt.plusDays(20),
+        createdAt.minusDays(1),
+        listOf("Email"),
+      )
+      val latest = appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        LocalDateTime.of(2026, 11, 25, 0, 15),
+        createdAt,
+        listOf("Phone", "Text"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      webTestClient.get()
+        .uri("/bff/referral-details/${referral.referenceNumber}/ics-view-or-change")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .json(
+          """
+          {
+            "referralFirstName": "Alex",
+            "referralLastName": "Jones",
+            "appointmentDate": "2026-11-25",
+            "appointmentTime": {"hour": 12, "minute": 15, "amPm": "am"},
+            "sessionMethod": {"appointmentCategory": "VIRTUAL", "type": "PHONE", "whyNotInPersonReason": "Person requested a call"},
+            "sessionCommunications": ["Phone", "Text"],
+            "changeAppointmentDetails": null
+          }
+          """.trimIndent(),
+          org.springframework.test.json.JsonCompareMode.STRICT,
+        )
+
+      latest.changeRequestedBy = ChangeRequesterType.DELIVERY_PARTNER
+      latest.changeReason = "Availability changed"
+      appointmentIcsRepository.saveAndFlush(latest)
+
+      webTestClient.get()
+        .uri("/bff/referral-details/${referral.referenceNumber}/ics-view-or-change")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.changeAppointmentDetails.changeRequestedBy").isEqualTo("DELIVERY_PARTNER")
+        .jsonPath("$.changeAppointmentDetails.reasonForChange").isEqualTo("Availability changed")
+    }
+
+    @Test
+    fun `should return structured in person location details`() {
+      val referral = referralRepository.findById(referral.id).orElseThrow()
+      val appointment = appointmentHelper.createAppointment(referral)
+      val delivery = appointmentHelper.createAppointmentDelivery(
+        AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION,
+        addressLineOne = "1 Example Street",
+        addressLineTwo = "Flat 2",
+        townOrCity = "Leeds",
+        county = "West Yorkshire",
+        postCode = "LS1 1AA",
+      )
+      appointmentHelper.createAppointmentIcs(appointment, delivery, testUser, communications = emptyList())
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      webTestClient.get()
+        .uri("/bff/referral-details/${referral.referenceNumber}/ics-view-or-change")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.sessionMethod.type").isEqualTo("IN_PERSON_OTHER_LOCATION")
+        .jsonPath("$.sessionMethod.appointmentCategory").isEqualTo("IN_PERSON")
+        .jsonPath("$.sessionMethod.addressLine1").isEqualTo("1 Example Street")
+        .jsonPath("$.sessionMethod.addressLine2").isEqualTo("Flat 2")
+        .jsonPath("$.sessionMethod.townOrCity").isEqualTo("Leeds")
+        .jsonPath("$.sessionMethod.county").isEqualTo("West Yorkshire")
+        .jsonPath("$.sessionMethod.postcode").isEqualTo("LS1 1AA")
+        .jsonPath("$.sessionMethod.whyNotInPersonReason").doesNotExist()
+        .jsonPath("$.sessionCommunications").isEmpty
+    }
+  }
+
+  @Nested
   @DisplayName("GET /bff/ics-feedback/{caseReference}/*")
   inner class GetIcsFeedbackPagesEndpoints {
 

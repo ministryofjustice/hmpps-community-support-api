@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanc
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackCheckAnswersBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsViewOrChangeBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentsPersonDetailsDto
@@ -284,6 +285,13 @@ class AppointmentService(
           getReferralName(ics.appointment),
         )
       }
+  }
+
+  @Transactional(readOnly = true)
+  fun getIcsViewOrChange(referral: Referral): IcsViewOrChangeBffDto {
+    val appointment = getIcsAppointmentsByReferral(referral.id).maxByOrNull { it.createdAt }
+      ?: throw NotFoundException("ICS appointment not found for referral ${referral.referenceNumber}")
+    return IcsViewOrChangeBffDto.from(appointment)
   }
 
   /**
