@@ -18,8 +18,8 @@ class OpenApiConfiguration(buildProperties: BuildProperties) {
     .servers(
       listOf(
         Server().url("https://community-support-api-dev.hmpps.service.justice.gov.uk").description("Development"),
-        Server().url("https://community-support-api-preprod.hmpps.service.justice.gov.uk").description("Pre-Production"),
-        Server().url("https://community-support-api.hmpps.service.justice.gov.uk").description("Production"),
+//        Server().url("https://community-support-api-preprod.hmpps.service.justice.gov.uk").description("Pre-Production"),
+//        Server().url("https://community-support-api.hmpps.service.justice.gov.uk").description("Production"),
         Server().url("http://localhost:8080").description("Local"),
       ),
     )

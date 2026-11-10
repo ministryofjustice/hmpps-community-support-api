@@ -14,7 +14,7 @@ import java.time.format.DateTimeFormatter
 
 class OpenApiDocsTest : IntegrationTestBase() {
   @LocalServerPort
-  private val port: Int = 0
+  private val port: Int = 8080
 
   @Test
   fun `open api docs are available`() {
