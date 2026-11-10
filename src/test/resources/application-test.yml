@@ -60,3 +60,7 @@ webclient:
 reference-data:
   probation-offices:
     path: "test-data/probation-offices-v0.csv"
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
