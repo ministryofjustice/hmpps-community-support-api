@@ -46,8 +46,11 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonReposit
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.UUID
 
 class AppointmentControllerIntegrationTest : IntegrationTestBase() {
@@ -81,6 +84,9 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
   @MockitoBean
   private lateinit var userMapper: UserMapper
+
+  @MockitoBean
+  private lateinit var clock: Clock
 
   private lateinit var referral: Referral
 
@@ -947,6 +953,8 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       testDataCleaner.cleanAllTables()
       testUser = referralHelper.ensureReferralUser()
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      whenever(clock.zone).thenReturn(ZoneId.of("Europe/London"))
+      whenever(clock.instant()).thenReturn(Instant.parse("2026-09-21T11:00:00Z"))
     }
 
     @Test
@@ -1005,12 +1013,65 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
           body.personDetails.crn shouldBe referral.personIdentifier
           body.personDetails.dateOfBirth shouldBe person.dateOfBirth.toString()
 
-          body.appointments.size shouldBe 1
-          body.appointments.first().label shouldBe "Pre-release session"
-          body.appointments.first().appointmentDate shouldBe appointmentDateTime.toLocalDate()
-          body.appointments.first().appointmentTime shouldBe AppointmentTimeResponse(hour = 3, minute = 0, amPm = "pm")
-          body.appointments.first().appointmentStatus shouldBe AppointmentStatusHistoryType.SCHEDULED
+          body.upcomingAppointments.size shouldBe 1
+          body.upcomingAppointments.first().label shouldBe "Pre-release session"
+          body.upcomingAppointments.first().appointmentDate shouldBe appointmentDateTime.toLocalDate()
+          body.upcomingAppointments.first().appointmentTime shouldBe AppointmentTimeResponse(hour = 3, minute = 0, amPm = "pm")
+          body.upcomingAppointments.first().appointmentStatus shouldBe AppointmentStatusHistoryType.SCHEDULED
+          body.pastAppointments shouldBe emptyList()
         }
+    }
+
+    @Test
+    fun `should return both empty arrays when there are no appointments`() {
+      val person = referralHelper.createPerson()
+      referralHelper.createReferral(person, submittedBy = testUser, referenceNumber = caseReference)
+
+      webTestClient.get()
+        .uri("/bff/referral/$caseReference/appointments")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.upcomingAppointments").isArray
+        .jsonPath("$.upcomingAppointments").isEmpty
+        .jsonPath("$.pastAppointments").isArray
+        .jsonPath("$.pastAppointments").isEmpty
+    }
+
+    @Test
+    fun `should move an appointment into past appointments on the next request after its start time`() {
+      val person = referralHelper.createPerson()
+      val referral = referralHelper.createReferral(person, submittedBy = testUser, referenceNumber = caseReference)
+      val appointment = appointmentHelper.createAppointment(referral)
+      val history = appointmentHelper.createAppointmentIcs(
+        appointment = appointment,
+        user = testUser,
+        appointmentDateTime = LocalDateTime.of(2026, 9, 21, 12, 0),
+        communications = emptyList(),
+      )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      webTestClient.get()
+        .uri("/bff/referral/$caseReference/appointments")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.upcomingAppointments[0].id").isEqualTo(history.id.toString())
+        .jsonPath("$.pastAppointments").isEmpty
+
+      whenever(clock.instant()).thenReturn(Instant.parse("2026-09-21T11:00:00.000000001Z"))
+
+      webTestClient.get()
+        .uri("/bff/referral/$caseReference/appointments")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.upcomingAppointments").isEmpty
+        .jsonPath("$.pastAppointments[0].id").isEqualTo(history.id.toString())
+        .jsonPath("$.pastAppointments[0].appointmentStatus").isEqualTo("SCHEDULED")
     }
   }
 

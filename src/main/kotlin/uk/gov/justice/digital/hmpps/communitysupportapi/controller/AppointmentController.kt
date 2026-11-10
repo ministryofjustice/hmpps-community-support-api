@@ -135,7 +135,11 @@ class AppointmentController(
     return ResponseEntity.ok(appointmentService.getIcsAppointmentsByReferral(referral.id))
   }
 
-  @Operation(summary = "Get referral appointments for the appointments tab")
+  @Operation(
+    summary = "Get upcoming and past referral appointments for the appointments tab",
+    description = "Appointments move into the past list once their start time has passed. " +
+      "Both lists retain the existing newest-created-first ordering.",
+  )
   @ApiResponses(
     value = [
       ApiResponse(
