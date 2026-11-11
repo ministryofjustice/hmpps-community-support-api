@@ -1460,7 +1460,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should move an appointment into past appointments on the next request after its start time`() {
+    fun `should return needs feedback status for a scheduled appointment after its start time`() {
       val person = referralHelper.createPerson()
       val referral = referralHelper.createReferral(person, submittedBy = testUser, referenceNumber = caseReference)
       val appointment = appointmentHelper.createAppointment(referral)
@@ -1491,7 +1491,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         .expectBody()
         .jsonPath("$.upcomingAppointments").isEmpty
         .jsonPath("$.pastAppointments[0].id").isEqualTo(history.id.toString())
-        .jsonPath("$.pastAppointments[0].appointmentStatus").isEqualTo("SCHEDULED")
+        .jsonPath("$.pastAppointments[0].appointmentStatus").isEqualTo("NEEDS_FEEDBACK")
     }
   }
 
