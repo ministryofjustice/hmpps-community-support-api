@@ -743,7 +743,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(result.pastAppointments.first().label).isEqualTo("Contact session")
       assertThat(result.pastAppointments.first().appointmentDate).isEqualTo(LocalDate.of(2026, 9, 20))
       assertThat(result.pastAppointments.first().appointmentTime).isEqualTo(AppointmentTimeResponse(hour = 9, minute = 15, amPm = "am"))
-      assertThat(result.pastAppointments.first().appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
+      assertThat(result.pastAppointments.first().appointmentStatus).isEqualTo(AppointmentStatusHistoryType.NEEDS_FEEDBACK)
     }
 
     @ParameterizedTest
@@ -772,11 +772,14 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       val populated = if (isPast) result.pastAppointments else result.upcomingAppointments
       val empty = if (isPast) result.upcomingAppointments else result.pastAppointments
       assertThat(populated.map { it.id }).containsExactly(appointmentHistory.id)
+      assertThat(populated.single().appointmentStatus).isEqualTo(
+        if (isPast) AppointmentStatusHistoryType.NEEDS_FEEDBACK else AppointmentStatusHistoryType.SCHEDULED,
+      )
       assertThat(empty).isEmpty()
     }
 
     @Test
-    fun `should return the latest status for upcoming and past appointments`() {
+    fun `should return needs feedback for elapsed appointments until feedback is completed`() {
       val upcomingAppointment = appointmentHelper.createAppointment(referral)
       appointmentHelper.createAppointmentIcs(
         appointment = upcomingAppointment,
@@ -812,13 +815,26 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         AppointmentStatusHistoryType.SCHEDULED,
         LocalDateTime.of(2026, 9, 19, 12, 0),
       )
+
+      val completedAppointment = appointmentHelper.createAppointment(referral)
+      appointmentHelper.createAppointmentIcs(
+        appointment = completedAppointment,
+        user = testUser,
+        appointmentDateTime = LocalDateTime.of(2026, 9, 20, 12, 0),
+        communications = emptyList(),
+      )
       appointmentHelper.createAppointmentStatusHistory(
-        pastAppointment,
+        completedAppointment,
+        AppointmentStatusHistoryType.SCHEDULED,
+        LocalDateTime.of(2026, 9, 19, 12, 0),
+      )
+      appointmentHelper.createAppointmentStatusHistory(
+        completedAppointment,
         AppointmentStatusHistoryType.NEEDS_FEEDBACK,
         LocalDateTime.of(2026, 9, 20, 12, 0),
       )
       appointmentHelper.createAppointmentStatusHistory(
-        pastAppointment,
+        completedAppointment,
         AppointmentStatusHistoryType.COMPLETED,
         LocalDateTime.of(2026, 9, 20, 13, 0),
       )
@@ -827,8 +843,11 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
       assertThat(result.upcomingAppointments).hasSize(1)
       assertThat(result.upcomingAppointments.single().appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
-      assertThat(result.pastAppointments).hasSize(1)
-      assertThat(result.pastAppointments.single().appointmentStatus).isEqualTo(AppointmentStatusHistoryType.COMPLETED)
+      assertThat(result.pastAppointments).hasSize(2)
+      assertThat(result.pastAppointments.map { it.appointmentStatus }).containsExactlyInAnyOrder(
+        AppointmentStatusHistoryType.NEEDS_FEEDBACK,
+        AppointmentStatusHistoryType.COMPLETED,
+      )
     }
 
     @Test

@@ -663,8 +663,14 @@ class AppointmentService(
     )
       .partition { it.appointmentDateTime.isBefore(now) }
 
-    fun summaries(appointments: List<AppointmentHistory>): List<ReferralAppointmentSummaryDto> = appointments.map {
-      ReferralAppointmentSummaryDto.from(it, getLatestAppointmentStatus(it.appointment.id))
+    fun summaries(appointments: List<AppointmentHistory>, isPast: Boolean): List<ReferralAppointmentSummaryDto> = appointments.map {
+      val latestStatus = getLatestAppointmentStatus(it.appointment.id)
+      val responseStatus = if (isPast && latestStatus == AppointmentStatusHistoryType.SCHEDULED) {
+        AppointmentStatusHistoryType.NEEDS_FEEDBACK
+      } else {
+        latestStatus
+      }
+      ReferralAppointmentSummaryDto.from(it, responseStatus)
     }
 
     return ReferralAppointmentsBffResponseDto(
@@ -674,8 +680,8 @@ class AppointmentService(
         dateOfBirth = person.dateOfBirth.toString(),
         crn = referral.personIdentifier,
       ),
-      upcomingAppointments = summaries(upcomingAppointments),
-      pastAppointments = summaries(pastAppointments),
+      upcomingAppointments = summaries(upcomingAppointments, isPast = false),
+      pastAppointments = summaries(pastAppointments, isPast = true),
     )
   }
 }
