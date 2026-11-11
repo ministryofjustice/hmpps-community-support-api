@@ -29,7 +29,7 @@ services:
   nDelius-api:
     base-url: http://localhost:9091
   prison-api:
-    base-url: http://localhost:9091/prison-api
+    base-url: http://localhost:9091
 
 notify:
   api.key: "${NOTIFY_API_KEY:invalid-key}"
