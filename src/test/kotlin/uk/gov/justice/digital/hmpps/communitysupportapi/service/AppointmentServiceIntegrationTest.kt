@@ -10,8 +10,11 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentTimeResponse
@@ -54,15 +57,21 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserR
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.CreateIcsFeedbackRequestFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
+import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import java.util.UUID
 
 class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var appointmentService: AppointmentService
+
+  @MockitoBean
+  private lateinit var clock: Clock
 
   @Autowired
   private lateinit var entityManager: EntityManager
@@ -688,6 +697,12 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
   @DisplayName("getAppointmentsForReferral")
   inner class GetAppointmentsForReferral {
 
+    @BeforeEach
+    fun setClock() {
+      whenever(clock.zone).thenReturn(ZoneId.of("Europe/London"))
+      whenever(clock.instant()).thenReturn(Instant.parse("2026-09-21T11:00:00Z"))
+    }
+
     @Test
     fun `should return person details and all appointments for the referral`() {
       val laterAppointment = appointmentHelper.createAppointment(referral, type = AppointmentType.PRE_RELEASE_SESSION)
@@ -719,15 +734,128 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(result.personDetails.crn).isEqualTo(referral.personIdentifier)
       assertThat(result.personDetails.dateOfBirth).isEqualTo(person.dateOfBirth.toString())
 
-      assertThat(result.appointments).hasSize(2)
-      assertThat(result.appointments.first().label).isEqualTo("Pre-release session")
-      assertThat(result.appointments.first().appointmentDate).isEqualTo(LocalDate.of(2026, 9, 22))
-      assertThat(result.appointments.first().appointmentTime).isEqualTo(AppointmentTimeResponse(hour = 3, minute = 0, amPm = "pm"))
-      assertThat(result.appointments.first().appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
-      assertThat(result.appointments[1].label).isEqualTo("Contact session")
-      assertThat(result.appointments[1].appointmentDate).isEqualTo(LocalDate.of(2026, 9, 20))
-      assertThat(result.appointments[1].appointmentTime).isEqualTo(AppointmentTimeResponse(hour = 9, minute = 15, amPm = "am"))
-      assertThat(result.appointments[1].appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
+      assertThat(result.upcomingAppointments).hasSize(1)
+      assertThat(result.upcomingAppointments.first().label).isEqualTo("Pre-release session")
+      assertThat(result.upcomingAppointments.first().appointmentDate).isEqualTo(LocalDate.of(2026, 9, 22))
+      assertThat(result.upcomingAppointments.first().appointmentTime).isEqualTo(AppointmentTimeResponse(hour = 3, minute = 0, amPm = "pm"))
+      assertThat(result.upcomingAppointments.first().appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
+      assertThat(result.pastAppointments).hasSize(1)
+      assertThat(result.pastAppointments.first().label).isEqualTo("Contact session")
+      assertThat(result.pastAppointments.first().appointmentDate).isEqualTo(LocalDate.of(2026, 9, 20))
+      assertThat(result.pastAppointments.first().appointmentTime).isEqualTo(AppointmentTimeResponse(hour = 9, minute = 15, amPm = "am"))
+      assertThat(result.pastAppointments.first().appointmentStatus).isEqualTo(AppointmentStatusHistoryType.NEEDS_FEEDBACK)
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+      "2026-09-21T10:59:59.999999999Z, false",
+      "2026-09-21T11:00:00Z, false",
+      "2026-09-21T11:00:00.000000001Z, true",
+      "2026-12-21T11:59:59.999999999Z, false",
+      "2026-12-21T12:00:00Z, false",
+      "2026-12-21T12:00:00.000000001Z, true",
+    )
+    fun `should move appointments to past only after their UK start time`(instant: String, isPast: Boolean) {
+      val now = Instant.parse(instant)
+      whenever(clock.instant()).thenReturn(now)
+      val appointment = appointmentHelper.createAppointment(referral)
+      val appointmentHistory = appointmentHelper.createAppointmentIcs(
+        appointment = appointment,
+        user = testUser,
+        appointmentDateTime = LocalDateTime.of(now.atZone(clock.zone).toLocalDate(), LocalTime.NOON),
+        communications = emptyList(),
+      )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      val result = appointmentService.getAppointmentsForReferral(caseReference)
+
+      val populated = if (isPast) result.pastAppointments else result.upcomingAppointments
+      val empty = if (isPast) result.upcomingAppointments else result.pastAppointments
+      assertThat(populated.map { it.id }).containsExactly(appointmentHistory.id)
+      assertThat(populated.single().appointmentStatus).isEqualTo(
+        if (isPast) AppointmentStatusHistoryType.NEEDS_FEEDBACK else AppointmentStatusHistoryType.SCHEDULED,
+      )
+      assertThat(empty).isEmpty()
+    }
+
+    @Test
+    fun `should return needs feedback for elapsed appointments until feedback is completed`() {
+      val upcomingAppointment = appointmentHelper.createAppointment(referral)
+      appointmentHelper.createAppointmentIcs(
+        appointment = upcomingAppointment,
+        user = testUser,
+        appointmentDateTime = LocalDateTime.of(2026, 9, 22, 12, 0),
+        communications = emptyList(),
+      )
+      appointmentHelper.createAppointmentStatusHistory(
+        upcomingAppointment,
+        AppointmentStatusHistoryType.SCHEDULED,
+        LocalDateTime.of(2026, 9, 19, 12, 0),
+      )
+      appointmentHelper.createAppointmentStatusHistory(
+        upcomingAppointment,
+        AppointmentStatusHistoryType.CHANGED,
+        LocalDateTime.of(2026, 9, 20, 12, 0),
+      )
+      appointmentHelper.createAppointmentStatusHistory(
+        upcomingAppointment,
+        AppointmentStatusHistoryType.SCHEDULED,
+        LocalDateTime.of(2026, 9, 21, 10, 0),
+      )
+
+      val pastAppointment = appointmentHelper.createAppointment(referral)
+      appointmentHelper.createAppointmentIcs(
+        appointment = pastAppointment,
+        user = testUser,
+        appointmentDateTime = LocalDateTime.of(2026, 9, 20, 12, 0),
+        communications = emptyList(),
+      )
+      appointmentHelper.createAppointmentStatusHistory(
+        pastAppointment,
+        AppointmentStatusHistoryType.SCHEDULED,
+        LocalDateTime.of(2026, 9, 19, 12, 0),
+      )
+
+      val completedAppointment = appointmentHelper.createAppointment(referral)
+      appointmentHelper.createAppointmentIcs(
+        appointment = completedAppointment,
+        user = testUser,
+        appointmentDateTime = LocalDateTime.of(2026, 9, 20, 12, 0),
+        communications = emptyList(),
+      )
+      appointmentHelper.createAppointmentStatusHistory(
+        completedAppointment,
+        AppointmentStatusHistoryType.SCHEDULED,
+        LocalDateTime.of(2026, 9, 19, 12, 0),
+      )
+      appointmentHelper.createAppointmentStatusHistory(
+        completedAppointment,
+        AppointmentStatusHistoryType.NEEDS_FEEDBACK,
+        LocalDateTime.of(2026, 9, 20, 12, 0),
+      )
+      appointmentHelper.createAppointmentStatusHistory(
+        completedAppointment,
+        AppointmentStatusHistoryType.COMPLETED,
+        LocalDateTime.of(2026, 9, 20, 13, 0),
+      )
+
+      val result = appointmentService.getAppointmentsForReferral(caseReference)
+
+      assertThat(result.upcomingAppointments).hasSize(1)
+      assertThat(result.upcomingAppointments.single().appointmentStatus).isEqualTo(AppointmentStatusHistoryType.SCHEDULED)
+      assertThat(result.pastAppointments).hasSize(2)
+      assertThat(result.pastAppointments.map { it.appointmentStatus }).containsExactlyInAnyOrder(
+        AppointmentStatusHistoryType.NEEDS_FEEDBACK,
+        AppointmentStatusHistoryType.COMPLETED,
+      )
+    }
+
+    @Test
+    fun `should return empty lists when no appointments exist`() {
+      val result = appointmentService.getAppointmentsForReferral(caseReference)
+
+      assertThat(result.upcomingAppointments).isEmpty()
+      assertThat(result.pastAppointments).isEmpty()
     }
 
     @Test

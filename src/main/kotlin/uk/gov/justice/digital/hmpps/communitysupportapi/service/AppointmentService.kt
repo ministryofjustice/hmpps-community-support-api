@@ -59,6 +59,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentSt
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import java.time.Clock
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -77,6 +78,7 @@ class AppointmentService(
   private val personRepository: PersonRepository,
   private val referralLookupService: ReferralLookupService,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
+  private val clock: Clock,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
@@ -112,6 +114,7 @@ class AppointmentService(
         SessionMethodType.PHONE,
         SessionMethodType.VIDEO,
         SessionMethodType.IN_PERSON_OTHER_LOCATION,
+        SessionMethodType.IN_PERSON_PRISON,
       ),
       AppointmentType.HANDOVER_SESSION to setOf(
         SessionMethodType.PHONE,
@@ -145,11 +148,21 @@ class AppointmentService(
 
   private fun createAppointmentDelivery(sessionMethodRequest: SessionMethodRequest): AppointmentDelivery {
     val deliveryMethod = sessionMethodRequest.type.toDeliveryMethod()
+    val prison = if (sessionMethodRequest.type == SessionMethodType.IN_PERSON_PRISON) {
+      val code = sessionMethodRequest.prisonCode?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?: throw ValidationException("prisonCode is required for IN_PERSON_PRISON")
+      referenceDataService.getPrisons().firstOrNull { it.code == code }
+        ?: throw ValidationException("Prison $code is not an active prison")
+    } else {
+      null
+    }
 
     return AppointmentDelivery(
       id = UUID.randomUUID(),
       method = deliveryMethod,
-      methodDetails = sessionMethodRequest.additionalDetails,
+      methodDetails = prison?.description ?: sessionMethodRequest.additionalDetails,
+      prisonCode = prison?.code,
       addressLine1 = sessionMethodRequest.addressLine1.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
       addressLine2 = sessionMethodRequest.addressLine2.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
       townOrCity = sessionMethodRequest.townOrCity.takeIf { deliveryMethod == AppointmentDeliveryMethod.IN_PERSON_OTHER_LOCATION },
@@ -257,6 +270,10 @@ class AppointmentService(
       }
     }
 
+    if (sessionMethod.type == SessionMethodType.IN_PERSON_PRISON && sessionMethod.prisonCode.isNullOrBlank()) {
+      throw ValidationException("prisonCode is required for IN_PERSON_PRISON")
+    }
+
     if (type == AppointmentType.POST_RELEASE_SESSION) {
       if (request.meetAtTheGate == null) {
         throw ValidationException("meetAtTheGate is required for appointment type $type")
@@ -347,6 +364,10 @@ class AppointmentService(
     changedBy: ReferralUser,
   ): AppointmentIcsResponse {
     log.info("Changing ICS appointment for referral {}", caseIdentifier)
+
+    if (request.sessionMethodRequest.type == SessionMethodType.IN_PERSON_PRISON) {
+      throw ValidationException("Session method IN_PERSON_PRISON is not allowed for appointment type ICS")
+    }
 
     val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
 
@@ -689,7 +710,7 @@ class AppointmentService(
   }
 
   /**
-   * Returns appointment tab data for a referral, including person details and all appointment summaries.
+   * Returns appointment tab data grouped by whether the start time has passed in UK local time.
    */
   @Transactional(readOnly = true)
   fun getAppointmentsForReferral(caseReference: String): ReferralAppointmentsBffResponseDto {
@@ -698,13 +719,22 @@ class AppointmentService(
     val person = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }
 
-    val appointments = appointmentIcsRepository.findByReferralIdAndTypesOrderByCreatedAtDesc(
+    val now = LocalDateTime.now(clock)
+    val (pastAppointments, upcomingAppointments) = appointmentIcsRepository.findByReferralIdAndTypesOrderByCreatedAtDesc(
       referral.id,
       SUPPORTED_CREATE_APPOINTMENT_TYPES,
     )
-      .map { appointment ->
-        ReferralAppointmentSummaryDto.from(appointment, getLatestAppointmentStatus(appointment.appointment.id))
+      .partition { it.appointmentDateTime.isBefore(now) }
+
+    fun summaries(appointments: List<AppointmentHistory>, isPast: Boolean): List<ReferralAppointmentSummaryDto> = appointments.map {
+      val latestStatus = getLatestAppointmentStatus(it.appointment.id)
+      val responseStatus = if (isPast && latestStatus == AppointmentStatusHistoryType.SCHEDULED) {
+        AppointmentStatusHistoryType.NEEDS_FEEDBACK
+      } else {
+        latestStatus
       }
+      ReferralAppointmentSummaryDto.from(it, responseStatus)
+    }
 
     return ReferralAppointmentsBffResponseDto(
       personDetails = ReferralAppointmentsPersonDetailsDto(
@@ -713,7 +743,8 @@ class AppointmentService(
         dateOfBirth = person.dateOfBirth.toString(),
         crn = referral.personIdentifier,
       ),
-      appointments = appointments,
+      upcomingAppointments = summaries(upcomingAppointments, isPast = false),
+      pastAppointments = summaries(pastAppointments, isPast = true),
     )
   }
 }

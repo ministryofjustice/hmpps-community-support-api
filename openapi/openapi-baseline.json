@@ -595,7 +595,8 @@
               "VIDEO_CALL",
               "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
-              "IN_PERSON_OTHER_LOCATION"
+              "IN_PERSON_OTHER_LOCATION",
+              "IN_PERSON_PRISON"
             ],
             "type": "string"
           },
@@ -606,6 +607,12 @@
             ]
           },
           "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prisonCode": {
             "type": [
               "string",
               "null"
@@ -638,7 +645,8 @@
               "VIDEO_CALL",
               "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
-              "IN_PERSON_OTHER_LOCATION"
+              "IN_PERSON_OTHER_LOCATION",
+              "IN_PERSON_PRISON"
             ],
             "type": [
               "string",
@@ -2740,11 +2748,16 @@
       },
       "IcsFeedbackCheckAnswersBffDto": {
         "properties": {
+          "appointmentIcsId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "referralFirstName": {
             "type": "string"
           }
         },
         "required": [
+          "appointmentIcsId",
           "referralFirstName"
         ],
         "type": "object"
@@ -2801,6 +2814,26 @@
         },
         "required": [
           "referralFirstName"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackSessionDetailsBffDto": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "referralFirstName": {
+            "type": "string"
+          },
+          "time": {
+            "$ref": "#/components/schemas/AppointmentTimeResponse"
+          }
+        },
+        "required": [
+          "date",
+          "referralFirstName",
+          "time"
         ],
         "type": "object"
       },
@@ -2882,6 +2915,18 @@
                 ]
               },
               "postcode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "prisonCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "prisonName": {
                 "type": [
                   "string",
                   "null"
@@ -3713,7 +3758,7 @@
       },
       "ReferralAppointmentsBffResponseDto": {
         "properties": {
-          "appointments": {
+          "pastAppointments": {
             "items": {
               "$ref": "#/components/schemas/ReferralAppointmentSummaryDto"
             },
@@ -3721,11 +3766,18 @@
           },
           "personDetails": {
             "$ref": "#/components/schemas/ReferralAppointmentsPersonDetailsDto"
+          },
+          "upcomingAppointments": {
+            "items": {
+              "$ref": "#/components/schemas/ReferralAppointmentSummaryDto"
+            },
+            "type": "array"
           }
         },
         "required": [
-          "appointments",
-          "personDetails"
+          "pastAppointments",
+          "personDetails",
+          "upcomingAppointments"
         ],
         "type": "object"
       },
@@ -4445,6 +4497,12 @@
               "null"
             ]
           },
+          "prisonCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "townOrCity": {
             "type": [
               "string",
@@ -4457,7 +4515,8 @@
               "VIDEO",
               "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
-              "IN_PERSON_OTHER_LOCATION"
+              "IN_PERSON_OTHER_LOCATION",
+              "IN_PERSON_PRISON"
             ],
             "type": "string"
           }
@@ -5326,16 +5385,16 @@
                 }
               }
             },
-            "description": "Referral first name found"
+            "description": "Check answers page details found"
           },
           "404": {
             "content": {
               "application/json": {}
             },
-            "description": "Referral not found"
+            "description": "Referral or ICS appointment not found"
           }
         },
-        "summary": "Get referral first name for the ICS feedback check answers page",
+        "summary": "Get referral first name and ICS appointment ID for the ICS feedback check answers page",
         "tags": [
           "appointment-controller"
         ]
@@ -5521,6 +5580,43 @@
           }
         },
         "summary": "Get referral first name for the ICS feedback next steps page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/session-details": {
+      "get": {
+        "operationId": "getIcsFeedbackSessionDetailsPage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackSessionDetailsBffDto"
+                }
+              }
+            },
+            "description": "Session details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral or ICS appointment not found"
+          }
+        },
+        "summary": "Get referral first name, appointment date and time for the ICS feedback session details page",
         "tags": [
           "appointment-controller"
         ]
@@ -6145,6 +6241,7 @@
     },
     "/bff/referral/{caseReference}/appointments": {
       "get": {
+        "description": "Appointments move into the past list once their start time has passed. Both lists retain the existing newest-created-first ordering.",
         "operationId": "getReferralAppointments",
         "parameters": [
           {
@@ -6174,7 +6271,7 @@
             "description": "Referral not found"
           }
         },
-        "summary": "Get referral appointments for the appointments tab",
+        "summary": "Get upcoming and past referral appointments for the appointments tab",
         "tags": [
           "appointment-controller"
         ]
