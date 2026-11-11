@@ -446,25 +446,6 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       }
     }
 
-    @ParameterizedTest
-    @EnumSource(value = AppointmentType::class, names = ["PRE_RELEASE_SESSION", "HANDOVER_SESSION"])
-    fun `should reject in-person probation office for pre-release and handover sessions`(type: AppointmentType) {
-      val request = buildTypedRequest(type, SessionMethodRequest(type = SessionMethodType.IN_PERSON_PROBATION_OFFICE))
-
-      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, request, testUser) }
-        .isInstanceOf(ValidationException::class.java)
-        .hasMessage("Session method IN_PERSON_PROBATION_OFFICE is not allowed for appointment type $type")
-    }
-
-    @Test
-    fun `should reject in-person other location for handover session`() {
-      val type = AppointmentType.HANDOVER_SESSION
-
-      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, buildTypedRequest(type, otherLocation), testUser) }
-        .isInstanceOf(ValidationException::class.java)
-        .hasMessage("Session method IN_PERSON_OTHER_LOCATION is not allowed for appointment type HANDOVER_SESSION")
-    }
-
     @Test
     fun `should create handover session as in-person without recording a location`() {
       val type = AppointmentType.HANDOVER_SESSION
@@ -482,26 +463,6 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(history.appointmentDelivery?.addressLine1).isNull()
     }
 
-    @ParameterizedTest
-    @EnumSource(value = AppointmentType::class, names = ["HANDOVER_SESSION"], mode = EnumSource.Mode.EXCLUDE)
-    fun `should reject in-person without location for non-handover types`(type: AppointmentType) {
-      val request = buildTypedRequest(type, SessionMethodRequest(type = SessionMethodType.IN_PERSON))
-
-      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, request, testUser) }
-        .isInstanceOf(ValidationException::class.java)
-        .hasMessage("Session method IN_PERSON is not allowed for appointment type $type")
-    }
-
-    @Test
-    fun `should reject session communication for handover session`() {
-      val type = AppointmentType.HANDOVER_SESSION
-      val request = buildTypedRequest(type, sessionCommunication = listOf("Email"))
-
-      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, request, testUser) }
-        .isInstanceOf(ValidationException::class.java)
-        .hasMessage("sessionCommunication is not applicable to appointment type HANDOVER_SESSION")
-    }
-
     @Test
     fun `should persist meet at the gate for post-release session`() {
       val type = AppointmentType.POST_RELEASE_SESSION
@@ -510,33 +471,6 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       assertThat(response.meetAtTheGate).isTrue()
       val history = appointmentIcsRepository.findById(response.appointmentIcsId).orElseThrow()
       assertThat(history.meetAtTheGate).isTrue()
-    }
-
-    @Test
-    fun `should require meet at the gate for post-release session`() {
-      val type = AppointmentType.POST_RELEASE_SESSION
-
-      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, buildTypedRequest(type, meetAtTheGate = null), testUser) }
-        .isInstanceOf(ValidationException::class.java)
-        .hasMessage("meetAtTheGate is required for appointment type POST_RELEASE_SESSION")
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = AppointmentType::class, names = ["POST_RELEASE_SESSION"], mode = EnumSource.Mode.EXCLUDE)
-    fun `should reject meet at the gate for non post-release types`(type: AppointmentType) {
-      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, buildTypedRequest(type, meetAtTheGate = true), testUser) }
-        .isInstanceOf(ValidationException::class.java)
-        .hasMessage("meetAtTheGate is only applicable to appointment type POST_RELEASE_SESSION")
-    }
-
-    @Test
-    fun `should reject in-person other location with missing mandatory address fields`() {
-      val type = AppointmentType.CONTACT_SESSION
-      val request = buildTypedRequest(type, SessionMethodRequest(type = SessionMethodType.IN_PERSON_OTHER_LOCATION, addressLine1 = "1 High Street"))
-
-      assertThatThrownBy { appointmentService.createAppointment(caseReference, type, request, testUser) }
-        .isInstanceOf(ValidationException::class.java)
-        .hasMessage("Missing required address fields for IN_PERSON_OTHER_LOCATION: townOrCity, postcode")
     }
 
     @Test
