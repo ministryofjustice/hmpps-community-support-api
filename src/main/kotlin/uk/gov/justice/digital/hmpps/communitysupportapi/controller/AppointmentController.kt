@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRef
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsChangeDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanceBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackCheckAnswersBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackDidSessionTakePlaceBffDto
@@ -144,6 +145,26 @@ class AppointmentController(
     log.info("GET /bff/referral-details/{}/ics-view-or-change", caseReference)
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
     return ResponseEntity.ok(appointmentService.getIcsViewOrChange(referral))
+  }
+
+  @Operation(summary = "Get referral information and ICS prefill for the change details page")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "ICS change details found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsChangeDetailsBffDto::class))],
+      ),
+      ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
+    ],
+  )
+  @GetMapping("/bff/referral/{caseReference}/ics-change-details")
+  fun getIcsChangeDetails(
+    @PathVariable caseReference: String,
+  ): ResponseEntity<IcsChangeDetailsBffDto> {
+    log.info("GET /bff/referral/{}/ics-change-details", caseReference)
+    val referral = referralLookupService.findByCaseIdentifier(caseReference)
+    return ResponseEntity.ok(appointmentService.getIcsChangeDetails(referral))
   }
 
   @Operation(summary = "Get all ICS appointments for a referral")
