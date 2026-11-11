@@ -21,7 +21,7 @@ class ReferralNonContactSession(
   val referralId: UUID,
 
   @Column(name = "created_at", nullable = false)
-  val createdAt: OffsetDateTime? = null,
+  val createdAt: OffsetDateTime = OffsetDateTime.now(),
 
   @Column(name = "created_by", nullable = false)
   val createdBy: String = "SYSTEM",
@@ -30,7 +30,7 @@ class ReferralNonContactSession(
   val deletedAt: OffsetDateTime? = null,
 
   @Column(name = "start_datetime", nullable = false)
-  val startDateTime: OffsetDateTime? = null,
+  val startDateTime: OffsetDateTime,
 
   @Column(name = "duration_hours", nullable = false)
   val durationHours: Int,

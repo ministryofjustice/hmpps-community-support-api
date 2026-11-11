@@ -3,8 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.entity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.OneToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.util.UUID
 
@@ -20,7 +19,6 @@ class ReferenceDataReferralPathway(
   @Column(name = "display_order", nullable = false)
   val displayOrder: Int,
 
-  @OneToOne
-  @JoinColumn(name = "id", referencedColumnName = "reference_data_referral_pathway_id", nullable = false)
-  val referralPathwayNeed: ReferenceDataReferralPathwayNeed,
+  @OneToMany(mappedBy = "referenceDataReferralPathway")
+  val referralPathwayNeed: MutableList<ReferenceDataReferralPathwayNeed> = mutableListOf(),
 )

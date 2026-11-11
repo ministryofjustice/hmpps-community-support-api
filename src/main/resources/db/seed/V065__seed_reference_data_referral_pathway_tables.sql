@@ -18,4 +18,7 @@ VALUES
     ('ed5018de-1bf4-46e5-b8be-2a6c944fce04', 'ca4d147f-cbc3-4c2d-9e33-627c9974d801', '3b1f7e2a-1a07-4c2d-8e3f-1a2b3c4d5e07'),
     ('ed5018de-1bf4-46e5-b8be-2a6c944fce05', 'ca4d147f-cbc3-4c2d-9e33-627c9974d802', '3b1f7e2a-1a01-4c2d-8e3f-1a2b3c4d5e01'),
     ('ed5018de-1bf4-46e5-b8be-2a6c944fce06', 'ca4d147f-cbc3-4c2d-9e33-627c9974d803', '3b1f7e2a-1a02-4c2d-8e3f-1a2b3c4d5e02'),
-    ('ed5018de-1bf4-46e5-b8be-2a6c944fce07', 'ca4d147f-cbc3-4c2d-9e33-627c9974d804', '3b1f7e2a-1a03-4c2d-8e3f-1a2b3c4d5e03');
+    ('ed5018de-1bf4-46e5-b8be-2a6c944fce07', 'ca4d147f-cbc3-4c2d-9e33-627c9974d804', '3b1f7e2a-1a03-4c2d-8e3f-1a2b3c4d5e03')
+ON CONFLICT (id) DO UPDATE
+SET reference_data_referral_pathway_id = EXCLUDED.reference_data_referral_pathway_id,
+    reference_data_need_id = EXCLUDED.reference_data_need_id;

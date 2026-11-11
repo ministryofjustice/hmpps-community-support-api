@@ -21,7 +21,7 @@ class ReferralNote(
   val referralId: UUID,
 
   @Column(name = "created_at", nullable = false)
-  val createdAt: OffsetDateTime? = null,
+  val createdAt: OffsetDateTime = OffsetDateTime.now(),
 
   @Column(name = "created_by", nullable = false)
   val createdBy: String = "SYSTEM",

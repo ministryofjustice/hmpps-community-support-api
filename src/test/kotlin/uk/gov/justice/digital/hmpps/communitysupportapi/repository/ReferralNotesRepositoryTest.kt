@@ -123,13 +123,13 @@ class ReferralNotesRepositoryTest : IntegrationTestBase() {
     assertEquals(secondReferralNote.id, earlierNote.id)
     assertEquals("Second note", earlierNote.title)
     assertEquals("Second note details", earlierNote.details)
-    assertFalse(secondReferralNote.shouldNotify)
+    assertFalse(earlierNote.shouldNotify)
 
     val laterNote = notes[1]
     assertEquals(firstReferralNote.id, laterNote.id)
     assertEquals("First note", laterNote.title)
     assertEquals("First note details", laterNote.details)
-    assertTrue(firstReferralNote.shouldNotify)
+    assertTrue(laterNote.shouldNotify)
   }
 
   @Test
