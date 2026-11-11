@@ -1081,6 +1081,69 @@ class ActionPlanServiceIntegrationTest :
     }
 
     @Test
+    fun `should delete change service end date answers when confirmation changes to yes`() {
+      val confirmStep = actionPlanStepRepository
+        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
+        .first { it.stepType == ActionPlanStepType.SERVICE_END_DATE_CHECK }
+      val confirmQuestion = createServiceDeliveryQuestion(confirmStep, 1, "Is the service end date still correct?")
+      createChoice(confirmQuestion, 1, "Yes", "YES")
+      createChoice(confirmQuestion, 2, "No", "NO")
+
+      val changeServiceEndDateStep = actionPlanStepRepository
+        .findAllByActionPlanTemplateIdOrderByOrderNumberAsc(actionPlanTemplateId)
+        .first { it.stepType == ActionPlanStepType.CHANGE_SERVICE_END_DATE }
+      val newServiceEndDateQuestion = createServiceDeliveryQuestion(
+        changeServiceEndDateStep,
+        1,
+        "What is the new service end date?",
+        ActionPlanQuestionAnswerType.DATE,
+      )
+      val reasonQuestion = createServiceDeliveryQuestion(
+        changeServiceEndDateStep,
+        2,
+        "Why are you changing the service end date?",
+        ActionPlanQuestionAnswerType.TEXTAREA,
+      )
+
+      updateSessionDeliveryDetails(
+        sessionDeliveryDetailsRequest(
+          confirmQuestion to listOf(sessionDeliveryDetailsAnswer("NO")),
+          newServiceEndDateQuestion to listOf(sessionDeliveryDetailsAnswer("2026-12-15")),
+          reasonQuestion to listOf(sessionDeliveryDetailsAnswer("Additional support is needed")),
+        ),
+      )
+
+      val result = updateSessionDeliveryDetails(
+        sessionDeliveryDetailsRequest(
+          confirmQuestion to listOf(sessionDeliveryDetailsAnswer("YES")),
+        ),
+      )
+
+      assertTrue(result.questions.none { it.id == newServiceEndDateQuestion.id || it.id == reasonQuestion.id })
+      assertEquals(
+        listOf("YES"),
+        actionPlanService.getConfirmServiceEndDateForReferral(referral.referenceNumber!!).questions
+          .single { it.id == confirmQuestion.id }.savedResponses.map { it.value },
+      )
+
+      val changeQuestionIds = setOf(newServiceEndDateQuestion.id, reasonQuestion.id)
+      val activeHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAllByActionPlanIdAndDeletedAtIsNull(actionPlan.id)
+      assertTrue(activeHeaders.none { it.actionPlanStepQuestionId in changeQuestionIds })
+
+      val deletedHeaders = actionPlanStepQuestionAnswerHeaderRepository.findAll().filter {
+        it.actionPlanId == actionPlan.id &&
+          it.actionPlanStepQuestionId in changeQuestionIds &&
+          it.deletedAt != null
+      }
+      assertEquals(changeQuestionIds, deletedHeaders.map { it.actionPlanStepQuestionId }.toSet())
+      assertEquals(
+        2,
+        actionPlanQuestionResponseEventRepository.findByActionPlanId(actionPlan.id)
+          .count { it.eventType == ActionPlanQuestionResponseEventType.DELETED },
+      )
+    }
+
+    @Test
     fun `should skip change service end date step when the single confirm question answer is yes`() {
       val targetServiceCompletionDate = OffsetDateTime.now().plusDays(10)
       val combinedReferral = createReferral("Mia", "Evans", targetServiceCompletionDate)
