@@ -34,6 +34,9 @@ class ActionPlanQuestionWriterIntegrationTest :
   @Autowired
   private lateinit var headerRepository: ActionPlanStepQuestionAnswerHeaderRepository
 
+  @Autowired
+  private lateinit var eventRepository: ActionPlanQuestionResponseEventRepository
+
   override fun afterAll(context: ExtensionContext) {
     testDataCleaner.cleanAllTables()
   }
@@ -157,6 +160,57 @@ class ActionPlanQuestionWriterIntegrationTest :
     assertThat(activeHeaders.map { it.id }).containsExactlyInAnyOrder(
       testData.multipleChoiceQuestionWithMultipleAnswersSelected.answers.single { it.details.content == "Option 1" }.header.id,
     )
+  }
+
+  @Test
+  fun `should delete all answers for the specified questions`() {
+    val testData = TestData()
+    val changedAt = testData.changedAt.withNano(0)
+    val questions = listOf(
+      testData.questionWithAnswer.question,
+      testData.multipleChoiceQuestionWithMultipleAnswersSelected.question,
+      testData.questionWithoutAnswer,
+    )
+    val headerIds = listOf(testData.questionWithAnswer.answerHeader.id) +
+      testData.multipleChoiceQuestionWithMultipleAnswersSelected.answers.map { it.header.id }
+
+    writer.deleteAnswersForActionPlanAndQuestions(
+      testData.actionPlan.id,
+      questions,
+      testData.changedBy,
+      changedAt,
+      testData.batchId,
+    )
+
+    assertThat(headerRepository.findActiveByPlanAndQuestionIds(testData.actionPlan.id, questions.map { it.id })).isEmpty()
+    headerRepository.findAllById(headerIds).forEach { header ->
+      assertThat(header.deletedBy).isEqualTo(testData.changedBy)
+      assertThat(header.deletedAt).isEqualTo(changedAt)
+    }
+    assertThat(detailsRepository.findAllByActionPlanStepQuestionAnswerHeaderIdIn(headerIds)).hasSize(headerIds.size)
+    assertThat(
+      headerRepository.findActiveByPlanAndQuestionIds(
+        testData.actionPlan.id,
+        listOf(testData.multipleChoiceQuestionWithAnswers.question.id),
+      ).map { it.id },
+    ).containsExactly(testData.multipleChoiceQuestionWithAnswers.answers.single().header.id)
+  }
+
+  @Test
+  fun `should leave existing answers unchanged when no questions are specified for deletion`() {
+    val testData = TestData()
+    val headerIds = writer.answersForActionPlan(testData.actionPlan.id).map { it.id }
+
+    writer.deleteAnswersForActionPlanAndQuestions(
+      testData.actionPlan.id,
+      emptyList(),
+      testData.changedBy,
+      testData.changedAt,
+      testData.batchId,
+    )
+
+    assertThat(writer.answersForActionPlan(testData.actionPlan.id).map { it.id }).containsExactlyInAnyOrderElementsOf(headerIds)
+    assertThat(eventRepository.findByQuestionResponseChangeBatchId(testData.batchId)).isEmpty()
   }
 
   @Nested
