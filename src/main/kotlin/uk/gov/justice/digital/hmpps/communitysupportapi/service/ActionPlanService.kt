@@ -377,6 +377,22 @@ class ActionPlanService(
       actionPlanQuestionWriter.write(answers, decisions, changedBy, changedAt, batchId)
     }
 
+    if (!shouldHandleChangeServiceEndDateStep) {
+      actionPlanData.steps
+        .firstOrNull { it.stepType == ActionPlanStepType.CHANGE_SERVICE_END_DATE }
+        ?.let { step ->
+          val changeServiceEndDateQuestions = actionPlanStepQuestionRepository
+            .findAllByActionPlanStepIdInOrderByOrderNumberAsc(listOf(step.id))
+          actionPlanQuestionWriter.deleteAnswersForActionPlanAndQuestions(
+            actionPlan.id,
+            changeServiceEndDateQuestions,
+            changedBy,
+            changedAt,
+            batchId,
+          )
+        }
+    }
+
     return getSessionDeliveryDetailsForReferral(referralReference)
   }
 

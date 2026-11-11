@@ -595,7 +595,8 @@
               "VIDEO_CALL",
               "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
-              "IN_PERSON_OTHER_LOCATION"
+              "IN_PERSON_OTHER_LOCATION",
+              "IN_PERSON_PRISON"
             ],
             "type": "string"
           },
@@ -606,6 +607,12 @@
             ]
           },
           "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prisonCode": {
             "type": [
               "string",
               "null"
@@ -638,7 +645,8 @@
               "VIDEO_CALL",
               "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
-              "IN_PERSON_OTHER_LOCATION"
+              "IN_PERSON_OTHER_LOCATION",
+              "IN_PERSON_PRISON"
             ],
             "type": [
               "string",
@@ -2887,6 +2895,18 @@
                   "null"
                 ]
               },
+              "prisonCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "prisonName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "probationOfficeName": {
                 "type": [
                   "string",
@@ -3713,7 +3733,7 @@
       },
       "ReferralAppointmentsBffResponseDto": {
         "properties": {
-          "appointments": {
+          "pastAppointments": {
             "items": {
               "$ref": "#/components/schemas/ReferralAppointmentSummaryDto"
             },
@@ -3721,11 +3741,18 @@
           },
           "personDetails": {
             "$ref": "#/components/schemas/ReferralAppointmentsPersonDetailsDto"
+          },
+          "upcomingAppointments": {
+            "items": {
+              "$ref": "#/components/schemas/ReferralAppointmentSummaryDto"
+            },
+            "type": "array"
           }
         },
         "required": [
-          "appointments",
-          "personDetails"
+          "pastAppointments",
+          "personDetails",
+          "upcomingAppointments"
         ],
         "type": "object"
       },
@@ -4445,6 +4472,12 @@
               "null"
             ]
           },
+          "prisonCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "townOrCity": {
             "type": [
               "string",
@@ -4457,7 +4490,8 @@
               "VIDEO",
               "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
-              "IN_PERSON_OTHER_LOCATION"
+              "IN_PERSON_OTHER_LOCATION",
+              "IN_PERSON_PRISON"
             ],
             "type": "string"
           }
@@ -6145,6 +6179,7 @@
     },
     "/bff/referral/{caseReference}/appointments": {
       "get": {
+        "description": "Appointments move into the past list once their start time has passed. Both lists retain the existing newest-created-first ordering.",
         "operationId": "getReferralAppointments",
         "parameters": [
           {
@@ -6174,7 +6209,7 @@
             "description": "Referral not found"
           }
         },
-        "summary": "Get referral appointments for the appointments tab",
+        "summary": "Get upcoming and past referral appointments for the appointments tab",
         "tags": [
           "appointment-controller"
         ]
