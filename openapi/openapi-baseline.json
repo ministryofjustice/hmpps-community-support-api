@@ -3713,7 +3713,7 @@
       },
       "ReferralAppointmentsBffResponseDto": {
         "properties": {
-          "appointments": {
+          "pastAppointments": {
             "items": {
               "$ref": "#/components/schemas/ReferralAppointmentSummaryDto"
             },
@@ -3721,11 +3721,18 @@
           },
           "personDetails": {
             "$ref": "#/components/schemas/ReferralAppointmentsPersonDetailsDto"
+          },
+          "upcomingAppointments": {
+            "items": {
+              "$ref": "#/components/schemas/ReferralAppointmentSummaryDto"
+            },
+            "type": "array"
           }
         },
         "required": [
-          "appointments",
-          "personDetails"
+          "pastAppointments",
+          "personDetails",
+          "upcomingAppointments"
         ],
         "type": "object"
       },
@@ -6145,6 +6152,7 @@
     },
     "/bff/referral/{caseReference}/appointments": {
       "get": {
+        "description": "Appointments move into the past list once their start time has passed. Both lists retain the existing newest-created-first ordering.",
         "operationId": "getReferralAppointments",
         "parameters": [
           {
@@ -6174,7 +6182,7 @@
             "description": "Referral not found"
           }
         },
-        "summary": "Get referral appointments for the appointments tab",
+        "summary": "Get upcoming and past referral appointments for the appointments tab",
         "tags": [
           "appointment-controller"
         ]
