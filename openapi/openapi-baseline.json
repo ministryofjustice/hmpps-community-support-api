@@ -595,7 +595,8 @@
               "VIDEO_CALL",
               "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
-              "IN_PERSON_OTHER_LOCATION"
+              "IN_PERSON_OTHER_LOCATION",
+              "IN_PERSON_PRISON"
             ],
             "type": "string"
           },
@@ -606,6 +607,12 @@
             ]
           },
           "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prisonCode": {
             "type": [
               "string",
               "null"
@@ -638,7 +645,8 @@
               "VIDEO_CALL",
               "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
-              "IN_PERSON_OTHER_LOCATION"
+              "IN_PERSON_OTHER_LOCATION",
+              "IN_PERSON_PRISON"
             ],
             "type": [
               "string",
@@ -2887,6 +2895,18 @@
                   "null"
                 ]
               },
+              "prisonCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "prisonName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "probationOfficeName": {
                 "type": [
                   "string",
@@ -4452,6 +4472,12 @@
               "null"
             ]
           },
+          "prisonCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "townOrCity": {
             "type": [
               "string",
@@ -4464,7 +4490,8 @@
               "VIDEO",
               "IN_PERSON",
               "IN_PERSON_PROBATION_OFFICE",
-              "IN_PERSON_OTHER_LOCATION"
+              "IN_PERSON_OTHER_LOCATION",
+              "IN_PERSON_PRISON"
             ],
             "type": "string"
           }
