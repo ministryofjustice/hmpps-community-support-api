@@ -1047,6 +1047,49 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("GET /bff/referral/{caseReference}/ics-change-details/reason")
+  inner class GetIcsChangeReason {
+    @Test
+    fun `should enforce authorization and return 404 for an unknown referral`() {
+      val path = "/bff/referral/${referral.referenceNumber}/ics-change-details/reason"
+      assertUnauthorized(HttpMethod.GET, path)
+      assertForbiddenNoRole(HttpMethod.GET, path)
+      assertForbiddenWrongRole(HttpMethod.GET, path)
+      assertNotFound(HttpMethod.GET, "/bff/referral/${UUID.randomUUID()}/ics-change-details/reason")
+    }
+
+    @Test
+    fun `should return 404 without an ICS appointment`() {
+      assertNotFound(HttpMethod.GET, "/bff/referral/${referral.referenceNumber}/ics-change-details/reason")
+    }
+
+    @Test
+    fun `should return full name for the change reason page`() {
+      val referral = referralRepository.findById(referral.id).orElseThrow()
+      val appointment = appointmentHelper.createAppointment(referral)
+      val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL, "Person requested a call")
+      val createdAt = LocalDateTime.of(2026, 11, 10, 9, 0)
+      appointmentHelper.createAppointmentIcs(
+        appointment,
+        delivery,
+        testUser,
+        createdAt.plusDays(20),
+        createdAt,
+        listOf("Phone"),
+      )
+      appointmentHelper.createAppointmentStatusHistory(appointment)
+
+      webTestClient.get()
+        .uri("/bff/referral/${referral.referenceNumber}/ics-change-details/reason")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.fullName").isEqualTo("Alex Jones")
+    }
+  }
+
+  @Nested
   @DisplayName("GET /bff/referral/{caseReference}/ics-change-details")
   inner class GetIcsChangeDetails {
     @Test

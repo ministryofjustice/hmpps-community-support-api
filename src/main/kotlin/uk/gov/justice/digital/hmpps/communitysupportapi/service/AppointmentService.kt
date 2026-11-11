@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentTyp
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsChangeDetailsBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsChangeReasonBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanceBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackCheckAnswersBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDetailsBffDto
@@ -306,6 +307,14 @@ class AppointmentService(
       appointmentTime = appointment.appointmentTime,
       sessionMethod = appointment.sessionMethod,
       sessionCommunications = appointment.sessionCommunications,
+    )
+  }
+
+  @Transactional(readOnly = true)
+  fun getIcsChangeReason(referral: Referral): IcsChangeReasonBffDto {
+    val appointment = getLatestIcsAppointment(referral.id.toString())
+    return IcsChangeReasonBffDto(
+      fullName = ReferralNameDto.fullName(appointment.referralFirstName, appointment.referralLastName),
     )
   }
 
