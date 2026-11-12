@@ -244,8 +244,7 @@ class AppointmentController(
   ): ResponseEntity<AppointmentIcsFeedbackResponse> {
     log.info("POST /referral/{}/ics/{}/feedback", caseReference, icsId)
     val submittedBy = userMapper.fromToken(authenticationHolder)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    val response = appointmentService.createIcsFeedback(referral.id, icsId, request, submittedBy)
+    val response = appointmentService.createIcsFeedback(caseReference, icsId, request, submittedBy)
     return ResponseEntity.status(HttpStatus.CREATED).body(response)
   }
 
