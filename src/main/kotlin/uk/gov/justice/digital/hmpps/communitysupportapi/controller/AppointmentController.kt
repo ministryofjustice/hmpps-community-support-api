@@ -144,8 +144,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsViewOrChangeBffDto> {
     log.info("GET /bff/referral-details/{}/ics-view-or-change", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(appointmentService.getIcsViewOrChange(referral))
+    return ResponseEntity.ok(appointmentService.getIcsViewOrChange(caseReference))
   }
 
   @Operation(summary = "Get referral information and ICS prefill for the change details page")
@@ -164,8 +163,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsChangeDetailsBffDto> {
     log.info("GET /bff/referral/{}/ics-change-details", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(appointmentService.getIcsChangeDetails(referral))
+    return ResponseEntity.ok(appointmentService.getIcsChangeDetails(caseReference))
   }
 
   @Operation(summary = "Get referral full name for the ICS change reason page")
@@ -184,8 +182,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsChangeReasonBffDto> {
     log.info("GET /bff/referral/{}/ics-change-details/reason", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(appointmentService.getIcsChangeReason(referral))
+    return ResponseEntity.ok(appointmentService.getIcsChangeReason(caseReference))
   }
 
   @Operation(summary = "Get all ICS appointments for a referral")
@@ -352,10 +349,8 @@ class AppointmentController(
   ): ResponseEntity<IcsFeedbackSessionDto> {
     log.info("GET /bff/referral/{}/ics_appointment_feedback_details", caseReference)
 
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-
     return ResponseEntity.ok(
-      appointmentService.getIcsFeedbackSessionDetails(referral),
+      appointmentService.getIcsFeedbackSessionDetails(caseReference),
     )
   }
 
@@ -375,8 +370,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsFeedbackDidSessionTakePlaceBffDto> {
     log.info("GET /bff/ics-feedback/{}/did-session-take-place", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackDidSessionTakePlaceBffDto(appointmentService.getIcsFeedbackSessionMethod(referral)))
+    return ResponseEntity.ok(IcsFeedbackDidSessionTakePlaceBffDto(appointmentService.getIcsFeedbackSessionMethod(caseReference)))
   }
 
   @Operation(summary = "Get referral first name, appointment date and time for the ICS feedback attendance page")
@@ -395,8 +389,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsFeedbackAttendanceBffDto> {
     log.info("GET /bff/ics-feedback/{}/attendance", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(appointmentService.getIcsFeedbackAttendance(referral))
+    return ResponseEntity.ok(appointmentService.getIcsFeedbackAttendance(caseReference))
   }
 
   @Operation(summary = "Get referral first name, appointment date and time for the ICS feedback session details page")
@@ -415,8 +408,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsFeedbackSessionDetailsBffDto> {
     log.info("GET /bff/ics-feedback/{}/session-details", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(appointmentService.getIcsFeedbackSessionDetailsPage(referral))
+    return ResponseEntity.ok(appointmentService.getIcsFeedbackSessionDetailsPage(caseReference))
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback session feedback page")
@@ -435,8 +427,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsFeedbackSessionFeedbackBffDto> {
     log.info("GET /bff/ics-feedback/{}/session-feedback", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackSessionFeedbackBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(IcsFeedbackSessionFeedbackBffDto(appointmentService.getIcsFeedbackReferralFirstName(caseReference)))
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback issues or concerns page")
@@ -455,8 +446,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsFeedbackIssuesOrConcernsBffDto> {
     log.info("GET /bff/ics-feedback/{}/issues-or-concerns", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackIssuesOrConcernsBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(IcsFeedbackIssuesOrConcernsBffDto(appointmentService.getIcsFeedbackReferralFirstName(caseReference)))
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback identified additional needs page")
@@ -475,8 +465,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsFeedbackIdentifiedAdditionalNeedsBffDto> {
     log.info("GET /bff/ics-feedback/{}/identified-additional-needs", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackIdentifiedAdditionalNeedsBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(IcsFeedbackIdentifiedAdditionalNeedsBffDto(appointmentService.getIcsFeedbackReferralFirstName(caseReference)))
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback next steps page")
@@ -495,8 +484,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsFeedbackNextStepsBffDto> {
     log.info("GET /bff/ics-feedback/{}/next-steps", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackNextStepsBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(IcsFeedbackNextStepsBffDto(appointmentService.getIcsFeedbackReferralFirstName(caseReference)))
   }
 
   @Operation(summary = "Get referral first name and ICS appointment ID for the ICS feedback check answers page")
@@ -515,8 +503,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsFeedbackCheckAnswersBffDto> {
     log.info("GET /bff/ics-feedback/{}/check-answers", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(appointmentService.getIcsFeedbackCheckAnswers(referral))
+    return ResponseEntity.ok(appointmentService.getIcsFeedbackCheckAnswers(caseReference))
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback why session did not happen page")
@@ -535,8 +522,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsFeedbackWhyDidSessionNotHappenBffDto> {
     log.info("GET /bff/ics-feedback/{}/why-did-the-session-not-happen", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackWhyDidSessionNotHappenBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(IcsFeedbackWhyDidSessionNotHappenBffDto(appointmentService.getIcsFeedbackReferralFirstName(caseReference)))
   }
 
   @Operation(summary = "Get referral first name for the ICS feedback how they tried to contact the person page")
@@ -555,8 +541,7 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<IcsFeedbackHowTheyTriedToContactThePersonBffDto> {
     log.info("GET /bff/ics-feedback/{}/how-they-tried-to-contact-the-person", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return ResponseEntity.ok(IcsFeedbackHowTheyTriedToContactThePersonBffDto(appointmentService.getIcsFeedbackReferralFirstName(referral)))
+    return ResponseEntity.ok(IcsFeedbackHowTheyTriedToContactThePersonBffDto(appointmentService.getIcsFeedbackReferralFirstName(caseReference)))
   }
 
   @Operation(summary = "Get Existing support needs")
@@ -579,10 +564,8 @@ class AppointmentController(
     @PathVariable caseReference: String,
   ): ResponseEntity<ExistingSupportNeedsBffResponseDto> {
     log.info("GET /bff/referral/{}/existing-support-needs", caseReference)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-
     return ResponseEntity.ok(
-      appointmentService.getReferralExistingAdditionalSupportNeeds(referral),
+      appointmentService.getReferralExistingAdditionalSupportNeeds(caseReference),
     )
   }
 }

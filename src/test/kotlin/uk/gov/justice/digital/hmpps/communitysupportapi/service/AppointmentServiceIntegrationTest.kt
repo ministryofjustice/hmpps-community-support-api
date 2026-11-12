@@ -970,7 +970,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `should throw NotFoundException if no appointment exists`() {
       assertThrows<NotFoundException> {
-        appointmentService.getIcsFeedbackSessionDetails(referral)
+        appointmentService.getIcsFeedbackSessionDetails(referral.id.toString())
       }
     }
 
@@ -991,7 +991,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
       appointmentHelper.createAppointmentStatusHistory(appointment)
 
-      val result = appointmentService.getIcsFeedbackSessionDetails(referral)
+      val result = appointmentService.getIcsFeedbackSessionDetails(referral.id.toString())
 
       assertThat(result.fullName).isEqualTo("Alex Jones")
       assertThat(result.appointmentDetails?.method).isNull()
@@ -1031,7 +1031,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       appointmentHelper.createAppointmentStatusHistory(firstAppointment)
       appointmentHelper.createAppointmentStatusHistory(secondAppointment)
 
-      val result = appointmentService.getIcsFeedbackSessionDetails(referral)
+      val result = appointmentService.getIcsFeedbackSessionDetails(referral.id.toString())
 
       assertThat(result.fullName).isEqualTo("Alex Jones")
       assertThat(result.appointmentDetails?.method).isEqualTo(AppointmentDeliveryMethod.VIDEO_CALL)
@@ -1073,7 +1073,7 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       appointmentHelper.createAppointmentStatusHistory(appointment1)
       appointmentHelper.createAppointmentStatusHistory(appointment2)
 
-      val result = appointmentService.getIcsFeedbackSessionDetails(referral)
+      val result = appointmentService.getIcsFeedbackSessionDetails(referral.id.toString())
 
       assertThat(result.fullName).isEqualTo("Alex Jones")
       assertThat(result.appointmentDetails?.method).isEqualTo(AppointmentDeliveryMethod.PHONE_CALL)
