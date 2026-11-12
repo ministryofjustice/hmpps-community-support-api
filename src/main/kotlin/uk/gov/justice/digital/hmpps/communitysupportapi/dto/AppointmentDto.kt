@@ -1,16 +1,19 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.swagger.v3.oas.annotations.media.DiscriminatorMapping
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.constraints.AssertTrue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelivery
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AppointmentStatusHistoryType
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.appointments.ChangeIcsAppointment
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.OffsetDateTime
@@ -28,7 +31,16 @@ data class CreateAppointmentRequest(
   /** "Is this a Meet at the Gate session?" – required for POST_RELEASE_SESSION only. */
   val meetAtTheGate: Boolean? = null,
   var changeAppointmentDetails: ChangeAppointmentDetails? = null,
-)
+) {
+  @get:JsonIgnore
+  @get:Schema(hidden = true)
+  @get:AssertTrue(
+    message = "Session method IN_PERSON_PRISON is not allowed for appointment type ICS",
+    groups = [ChangeIcsAppointment::class],
+  )
+  val isValidIcsChangeSessionMethod: Boolean
+    get() = sessionMethodRequest.type != SessionMethodType.IN_PERSON_PRISON
+}
 
 data class ChangeAppointmentDetails(
   val changeRequestedBy: ChangeRequesterType? = null,

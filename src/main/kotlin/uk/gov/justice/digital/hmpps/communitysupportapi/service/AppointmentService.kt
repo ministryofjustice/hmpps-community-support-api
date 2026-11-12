@@ -52,6 +52,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentSt
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.appointments.CreateAppointmentValidator
 import java.time.Clock
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -89,31 +90,6 @@ class AppointmentService(
         value = it.toCreateAppointmentValue(),
       )
     }
-
-    private val ALL_LOCATION_METHODS = setOf(
-      SessionMethodType.PHONE,
-      SessionMethodType.VIDEO,
-      SessionMethodType.IN_PERSON_PROBATION_OFFICE,
-      SessionMethodType.IN_PERSON_OTHER_LOCATION,
-    )
-
-    /** Session methods permitted for each appointment type (see session-mapping.png). */
-    private val ALLOWED_SESSION_METHODS: Map<AppointmentType, Set<SessionMethodType>> = mapOf(
-      AppointmentType.ICS to ALL_LOCATION_METHODS,
-      AppointmentType.CONTACT_SESSION to ALL_LOCATION_METHODS,
-      AppointmentType.POST_RELEASE_SESSION to ALL_LOCATION_METHODS,
-      AppointmentType.PRE_RELEASE_SESSION to setOf(
-        SessionMethodType.PHONE,
-        SessionMethodType.VIDEO,
-        SessionMethodType.IN_PERSON_OTHER_LOCATION,
-        SessionMethodType.IN_PERSON_PRISON,
-      ),
-      AppointmentType.HANDOVER_SESSION to setOf(
-        SessionMethodType.PHONE,
-        SessionMethodType.VIDEO,
-        SessionMethodType.IN_PERSON,
-      ),
-    )
   }
 
   private fun createNewAppointment(referral: Referral, type: AppointmentType): Appointment {
@@ -214,7 +190,7 @@ class AppointmentService(
   ): AppointmentIcsResponse {
     log.info("Creating {} appointment for referral {}", type, caseIdentifier)
 
-    validateAppointmentRequest(type, request)
+    CreateAppointmentValidator.validate(type, request)
 
     val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
 
@@ -238,45 +214,6 @@ class AppointmentService(
 
     log.info("{} appointment created with id {}", type, savedIcs.id)
     return AppointmentIcsResponse.from(savedIcs, appointmentHistory.status, getReferralName(savedIcs.appointment))
-  }
-
-  /**
-   * Validates the request against the form rules for the given appointment type (see session-mapping.png).
-   */
-  private fun validateAppointmentRequest(type: AppointmentType, request: CreateAppointmentRequest) {
-    val sessionMethod = request.sessionMethodRequest
-
-    val allowedMethods = ALLOWED_SESSION_METHODS.getValue(type)
-    if (sessionMethod.type !in allowedMethods) {
-      throw ValidationException("Session method ${sessionMethod.type} is not allowed for appointment type $type")
-    }
-
-    if (sessionMethod.type == SessionMethodType.IN_PERSON_OTHER_LOCATION) {
-      val missingFields = listOfNotNull(
-        "addressLine1".takeIf { sessionMethod.addressLine1.isNullOrBlank() },
-        "townOrCity".takeIf { sessionMethod.townOrCity.isNullOrBlank() },
-        "postcode".takeIf { sessionMethod.postcode.isNullOrBlank() },
-      )
-      if (missingFields.isNotEmpty()) {
-        throw ValidationException("Missing required address fields for IN_PERSON_OTHER_LOCATION: ${missingFields.joinToString()}")
-      }
-    }
-
-    if (sessionMethod.type == SessionMethodType.IN_PERSON_PRISON && sessionMethod.prisonCode.isNullOrBlank()) {
-      throw ValidationException("prisonCode is required for IN_PERSON_PRISON")
-    }
-
-    if (type == AppointmentType.POST_RELEASE_SESSION) {
-      if (request.meetAtTheGate == null) {
-        throw ValidationException("meetAtTheGate is required for appointment type $type")
-      }
-    } else if (request.meetAtTheGate != null) {
-      throw ValidationException("meetAtTheGate is only applicable to appointment type ${AppointmentType.POST_RELEASE_SESSION}")
-    }
-
-    if (type == AppointmentType.HANDOVER_SESSION && request.sessionCommunication.isNotEmpty()) {
-      throw ValidationException("sessionCommunication is not applicable to appointment type $type")
-    }
   }
 
   /**
@@ -327,10 +264,6 @@ class AppointmentService(
     changedBy: ReferralUser,
   ): AppointmentIcsResponse {
     log.info("Changing ICS appointment for referral {}", caseIdentifier)
-
-    if (request.sessionMethodRequest.type == SessionMethodType.IN_PERSON_PRISON) {
-      throw ValidationException("Session method IN_PERSON_PRISON is not allowed for appointment type ICS")
-    }
 
     val referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
 

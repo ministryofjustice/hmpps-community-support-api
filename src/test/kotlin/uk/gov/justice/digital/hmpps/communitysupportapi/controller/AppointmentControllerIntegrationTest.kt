@@ -660,8 +660,8 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
         .exchange()
         .expectStatus().isBadRequest
         .expectBody()
-        .jsonPath("$.developerMessage")
-        .isEqualTo("Session method IN_PERSON_PRISON is not allowed for appointment type ICS")
+        .jsonPath("$.userMessage")
+        .isEqualTo("Validation failure: validIcsChangeSessionMethod: Session method IN_PERSON_PRISON is not allowed for appointment type ICS")
 
       assertThat(appointmentRepository.findAllByReferralId(referral.id).orEmpty()).hasSize(1)
       assertThat(appointmentStatusHistoryRepository.findTopByAppointmentIdOrderByCreatedAtDesc(appointment.id)?.status)
