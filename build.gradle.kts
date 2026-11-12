@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.14"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.15"
   kotlin("plugin.spring") version "2.4.21"
   kotlin("plugin.jpa") version "2.4.21"
 }
@@ -11,7 +11,7 @@ configurations {
 }
 
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:3.0.3")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:3.1.0")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-webclient")
   implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -30,7 +30,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
   implementation("org.springframework.security:spring-security-crypto:7.1.2")
-  implementation("com.nimbusds:oauth2-oidc-sdk:11.38.2")
+  implementation("com.nimbusds:oauth2-oidc-sdk:11.39")
 
   // csv
   implementation("org.apache.commons:commons-csv:1.14.1")
@@ -39,7 +39,7 @@ dependencies {
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.boot:spring-boot-test-autoconfigure")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
-  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:3.0.3")
+  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:3.1.0")
   testImplementation("org.mockito.kotlin:mockito-kotlin:6.4.0")
   testImplementation("org.wiremock:wiremock-standalone:3.13.2")
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.48") {
@@ -50,7 +50,7 @@ dependencies {
   testImplementation("org.awaitility:awaitility-kotlin")
   testImplementation("com.ninja-squad:springmockk:5.0.1")
   testImplementation("io.kotest:kotest-assertions-core:6.2.6")
-  testImplementation("io.mockk:mockk:1.14.11")
+  testImplementation("io.mockk:mockk:1.14.12")
 
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
   runtimeOnly("org.postgresql:postgresql:42.7.14")
