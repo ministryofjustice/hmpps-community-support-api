@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
-import io.kotest.matchers.shouldBe
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -18,7 +17,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
@@ -27,13 +26,13 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReas
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionNotHappenReasonRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsFeedbackRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIcsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
@@ -827,36 +826,35 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("GET /bff/referral/{caseReference}/existing-support-needs")
-  inner class GetExistingSupportNeedsEndpoint {
+  @DisplayName("GET /bff/ics-feedback/{caseReference}/identified-additional-support-needs")
+  inner class GetIdentifiedAdditionalSupportNeedsEndpoint {
 
     @Test
     fun `should return 401 unauthorized when no token provided`() {
-      assertUnauthorized(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+      assertUnauthorized(GET, "/bff/ics-feedback/${referral.referenceNumber}/identified-additional-support-needs")
     }
 
     @Test
     fun `should return 403 forbidden when no roles provided`() {
-      assertForbiddenNoRole(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+      assertForbiddenNoRole(GET, "/bff/ics-feedback/${referral.referenceNumber}/identified-additional-support-needs")
     }
 
     @Test
     fun `should return 403 forbidden when wrong role provided`() {
-      assertForbiddenWrongRole(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+      assertForbiddenWrongRole(GET, "/bff/ics-feedback/${referral.referenceNumber}/identified-additional-support-needs")
     }
 
     @Test
     fun `should return 404 when referral case reference is not found`() {
-      assertNotFound(GET, "/bff/referral/${referral.referenceNumber}/existing-support-needs")
+      assertNotFound(GET, "/bff/ics-feedback/${referral.referenceNumber}/identified-additional-support-needs")
     }
 
     @Test
-    fun `should return 200 with correct existing support needs details`() {
+    fun `should return 200 with correct referral support needs details`() {
       val person = referralHelper.createPerson(identifier = CRN)
       person.additionalDetails = PersonAdditionalDetailsFactory()
         .withPerson(person)
         .withEthnicity("White")
-        .withPreferredLanguage("")
         .withNeurodiverseConditions("None")
         .withReligionOrBelief("Christianity")
         .withAddress("1, Test Street, Testville, TE1 1ST")
@@ -872,27 +870,34 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
         .withCreatedBy(testUser.id)
         .withAdditionalSupportNeeded(true)
         .withCaringResponsibilitiesDetails("Lorem ipsum dolor sit amet")
+        .withMentalEmotionalHealthDetails("Lorem ipsum dolor sit amet")
+        .withInterpreterNeeded(true)
+        .withInterpreterLanguage("Spanish")
         .create()
       personAdditionalSupportNeedsRepository.save(supportNeeds)
 
       webTestClient.get()
-        .uri("/bff/referral/${referral.referenceNumber}/existing-support-needs")
+        .uri("/bff/ics-feedback/${referral.referenceNumber}/identified-additional-support-needs")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
         .isOk
-        .expectBody<ExistingSupportNeedsBffResponseDto>()
+        .expectBody<IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto>()
         .consumeWith { result ->
           val body = result.responseBody!!
-          body.physicalHealthDetails shouldBe null
-          body.mentalEmotionalHealthDetails shouldBe null
-          body.neurodiversityDetails shouldBe null
-          body.locationTravelDetails shouldBe null
-          body.caringResponsibilitiesDetails shouldBe "Lorem ipsum dolor sit amet"
-          body.employmentResponsibilitiesDetails shouldBe null
-          body.diversityDetails shouldBe null
-          body.anythingElseDetails shouldBe null
-          body.interpreterLanguage shouldBe null
+          assertThat(body.referralFirstName).isEqualTo("John")
+          assertThat(body.referralSupportNeeds.size).isEqualTo(2)
+          assertThat(body.referralSupportNeeds).doesNotContainKey("physicalHealth")
+          assertThat(body.referralSupportNeeds).doesNotContainKey("learningDisability")
+          assertThat(body.referralSupportNeeds).doesNotContainKey("neurodiversity")
+          assertThat(body.referralSupportNeeds).doesNotContainKey("locationTravel")
+          assertThat(body.referralSupportNeeds).doesNotContainKey("employmentResponsibilities")
+          assertThat(body.referralSupportNeeds).doesNotContainKey("diversity")
+          assertThat(body.referralSupportNeeds).doesNotContainKey("anythingElse")
+          assertThat(body.referralSupportNeeds).doesNotContainKey("interpreter")
+
+          assertThat(body.referralSupportNeeds["caringResponsibilities"]).isEqualTo("Lorem ipsum dolor sit amet")
+          assertThat(body.referralSupportNeeds["mentalEmotionalHealth"]).isEqualTo("Lorem ipsum dolor sit amet")
         }
     }
   }
