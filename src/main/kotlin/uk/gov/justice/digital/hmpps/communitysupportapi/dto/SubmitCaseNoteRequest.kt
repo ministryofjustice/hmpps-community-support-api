@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import jakarta.validation.constraints.NotNull
+import java.util.UUID
 
 data class SubmitCaseNoteRequest(
   @field:NotNull(message = "The note title must not be null")
@@ -10,4 +11,6 @@ data class SubmitCaseNoteRequest(
   val details: String,
 
   val shouldNotify: Boolean = false,
+
+  val pathways: List<UUID> = emptyList(),
 )

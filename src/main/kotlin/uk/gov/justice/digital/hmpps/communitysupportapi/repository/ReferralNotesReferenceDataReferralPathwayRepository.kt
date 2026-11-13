@@ -4,4 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralNotesReferenceDataReferralPathway
 import java.util.UUID
 
-interface ReferralNotesReferenceDataReferralPathwayRepository : JpaRepository<ReferralNotesReferenceDataReferralPathway, UUID>
+interface ReferralNotesReferenceDataReferralPathwayRepository : JpaRepository<ReferralNotesReferenceDataReferralPathway, UUID> {
+  fun findAllByReferralNoteId(referralNoteId: UUID): List<ReferralNotesReferenceDataReferralPathway>
+}
