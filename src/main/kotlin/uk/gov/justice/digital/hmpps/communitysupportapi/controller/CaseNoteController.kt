@@ -9,11 +9,13 @@ import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNotesAndNonContactSessionsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CaseNoteService
@@ -64,5 +66,33 @@ class CaseNoteController(
     val createdBy = user.hmppsAuthUsername
     logger.info("Submitting case note for referral {}", referralReference)
     return ResponseEntity.ok(caseNoteService.submitCaseNote(referralReference, request, createdBy))
+  }
+
+  @Operation(summary = "Get case notes and non-contact sessions for a referral")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Case notes and non-contact sessions retrieved successfully",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ReferralNotesAndNonContactSessionsBffResponseDto::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{referralReference}/notes")
+  fun getNotesAndNonContactSessions(
+    @PathVariable referralReference: String,
+  ): ResponseEntity<ReferralNotesAndNonContactSessionsBffResponseDto> {
+    logger.info("Fetching notes and non-contact sessions for referral {}", referralReference)
+    return ResponseEntity.ok(caseNoteService.getNotesAndNonContactSessions(referralReference))
   }
 }
