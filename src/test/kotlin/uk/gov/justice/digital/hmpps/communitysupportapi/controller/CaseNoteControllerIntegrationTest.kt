@@ -51,31 +51,6 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setup() {
       testUser = referralHelper.ensureReferralUser()
-
-//      referenceDataReferralPathwayRepository.saveAll(
-//        listOf(
-//          ReferenceDataReferralPathway(
-//            id = UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d801"),
-//            title = "Community Links",
-//            displayOrder = 1,
-//          ),
-//          ReferenceDataReferralPathway(
-//            id = UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d802"),
-//            title = "Housing Support",
-//            displayOrder = 2,
-//          ),
-//          ReferenceDataReferralPathway(
-//            id = UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d803"),
-//            title = "Jobs and skills support",
-//            displayOrder = 3,
-//          ),
-//          ReferenceDataReferralPathway(
-//            id = UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d804"),
-//            title = "Money management",
-//            displayOrder = 4,
-//          ),
-//        ),
-//      )
     }
 
     @Test
