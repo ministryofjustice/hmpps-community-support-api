@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -42,6 +43,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointments
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.AppointmentService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralLookupService
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.appointments.ChangeIcsAppointment
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
 
@@ -120,7 +122,7 @@ class AppointmentController(
   @PutMapping("/referral/{caseReference}/ics")
   fun changeIcsAppointment(
     @PathVariable caseReference: String,
-    @RequestBody request: CreateAppointmentRequest,
+    @Validated(ChangeIcsAppointment::class) @RequestBody request: CreateAppointmentRequest,
   ): ResponseEntity<AppointmentIcsResponse> {
     log.info("PUT /referral/{}/ics", caseReference)
     val changedBy = userMapper.fromToken(authenticationHolder)
@@ -304,8 +306,7 @@ class AppointmentController(
   ): ResponseEntity<AppointmentIcsFeedbackResponse> {
     log.info("POST /referral/{}/ics/{}/feedback", caseReference, icsId)
     val submittedBy = userMapper.fromToken(authenticationHolder)
-    val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    val response = appointmentService.createIcsFeedback(referral.id, icsId, request, submittedBy)
+    val response = appointmentService.createIcsFeedback(caseReference, icsId, request, submittedBy)
     return ResponseEntity.status(HttpStatus.CREATED).body(response)
   }
 
