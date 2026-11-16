@@ -24,7 +24,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsRespon
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentReferenceDataBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsChangeDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsChangeReasonBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanceBffDto
@@ -32,6 +31,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackCheckAnsw
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackDidSessionTakePlaceBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackHowTheyTriedToContactThePersonBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIdentifiedAdditionalNeedsBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIssuesOrConcernsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackNextStepsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDetailsBffDto
@@ -551,7 +551,7 @@ class AppointmentController(
       ApiResponse(
         responseCode = "200",
         description = "Existing support needs found",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ExistingSupportNeedsBffResponseDto::class))],
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto::class))],
       ),
       ApiResponse(
         responseCode = "404",
@@ -560,13 +560,13 @@ class AppointmentController(
       ),
     ],
   )
-  @GetMapping("/bff/referral/{caseReference}/existing-support-needs")
-  fun getExistingSupportNeeds(
+  @GetMapping("/bff/ics-feedback/{caseReference}/identified-additional-support-needs")
+  fun getIdentifiedAdditionalSupportNeeds(
     @PathVariable caseReference: String,
-  ): ResponseEntity<ExistingSupportNeedsBffResponseDto> {
-    log.info("GET /bff/referral/{}/existing-support-needs", caseReference)
+  ): ResponseEntity<IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto> {
+    log.info("GET /bff/ics-feedback/{}/existing-support-needs", caseReference)
     return ResponseEntity.ok(
-      appointmentService.getReferralExistingAdditionalSupportNeeds(caseReference),
+      appointmentService.getIcsFeedbackReferralAdditionalSupportNeeds(caseReference),
     )
   }
 }

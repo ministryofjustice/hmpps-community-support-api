@@ -2667,63 +2667,55 @@
         ],
         "type": "object"
       },
-      "ExistingSupportNeedsBffResponseDto": {
+      "IcsChangeDetailsBffDto": {
         "properties": {
-          "anythingElseDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "appointmentDate": {
+            "format": "date",
+            "type": "string"
           },
-          "caringResponsibilitiesDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "appointmentTime": {
+            "$ref": "#/components/schemas/AppointmentTimeResponse"
           },
-          "diversityDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "firstName": {
+            "type": "string"
           },
-          "employmentResponsibilitiesDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "personIdentifier": {
+            "type": "string"
           },
-          "interpreterLanguage": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "referralDate": {
+            "format": "date",
+            "type": "string"
           },
-          "locationTravelDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "sessionCommunications": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
-          "mentalEmotionalHealthDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "neurodiversityDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "physicalHealthDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "sessionMethod": {
+            "$ref": "#/components/schemas/SessionMethod"
           }
         },
+        "required": [
+          "appointmentDate",
+          "appointmentTime",
+          "firstName",
+          "personIdentifier",
+          "referralDate",
+          "sessionCommunications",
+          "sessionMethod"
+        ],
+        "type": "object"
+      },
+      "IcsChangeReasonBffDto": {
+        "properties": {
+          "fullName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName"
+        ],
         "type": "object"
       },
       "IcsChangeDetailsBffDto": {
@@ -2843,6 +2835,24 @@
         },
         "required": [
           "referralFirstName"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          },
+          "referralSupportNeeds": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "referralFirstName",
+          "referralSupportNeeds"
         ],
         "type": "object"
       },
@@ -4644,6 +4654,33 @@
         ],
         "type": "object"
       },
+      "SubmitCaseNoteRequest": {
+        "properties": {
+          "details": {
+            "type": "string"
+          },
+          "pathways": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "shouldNotify": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "details",
+          "pathways",
+          "shouldNotify",
+          "title"
+        ],
+        "type": "object"
+      },
       "SubmitReferralResponseDto": {
         "properties": {
           "personId": {
@@ -4664,6 +4701,21 @@
         "required": [
           "personId",
           "referralId"
+        ],
+        "type": "object"
+      },
+      "SuccessMessageResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message",
+          "success"
         ],
         "type": "object"
       },
@@ -5607,6 +5659,43 @@
         ]
       }
     },
+    "/bff/ics-feedback/{caseReference}/identified-additional-support-needs": {
+      "get": {
+        "operationId": "getIdentifiedAdditionalSupportNeeds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto"
+                }
+              }
+            },
+            "description": "Existing support needs found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Existing support needs found"
+          }
+        },
+        "summary": "Get Existing support needs",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
     "/bff/ics-feedback/{caseReference}/issues-or-concerns": {
       "get": {
         "operationId": "getIcsFeedbackIssuesOrConcerns",
@@ -6442,43 +6531,6 @@
           }
         },
         "summary": "Get create appointment page data for a referral",
-        "tags": [
-          "appointment-controller"
-        ]
-      }
-    },
-    "/bff/referral/{caseReference}/existing-support-needs": {
-      "get": {
-        "operationId": "getExistingSupportNeeds",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "caseReference",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExistingSupportNeedsBffResponseDto"
-                }
-              }
-            },
-            "description": "Existing support needs found"
-          },
-          "404": {
-            "content": {
-              "application/json": {}
-            },
-            "description": "Existing support needs found"
-          }
-        },
-        "summary": "Get Existing support needs",
         "tags": [
           "appointment-controller"
         ]
@@ -8161,6 +8213,59 @@
         "summary": "Update the Action Plan needs order",
         "tags": [
           "action-plan-controller"
+        ]
+      }
+    },
+    "/referral/{referralReference}/case-note": {
+      "post": {
+        "operationId": "submitCaseNote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitCaseNoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessageResponse"
+                }
+              }
+            },
+            "description": "Case note submitted successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Validation failure"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Submit a case note",
+        "tags": [
+          "case-note-controller"
         ]
       }
     },
