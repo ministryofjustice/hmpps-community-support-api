@@ -4603,6 +4603,33 @@
         ],
         "type": "object"
       },
+      "SubmitCaseNoteRequest": {
+        "properties": {
+          "details": {
+            "type": "string"
+          },
+          "pathways": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "shouldNotify": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "details",
+          "pathways",
+          "shouldNotify",
+          "title"
+        ],
+        "type": "object"
+      },
       "SubmitReferralResponseDto": {
         "properties": {
           "personId": {
@@ -4623,6 +4650,21 @@
         "required": [
           "personId",
           "referralId"
+        ],
+        "type": "object"
+      },
+      "SuccessMessageResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message",
+          "success"
         ],
         "type": "object"
       },
@@ -8120,6 +8162,59 @@
         "summary": "Update the Action Plan needs order",
         "tags": [
           "action-plan-controller"
+        ]
+      }
+    },
+    "/referral/{referralReference}/case-note": {
+      "post": {
+        "operationId": "submitCaseNote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitCaseNoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessageResponse"
+                }
+              }
+            },
+            "description": "Case note submitted successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Validation failure"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Submit a case note",
+        "tags": [
+          "case-note-controller"
         ]
       }
     },
