@@ -2667,63 +2667,55 @@
         ],
         "type": "object"
       },
-      "ExistingSupportNeedsBffResponseDto": {
+      "IcsChangeDetailsBffDto": {
         "properties": {
-          "anythingElseDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "appointmentDate": {
+            "format": "date",
+            "type": "string"
           },
-          "caringResponsibilitiesDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "appointmentTime": {
+            "$ref": "#/components/schemas/AppointmentTimeResponse"
           },
-          "diversityDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "firstName": {
+            "type": "string"
           },
-          "employmentResponsibilitiesDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "personIdentifier": {
+            "type": "string"
           },
-          "interpreterLanguage": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "referralDate": {
+            "format": "date",
+            "type": "string"
           },
-          "locationTravelDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "sessionCommunications": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
-          "mentalEmotionalHealthDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "neurodiversityDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "physicalHealthDetails": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "sessionMethod": {
+            "$ref": "#/components/schemas/SessionMethod"
           }
         },
+        "required": [
+          "appointmentDate",
+          "appointmentTime",
+          "firstName",
+          "personIdentifier",
+          "referralDate",
+          "sessionCommunications",
+          "sessionMethod"
+        ],
+        "type": "object"
+      },
+      "IcsChangeReasonBffDto": {
+        "properties": {
+          "fullName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName"
+        ],
         "type": "object"
       },
       "IcsFeedbackAttendanceBffDto": {
@@ -2792,6 +2784,24 @@
         },
         "required": [
           "referralFirstName"
+        ],
+        "type": "object"
+      },
+      "IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto": {
+        "properties": {
+          "referralFirstName": {
+            "type": "string"
+          },
+          "referralSupportNeeds": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "referralFirstName",
+          "referralSupportNeeds"
         ],
         "type": "object"
       },
@@ -2886,6 +2896,51 @@
         },
         "required": [
           "referralFirstName"
+        ],
+        "type": "object"
+      },
+      "IcsViewOrChangeBffDto": {
+        "properties": {
+          "appointmentDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "appointmentTime": {
+            "$ref": "#/components/schemas/AppointmentTimeResponse"
+          },
+          "changeAppointmentDetails": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChangeAppointmentDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "referralFirstName": {
+            "type": "string"
+          },
+          "referralLastName": {
+            "type": "string"
+          },
+          "sessionCommunications": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sessionMethod": {
+            "$ref": "#/components/schemas/SessionMethod"
+          }
+        },
+        "required": [
+          "appointmentDate",
+          "appointmentTime",
+          "referralFirstName",
+          "referralLastName",
+          "sessionCommunications",
+          "sessionMethod"
         ],
         "type": "object"
       },
@@ -5511,6 +5566,43 @@
         ]
       }
     },
+    "/bff/ics-feedback/{caseReference}/identified-additional-support-needs": {
+      "get": {
+        "operationId": "getIdentifiedAdditionalSupportNeeds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto"
+                }
+              }
+            },
+            "description": "Existing support needs found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Existing support needs found"
+          }
+        },
+        "summary": "Get Existing support needs",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
     "/bff/ics-feedback/{caseReference}/issues-or-concerns": {
       "get": {
         "operationId": "getIcsFeedbackIssuesOrConcerns",
@@ -5993,6 +6085,43 @@
         ]
       }
     },
+    "/bff/referral-details/{caseReference}/ics-view-or-change": {
+      "get": {
+        "operationId": "getIcsViewOrChange",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsViewOrChangeBffDto"
+                }
+              }
+            },
+            "description": "ICS view or change details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral or ICS appointment not found"
+          }
+        },
+        "summary": "Get the latest ICS appointment for the view or change page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
     "/bff/referral-details/{referralIdentifier}/progress": {
       "get": {
         "operationId": "getReferralProgressDetails",
@@ -6314,43 +6443,6 @@
         ]
       }
     },
-    "/bff/referral/{caseReference}/existing-support-needs": {
-      "get": {
-        "operationId": "getExistingSupportNeeds",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "caseReference",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExistingSupportNeedsBffResponseDto"
-                }
-              }
-            },
-            "description": "Existing support needs found"
-          },
-          "404": {
-            "content": {
-              "application/json": {}
-            },
-            "description": "Existing support needs found"
-          }
-        },
-        "summary": "Get Existing support needs",
-        "tags": [
-          "appointment-controller"
-        ]
-      }
-    },
     "/bff/referral/{caseReference}/ics": {
       "get": {
         "operationId": "getIcsAppointments",
@@ -6386,6 +6478,80 @@
           }
         },
         "summary": "Get all ICS appointments for a referral",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/referral/{caseReference}/ics-change-details": {
+      "get": {
+        "operationId": "getIcsChangeDetails",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsChangeDetailsBffDto"
+                }
+              }
+            },
+            "description": "ICS change details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral or ICS appointment not found"
+          }
+        },
+        "summary": "Get referral information and ICS prefill for the change details page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/referral/{caseReference}/ics-change-details/reason": {
+      "get": {
+        "operationId": "getIcsChangeReason",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsChangeReasonBffDto"
+                }
+              }
+            },
+            "description": "ICS change reason found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral or ICS appointment not found"
+          }
+        },
+        "summary": "Get referral full name for the ICS change reason page",
         "tags": [
           "appointment-controller"
         ]
