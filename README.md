@@ -107,11 +107,19 @@ contract to the Pact Broker.
 
 ### CI pipeline
 
-On every push, `pipeline.yml` runs `pact_test_publish.yml`, which executes `./gradlew pactTest` and then
-`./gradlew pactPublish` to publish the generated contract(s) to the Pact Broker tagged with the branch name and
-app version. It then calls `trigger_pact_provider_verification.yml`, which dispatches the
-`pact_provider_verification.yml` workflow in `hmpps-person-record` to verify the newly published contract against
-that provider.
+On every push, `pipeline.yml` runs the shared
+[`pact_test_publish.yml`](https://github.com/ministryofjustice/hmpps-github-actions/blob/main/.github/workflows/pact_test_publish.yml)
+reusable workflow (from `ministryofjustice/hmpps-github-actions`), which:
+
+1. Executes `./gradlew pactTest` and uploads the test results as an artifact.
+2. Runs `./gradlew pactPublish` to publish the generated contract(s) to the Pact Broker, tagged with the branch
+   name and app version.
+3. Applies/refreshes a Pact Broker webhook (`webhook-hmpps-person-record.json`, ID `ctNyAoj2Rx6pJYuJSpYChw`, defined
+   in [`hmpps-pact-broker`](https://github.com/ministryofjustice/hmpps-pact-broker)) that is configured to fire a
+   `repository_dispatch` against `hmpps-person-record` whenever a contract requiring verification is published.
+   This replaces the previous approach of directly dispatching the provider's verification workflow from this
+   repository - the Pact Broker now triggers `hmpps-person-record`'s own `pact_provider_verification.yml` itself
+   whenever any consumer (not just this one) publishes a new/changed contract for it.
 
 Before deploying to an environment, `pact_deploy_env.yml` runs a Pact `can-i-deploy` check (via
 `pact_consumer_deployment: true`) to confirm the version being deployed has a successful, up-to-date provider
@@ -127,7 +135,7 @@ the Pact workflows to run successfully:
 | `PACT_BROKER_URL` | URL of the MoJ Pact Broker used to publish/verify contracts. |
 | `HMPPS_PACT_BROKER_USERNAME` | Username for authenticating with the Pact Broker. |
 | `HMPPS_PACT_BROKER_PASSWORD` | Password for authenticating with the Pact Broker. |
-| `PACT_TRIGGER_APP_ID` | GitHub App ID used to generate a token for dispatching the provider verification workflow in `hmpps-person-record`. The app must be installed on `hmpps-person-record` with `actions: write` permission. |
+| `PACT_TRIGGER_APP_ID` | GitHub App ID used to generate a short-lived, repository-scoped token that is embedded in the Pact Broker webhook so it can raise a `repository_dispatch` against `hmpps-person-record`. The app must be installed on `hmpps-person-record` with `contents: write` permission. |
 | `PACT_TRIGGER_PRIVATE_KEY` | Private key for the same GitHub App. |
 
 ## OpenAPI contract checks
