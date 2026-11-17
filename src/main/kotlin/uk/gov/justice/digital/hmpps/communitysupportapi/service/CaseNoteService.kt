@@ -2,14 +2,15 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNoteOrNonContactSessionBffDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNotesAndNonContactSessionsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralNote
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
-import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralNonContactSessionRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralNotesRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import java.time.OffsetDateTime
@@ -18,7 +19,6 @@ import java.util.UUID
 @Service
 class CaseNoteService(
   private val referralNoteRepository: ReferralNotesRepository,
-  private val referralNonContactSessionRepository: ReferralNonContactSessionRepository,
   private val referralRepository: ReferralRepository,
   private val referralLookupService: ReferralLookupService,
 ) {
@@ -62,21 +62,21 @@ class CaseNoteService(
   }
 
   @Transactional
-  fun getNotesAndNonContactSessions(referralReference: String): ReferralNotesAndNonContactSessionsBffResponseDto {
+  fun getNotesAndNonContactSessions(
+    referralReference: String,
+    pageable: Pageable,
+  ): Page<ReferralNoteOrNonContactSessionBffDto> {
     val referral = referralLookupService.findByCaseIdentifier(referralReference)
 
-    val notes = referralNoteRepository
-      .findAllByReferralIdAndDeletedAtIsNullOrderByCreatedAtDesc(referral.id)
-      .map { it.createdAt to ReferralNoteOrNonContactSessionBffDto.fromNote(it) }
+    val total = referralNoteRepository.countNoteAndNonContactSessionRows(referral.id)
+    val rows = referralNoteRepository.findAllNoteAndNonContactSessionRows(
+      referralId = referral.id,
+      limit = pageable.pageSize,
+      offset = pageable.offset,
+    )
 
-    val sessions = referralNonContactSessionRepository
-      .findAllByReferralIdAndDeletedAtIsNullOrderByCreatedAtDesc(referral.id)
-      .map { it.createdAt to ReferralNoteOrNonContactSessionBffDto.fromNonContactSession(it) }
+    val content = rows.map { ReferralNoteOrNonContactSessionBffDto.from(it) }
 
-    val merged = (notes + sessions)
-      .sortedByDescending { it.first }
-      .map { it.second }
-
-    return ReferralNotesAndNonContactSessionsBffResponseDto(notesAndNonContactSessions = merged)
+    return PageImpl(content, pageable, total)
   }
 }

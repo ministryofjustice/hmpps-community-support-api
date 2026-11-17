@@ -1,12 +1,15 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
@@ -15,9 +18,11 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNotesAndNonContactSessionsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNoteOrNonContactSessionBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CaseNoteService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 
@@ -77,7 +82,7 @@ class CaseNoteController(
         content = [
           Content(
             mediaType = "application/json",
-            schema = Schema(implementation = ReferralNotesAndNonContactSessionsBffResponseDto::class),
+            array = ArraySchema(schema = Schema(implementation = ReferralNoteOrNonContactSessionBffDto::class)),
           ),
         ],
       ),
@@ -91,8 +96,10 @@ class CaseNoteController(
   @GetMapping("/bff/referral/{referralReference}/notes")
   fun getNotesAndNonContactSessions(
     @PathVariable referralReference: String,
-  ): ResponseEntity<ReferralNotesAndNonContactSessionsBffResponseDto> {
+    @PageableDefault(page = 0, size = 25) pageable: Pageable,
+  ): ResponseEntity<PageResponse<ReferralNoteOrNonContactSessionBffDto>> {
     logger.info("Fetching notes and non-contact sessions for referral {}", referralReference)
-    return ResponseEntity.ok(caseNoteService.getNotesAndNonContactSessions(referralReference))
+    val page = caseNoteService.getNotesAndNonContactSessions(referralReference, pageable)
+    return ResponseEntity.ok(page.toResponse())
   }
 }

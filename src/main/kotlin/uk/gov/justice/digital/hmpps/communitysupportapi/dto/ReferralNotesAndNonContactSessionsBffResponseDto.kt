@@ -1,11 +1,10 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralNonContactSession
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralNote
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralNoteOrNonContactSessionRow
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.SHORT_DATE_TIME_FORMAT
 import java.util.UUID
 
-private const val DETAILS_MAX_LENGTH = 250
+private const val DETAILS_MAX_WORDS = 50
 
 data class ReferralNotesAndNonContactSessionsBffResponseDto(
   val notesAndNonContactSessions: List<ReferralNoteOrNonContactSessionBffDto>,
@@ -20,25 +19,13 @@ data class ReferralNoteOrNonContactSessionBffDto(
   val detailsTruncated: Boolean,
 ) {
   companion object {
-    fun fromNote(note: ReferralNote): ReferralNoteOrNonContactSessionBffDto {
-      val truncatedDetails = note.details.truncateDetails()
+    fun from(row: ReferralNoteOrNonContactSessionRow): ReferralNoteOrNonContactSessionBffDto {
+      val truncatedDetails = row.details.truncateDetails()
       return ReferralNoteOrNonContactSessionBffDto(
-        id = note.id,
-        createdAt = note.createdAt.format(SHORT_DATE_TIME_FORMAT),
-        createdBy = note.createdBy,
-        title = note.title,
-        details = truncatedDetails.text,
-        detailsTruncated = truncatedDetails.truncated,
-      )
-    }
-
-    fun fromNonContactSession(session: ReferralNonContactSession): ReferralNoteOrNonContactSessionBffDto {
-      val truncatedDetails = session.details.truncateDetails()
-      return ReferralNoteOrNonContactSessionBffDto(
-        id = session.id,
-        createdAt = session.createdAt.format(SHORT_DATE_TIME_FORMAT),
-        createdBy = session.createdBy,
-        title = session.title,
+        id = row.id,
+        createdAt = row.createdAt.format(SHORT_DATE_TIME_FORMAT),
+        createdBy = row.createdBy,
+        title = row.title,
         details = truncatedDetails.text,
         detailsTruncated = truncatedDetails.truncated,
       )
@@ -48,8 +35,11 @@ data class ReferralNoteOrNonContactSessionBffDto(
 
 private data class TruncatedDetails(val text: String, val truncated: Boolean)
 
-private fun String.truncateDetails(): TruncatedDetails = if (length <= DETAILS_MAX_LENGTH) {
-  TruncatedDetails(this, truncated = false)
-} else {
-  TruncatedDetails(take(DETAILS_MAX_LENGTH).trimEnd() + "...", truncated = true)
+private fun String.truncateDetails(): TruncatedDetails {
+  val words = trim().split(Regex("\\s+"))
+  return if (words.size <= DETAILS_MAX_WORDS) {
+    TruncatedDetails(this, truncated = false)
+  } else {
+    TruncatedDetails(words.take(DETAILS_MAX_WORDS).joinToString(" "), truncated = true)
+  }
 }
