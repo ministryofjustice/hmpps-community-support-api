@@ -4,10 +4,24 @@ plugins {
   id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.15"
   kotlin("plugin.spring") version "2.4.21"
   kotlin("plugin.jpa") version "2.4.21"
+  id("au.com.dius.pact") version "4.6.5"
 }
 
 configurations {
   testImplementation { exclude(group = "org.junit.vintage") }
+}
+
+// Pact broker connection details are supplied via environment variables so that the pipeline can
+// inject the real credentials while local runs fall back to sensible defaults.
+pact {
+  publish {
+    pactDirectory = layout.buildDirectory.dir("pacts").get().asFile
+    pactBrokerUrl = System.getenv("PACT_BROKER_URL") ?: "https://pact-broker-prod.apps.live-1.cloud-platform.service.justice.gov.uk"
+    pactBrokerUsername = System.getenv("HMPPS_PACT_BROKER_USERNAME")
+    pactBrokerPassword = System.getenv("HMPPS_PACT_BROKER_PASSWORD")
+    consumerVersion = System.getenv("APP_VERSION") ?: "local"
+    consumerBranch = System.getenv("GITHUB_BRANCH") ?: "local"
+  }
 }
 
 dependencies {
@@ -51,6 +65,7 @@ dependencies {
   testImplementation("com.ninja-squad:springmockk:5.0.1")
   testImplementation("io.kotest:kotest-assertions-core:6.2.7")
   testImplementation("io.mockk:mockk:1.14.12")
+  testImplementation("au.com.dius.pact.consumer:junit5:4.6.5")
 
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
   runtimeOnly("org.postgresql:postgresql:42.7.14")
@@ -89,8 +104,24 @@ compileTestKotlin.compilerOptions {
 }
 
 // This test is required for schema spy implementation and should NOT be run alongside our normal testsuite as it runs against a local application rather than the testcontainers instances.
+// Pact consumer tests are also excluded from the normal test suite and run separately via the pactTest task below.
 tasks.test {
   exclude("**/InitialiseDatabase.class")
+  filter {
+    excludeTestsMatching("*PactTest")
+  }
+}
+
+tasks.register<Test>("pactTest") {
+  group = "verification"
+  description = "Runs consumer-side Pact tests"
+  testClassesDirs = sourceSets.test.get().output.classesDirs
+  classpath = sourceSets.test.get().runtimeClasspath
+  useJUnitPlatform()
+  filter {
+    includeTestsMatching("*PactTest")
+    isFailOnNoMatchingTests = false
+  }
 }
 
 val test by testing.suites.existing(JvmTestSuite::class)
