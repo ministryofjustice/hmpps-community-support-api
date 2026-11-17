@@ -76,6 +76,60 @@ Or to automatically format
 Run
 `./gradlew clean test`
 
+## Pact contract testing
+
+This service consumes the [hmpps-person-record](https://github.com/ministryofjustice/hmpps-person-record) API
+(via `CorePersonRecordClient`) and verifies that integration using
+[Pact](https://docs.pact.io/) consumer contract tests.
+
+Pact tests live alongside other tests under `src/test/kotlin` and are named `*PactTest` (e.g.
+`CorePersonRecordClientPactTest`). They are excluded from the normal `test` task and run via a dedicated task instead.
+
+### Running Pact tests locally
+
+```bash
+./gradlew pactTest
+```
+
+This spins up a Pact mock provider, exercises `CorePersonRecordClient` against it, and writes the generated
+contract to `build/pacts/hmpps-community-support-api-hmpps-person-record.json`. It does **not** publish the
+contract to the Pact Broker.
+
+### Writing a new Pact test
+
+- Add a new `@Pact` interaction describing the request/response you expect from `hmpps-person-record`, matching
+  an existing `@State` provider state defined in that repo (see its `*PactTest`/`AbstractApiProviderPactTests`
+  classes) so the published contract can actually be verified by the provider.
+- Only assert on the fields this service actually uses from the response - Pact does not require (or check)
+  fields the provider returns that the consumer ignores.
+- Keep the consumer name (`hmpps-community-support-api`) and provider name (`hmpps-person-record`) constants
+  unchanged, as the Pact Broker uses these to associate contracts with verification results.
+
+### CI pipeline
+
+On every push, `pipeline.yml` runs `pact_test_publish.yml`, which executes `./gradlew pactTest` and then
+`./gradlew pactPublish` to publish the generated contract(s) to the Pact Broker tagged with the branch name and
+app version. It then calls `trigger_pact_provider_verification.yml`, which dispatches the
+`pact_provider_verification.yml` workflow in `hmpps-person-record` to verify the newly published contract against
+that provider.
+
+Before deploying to an environment, `pact_deploy_env.yml` runs a Pact `can-i-deploy` check (via
+`pact_consumer_deployment: true`) to confirm the version being deployed has a successful, up-to-date provider
+verification, and records the deployment in the Pact Broker once it succeeds.
+
+### Required GitHub secrets
+
+The following secrets must be configured on this repository (or inherited from the `ministryofjustice` org) for
+the Pact workflows to run successfully:
+
+| Secret | Purpose |
+| --- | --- |
+| `PACT_BROKER_URL` | URL of the MoJ Pact Broker used to publish/verify contracts. |
+| `HMPPS_PACT_BROKER_USERNAME` | Username for authenticating with the Pact Broker. |
+| `HMPPS_PACT_BROKER_PASSWORD` | Password for authenticating with the Pact Broker. |
+| `PACT_TRIGGER_APP_ID` | GitHub App ID used to generate a token for dispatching the provider verification workflow in `hmpps-person-record`. The app must be installed on `hmpps-person-record` with `actions: write` permission. |
+| `PACT_TRIGGER_PRIVATE_KEY` | Private key for the same GitHub App. |
+
 ## OpenAPI contract checks
 
 Pull requests targeting `main` run the OpenAPI contract check. The workflow starts the application using the existing integration-test setup, exports the OpenAPI document, and compares it with the committed baseline at `openapi/openapi-baseline.json`.
