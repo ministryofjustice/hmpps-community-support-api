@@ -5,11 +5,16 @@ import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferenceDataReferralPathway
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralNonContactSession
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralNonContactSessionReferenceDataReferralPathway
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralNote
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralNotesReferenceDataReferralPathway
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferenceDataReferralPathwayRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralNonContactSessionReferenceDataReferralPathwayRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralNonContactSessionRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralNotesReferenceDataReferralPathwayRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralNotesRepository
 import java.time.OffsetDateTime
@@ -21,6 +26,8 @@ class CaseNoteService(
   private val referralLookupService: ReferralLookupService,
   private val referralNotesReferenceDataReferralPathwayRepository: ReferralNotesReferenceDataReferralPathwayRepository,
   private val referenceDataReferralPathwayRepository: ReferenceDataReferralPathwayRepository,
+  private val referralNonContactSessionRepository: ReferralNonContactSessionRepository,
+  private val referralNonContactSessionReferenceDataReferralPathwayRepository: ReferralNonContactSessionReferenceDataReferralPathwayRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(this::class.java)
@@ -36,9 +43,6 @@ class CaseNoteService(
     val referral = referralLookupService.findByCaseIdentifier(referralReference)
 
     val pathwayIds = referenceDataReferralPathwayRepository.findAll().map(ReferenceDataReferralPathway::id)
-    if (request.pathways.isEmpty()) {
-      throw ValidationException("A case note must have at least one pathway to submit")
-    }
     if (!pathwayIds.containsAll(request.pathways)) {
       throw ValidationException("One of ${request.pathways} is not a valid pathway ID")
     }
@@ -73,6 +77,53 @@ class CaseNoteService(
     return SuccessMessageResponse(
       success = true,
       message = "Case note submitted successfully",
+    )
+  }
+
+  @Transactional
+  fun submitNonContactSession(
+    referralReference: String,
+    request: SubmitNonContactSessionRequest,
+    createdBy: String,
+  ): SuccessMessageResponse {
+    val createdAt = OffsetDateTime.now()
+    val referral = referralLookupService.findByCaseIdentifier(referralReference)
+
+    val pathwayIds = referenceDataReferralPathwayRepository.findAll().map(ReferenceDataReferralPathway::id)
+    if (request.pathways.isEmpty()) {
+      throw ValidationException("A non contact session must have at least one pathway to submit")
+    }
+    if (!pathwayIds.containsAll(request.pathways)) {
+      throw ValidationException("One of ${request.pathways} is not a valid pathway ID")
+    }
+
+    val session = referralNonContactSessionRepository.save(
+      ReferralNonContactSession(
+        id = UUID.randomUUID(),
+        referralId = referral.id,
+        createdAt = createdAt,
+        createdBy = createdBy,
+        title = request.title,
+        details = request.details,
+        startDateTime = request.startDate,
+        durationHours = request.durationHours,
+        durationMinutes = request.durationMinutes,
+      ),
+    )
+
+    val referralPathways = request.pathways.map { pathwayId ->
+      ReferralNonContactSessionReferenceDataReferralPathway(
+        id = UUID.randomUUID(),
+        referenceDataReferralPathwayId = pathwayId,
+        referralNonContactSessionId = session.id,
+      )
+    }
+
+    referralNonContactSessionReferenceDataReferralPathwayRepository.saveAll(referralPathways)
+
+    return SuccessMessageResponse(
+      success = true,
+      message = "Non contact session submitted successfully",
     )
   }
 }
