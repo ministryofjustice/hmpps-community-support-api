@@ -43,12 +43,39 @@ jobs:
     name: Validate the kotlin
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_verify.yml@v2 # WORKFLOW_VERSION
     secrets: inherit
+  app_version:
+    permissions:
+      contents: read
+    name: Create app version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.app_version.outputs.version }}
+    steps:
+      - id: app_version
+        name: Create app version
+        uses: ministryofjustice/hmpps-github-shared-actions/.github/actions/build-test-and-deploy/create_app_version@85dea2c43d9d69b5143817f8b84b71cf30d15df5 # WORKFLOW_VERSION
+  pact_test:
+    permissions:
+      contents: read
+      id-token: write
+    name: Pact Consumer Tests and Publish Contracts
+    needs: app_version
+    uses: ministryofjustice/hmpps-github-actions/.github/workflows/pact_test_publish.yml@b9374f6f9203795af3cc3f2246c5019680e4464d # WORKFLOW_VERSION
+    with:
+      app_version: '${{ needs.app_version.outputs.version }}'
+      pact_test_task: pactTest
+      pact_publish_task: pactPublish
+      webhook_name: hmpps-person-record
+      webhook_id: ctNyAoj2Rx6pJYuJSpYChw
+      webhook_provider_repository: hmpps-person-record
+    secrets: inherit
   build:
     name: Build docker image from hmpps-github-actions
     if: github.ref == 'refs/heads/main'
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/docker_build.yml@v2 # WORKFLOW_VERSION
     needs:
       - kotlin_validate
+      - pact_test
     with:
       docker_registry: 'ghcr.io'
       registry_org: 'ministryofjustice'
@@ -60,11 +87,12 @@ jobs:
     needs:
       - build
       - helm_lint
-    uses: ministryofjustice/hmpps-github-actions/.github/workflows/deploy_env.yml@v2 # WORKFLOW_VERSION
+    uses: ministryofjustice/hmpps-github-actions/.github/workflows/pact_deploy_env.yml@304442013204ed99de7752c66ab9dcb98defb25c # WORKFLOW_VERSION
     secrets: inherit
     with:
       environment: 'dev'
       app_version: '${{ needs.build.outputs.app_version }}'
+      pact_consumer_deployment: true
       slack_notification: "true"
 #  deploy_preprod:
 #    name: Deploy to pre-production environment

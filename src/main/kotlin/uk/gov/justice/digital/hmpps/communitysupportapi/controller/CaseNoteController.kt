@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.controller
 
 import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -21,6 +20,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNoteOrNonContactSessionBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CaseNoteService
@@ -73,6 +73,42 @@ class CaseNoteController(
     return ResponseEntity.ok(caseNoteService.submitCaseNote(referralReference, request, createdBy))
   }
 
+  @Operation(summary = "Submit a non contact session")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Non contact session submitted successfully",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = SuccessMessageResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Validation failure",
+        content = [Content(mediaType = "application/json")],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @PostMapping("/referral/{referralReference}/non-contact-session")
+  fun submitNonContactSession(
+    @PathVariable referralReference: String,
+    @Valid @RequestBody request: SubmitNonContactSessionRequest,
+  ): ResponseEntity<SuccessMessageResponse> {
+    val user = userMapper.fromToken(authenticationHolder)
+    val createdBy = user.hmppsAuthUsername
+    logger.info("Submitting non contact session for referral {}", referralReference)
+    return ResponseEntity.ok(caseNoteService.submitNonContactSession(referralReference, request, createdBy))
+  }
+
   @Operation(summary = "Get case notes and non-contact sessions for a referral")
   @ApiResponses(
     value = [
@@ -82,7 +118,7 @@ class CaseNoteController(
         content = [
           Content(
             mediaType = "application/json",
-            array = ArraySchema(schema = Schema(implementation = ReferralNoteOrNonContactSessionBffDto::class)),
+            schema = Schema(implementation = PageResponse::class),
           ),
         ],
       ),

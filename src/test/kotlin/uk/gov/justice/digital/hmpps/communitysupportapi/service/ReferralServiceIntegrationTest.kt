@@ -23,7 +23,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlan
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEvent
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActionPlanEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ActorType
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.AlreadyReportedException
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictException
@@ -32,6 +31,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.integration.AppointmentT
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.PersonTestSupport
 import uk.gov.justice.digital.hmpps.communitysupportapi.integration.ReferralTestSupport
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.CreateReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.WithdrawReferralRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ActionPlanEventRepository

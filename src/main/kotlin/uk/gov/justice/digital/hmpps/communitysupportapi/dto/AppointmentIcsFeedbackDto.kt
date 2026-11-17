@@ -74,15 +74,6 @@ data class NextStepsRequest(
   val actionsBeforeNextSession: String? = null,
 )
 
-data class CreateIcsFeedbackRequest(
-  val record: RecordSessionRequest,
-  val sessionDetails: SessionDetailsRequest? = null,
-  val sessionFeedback: SessionFeedbackRequest? = null,
-  val issuesAndConcerns: IssuesAndConcernsRequest? = null,
-  val newlyIdentifiedAdditionalSupportNeeds: String? = null,
-  val nextSteps: NextStepsRequest? = null,
-)
-
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "ICS appointment session feedback")
 data class AppointmentIcsFeedbackResponse(
@@ -134,7 +125,10 @@ data class AppointmentIcsFeedbackResponse(
   val createdBy: UUID?,
 ) {
   companion object {
-    fun from(feedback: AppointmentIcsFeedback, sessionFeedbackAppointmentDetails: SessionFeedbackAppointmentDetailsDto? = null) = AppointmentIcsFeedbackResponse(
+    fun from(
+      feedback: AppointmentIcsFeedback,
+      sessionFeedbackAppointmentDetails: SessionFeedbackAppointmentDetailsDto? = null,
+    ) = AppointmentIcsFeedbackResponse(
       id = feedback.id,
       appointmentIcsId = feedback.appointmentIcs.id,
       recordSessionDidSessionHappen = feedback.recordSessionDidSessionHappen,

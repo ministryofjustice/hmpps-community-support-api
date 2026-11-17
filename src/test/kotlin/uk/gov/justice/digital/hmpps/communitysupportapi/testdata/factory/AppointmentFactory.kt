@@ -15,10 +15,10 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelive
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDeliveryMethod
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistory
-import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.AppointmentStatusHistoryType
 import java.time.LocalDateTime
 import java.util.UUID
 

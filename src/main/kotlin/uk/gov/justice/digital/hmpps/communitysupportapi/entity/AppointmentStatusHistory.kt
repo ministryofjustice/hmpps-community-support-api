@@ -10,6 +10,7 @@ import jakarta.persistence.IdClass
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.AppointmentStatusHistoryType
 import java.io.Serializable
 import java.time.LocalDateTime
 import java.util.UUID
@@ -18,15 +19,6 @@ data class AppointmentStatusHistoryId(
   val appointment: UUID? = null,
   val createdAt: LocalDateTime? = null,
 ) : Serializable
-
-enum class AppointmentStatusHistoryType {
-  SCHEDULED,
-  NEEDS_FEEDBACK,
-  COMPLETED,
-  CHANGED,
-  DID_NOT_ATTEND,
-  DID_NOT_HAPPEN,
-}
 
 @Entity
 @Table(name = "appointment_status_history")

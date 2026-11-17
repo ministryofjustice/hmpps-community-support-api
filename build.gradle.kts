@@ -1,17 +1,31 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.14"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.15"
   kotlin("plugin.spring") version "2.4.21"
   kotlin("plugin.jpa") version "2.4.21"
+  id("au.com.dius.pact") version "4.6.5"
 }
 
 configurations {
   testImplementation { exclude(group = "org.junit.vintage") }
 }
 
+// Pact broker connection details are supplied via environment variables so that the pipeline can
+// inject the real credentials while local runs fall back to sensible defaults.
+pact {
+  publish {
+    pactDirectory = layout.buildDirectory.dir("pacts").get().asFile
+    pactBrokerUrl = System.getenv("PACT_BROKER_URL") ?: "https://pact-broker-prod.apps.live-1.cloud-platform.service.justice.gov.uk"
+    pactBrokerUsername = System.getenv("HMPPS_PACT_BROKER_USERNAME")
+    pactBrokerPassword = System.getenv("HMPPS_PACT_BROKER_PASSWORD")
+    consumerVersion = System.getenv("APP_VERSION") ?: "local"
+    consumerBranch = System.getenv("GITHUB_BRANCH") ?: "local"
+  }
+}
+
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:3.0.3")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:3.1.0")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-webclient")
   implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -30,7 +44,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
   implementation("org.springframework.security:spring-security-crypto:7.1.2")
-  implementation("com.nimbusds:oauth2-oidc-sdk:11.38.2")
+  implementation("com.nimbusds:oauth2-oidc-sdk:11.39")
 
   // csv
   implementation("org.apache.commons:commons-csv:1.14.1")
@@ -39,7 +53,7 @@ dependencies {
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.boot:spring-boot-test-autoconfigure")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
-  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:3.0.3")
+  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:3.1.0")
   testImplementation("org.mockito.kotlin:mockito-kotlin:6.4.0")
   testImplementation("org.wiremock:wiremock-standalone:3.13.2")
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.48") {
@@ -49,8 +63,9 @@ dependencies {
   testImplementation("org.testcontainers:junit-jupiter:1.21.4")
   testImplementation("org.awaitility:awaitility-kotlin")
   testImplementation("com.ninja-squad:springmockk:5.0.1")
-  testImplementation("io.kotest:kotest-assertions-core:6.2.6")
-  testImplementation("io.mockk:mockk:1.14.11")
+  testImplementation("io.kotest:kotest-assertions-core:6.2.7")
+  testImplementation("io.mockk:mockk:1.14.12")
+  testImplementation("au.com.dius.pact.consumer:junit5:4.6.5")
 
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
   runtimeOnly("org.postgresql:postgresql:42.7.14")
@@ -89,8 +104,24 @@ compileTestKotlin.compilerOptions {
 }
 
 // This test is required for schema spy implementation and should NOT be run alongside our normal testsuite as it runs against a local application rather than the testcontainers instances.
+// Pact consumer tests are also excluded from the normal test suite and run separately via the pactTest task below.
 tasks.test {
   exclude("**/InitialiseDatabase.class")
+  filter {
+    excludeTestsMatching("*PactTest")
+  }
+}
+
+tasks.register<Test>("pactTest") {
+  group = "verification"
+  description = "Runs consumer-side Pact tests"
+  testClassesDirs = sourceSets.test.get().output.classesDirs
+  classpath = sourceSets.test.get().runtimeClasspath
+  useJUnitPlatform()
+  filter {
+    includeTestsMatching("*PactTest")
+    isFailOnNoMatchingTests = false
+  }
 }
 
 val test by testing.suites.existing(JvmTestSuite::class)
