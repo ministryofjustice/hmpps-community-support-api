@@ -12,11 +12,11 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRef
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateAppointmentTypeOptionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ExistingSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsChangeDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsChangeReasonBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanceBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackCheckAnswersBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsViewOrChangeBffDto
@@ -426,27 +426,30 @@ class AppointmentService(
   }
 
   /**
-   * Returns ICS appointment existing support needs by a referral.
+   * Returns ICS feedback referral support needs by a referral.
    */
   @Transactional(readOnly = true)
-  fun getReferralExistingAdditionalSupportNeeds(caseReference: String): ExistingSupportNeedsBffResponseDto {
+  fun getIcsFeedbackReferralAdditionalSupportNeeds(caseReference: String): IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto {
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
     val referralFirstName = personRepository.findById(referral.personId)
       .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }.firstName
     val referralId = referral.id
     val personAdditionalSupportNeeds = personAdditionalSupportNeedsRepository.findByReferralId(referralId)
-      ?: throw NotFoundException("Existing support needs not found for referral $referralId")
+      ?: throw NotFoundException("Referral support needs not found for referral $referralId")
 
-    return ExistingSupportNeedsBffResponseDto(
-      personAdditionalSupportNeeds.physicalHealthDetails,
-      personAdditionalSupportNeeds.mentalEmotionalHealthDetails,
-      personAdditionalSupportNeeds.neurodiversityDetails,
-      personAdditionalSupportNeeds.locationTravelDetails,
-      personAdditionalSupportNeeds.caringResponsibilitiesDetails,
-      personAdditionalSupportNeeds.employmentResponsibilitiesDetails,
-      personAdditionalSupportNeeds.diversityDetails,
-      personAdditionalSupportNeeds.anythingElseDetails,
-      personAdditionalSupportNeeds.interpreterLanguage,
+    val referralSupportNeeds: Map<String, String> = buildMap {
+      personAdditionalSupportNeeds.physicalHealthDetails?.let { put("physicalHealth", it) }
+      personAdditionalSupportNeeds.mentalEmotionalHealthDetails?.let { put("mentalEmotionalHealth", it) }
+      personAdditionalSupportNeeds.neurodiversityDetails?.let { put("neurodiversity", it) }
+      personAdditionalSupportNeeds.locationTravelDetails?.let { put("locationTravel", it) }
+      personAdditionalSupportNeeds.caringResponsibilitiesDetails?.let { put("caringResponsibilities", it) }
+      personAdditionalSupportNeeds.employmentResponsibilitiesDetails?.let { put("employmentResponsibilities", it) }
+      personAdditionalSupportNeeds.diversityDetails?.let { put("diversity", it) }
+      personAdditionalSupportNeeds.anythingElseDetails?.let { put("anythingElse", it) }
+    }
+    return IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto(
+      referralFirstName,
+      referralSupportNeeds,
     )
   }
 
