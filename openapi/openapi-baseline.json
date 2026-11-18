@@ -4630,6 +4630,45 @@
         ],
         "type": "object"
       },
+      "SubmitNonContactSessionRequest": {
+        "properties": {
+          "details": {
+            "type": "string"
+          },
+          "durationHours": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "durationMinutes": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "pathways": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "startDate": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "details",
+          "durationHours",
+          "durationMinutes",
+          "pathways",
+          "startDate",
+          "title"
+        ],
+        "type": "object"
+      },
       "SubmitReferralResponseDto": {
         "properties": {
           "personId": {
@@ -6956,6 +6995,39 @@
         ]
       }
     },
+    "/bff/referral/{referralReference}/notes/pathways": {
+      "get": {
+        "operationId": "getReferralPathway",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral pathways found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral pathways not found"
+          }
+        },
+        "summary": "Get referral pathways",
+        "tags": [
+          "case-note-controller"
+        ]
+      }
+    },
     "/bff/service-days-page/{referralId}": {
       "get": {
         "operationId": "getServiceDaysPage",
@@ -8213,6 +8285,59 @@
           }
         },
         "summary": "Submit a case note",
+        "tags": [
+          "case-note-controller"
+        ]
+      }
+    },
+    "/referral/{referralReference}/non-contact-session": {
+      "post": {
+        "operationId": "submitNonContactSession",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitNonContactSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessageResponse"
+                }
+              }
+            },
+            "description": "Non contact session submitted successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Validation failure"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Submit a non contact session",
         "tags": [
           "case-note-controller"
         ]
