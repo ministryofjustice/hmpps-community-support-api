@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.dto.NeedsInterpreterBffR
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.OffenceSentenceInfoBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ProbationPractitionerDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RefereeNameDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCriminogenicNeedsDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SelectionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.TaskListStatusItem
@@ -1631,7 +1632,7 @@ class DraftReferralControllerIntegrationTest : IntegrationTestBase() {
         .expectBody<TaskListStatusResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-          body.contactDetailsStatus shouldBe ContactDetailsDto(false, TaskListStatusItem.completed())
+          body.contactDetailsStatus shouldBe listOf(ReferenceDataReferralPathwayDto(UUID.randomUUID(), "X123456"))
         }
     }
   }
