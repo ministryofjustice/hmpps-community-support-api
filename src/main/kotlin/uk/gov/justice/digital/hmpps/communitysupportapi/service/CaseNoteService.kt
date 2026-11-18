@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional
 import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
@@ -126,4 +127,8 @@ class CaseNoteService(
       message = "Non contact session submitted successfully",
     )
   }
+
+  fun getReferenceDataReferralPathways(): List<ReferenceDataReferralPathwayDto> = referenceDataReferralPathwayRepository
+    .findAllByOrderByDisplayOrderAsc()
+    .map { ReferenceDataReferralPathwayDto(it.id, it.title) }
 }
