@@ -19,7 +19,6 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CheckReferralInformationDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralInformationDto
@@ -372,7 +371,8 @@ class ReferralController(
   )
   @GetMapping("/bff/confirm-person-details/{referralId}")
   fun getReferralPersonDetails(@PathVariable referralId: UUID): ResponseEntity<ConfirmPersonDetailsBffDto> {
-    val referral = referralService.getReferral(referralId).orElseThrow { NotFoundException("Referral not found for id $referralId") }
+    val referral =
+      referralService.getReferral(referralId).orElseThrow { NotFoundException("Referral not found for id $referralId") }
     try {
       val result = referralService.getConfirmPersonDetailsBffDto(referral.personIdentifier)
       return ResponseEntity.ok(result)
@@ -380,35 +380,5 @@ class ReferralController(
       log.warn("Person details not found for person identifier={}", referral.personIdentifier, e)
       return ResponseEntity.notFound().build()
     }
-  }
-
-  @Operation(summary = "Get referral pathways")
-  @ApiResponses(
-    value = [
-      ApiResponse(
-        responseCode = "200",
-        description = "Referral pathways found",
-        content = [
-          Content(
-            mediaType = "application/json",
-          ),
-        ],
-      ),
-      ApiResponse(
-        responseCode = "404",
-        description = "Referral pathways not found",
-        content = [Content(mediaType = "application/json")],
-      ),
-    ],
-  )
-  @GetMapping("/bff/referral/{referralReference}/notes/pathways")
-  fun getReferralPathway(@PathVariable referralReference: String): ResponseEntity<List<ReferenceDataReferralPathwayDto>> {
-    val result = try {
-      referralService.getReferenceDataReferralPathways()
-    } catch (e: RuntimeException) {
-      log.warn("Referral pathways not found for referral reference={}", referralReference, e)
-      return ResponseEntity.notFound().build()
-    }
-    return ResponseEntity.ok(result)
   }
 }
