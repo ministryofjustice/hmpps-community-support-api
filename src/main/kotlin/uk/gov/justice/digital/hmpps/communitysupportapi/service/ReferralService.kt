@@ -66,7 +66,7 @@ class ReferralService(
   private val personService: PersonService,
   private val actionPlanService: ActionPlanService,
   private val withdrawalReasonService: WithdrawalReasonService,
-  private val referenceDataReferralPathwayRepository: ReferenceDataReferralPathwayRepository
+  private val referenceDataReferralPathwayRepository: ReferenceDataReferralPathwayRepository,
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
@@ -362,13 +362,10 @@ class ReferralService(
     throw IllegalStateException("Unable to generate a unique referral reference for referral $referralId")
   }
 
-  fun getReferenceDataReferralPathways():List<ReferenceDataReferralPathwayDto> {
-    return referenceDataReferralPathwayRepository
-      .findAll()
-      .sortedBy { it.displayOrder }
-      .map{ ReferenceDataReferralPathwayDto(it.id,it.title)}
-  }
-
+  fun getReferenceDataReferralPathways(): List<ReferenceDataReferralPathwayDto> = referenceDataReferralPathwayRepository
+    .findAll()
+    .sortedBy { it.displayOrder }
+    .map { ReferenceDataReferralPathwayDto(it.id, it.title) }
 
   private fun upsertPerson(personDetails: PersonDto): Person {
     val existing = personRepository.findByIdentifier(personDetails.personIdentifier!!) ?: return personRepository.save(
