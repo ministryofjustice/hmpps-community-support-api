@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIc
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferenceDataReferralPathwayRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
@@ -78,6 +79,9 @@ class ReferralServiceTest {
 
   @Mock
   lateinit var withdrawalReasonService: WithdrawalReasonService
+
+  @Mock
+  lateinit var referenceDataReferralPathwayRepository: ReferenceDataReferralPathwayRepository
 
   @InjectMocks
   lateinit var referralService: ReferralService
