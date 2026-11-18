@@ -7,6 +7,7 @@
 .gradle/
 .kotlin/
 build/
+bin/
 
 # CMake
 cmake-build-debug/
@@ -78,3 +79,4 @@ sonar-project.properties
 # snyk.io policy file
 .snyk
 /scratch/
+.vscode/settings.json

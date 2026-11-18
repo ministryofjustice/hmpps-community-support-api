@@ -4,11 +4,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralNoteO
 import uk.gov.justice.digital.hmpps.communitysupportapi.util.SHORT_DATE_TIME_FORMAT
 import java.util.UUID
 
-private const val DETAILS_MAX_WORDS = 50
-
-data class ReferralNotesAndNonContactSessionsBffResponseDto(
-  val notesAndNonContactSessions: List<ReferralNoteOrNonContactSessionBffDto>,
-)
+private const val DETAILS_MAX_WORDS = 40
 
 data class ReferralNoteOrNonContactSessionBffDto(
   val id: UUID,

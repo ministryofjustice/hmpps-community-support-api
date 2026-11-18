@@ -35,7 +35,7 @@ interface ReferralNotesRepository : JpaRepository<ReferralNote, UUID> {
       """,
     nativeQuery = true,
   )
-  fun findAllNoteAndNonContactSessionRows(
+  fun findPagedNoteAndNonContactSessionRows(
     @Param("referralId") referralId: UUID,
     @Param("limit") limit: Int,
     @Param("offset") offset: Long,

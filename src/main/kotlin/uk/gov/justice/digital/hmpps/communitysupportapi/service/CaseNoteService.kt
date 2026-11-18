@@ -139,7 +139,7 @@ class CaseNoteService(
     val referral = referralLookupService.findByCaseIdentifier(referralReference)
 
     val total = referralNoteRepository.countNoteAndNonContactSessionRows(referral.id)
-    val rows = referralNoteRepository.findAllNoteAndNonContactSessionRows(
+    val rows = referralNoteRepository.findPagedNoteAndNonContactSessionRows(
       referralId = referral.id,
       limit = pageable.pageSize,
       offset = pageable.offset,
