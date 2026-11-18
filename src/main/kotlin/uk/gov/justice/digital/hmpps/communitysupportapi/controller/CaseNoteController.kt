@@ -104,6 +104,7 @@ class CaseNoteController(
     logger.info("Submitting non contact session for referral {}", referralReference)
     return ResponseEntity.ok(caseNoteService.submitNonContactSession(referralReference, request, createdBy))
   }
+
   @Operation(summary = "Get referral pathways")
   @ApiResponses(
     value = [
