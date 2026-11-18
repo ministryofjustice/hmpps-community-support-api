@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ActionPlanStatusDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ConfirmPersonDetailsBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PersonDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralAppointmentHistoryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralCreationResult
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralDetailsBffResponseDto
@@ -37,6 +38,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIc
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferenceDataReferralPathwayRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralProviderAssignmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserAssignmentRepository
@@ -64,6 +66,7 @@ class ReferralService(
   private val personService: PersonService,
   private val actionPlanService: ActionPlanService,
   private val withdrawalReasonService: WithdrawalReasonService,
+  private val referenceDataReferralPathwayRepository: ReferenceDataReferralPathwayRepository
 ) {
   companion object {
     private val logger = LoggerFactory.getLogger(ReferralService::class.java)
@@ -358,6 +361,14 @@ class ReferralService(
     logger.error("Unable to generate a unique referral number for referral : {}", referralId)
     throw IllegalStateException("Unable to generate a unique referral reference for referral $referralId")
   }
+
+  fun getReferenceDataReferralPathways():List<ReferenceDataReferralPathwayDto> {
+    return referenceDataReferralPathwayRepository
+      .findAll()
+      .sortedBy { it.displayOrder }
+      .map{ ReferenceDataReferralPathwayDto(it.id,it.title)}
+  }
+
 
   private fun upsertPerson(personDetails: PersonDto): Person {
     val existing = personRepository.findByIdentifier(personDetails.personIdentifier!!) ?: return personRepository.save(

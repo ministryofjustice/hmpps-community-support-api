@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.service.ReferralService
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.WithdrawalReasonService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.util.UUID
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
 
 @RestController
 @PreAuthorize("hasAnyRole('ROLE_IPB_FRONTEND_RW')")
@@ -379,5 +380,35 @@ class ReferralController(
       log.warn("Person details not found for person identifier={}", referral.personIdentifier, e)
       return ResponseEntity.notFound().build()
     }
+  }
+
+  @Operation(summary = "Get referral pathways")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral pathways found",
+        content = [
+          Content(
+            mediaType = "application/json",
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral pathways not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{referralReference}/notes/pathways")
+  fun getReferralPathway(@PathVariable referralReference: String): ResponseEntity<List<ReferenceDataReferralPathwayDto>> {
+    val result = try {
+      referralService.getReferenceDataReferralPathways()
+    } catch (e: RuntimeException) {
+      log.warn("Referral pathways not found for referral reference={}", referralReference, e)
+      return ResponseEntity.notFound().build()
+    }
+    return ResponseEntity.ok(result)
   }
 }
