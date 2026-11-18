@@ -81,7 +81,8 @@ abstract class IntegrationTestBase {
       registry.add("services.core-person-record-api.base-url") { "http://localhost:${wireMockServer.port()}" }
       registry.add("services.manage-users-api.base-url") { "http://localhost:${wireMockServer.port()}" }
       registry.add("services.assess-risks-and-needs-api.base-url") { "http://localhost:${wireMockServer.port()}" }
-      registry.add("services.hmpps-auth-api.base-url") { "http://localhost:8090/auth" }
+      registry.add("services.hmpps-auth-api.base-url") { "http://localhost:${hmppsAuth.port()}/auth" }
+      registry.add("spring.security.oauth2.client.provider.hmpps-auth.token-uri") { "http://localhost:${hmppsAuth.port()}/auth/oauth/token" }
       registry.add("services.nDelius-api.base-url") { "http://localhost:${wireMockServer.port()}" }
       registry.add("services.prison-api.base-url") { "http://localhost:${wireMockServer.port()}" }
     }
