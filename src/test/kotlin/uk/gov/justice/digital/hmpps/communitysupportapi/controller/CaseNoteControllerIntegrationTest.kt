@@ -489,5 +489,114 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
           body.content.map { it.title } shouldBe listOf("Note 1")
         }
     }
+
+    @Test
+    fun `should exclude soft-deleted notes and non-contact sessions from content and totalElements`() {
+      val referral = referralHelper.createReferral()
+      caseNoteRepository.save(
+        ReferralNote(
+          id = UUID.randomUUID(),
+          referralId = referral.id,
+          createdAt = baseTime,
+          createdBy = "Note author",
+          title = "Active note",
+          details = "Active details",
+        ),
+      )
+      caseNoteRepository.save(
+        ReferralNote(
+          id = UUID.randomUUID(),
+          referralId = referral.id,
+          createdAt = baseTime.plusHours(1),
+          createdBy = "Note author",
+          title = "Deleted note",
+          details = "Deleted details",
+          deletedAt = baseTime.plusDays(1),
+        ),
+      )
+      referralNonContactSessionRepository.save(
+        ReferralNonContactSession(
+          id = UUID.randomUUID(),
+          referralId = referral.id,
+          createdAt = baseTime.plusHours(2),
+          createdBy = "Session author",
+          title = "Deleted session",
+          details = "Deleted details",
+          startDateTime = baseTime,
+          durationHours = 1,
+          durationMinutes = 0,
+          deletedAt = baseTime.plusDays(1),
+        ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/referral/${referral.referenceNumber}/notes")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<PageResponse<ReferralNoteOrNonContactSessionBffDto>>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.totalElements shouldBe 1
+          body.totalPages shouldBe 1
+          body.content.map { it.title } shouldBe listOf("Active note")
+        }
+    }
+
+    @Test
+    fun `should only return notes and non-contact sessions belonging to the requested referral`() {
+      val referral = referralHelper.createReferral()
+      val otherPerson = referralHelper.createPerson(identifier = "X654321")
+      val otherReferral = referralHelper.createReferral(
+        person = otherPerson,
+        referenceNumber = "CD5678EF",
+        submittedBy = referralHelper.ensureReferralUser(),
+      )
+      caseNoteRepository.save(
+        ReferralNote(
+          id = UUID.randomUUID(),
+          referralId = referral.id,
+          createdAt = baseTime,
+          createdBy = "Note author",
+          title = "Own note",
+          details = "Own details",
+        ),
+      )
+      caseNoteRepository.save(
+        ReferralNote(
+          id = UUID.randomUUID(),
+          referralId = otherReferral.id,
+          createdAt = baseTime.plusHours(1),
+          createdBy = "Note author",
+          title = "Other referral note",
+          details = "Other details",
+        ),
+      )
+      referralNonContactSessionRepository.save(
+        ReferralNonContactSession(
+          id = UUID.randomUUID(),
+          referralId = otherReferral.id,
+          createdAt = baseTime.plusHours(2),
+          createdBy = "Session author",
+          title = "Other referral session",
+          details = "Other details",
+          startDateTime = baseTime,
+          durationHours = 1,
+          durationMinutes = 0,
+        ),
+      )
+
+      webTestClient.get()
+        .uri("/bff/referral/${referral.referenceNumber}/notes")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<PageResponse<ReferralNoteOrNonContactSessionBffDto>>()
+        .consumeWith { response ->
+          val body = response.responseBody!!
+          body.totalElements shouldBe 1
+          body.content.map { it.title } shouldBe listOf("Own note")
+        }
+    }
   }
 }
