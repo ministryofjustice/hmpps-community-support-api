@@ -54,6 +54,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditio
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.appointments.CreateAppointmentValidator
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.appointments.CreateIcsFeedbackValidator
 import java.time.Clock
 import java.time.LocalDateTime
 import java.util.UUID
@@ -514,6 +515,8 @@ class AppointmentService(
     request: CreateIcsFeedbackRequest,
     submittedBy: ReferralUser,
   ): AppointmentIcsFeedbackResponse {
+    CreateIcsFeedbackValidator.validate(request)
+
     // Validate the entities
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
 

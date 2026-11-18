@@ -1285,7 +1285,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         record = RecordSessionRequest(
           didSessionHappen = false,
           didPersonAttend = false,
-          noAttendanceInformation = "No answer when called.",
+          howTheyTriedToContactThePerson = "No answer when called.",
+          reasonsTheyDidNotAttend = "Reason unknown.",
         ),
       )
 
@@ -1401,7 +1402,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         record = RecordSessionRequest(
           didSessionHappen = false,
           didPersonAttend = false,
-          noAttendanceInformation = "Called three times and there was no answer. Left voicemail.",
+          howTheyTriedToContactThePerson = "Called three times and there was no answer. Left voicemail.",
+          reasonsTheyDidNotAttend = "Reason unknown.",
         ),
       )
 
@@ -1440,7 +1442,8 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
         record = RecordSessionRequest(
           didSessionHappen = false,
           didPersonAttend = false,
-          noAttendanceInformation = "Called three times and there was no answer. Left voicemail.",
+          howTheyTriedToContactThePerson = "Called three times and there was no answer. Left voicemail.",
+          reasonsTheyDidNotAttend = "Reason unknown.",
         ),
       )
       val icsFeedback = appointmentService.createIcsFeedback(
