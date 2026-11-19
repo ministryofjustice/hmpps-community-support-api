@@ -115,8 +115,8 @@ class ReferralUserAssignmentServiceTest(@Autowired private val userService: User
         CaseWorkerDto(userType = UserType.EXTERNAL, emailAddress = email.trim().lowercase())
       }
 
-    val result = referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
-    verify(notifyClient).sendEmail("2269a690-61e1-4b04-881f-198beb822465", "victoriasmith@email.com", mapOf("fullName" to user.fullName), null)
+    referralAssignmentService.assignCaseWorkers(assigner, referral.referenceNumber.orEmpty(), caseWorkers)
+    verify(notifyClient).sendEmail(assignCaseworkEmailTemplateId, "victoriasmith@email.com", mapOf("fullName" to user.fullName), null)
   }
 
   @Test
