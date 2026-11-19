@@ -142,9 +142,6 @@ class ReferralAssignmentService(
   ) {
     val isValid: Boolean
       get() = failureReason.isNullOrBlank()
-
-    val hasError: Boolean
-      get() = !isValid
   }
 
   private fun validateEmailAddress(emailAddress: String): EmailValidationResult {
