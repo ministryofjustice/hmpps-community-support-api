@@ -62,6 +62,8 @@ class ReferralUserAssignmentServiceTest(@Autowired private val userService: User
   @Mock
   private lateinit var notifyClient: NotificationClient
 
+  private val assignCaseworkEmailTemplateId = "2269a690-61e1-4b04-881f-198beb822465"
+
   @BeforeEach
   fun setUp() {
     notifyService = NotifyService(notifyClient)
@@ -71,6 +73,7 @@ class ReferralUserAssignmentServiceTest(@Autowired private val userService: User
       entityManager = entityManager,
       referralLookupService = referralLookupService,
       notifyService = notifyService,
+      assignCaseworkEmailTemplateId = assignCaseworkEmailTemplateId,
     )
   }
 

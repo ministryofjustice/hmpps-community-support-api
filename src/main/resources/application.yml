@@ -2,6 +2,11 @@ info.app:
   name: HMPPS Community Support Api
   version: 1.0
 
+notify:
+  templates:
+    assign-caseworker: "2269a690-61e1-4b04-881f-198beb822465"
+    ics-feedback-probation-practitioner: "15536897-d353-44fc-8ba6-35434d3ebf9a"
+
 spring:
   application:
     name: hmpps-community-support-api

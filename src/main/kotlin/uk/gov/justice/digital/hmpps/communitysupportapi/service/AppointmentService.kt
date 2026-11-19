@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import SessionFeedbackAppointmentDetailsDto
 import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
@@ -43,6 +44,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.exception.ConflictExcept
 import uk.gov.justice.digital.hmpps.communitysupportapi.exception.NotFoundException
 import uk.gov.justice.digital.hmpps.communitysupportapi.factory.ReferralEventFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.AppointmentStatusHistoryType
+import uk.gov.justice.digital.hmpps.communitysupportapi.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.ProbationOfficeSummary
 import uk.gov.justice.digital.hmpps.communitysupportapi.model.getAppointmentStatusHistoryType
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentDeliveryRepository
@@ -52,7 +54,9 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRe
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonAdditionalSupportNeedsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ProbationPractitionerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.validation.PersonIdentifierValidator
 import uk.gov.justice.digital.hmpps.communitysupportapi.validation.appointments.CreateAppointmentValidator
 import java.time.Clock
 import java.time.LocalDateTime
@@ -71,7 +75,11 @@ class AppointmentService(
   private val personRepository: PersonRepository,
   private val referralLookupService: ReferralLookupService,
   private val personAdditionalSupportNeedsRepository: PersonAdditionalSupportNeedsRepository,
+  private val probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository,
+  private val notifyService: NotifyService,
+  private val identifierValidator: PersonIdentifierValidator,
   private val clock: Clock,
+  @Value($$"${notify.templates.ics-feedback-probation-practitioner}") private val icsFeedbackProbationPractitionerTemplateId: String,
 ) {
   companion object {
     private val log = LoggerFactory.getLogger(AppointmentService::class.java)
@@ -547,7 +555,43 @@ class AppointmentService(
     referralRepository.save(referral)
     log.info("Referral event APPOINTMENT_FEEDBACK_SENT recorded for referral {}", referral.id)
 
+    if (request.issuesAndConcerns?.notifyProbationPractitioner == true) {
+      notifyProbationPractitionerOfIssuesAndConcerns(referral, request)
+    }
+
     return AppointmentIcsFeedbackResponse.from(savedAppointmentHistory)
+  }
+
+  /**
+   * Sends an email notification to the probation practitioner assigned to the referral,
+   * informing them of the issues and concerns identified during the ICS feedback session.
+   */
+  private fun notifyProbationPractitionerOfIssuesAndConcerns(referral: Referral, request: CreateIcsFeedbackRequest) {
+    val probationPractitionerDetails = probationPractitionerDetailsRepository.findByReferralId(referral.id)
+    val probationPractitionerEmail = probationPractitionerDetails?.emailAddress
+
+    if (probationPractitionerEmail.isNullOrBlank()) {
+      log.warn("Cannot notify probation practitioner for referral {}: no email address on file", referral.id)
+      return
+    }
+
+    val person = personRepository.findById(referral.personId)
+      .orElseThrow { NotFoundException("Person not found for referral ${referral.id}") }
+
+    val crn = when (val identifier = identifierValidator.validate(person.identifier)) {
+      is PersonIdentifier.Crn -> identifier.value
+      is PersonIdentifier.PrisonerNumber -> null
+    }
+
+    val personalisation = mapOf(
+      "crn" to crn.orEmpty(),
+      "popFullName" to "${person.firstName} ${person.lastName}",
+      "referenceNumber" to referral.referenceNumber.orEmpty(),
+      "issuesAndConcerns" to request.issuesAndConcerns?.identified.orEmpty(),
+    )
+
+    notifyService.sendEmail(icsFeedbackProbationPractitionerTemplateId, probationPractitionerEmail, personalisation)
+    log.info("Notified probation practitioner for referral {} of issues and concerns identified", referral.id)
   }
 
   /**

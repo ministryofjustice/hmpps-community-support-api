@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 
 import jakarta.persistence.EntityManager
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AssignmentFailureDto
@@ -26,12 +27,13 @@ class ReferralAssignmentService(
   private val entityManager: EntityManager,
   private val referralLookupService: ReferralLookupService,
   private val notifyService: NotifyService,
+  @Value($$"${notify.templates.assign-caseworker}")
+  private val assignCaseworkEmailTemplateId: String,
 ) {
   companion object {
     private const val MAX_CASE_WORKERS = 5
     private val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")
     private val log = LoggerFactory.getLogger(this::class.java)
-    private val assignCaseworkEmailTemplateId = "2269a690-61e1-4b04-881f-198beb822465"
   }
 
   fun getReferralByCaseIdentifier(caseIdentifier: String?): Referral = referralLookupService.findByCaseIdentifier(caseIdentifier)
