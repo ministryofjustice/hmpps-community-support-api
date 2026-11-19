@@ -33,6 +33,8 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0")
+  // Swagger UI 5.35.0 bundles DOMPurify patched for CVE-2026-116802 and CVE-2026-116803.
+  implementation("org.webjars:swagger-ui:5.35.0")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-flyway")
   implementation("org.springframework:spring-web")
