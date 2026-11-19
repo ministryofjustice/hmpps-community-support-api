@@ -9,11 +9,13 @@ import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
@@ -101,5 +103,35 @@ class CaseNoteController(
     val createdBy = user.hmppsAuthUsername
     logger.info("Submitting non contact session for referral {}", referralReference)
     return ResponseEntity.ok(caseNoteService.submitNonContactSession(referralReference, request, createdBy))
+  }
+
+  @Operation(summary = "Get referral pathways")
+  @ApiResponses(
+    value = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Referral pathways found",
+        content = [
+          Content(
+            mediaType = "application/json",
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Referral pathways not found",
+        content = [Content(mediaType = "application/json")],
+      ),
+    ],
+  )
+  @GetMapping("/bff/referral/{referralReference}/notes/pathways")
+  fun getReferralPathway(@PathVariable referralReference: String): ResponseEntity<List<ReferenceDataReferralPathwayDto>> {
+    val result = try {
+      caseNoteService.getReferenceDataReferralPathways()
+    } catch (e: RuntimeException) {
+      logger.warn("Referral pathways not found for referral reference={}", referralReference, e)
+      return ResponseEntity.notFound().build()
+    }
+    return ResponseEntity.ok(result)
   }
 }
