@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwaysDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNoteOrNonContactSessionBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
@@ -149,6 +149,7 @@ class CaseNoteController(
         content = [
           Content(
             mediaType = "application/json",
+            schema = Schema(implementation = ReferenceDataReferralPathwaysDto::class),
           ),
         ],
       ),
@@ -160,13 +161,13 @@ class CaseNoteController(
     ],
   )
   @GetMapping("/bff/referral/{referralReference}/notes/pathways")
-  fun getReferralPathway(@PathVariable referralReference: String): ResponseEntity<List<ReferenceDataReferralPathwayDto>> {
+  fun getReferralPathway(@PathVariable referralReference: String): ResponseEntity<ReferenceDataReferralPathwaysDto> {
     val result = try {
       caseNoteService.getReferenceDataReferralPathways()
     } catch (e: RuntimeException) {
       logger.warn("Referral pathways not found for referral reference={}", referralReference, e)
       return ResponseEntity.notFound().build()
     }
-    return ResponseEntity.ok(result)
+    return ResponseEntity.ok(ReferenceDataReferralPathwaysDto(result))
   }
 }
