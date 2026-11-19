@@ -26,6 +26,15 @@ class OpenApiDocsTest : IntegrationTestBase() {
   }
 
   @Test
+  fun `swagger ui javascript bundle is available`() {
+    webTestClient.get()
+      .uri("/swagger-ui/swagger-ui-bundle.js")
+      .exchange()
+      .expectStatus().isOk
+      .expectBody().consumeWith { assertThat(it.responseBody).isNotEmpty }
+  }
+
+  @Test
   fun `open api docs redirect to correct page`() {
     webTestClient.get()
       .uri("/swagger-ui.html")
