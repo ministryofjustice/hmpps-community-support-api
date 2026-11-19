@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNoteOrNonContactSessionBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
@@ -149,4 +150,8 @@ class CaseNoteService(
 
     return PageImpl(content, pageable, total)
   }
+
+  fun getReferenceDataReferralPathways(): List<ReferenceDataReferralPathwayDto> = referenceDataReferralPathwayRepository
+    .findAllByOrderByDisplayOrderAsc()
+    .map { ReferenceDataReferralPathwayDto(it.id, it.title) }
 }

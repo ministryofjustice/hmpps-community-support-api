@@ -17,6 +17,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNoteOrNonContactSessionBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
@@ -598,5 +599,27 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
           body.content.map { it.title } shouldBe listOf("Own note")
         }
     }
+  }
+
+  @Test
+  fun `should return 200 when requesting pathways`() {
+    testUser = referralHelper.ensureReferralUser()
+    whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+    val referral = referralHelper.createReferral()
+
+    webTestClient.get()
+      .uri("/bff/referral/${referral.referenceNumber}/notes/pathways")
+      .headers(setAuthorisation())
+      .exchange()
+      .expectStatus().isOk
+      .expectBody<List<ReferenceDataReferralPathwayDto>>()
+      .consumeWith { response ->
+        response.responseBody shouldBe listOf(
+          ReferenceDataReferralPathwayDto(UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d801"), "Community links"),
+          ReferenceDataReferralPathwayDto(UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d802"), "Housing support"),
+          ReferenceDataReferralPathwayDto(UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d803"), "Jobs and skills support"),
+          ReferenceDataReferralPathwayDto(UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d804"), "Money management"),
+        )
+      }
   }
 }
