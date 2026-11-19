@@ -3166,6 +3166,38 @@
         ],
         "type": "object"
       },
+      "PageResponse": {
+        "properties": {
+          "content": {
+            "items": {},
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "content",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ],
+        "type": "object"
+      },
       "Pageable": {
         "properties": {
           "page": {
@@ -3724,6 +3756,36 @@
         "required": [
           "firstName",
           "lastName"
+        ],
+        "type": "object"
+      },
+      "ReferenceDataReferralPathwayDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "type": "object"
+      },
+      "ReferenceDataReferralPathwaysDto": {
+        "properties": {
+          "pathways": {
+            "items": {
+              "$ref": "#/components/schemas/ReferenceDataReferralPathwayDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "pathways"
         ],
         "type": "object"
       },
@@ -4626,6 +4688,45 @@
           "details",
           "pathways",
           "shouldNotify",
+          "title"
+        ],
+        "type": "object"
+      },
+      "SubmitNonContactSessionRequest": {
+        "properties": {
+          "details": {
+            "type": "string"
+          },
+          "durationHours": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "durationMinutes": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "pathways": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "startDate": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "details",
+          "durationHours",
+          "durationMinutes",
+          "pathways",
+          "startDate",
           "title"
         ],
         "type": "object"
@@ -6956,6 +7057,88 @@
         ]
       }
     },
+    "/bff/referral/{referralReference}/notes": {
+      "get": {
+        "operationId": "getNotesAndNonContactSessions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageable",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponse"
+                }
+              }
+            },
+            "description": "Case notes and non-contact sessions retrieved successfully"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get case notes and non-contact sessions for a referral",
+        "tags": [
+          "case-note-controller"
+        ]
+      }
+    },
+    "/bff/referral/{referralReference}/notes/pathways": {
+      "get": {
+        "operationId": "getReferralPathway",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceDataReferralPathwaysDto"
+                }
+              }
+            },
+            "description": "Referral pathways found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral pathways not found"
+          }
+        },
+        "summary": "Get referral pathways",
+        "tags": [
+          "case-note-controller"
+        ]
+      }
+    },
     "/bff/service-days-page/{referralId}": {
       "get": {
         "operationId": "getServiceDaysPage",
@@ -8213,6 +8396,59 @@
           }
         },
         "summary": "Submit a case note",
+        "tags": [
+          "case-note-controller"
+        ]
+      }
+    },
+    "/referral/{referralReference}/non-contact-session": {
+      "post": {
+        "operationId": "submitNonContactSession",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitNonContactSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessageResponse"
+                }
+              }
+            },
+            "description": "Non contact session submitted successfully"
+          },
+          "400": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Validation failure"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Submit a non contact session",
         "tags": [
           "case-note-controller"
         ]

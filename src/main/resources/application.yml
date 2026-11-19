@@ -98,3 +98,7 @@ services:
 reference-data:
   probation-offices:
     path: "reference-data/probation-offices-v0.csv"
+springdoc:
+  swagger-ui:
+    # Must match the org.webjars:swagger-ui version in build.gradle.kts (springdoc defaults to an older one).
+    version: 5.35.0

@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'kotlin/uk/gov/justice/digital/hmpps/communitysupportapi/**'
+      - 'src/main/kotlin/uk/gov/justice/digital/hmpps/communitysupportapi/**'
 
 permissions:
   contents: read
