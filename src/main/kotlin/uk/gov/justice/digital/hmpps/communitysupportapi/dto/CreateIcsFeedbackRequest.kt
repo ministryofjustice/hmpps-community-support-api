@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.constraints.AssertTrue
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentHistory
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentIcsFeedback
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
@@ -12,6 +15,18 @@ class CreateIcsFeedbackRequest(
   val newlyIdentifiedAdditionalSupportNeeds: String? = null,
   val nextSteps: NextStepsRequest? = null,
 ) {
+  @get:JsonIgnore
+  @get:Schema(hidden = true)
+  @get:AssertTrue(message = "howTheyTriedToContactThePerson is required when the person did not attend")
+  val isContactMethodValid: Boolean
+    get() = record.didPersonAttend != false || !record.howTheyTriedToContactThePerson.isNullOrBlank()
+
+  @get:JsonIgnore
+  @get:Schema(hidden = true)
+  @get:AssertTrue(message = "reasonsTheyDidNotAttend is required when the person did not attend")
+  val isReasonsValid: Boolean
+    get() = record.didPersonAttend != false || !record.reasonsTheyDidNotAttend.isNullOrBlank()
+
   fun toAppointmentIcsFeedback(ics: AppointmentHistory, submittedBy: ReferralUser): AppointmentIcsFeedback {
     val isOtherLocation = this.record.howSessionTookPlace?.type == SessionMethodType.IN_PERSON_OTHER_LOCATION
 

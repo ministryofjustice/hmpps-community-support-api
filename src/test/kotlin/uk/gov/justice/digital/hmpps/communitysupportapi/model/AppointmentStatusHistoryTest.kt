@@ -30,5 +30,7 @@ class AppointmentStatusHistoryTest {
     appointmentIcs = mock<AppointmentHistory>(),
     recordSessionDidSessionHappen = didSessionHappen,
     recordSessionDidPersonAttend = didPersonAttend,
+    recordSessionHowTheyTriedToContactThePerson = null,
+    recordSessionReasonsTheyDidNotAttend = null,
   )
 }

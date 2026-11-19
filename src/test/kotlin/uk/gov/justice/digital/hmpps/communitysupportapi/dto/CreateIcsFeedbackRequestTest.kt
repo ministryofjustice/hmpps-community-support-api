@@ -26,8 +26,6 @@ class CreateIcsFeedbackRequestTest {
           postcode = "LS1 1AA",
         ),
         didPersonAttend = true,
-        howTheyTriedToContactThePerson = "Called twice",
-        reasonsTheyDidNotAttend = "Unwell",
       ),
       sessionDetails = SessionDetailsRequest(
         wasPersonLate = true,
@@ -63,8 +61,8 @@ class CreateIcsFeedbackRequestTest {
     assertThat(feedback.recordSessionCounty).isEqualTo("West Yorkshire")
     assertThat(feedback.recordSessionPostcode).isEqualTo("LS1 1AA")
     assertThat(feedback.recordSessionDidPersonAttend).isTrue()
-    assertThat(feedback.recordSessionHowTheyTriedToContactThePerson).isEqualTo("Called twice")
-    assertThat(feedback.recordSessionReasonsTheyDidNotAttend).isEqualTo("Unwell")
+    assertThat(feedback.recordSessionHowTheyTriedToContactThePerson).isNull()
+    assertThat(feedback.recordSessionReasonsTheyDidNotAttend).isNull()
     assertThat(feedback.sessionDetailsWasPersonLate).isTrue()
     assertThat(feedback.sessionDetailsLateReason).isEqualTo("Traffic")
     assertThat(feedback.sessionDetailsDuration).isEqualTo("1 hour and 30 minutes")
