@@ -149,6 +149,7 @@ class CaseNoteController(
         content = [
           Content(
             mediaType = "application/json",
+            schema = Schema(implementation = PathwaysDto::class),
           ),
         ],
       ),
