@@ -3,8 +3,12 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.service
 import jakarta.transaction.Transactional
 import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNoteOrNonContactSessionBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
@@ -126,6 +130,25 @@ class CaseNoteService(
       success = true,
       message = "Non contact session submitted successfully",
     )
+  }
+
+  @Transactional
+  fun getNotesAndNonContactSessions(
+    referralReference: String,
+    pageable: Pageable,
+  ): Page<ReferralNoteOrNonContactSessionBffDto> {
+    val referral = referralLookupService.findByCaseIdentifier(referralReference)
+
+    val total = referralNoteRepository.countNoteAndNonContactSessionRows(referral.id)
+    val rows = referralNoteRepository.findPagedNoteAndNonContactSessionRows(
+      referralId = referral.id,
+      limit = pageable.pageSize,
+      offset = pageable.offset,
+    )
+
+    val content = rows.map { ReferralNoteOrNonContactSessionBffDto.from(it) }
+
+    return PageImpl(content, pageable, total)
   }
 
   fun getReferenceDataReferralPathways(): List<ReferenceDataReferralPathwayDto> = referenceDataReferralPathwayRepository
