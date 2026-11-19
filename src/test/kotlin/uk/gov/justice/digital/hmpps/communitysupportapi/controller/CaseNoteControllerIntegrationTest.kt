@@ -18,7 +18,7 @@ import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNoteOrNonContactSessionBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwaysDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
@@ -612,13 +612,21 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
       .headers(setAuthorisation())
       .exchange()
       .expectStatus().isOk
-      .expectBody<List<ReferenceDataReferralPathwayDto>>()
+      .expectBody<ReferenceDataReferralPathwaysDto>()
       .consumeWith { response ->
-        response.responseBody shouldBe listOf(
-          ReferenceDataReferralPathwayDto(UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d801"), "Community links"),
-          ReferenceDataReferralPathwayDto(UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d802"), "Housing support"),
-          ReferenceDataReferralPathwayDto(UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d803"), "Jobs and skills support"),
-          ReferenceDataReferralPathwayDto(UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d804"), "Money management"),
+        response.responseBody shouldBe ReferenceDataReferralPathwaysDto(
+          listOf(
+            ReferenceDataReferralPathwayDto(UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d801"), "Community links"),
+            ReferenceDataReferralPathwayDto(UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d802"), "Housing support"),
+            ReferenceDataReferralPathwayDto(
+              UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d803"),
+              "Jobs and skills support",
+            ),
+            ReferenceDataReferralPathwayDto(
+              UUID.fromString("ca4d147f-cbc3-4c2d-9e33-627c9974d804"),
+              "Money management",
+            ),
+          ),
         )
       }
   }
