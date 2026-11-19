@@ -382,16 +382,18 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return 201 and persist contact attempts when person did not come`() {
+    fun `should persist and return separate non-attendance details when person did not attend`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
       val icsId = createIcsAppointmentId()
+      val contact = "Called twice on 26 April and left a voicemail."
+      val reasons = "The person was unwell."
 
       val request = CreateIcsFeedbackRequest(
         record = RecordSessionRequest(
           didSessionHappen = false,
           didPersonAttend = false,
-          howTheyTriedToContactThePerson = "Called twice on 26 April, no answer. Left a voicemail.",
-          reasonsTheyDidNotAttend = "Reason unknown.",
+          howTheyTriedToContactThePerson = contact,
+          reasonsTheyDidNotAttend = reasons,
         ),
       )
 
@@ -407,48 +409,15 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
           val body = result.responseBody!!
           assertThat(body.recordSessionDidSessionHappen).isFalse()
           assertThat(body.recordSessionDidPersonAttend).isFalse()
-          assertThat(body.recordSessionHowTheyTriedToContactThePerson).isEqualTo("Called twice on 26 April, no answer. Left a voicemail.")
+          assertThat(body.recordSessionHowTheyTriedToContactThePerson).isEqualTo(contact)
+          assertThat(body.recordSessionReasonsTheyDidNotAttend).isEqualTo(reasons)
           assertThat(body.recordSessionNotHappenReason).isNull()
           assertThat(body.recordSessionNotHappenReasonDetails).isNull()
           val saved = appointmentIcsFeedbackRepository.findById(body.id).orElseThrow()
           assertThat(saved.recordSessionDidPersonAttend).isFalse()
-          assertThat(saved.recordSessionHowTheyTriedToContactThePerson).isEqualTo("Called twice on 26 April, no answer. Left a voicemail.")
+          assertThat(saved.recordSessionHowTheyTriedToContactThePerson).isEqualTo(contact)
+          assertThat(saved.recordSessionReasonsTheyDidNotAttend).isEqualTo(reasons)
         }
-    }
-
-    @Test
-    fun `should persist and return separate non-attendance details`() {
-      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
-      val icsId = createIcsAppointmentId()
-      val contact = "Called twice on 26 April and left a voicemail."
-      val reasons = "The person was unwell."
-
-      val result = webTestClient.post()
-        .uri("/referral/$referralCaseReference/ics/$icsId/feedback")
-        .contentType(MediaType.APPLICATION_JSON)
-        .headers(setAuthorisation())
-        .bodyValue(
-          CreateIcsFeedbackRequest(
-            record = RecordSessionRequest(
-              didSessionHappen = false,
-              didPersonAttend = false,
-              howTheyTriedToContactThePerson = contact,
-              reasonsTheyDidNotAttend = reasons,
-            ),
-          ),
-        )
-        .exchange()
-        .expectStatus().isCreated
-        .expectBody<AppointmentIcsFeedbackResponse>()
-        .returnResult()
-
-      val body = result.responseBody!!
-      assertThat(body.recordSessionHowTheyTriedToContactThePerson).isEqualTo(contact)
-      assertThat(body.recordSessionReasonsTheyDidNotAttend).isEqualTo(reasons)
-
-      val saved = appointmentIcsFeedbackRepository.findById(body.id).orElseThrow()
-      assertThat(saved.recordSessionHowTheyTriedToContactThePerson).isEqualTo(contact)
-      assertThat(saved.recordSessionReasonsTheyDidNotAttend).isEqualTo(reasons)
     }
 
     @Test
