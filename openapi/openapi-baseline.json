@@ -3759,6 +3759,36 @@
         ],
         "type": "object"
       },
+      "ReferenceDataReferralPathwayDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "type": "object"
+      },
+      "ReferenceDataReferralPathwaysDto": {
+        "properties": {
+          "pathways": {
+            "items": {
+              "$ref": "#/components/schemas/ReferenceDataReferralPathwayDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "pathways"
+        ],
+        "type": "object"
+      },
       "ReferralAppointmentHistoryDto": {
         "properties": {
           "appointmentIcsId": {
@@ -7088,7 +7118,11 @@
         "responses": {
           "200": {
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceDataReferralPathwaysDto"
+                }
+              }
             },
             "description": "Referral pathways found"
           },
