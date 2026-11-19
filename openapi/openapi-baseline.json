@@ -3166,6 +3166,38 @@
         ],
         "type": "object"
       },
+      "PageResponse": {
+        "properties": {
+          "content": {
+            "items": {},
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "content",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ],
+        "type": "object"
+      },
       "Pageable": {
         "properties": {
           "page": {
@@ -6992,6 +7024,51 @@
         "summary": "Get the session delivery details with questions and saved answers for an action plan",
         "tags": [
           "action-plan-controller"
+        ]
+      }
+    },
+    "/bff/referral/{referralReference}/notes": {
+      "get": {
+        "operationId": "getNotesAndNonContactSessions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "referralReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageable",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponse"
+                }
+              }
+            },
+            "description": "Case notes and non-contact sessions retrieved successfully"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral not found"
+          }
+        },
+        "summary": "Get case notes and non-contact sessions for a referral",
+        "tags": [
+          "case-note-controller"
         ]
       }
     },
