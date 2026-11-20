@@ -12,6 +12,10 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -36,6 +40,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentDelive
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.AppointmentType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ChangeRequesterType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Person
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ProbationPractitionerDetails
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.Referral
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralEventType
 import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralUser
@@ -51,17 +56,20 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentIc
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.AppointmentStatusHistoryRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.PersonRepository
+import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ProbationPractitionerDetailsRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralEventRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.repository.ReferralUserRepository
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.CreateIcsFeedbackRequestFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.ReferralFactory
+import uk.gov.service.notify.NotificationClient
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.util.UUID
 
@@ -112,6 +120,12 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
 
   @Autowired
   private lateinit var personRepository: PersonRepository
+
+  @Autowired
+  private lateinit var probationPractitionerDetailsRepository: ProbationPractitionerDetailsRepository
+
+  @MockitoBean
+  private lateinit var notificationClient: NotificationClient
 
   private lateinit var person: Person
 
@@ -1341,6 +1355,66 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
       val events = referralEventRepository.findAll()
         .filter { it.eventType == ReferralEventType.APPOINTMENT_FEEDBACK_SENT }
       assertThat(events).hasSize(1)
+    }
+
+    @Test
+    fun `should email probation practitioner when notifyProbationPractitioner is true`() {
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          id = UUID.randomUUID(),
+          referralId = referral.id,
+          name = "Jane Doe",
+          emailAddress = "jane.doe@justice.gov.uk",
+          updatedAt = OffsetDateTime.now(),
+          updatedBy = testUser.id,
+        ),
+      )
+
+      val icsId = createIcsAndGetId()
+      val request = buildFeedbackRequest(
+        issuesConcernsIdentified = "Risk of housing loss",
+        notifyProbationPractitioner = true,
+      )
+
+      appointmentService.createIcsFeedback(caseReference, icsId, request, testUser)
+
+      verify(notificationClient).sendEmail(
+        eq("15536897-d353-44fc-8ba6-35434d3ebf9a"),
+        eq("jane.doe@justice.gov.uk"),
+        eq(
+          mapOf(
+            "crn" to "X654321",
+            "popFullName" to "Alex Jones",
+            "referenceNumber" to caseReference,
+            "issuesAndConcerns" to "Risk of housing loss",
+          ),
+        ),
+        isNull(),
+      )
+    }
+
+    @Test
+    fun `should not email probation practitioner when notifyProbationPractitioner is false`() {
+      probationPractitionerDetailsRepository.save(
+        ProbationPractitionerDetails(
+          id = UUID.randomUUID(),
+          referralId = referral.id,
+          name = "Jane Doe",
+          emailAddress = "jane.doe@justice.gov.uk",
+          updatedAt = OffsetDateTime.now(),
+          updatedBy = testUser.id,
+        ),
+      )
+
+      val icsId = createIcsAndGetId()
+      val request = buildFeedbackRequest(
+        issuesConcernsIdentified = "Risk of housing loss",
+        notifyProbationPractitioner = false,
+      )
+
+      appointmentService.createIcsFeedback(caseReference, icsId, request, testUser)
+
+      verifyNoInteractions(notificationClient)
     }
   }
 
