@@ -252,7 +252,8 @@ INSERT INTO appointment_ics_feedback (
     record_session_did_person_attend,
     record_session_not_happen_reason,
     record_session_not_happen_reason_details,
-    record_session_no_attendance_information,
+    record_session_how_they_tried_to_contact_the_person,
+    record_session_reasons_they_did_not_attend,
     session_details_was_person_late,
     session_details_late_reason,
     session_details_duration,
@@ -277,7 +278,7 @@ VALUES
         NULL,
         NULL,  -- record_session_pdu
         NULL, NULL, NULL, NULL, NULL,  -- address fields
-        NULL, NULL, NULL, NULL,        -- non-attendance / session-not-happen fields
+        NULL, NULL, NULL, NULL, NULL,  -- non-attendance / session-not-happen fields
         false,
         NULL,
         '1 hour and 0 minutes',
@@ -301,7 +302,7 @@ VALUES
         NULL,
         NULL,  -- record_session_pdu
         NULL, NULL, NULL, NULL, NULL,  -- address fields
-        NULL, NULL, NULL, NULL,        -- non-attendance / session-not-happen fields
+        NULL, NULL, NULL, NULL, NULL,  -- non-attendance / session-not-happen fields
         true,
         'Technical issues connecting to the video call platform.',
         '45 minutes',
@@ -325,7 +326,7 @@ VALUES
         NULL,
         'PDU-South-East',  -- record_session_pdu
         NULL, NULL, NULL, NULL, NULL,  -- address fields (not applicable for probation office)
-        NULL, NULL, NULL, NULL,        -- non-attendance / session-not-happen fields
+        NULL, NULL, NULL, NULL, NULL,  -- non-attendance / session-not-happen fields
         false,
         NULL,
         '1 hour and 30 minutes',
@@ -341,7 +342,7 @@ VALUES
         'a0000000-0000-4000-8000-000000000001'
     ),
     -- Dana: session did not happen; person did NOT attend (did not answer phone)
-    --       record_session_did_person_attend = false → noAttendanceInformation populated
+    --       record_session_did_person_attend = false; contact attempts and reasons recorded separately
     (
         'd0000000-0000-4000-8000-000000000004',
         'b0000000-0000-4000-8000-000000000004',
@@ -354,6 +355,7 @@ VALUES
         NULL,          -- record_session_not_happen_reason (n/a – person did not attend)
         NULL,          -- record_session_not_happen_reason_details
         'Called twice on the day of the appointment – no answer either time. Left a voicemail after each attempt. Sent a follow-up text message the following morning but received no response.',
+        'Reason unknown.',
         NULL, NULL, NULL,  -- session details (n/a)
         NULL, NULL, NULL,  -- session feedback (n/a)
         'Unable to make contact with Dana. Pattern of non-attendance may indicate additional needs or barriers to engagement.',
@@ -373,7 +375,7 @@ VALUES
         NULL,
         NULL,  -- record_session_pdu
         NULL, NULL, NULL, NULL, NULL,  -- address fields
-        NULL, NULL, NULL, NULL,        -- non-attendance / session-not-happen fields
+        NULL, NULL, NULL, NULL, NULL,  -- non-attendance / session-not-happen fields
         false,
         NULL,
         '1 hour and 15 minutes',
@@ -402,7 +404,7 @@ VALUES
         true,          -- record_session_did_person_attend
         'SERVICE_PROVIDER_ISSUE',
         'The room booking had been cancelled without notice due to a fire alarm drill that ran over time. A replacement room was not available at short notice.',
-        NULL,          -- record_session_no_attendance_information (n/a – person attended)
+        NULL, NULL,    -- non-attendance details (n/a – person attended)
         NULL, NULL, NULL,  -- session details (n/a)
         NULL, NULL, NULL,  -- session feedback (n/a)
         NULL,
@@ -426,7 +428,7 @@ VALUES
         true,          -- record_session_did_person_attend
         'PERSON_DID_NOT_COMPLY',
         'Luka attended the appointment but became disruptive during the introduction, refusing to engage with the session structure and using disrespectful language. The session was ended early for safeguarding reasons.',
-        NULL,          -- record_session_no_attendance_information (n/a – person attended)
+        NULL, NULL,    -- non-attendance details (n/a – person attended)
         NULL, NULL, NULL,  -- session details (n/a)
         NULL, NULL, NULL,  -- session feedback (n/a)
         'Disruptive behaviour resulted in early termination of the session. Safeguarding considerations noted.',
@@ -450,7 +452,7 @@ VALUES
         true,         -- record_session_did_person_attend
         'PERSON_DID_NOT_COMPLY',
         'Gloria attended the appointment but became aggressive and using disrespectful language when introduced. Due to safeguarding reasons, the session finished early',
-        NULL,          -- record_session_no_attendance_information (n/a – person attended)
+        NULL, NULL,    -- non-attendance details (n/a – person attended)
         NULL, NULL, NULL,  -- session details (n/a)
         NULL, NULL, NULL,  -- session feedback (n/a)
         'Disruptive behaviour resulted in early termination of the session. Safeguarding considerations noted.',
@@ -461,4 +463,3 @@ VALUES
         '2026-02-27 14:50:00',
         'a0000000-0000-4000-8000-000000000003'
     );
-

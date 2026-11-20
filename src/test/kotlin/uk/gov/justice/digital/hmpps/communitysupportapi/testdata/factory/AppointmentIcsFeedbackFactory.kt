@@ -16,7 +16,8 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
   private var recordSessionDidPersonAttend: Boolean? = true
   private var recordSessionNotHappenReason: String? = null
   private var recordSessionNotHappenReasonDetails: String? = null
-  private var recordSessionNoAttendanceInformation: String? = null
+  private var recordSessionHowTheyTriedToContactThePerson: String? = null
+  private var recordSessionReasonsTheyDidNotAttend: String? = null
 
   private var sessionDetailsWasPersonLate: Boolean? = false
   private var sessionDetailsLateReason: String? = null
@@ -52,8 +53,12 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
     this.recordSessionNotHappenReason = reason
   }
 
-  fun withNoAttendanceInformation(info: String?) = apply {
-    this.recordSessionNoAttendanceInformation = info
+  fun withHowTheyTriedToContactThePerson(contact: String?) = apply {
+    this.recordSessionHowTheyTriedToContactThePerson = contact
+  }
+
+  fun withReasonsTheyDidNotAttend(reasons: String?) = apply {
+    this.recordSessionReasonsTheyDidNotAttend = reasons
   }
 
   fun withWasPersonLate(wasPersonLate: Boolean?) = apply {
@@ -84,7 +89,8 @@ class AppointmentIcsFeedbackFactory : TestEntityFactory<AppointmentIcsFeedback>(
     recordSessionDidPersonAttend = recordSessionDidPersonAttend,
     recordSessionNotHappenReason = recordSessionNotHappenReason,
     recordSessionNotHappenReasonDetails = recordSessionNotHappenReasonDetails,
-    recordSessionNoAttendanceInformation = recordSessionNoAttendanceInformation,
+    recordSessionHowTheyTriedToContactThePerson = recordSessionHowTheyTriedToContactThePerson,
+    recordSessionReasonsTheyDidNotAttend = recordSessionReasonsTheyDidNotAttend,
     sessionDetailsWasPersonLate = sessionDetailsWasPersonLate,
     sessionDetailsLateReason = sessionDetailsLateReason,
     sessionDetailsDuration = sessionDetailsDuration,
