@@ -747,7 +747,7 @@
               "null"
             ]
           },
-          "recordSessionNoAttendanceInformation": {
+          "recordSessionHowTheyTriedToContactThePerson": {
             "type": [
               "string",
               "null"
@@ -778,6 +778,12 @@
             ]
           },
           "recordSessionPostcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recordSessionReasonsTheyDidNotAttend": {
             "type": [
               "string",
               "null"
@@ -3716,7 +3722,13 @@
               }
             ]
           },
-          "noAttendanceInformation": {
+          "howTheyTriedToContactThePerson": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reasonsTheyDidNotAttend": {
             "type": [
               "string",
               "null"
