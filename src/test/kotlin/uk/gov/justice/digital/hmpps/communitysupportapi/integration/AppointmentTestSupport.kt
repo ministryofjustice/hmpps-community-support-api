@@ -117,7 +117,8 @@ class AppointmentTestSupport(
     howSessionTookPlace: SessionMethodRequest? = SessionMethodRequest(type = SessionMethodType.PHONE),
     didPersonAttend: Boolean? = null,
     sessionNotHappenReason: SessionNotHappenReasonRequest? = null,
-    noAttendanceInformation: String? = null,
+    howTheyTriedToContactThePerson: String? = null,
+    reasonsTheyDidNotAttend: String? = null,
     wasPersonLate: Boolean? = false,
     lateReason: String? = null,
     duration: SessionDurationRequest? = SessionDurationRequest(hours = 1, minutes = 0),
@@ -134,7 +135,8 @@ class AppointmentTestSupport(
     .withHowSessionTookPlace(howSessionTookPlace)
     .withDidPersonAttend(didPersonAttend)
     .withSessionNotHappenReason(sessionNotHappenReason)
-    .withNoAttendanceInformation(noAttendanceInformation)
+    .withHowTheyTriedToContactThePerson(howTheyTriedToContactThePerson)
+    .withReasonsTheyDidNotAttend(reasonsTheyDidNotAttend)
     .withWasPersonLate(wasPersonLate)
     .withLateReason(lateReason)
     .withDuration(duration)
@@ -155,7 +157,8 @@ class AppointmentTestSupport(
     sessionMethod: String? = "Phone",
     didPersonAttend: Boolean? = true,
     notHappenReason: String? = null,
-    noAttendanceInformation: String? = null,
+    howTheyTriedToContactThePerson: String? = null,
+    reasonsTheyDidNotAttend: String? = null,
     wasPersonLate: Boolean? = false,
     duration: String? = "1 hour",
     whatHappened: String? = "Discussed reintegration goals",
@@ -169,7 +172,8 @@ class AppointmentTestSupport(
       .withSessionMethod(sessionMethod)
       .withDidPersonAttend(didPersonAttend)
       .withNotHappenReason(notHappenReason)
-      .withNoAttendanceInformation(noAttendanceInformation)
+      .withHowTheyTriedToContactThePerson(howTheyTriedToContactThePerson)
+      .withReasonsTheyDidNotAttend(reasonsTheyDidNotAttend)
       .withWasPersonLate(wasPersonLate)
       .withDuration(duration)
       .withWhatHappened(whatHappened)

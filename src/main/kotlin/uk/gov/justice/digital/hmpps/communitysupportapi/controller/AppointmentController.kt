@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import jakarta.validation.Valid
 import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -302,7 +303,7 @@ class AppointmentController(
   fun submitIcsFeedback(
     @PathVariable caseReference: String,
     @PathVariable icsId: UUID,
-    @RequestBody request: CreateIcsFeedbackRequest,
+    @Valid @RequestBody request: CreateIcsFeedbackRequest,
   ): ResponseEntity<AppointmentIcsFeedbackResponse> {
     log.info("POST /referral/{}/ics/{}/feedback", caseReference, icsId)
     val submittedBy = userMapper.fromToken(authenticationHolder)

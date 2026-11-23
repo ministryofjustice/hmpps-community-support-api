@@ -49,7 +49,8 @@ data class RecordSessionRequest(
   // Only relevant when didSessionHappen = false and didPersonAttend = true
   val sessionNotHappenReason: SessionNotHappenReasonRequest? = null,
   // Only relevant when didSessionHappen = false and didPersonAttend = false
-  val noAttendanceInformation: String? = null,
+  val howTheyTriedToContactThePerson: String? = null,
+  val reasonsTheyDidNotAttend: String? = null,
 )
 
 data class SessionDetailsRequest(
@@ -94,7 +95,8 @@ data class AppointmentIcsFeedbackResponse(
   val recordSessionDidPersonAttend: Boolean?,
   val recordSessionNotHappenReason: String?,
   val recordSessionNotHappenReasonDetails: String?,
-  val recordSessionNoAttendanceInformation: String?,
+  val recordSessionHowTheyTriedToContactThePerson: String?,
+  val recordSessionReasonsTheyDidNotAttend: String?,
 
   // Section 2 – Session details
   val sessionDetailsWasPersonLate: Boolean?,
@@ -143,7 +145,8 @@ data class AppointmentIcsFeedbackResponse(
       recordSessionDidPersonAttend = feedback.recordSessionDidPersonAttend,
       recordSessionNotHappenReason = feedback.recordSessionNotHappenReason,
       recordSessionNotHappenReasonDetails = feedback.recordSessionNotHappenReasonDetails,
-      recordSessionNoAttendanceInformation = feedback.recordSessionNoAttendanceInformation,
+      recordSessionHowTheyTriedToContactThePerson = feedback.recordSessionHowTheyTriedToContactThePerson,
+      recordSessionReasonsTheyDidNotAttend = feedback.recordSessionReasonsTheyDidNotAttend,
       sessionDetailsWasPersonLate = feedback.sessionDetailsWasPersonLate,
       sessionDetailsLateReason = feedback.sessionDetailsLateReason,
       sessionDetailsDuration = feedback.sessionDetailsDuration,

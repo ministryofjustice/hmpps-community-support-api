@@ -125,7 +125,8 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   private var howSessionTookPlace: SessionMethodRequest? = SessionMethodRequest(type = SessionMethodType.PHONE)
   private var didPersonAttend: Boolean? = null
   private var sessionNotHappenReason: SessionNotHappenReasonRequest? = null
-  private var noAttendanceInformation: String? = null
+  private var howTheyTriedToContactThePerson: String? = null
+  private var reasonsTheyDidNotAttend: String? = null
 
   // Section 2 – Session details
   private var wasPersonLate: Boolean? = false
@@ -152,7 +153,8 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
   fun withHowSessionTookPlace(value: SessionMethodRequest?) = apply { howSessionTookPlace = value }
   fun withDidPersonAttend(value: Boolean?) = apply { didPersonAttend = value }
   fun withSessionNotHappenReason(value: SessionNotHappenReasonRequest?) = apply { sessionNotHappenReason = value }
-  fun withNoAttendanceInformation(value: String?) = apply { noAttendanceInformation = value }
+  fun withHowTheyTriedToContactThePerson(value: String?) = apply { howTheyTriedToContactThePerson = value }
+  fun withReasonsTheyDidNotAttend(value: String?) = apply { reasonsTheyDidNotAttend = value }
   fun withWasPersonLate(value: Boolean?) = apply { wasPersonLate = value }
   fun withLateReason(value: String?) = apply { lateReason = value }
   fun withDuration(value: SessionDurationRequest?) = apply { duration = value }
@@ -171,7 +173,8 @@ class CreateIcsFeedbackRequestFactory : TestEntityFactory<CreateIcsFeedbackReque
       howSessionTookPlace = howSessionTookPlace,
       didPersonAttend = didPersonAttend,
       sessionNotHappenReason = sessionNotHappenReason,
-      noAttendanceInformation = noAttendanceInformation,
+      howTheyTriedToContactThePerson = howTheyTriedToContactThePerson,
+      reasonsTheyDidNotAttend = reasonsTheyDidNotAttend,
     ),
     sessionDetails = SessionDetailsRequest(
       wasPersonLate = wasPersonLate,

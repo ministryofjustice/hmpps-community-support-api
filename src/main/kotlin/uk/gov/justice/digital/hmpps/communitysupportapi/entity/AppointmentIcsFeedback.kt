@@ -60,8 +60,11 @@ class AppointmentIcsFeedback(
   @Column(name = "record_session_not_happen_reason_details", columnDefinition = "TEXT")
   val recordSessionNotHappenReasonDetails: String? = null,
 
-  @Column(name = "record_session_no_attendance_information", columnDefinition = "TEXT")
-  val recordSessionNoAttendanceInformation: String? = null,
+  @Column(name = "record_session_how_they_tried_to_contact_the_person", columnDefinition = "TEXT")
+  val recordSessionHowTheyTriedToContactThePerson: String?,
+
+  @Column(name = "record_session_reasons_they_did_not_attend", columnDefinition = "TEXT")
+  val recordSessionReasonsTheyDidNotAttend: String?,
 
   @Column(name = "session_details_was_person_late")
   val sessionDetailsWasPersonLate: Boolean? = null,
