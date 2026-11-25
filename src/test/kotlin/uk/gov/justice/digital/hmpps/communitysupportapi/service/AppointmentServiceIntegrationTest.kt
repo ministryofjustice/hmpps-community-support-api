@@ -948,16 +948,16 @@ class AppointmentServiceIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return ICS feedback session details for appointment with latest appointmentDateTime`() {
+    fun `should return ICS feedback session details for latest created appointment even when booked retrospectively`() {
       val firstAppointment = appointmentHelper.createAppointment(referral)
       val firstDelivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL)
-      val firstAppointmentDateTime = LocalDateTime.of(2026, 3, 27, 10, 0)
-      val firstCreatedAt = firstAppointmentDateTime.minusDays(1)
+      val firstAppointmentDateTime = LocalDateTime.of(2026, 4, 9, 10, 0)
+      val firstCreatedAt = LocalDateTime.of(2026, 4, 8, 9, 0)
 
       val secondAppointment = appointmentHelper.createAppointment(referral)
       val secondDelivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL)
       val secondAppointmentDateTime = LocalDateTime.of(2026, 4, 5, 14, 30)
-      val secondCreatedAt = secondAppointmentDateTime.minusDays(1)
+      val secondCreatedAt = firstCreatedAt.plusDays(2)
 
       appointmentHelper.createAppointmentIcs(
         firstAppointment,

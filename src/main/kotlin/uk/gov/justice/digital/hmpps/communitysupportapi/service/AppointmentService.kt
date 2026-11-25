@@ -353,15 +353,15 @@ class AppointmentService(
       .orElseThrow { NotFoundException("Person not found for referral ${referral.referenceNumber}") }
       .let { "${it.firstName} ${it.lastName}" }
 
-    val appointmentHistory = getLatestIcsAppointmentHistory(referral)
+    val appointmentHistory = getLatestCreatedIcsAppointmentHistory(referral)
 
     return IcsFeedbackSessionDto.from(personName, appointmentHistory)
   }
 
   /**
-   * Returns the latest ICS appointment history entry for a referral.
+   * Returns the most recently created ICS appointment history entry, regardless of its session date.
    */
-  private fun getLatestIcsAppointmentHistory(referral: Referral): AppointmentHistory {
+  private fun getLatestCreatedIcsAppointmentHistory(referral: Referral): AppointmentHistory {
     val appointments = appointmentRepository
       .findAllByReferralId(referral.id)
       .orEmpty()
@@ -370,45 +370,42 @@ class AppointmentService(
 
     return appointments
       .flatMap { it.appointmentHistory }
-      .maxWithOrNull(
-        compareBy<AppointmentHistory> { it.appointmentDateTime }
-          .thenBy { it.createdAt },
-      )
+      .maxByOrNull { it.createdAt }
       ?: throw NotFoundException("ICS appointment not found for referral reference number: ${referral.referenceNumber}")
   }
 
   /**
-   * Returns the referral's first name and the latest ICS appointment date and time for the attendance page.
+   * Returns the referral's first name and the latest created ICS appointment date and time for the attendance page.
    */
   @Transactional(readOnly = true)
   fun getIcsFeedbackAttendance(caseReference: String): IcsFeedbackAttendanceBffDto {
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
     val referralFirstName = referralFirstName(referral)
-    val appointmentHistory = getLatestIcsAppointmentHistory(referral)
+    val appointmentHistory = getLatestCreatedIcsAppointmentHistory(referral)
 
     return IcsFeedbackAttendanceBffDto.from(referralFirstName, appointmentHistory)
   }
 
   /**
-   * Returns the referral's first name and the latest ICS appointment date and time for the session details page.
+   * Returns the referral's first name and the latest created ICS appointment date and time for the session details page.
    */
   @Transactional(readOnly = true)
   fun getIcsFeedbackSessionDetailsPage(caseReference: String): IcsFeedbackSessionDetailsBffDto {
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
     val referralFirstName = referralFirstName(referral)
-    val appointmentHistory = getLatestIcsAppointmentHistory(referral)
+    val appointmentHistory = getLatestCreatedIcsAppointmentHistory(referral)
 
     return IcsFeedbackSessionDetailsBffDto.from(referralFirstName, appointmentHistory)
   }
 
   /**
-   * Returns the referral's first name and latest ICS appointment ID for the check answers page.
+   * Returns the referral's first name and latest created ICS appointment ID for the check answers page.
    */
   @Transactional(readOnly = true)
   fun getIcsFeedbackCheckAnswers(caseReference: String): IcsFeedbackCheckAnswersBffDto {
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
     val referralFirstName = referralFirstName(referral)
-    val appointmentHistory = getLatestIcsAppointmentHistory(referral)
+    val appointmentHistory = getLatestCreatedIcsAppointmentHistory(referral)
 
     return IcsFeedbackCheckAnswersBffDto.from(referralFirstName, appointmentHistory)
   }
@@ -424,13 +421,17 @@ class AppointmentService(
     .firstName
 
   /**
-   * Returns the session method of the latest ICS appointment for a referral.
+   * Returns the session method of the most recently created ICS appointment for a referral.
    */
   @Transactional(readOnly = true)
   fun getIcsFeedbackSessionMethod(caseReference: String): SessionMethod {
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
-    return getIcsAppointmentsByReferral(referral.id).firstOrNull()?.sessionMethod
-      ?: throw NotFoundException("No ICS appointments found for referral reference number: ${referral.referenceNumber}")
+    val appointment = getLatestCreatedIcsAppointmentHistory(referral)
+    return AppointmentIcsResponse.from(
+      appointment,
+      getLatestAppointmentStatus(appointment.appointment.id),
+      getReferralName(appointment.appointment),
+    ).sessionMethod
   }
 
   /**
