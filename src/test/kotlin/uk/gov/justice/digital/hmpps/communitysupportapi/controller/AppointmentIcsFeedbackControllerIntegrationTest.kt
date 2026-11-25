@@ -17,7 +17,12 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.AppointmentIcsFeedbackResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CaseWorkerSummaryDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CreateIcsFeedbackRequest
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackAttendanceBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackCheckAnswersBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackDidSessionTakePlaceBffDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackIdentifiedAdditionalSupportNeedsBffResponseDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDetailsBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.IcsFeedbackSessionDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.RecordSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionDurationRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SessionMethodRequest
@@ -44,6 +49,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalDetailsFactory
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.PersonAdditionalSupportNeedsFactory
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -95,23 +101,125 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  private fun createIcsAppointmentId(): UUID {
+  private fun createIcsAppointmentId(
+    appointmentDateTime: LocalDateTime = LocalDateTime.of(2026, 4, 9, 10, 0),
+    method: AppointmentDeliveryMethod = AppointmentDeliveryMethod.PHONE_CALL,
+    createdAt: LocalDateTime = LocalDateTime.of(2026, 4, 8, 9, 0),
+  ): UUID {
     val referral = referralRepository.findById(referralId).orElseThrow()
     val appointment = appointmentHelper.createAppointment(referral)
     appointmentHelper.createAppointmentStatusHistory(appointment)
-    val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.PHONE_CALL, methodDetails = "Not feeling well enough to attend in person")
+    val delivery = appointmentHelper.createAppointmentDelivery(method, methodDetails = "Not feeling well enough to attend in person")
     val ics = appointmentHelper.createAppointmentIcs(
       appointment,
       delivery,
       testUser,
-      LocalDateTime.of(2026, 4, 9, 10, 0),
-      LocalDateTime.of(2026, 4, 8, 9, 0),
+      appointmentDateTime,
+      createdAt,
       listOf("Phone call"),
     )
     return ics.id
   }
 
   // ── Tests ─────────────────────────────────────────────────────────────────
+
+  @Nested
+  @DisplayName("Latest created ICS feedback journey")
+  inner class LatestCreatedFeedback {
+    @Test
+    fun `should submit feedback for a retrospective appointment after a later session already has feedback`() {
+      whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
+      val laterId = createIcsAppointmentId()
+      val feedback = appointmentHelper.buildIcsFeedbackRequest()
+
+      webTestClient.post()
+        .uri("/referral/$referralCaseReference/ics/$laterId/feedback")
+        .headers(setAuthorisation())
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(feedback)
+        .exchange()
+        .expectStatus().isCreated
+
+      val retrospectiveId = createIcsAppointmentId(
+        LocalDateTime.of(2026, 4, 1, 9, 0),
+        AppointmentDeliveryMethod.VIDEO_CALL,
+        createdAt = LocalDateTime.of(2026, 4, 10, 9, 0),
+      )
+
+      webTestClient.get()
+        .uri("/bff/ics-feedback/$referralCaseReference/check-answers")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<IcsFeedbackCheckAnswersBffDto>()
+        .consumeWith { result ->
+          assertThat(result.responseBody!!.appointmentIcsId).isEqualTo(retrospectiveId)
+        }
+
+      webTestClient.get()
+        .uri("/bff/ics-feedback/$referralCaseReference/attendance")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<IcsFeedbackAttendanceBffDto>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.date).isEqualTo(LocalDate.of(2026, 4, 1))
+          assertThat(body.time.hour).isEqualTo(9)
+        }
+
+      webTestClient.get()
+        .uri("/bff/ics-feedback/$referralCaseReference/session-details")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<IcsFeedbackSessionDetailsBffDto>()
+        .consumeWith { result ->
+          val body = result.responseBody!!
+          assertThat(body.date).isEqualTo(LocalDate.of(2026, 4, 1))
+          assertThat(body.time.hour).isEqualTo(9)
+        }
+
+      webTestClient.get()
+        .uri("/bff/ics-feedback/$referralCaseReference/did-session-take-place")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<IcsFeedbackDidSessionTakePlaceBffDto>()
+        .consumeWith { result ->
+          assertThat(result.responseBody!!.sessionMethod.type).isEqualTo("VIDEO")
+        }
+
+      webTestClient.get()
+        .uri("/bff/referral/$referralCaseReference/ics_appointment_feedback_details")
+        .headers(setAuthorisation())
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<IcsFeedbackSessionDto>()
+        .consumeWith { result ->
+          assertThat(result.responseBody!!.appointmentDetails?.date).isEqualTo("01/04/2026")
+        }
+
+      webTestClient.post()
+        .uri("/referral/$referralCaseReference/ics/$retrospectiveId/feedback")
+        .headers(setAuthorisation())
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(feedback)
+        .exchange()
+        .expectStatus().isCreated
+
+      assertThat(appointmentIcsFeedbackRepository.findByAppointmentIcsId(laterId)).isNotNull()
+      assertThat(appointmentIcsFeedbackRepository.findByAppointmentIcsId(retrospectiveId)).isNotNull()
+
+      webTestClient.post()
+        .uri("/referral/$referralCaseReference/ics/$retrospectiveId/feedback")
+        .headers(setAuthorisation())
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(feedback)
+        .exchange()
+        .expectStatus().isEqualTo(409)
+    }
+  }
 
   @Nested
   @DisplayName("POST /referral/{caseReference}/ics/{icsAppointmentId}/feedback")
