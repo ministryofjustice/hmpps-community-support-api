@@ -16,10 +16,9 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.expectBody
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwayDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwaysDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNoteOrNonContactSessionBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNotesBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
@@ -405,19 +404,21 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
-        .expectBody<PageResponse<ReferralNoteOrNonContactSessionBffDto>>()
+        .expectBody<ReferralNotesBffResponseDto>()
         .consumeWith { response ->
           val body = response.responseBody!!
-          body.page shouldBe 0
-          body.size shouldBe 25
-          body.totalElements shouldBe 2
-          body.totalPages shouldBe 1
-          body.content.map { it.title } shouldBe listOf("Session title", "Note title")
-          body.content[0].createdAt shouldBe "Wed 7 Jan 2026 10:02am"
-          body.content[0].createdBy shouldBe "Session author"
-          body.content[1].createdAt shouldBe "Mon 5 Jan 2026 7:02pm"
-          body.content[1].details shouldBe "Note details"
-          body.content[1].detailsTruncated shouldBe false
+          body.fullName shouldBe "John Smith"
+          val page = body.notesAndNonContactSessions
+          page.page shouldBe 0
+          page.size shouldBe 25
+          page.totalElements shouldBe 2
+          page.totalPages shouldBe 1
+          page.content.map { it.title } shouldBe listOf("Session title", "Note title")
+          page.content[0].createdAt shouldBe "Wed 7 Jan 2026 10:02am"
+          page.content[0].createdBy shouldBe "Session author"
+          page.content[1].createdAt shouldBe "Mon 5 Jan 2026 7:02pm"
+          page.content[1].details shouldBe "Note details"
+          page.content[1].detailsTruncated shouldBe false
         }
     }
 
@@ -441,9 +442,9 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
-        .expectBody<PageResponse<ReferralNoteOrNonContactSessionBffDto>>()
+        .expectBody<ReferralNotesBffResponseDto>()
         .consumeWith { response ->
-          val item = response.responseBody!!.content.single()
+          val item = response.responseBody!!.notesAndNonContactSessions.content.single()
           item.details shouldBe (1..40).joinToString(" ") { "word$it" }
           item.detailsTruncated shouldBe true
         }
@@ -470,13 +471,13 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
-        .expectBody<PageResponse<ReferralNoteOrNonContactSessionBffDto>>()
+        .expectBody<ReferralNotesBffResponseDto>()
         .consumeWith { response ->
-          val body = response.responseBody!!
-          body.content.size shouldBe 25
-          body.totalElements shouldBe 26
-          body.totalPages shouldBe 2
-          body.content.first().title shouldBe "Note 26"
+          val page = response.responseBody!!.notesAndNonContactSessions
+          page.content.size shouldBe 25
+          page.totalElements shouldBe 26
+          page.totalPages shouldBe 2
+          page.content.first().title shouldBe "Note 26"
         }
 
       webTestClient.get()
@@ -484,11 +485,11 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
-        .expectBody<PageResponse<ReferralNoteOrNonContactSessionBffDto>>()
+        .expectBody<ReferralNotesBffResponseDto>()
         .consumeWith { response ->
-          val body = response.responseBody!!
-          body.page shouldBe 1
-          body.content.map { it.title } shouldBe listOf("Note 1")
+          val page = response.responseBody!!.notesAndNonContactSessions
+          page.page shouldBe 1
+          page.content.map { it.title } shouldBe listOf("Note 1")
         }
     }
 
@@ -536,12 +537,12 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
-        .expectBody<PageResponse<ReferralNoteOrNonContactSessionBffDto>>()
+        .expectBody<ReferralNotesBffResponseDto>()
         .consumeWith { response ->
-          val body = response.responseBody!!
-          body.totalElements shouldBe 1
-          body.totalPages shouldBe 1
-          body.content.map { it.title } shouldBe listOf("Active note")
+          val page = response.responseBody!!.notesAndNonContactSessions
+          page.totalElements shouldBe 1
+          page.totalPages shouldBe 1
+          page.content.map { it.title } shouldBe listOf("Active note")
         }
     }
 
@@ -593,11 +594,11 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
-        .expectBody<PageResponse<ReferralNoteOrNonContactSessionBffDto>>()
+        .expectBody<ReferralNotesBffResponseDto>()
         .consumeWith { response ->
-          val body = response.responseBody!!
-          body.totalElements shouldBe 1
-          body.content.map { it.title } shouldBe listOf("Own note")
+          val page = response.responseBody!!.notesAndNonContactSessions
+          page.totalElements shouldBe 1
+          page.content.map { it.title } shouldBe listOf("Own note")
         }
     }
   }
