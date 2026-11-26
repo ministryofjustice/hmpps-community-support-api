@@ -32,7 +32,10 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webmvc")
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
-  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.1")
+  // Springdoc 3.2.1 moved to swagger-core 3.0.0 (Jackson 3), while the latest swagger-parser 2.1.49
+  // still depends on swagger-core 2.x and Jackson 2. Temporarily pinning Springdoc to 3.2.0
+  // to avoid runtime issues with swagger-parser until it is updated to support swagger-core 3.0.0 and Jackson 3.
+  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0")
   // Swagger UI 5.35.0 bundles DOMPurify patched for CVE-2026-116802 and CVE-2026-116803.
   implementation("org.webjars:swagger-ui:5.36.0")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
