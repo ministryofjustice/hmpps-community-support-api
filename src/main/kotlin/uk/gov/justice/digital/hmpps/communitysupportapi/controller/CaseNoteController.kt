@@ -17,13 +17,11 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.communitysupportapi.authorization.UserMapper
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.PageResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferenceDataReferralPathwaysDto
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNoteOrNonContactSessionBffDto
+import uk.gov.justice.digital.hmpps.communitysupportapi.dto.ReferralNotesBffResponseDto
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitCaseNoteRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SubmitNonContactSessionRequest
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.SuccessMessageResponse
-import uk.gov.justice.digital.hmpps.communitysupportapi.dto.toResponse
 import uk.gov.justice.digital.hmpps.communitysupportapi.service.CaseNoteService
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 
@@ -119,7 +117,7 @@ class CaseNoteController(
         content = [
           Content(
             mediaType = "application/json",
-            schema = Schema(implementation = PageResponse::class),
+            schema = Schema(implementation = ReferralNotesBffResponseDto::class),
           ),
         ],
       ),
@@ -134,10 +132,10 @@ class CaseNoteController(
   fun getNotesAndNonContactSessions(
     @PathVariable referralReference: String,
     @PageableDefault(page = 0, size = 25) pageable: Pageable,
-  ): ResponseEntity<PageResponse<ReferralNoteOrNonContactSessionBffDto>> {
+  ): ResponseEntity<ReferralNotesBffResponseDto> {
     logger.info("Fetching notes and non-contact sessions for referral {}", referralReference)
-    val page = caseNoteService.getNotesAndNonContactSessions(referralReference, pageable)
-    return ResponseEntity.ok(page.toResponse())
+    val response = caseNoteService.getNotesAndNonContactSessions(referralReference, pageable)
+    return ResponseEntity.ok(response)
   }
 
   @Operation(summary = "Get referral pathways")

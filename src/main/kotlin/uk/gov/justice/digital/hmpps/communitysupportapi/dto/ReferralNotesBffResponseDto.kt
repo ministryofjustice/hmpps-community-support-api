@@ -6,7 +6,12 @@ import java.util.UUID
 
 private const val DETAILS_MAX_WORDS = 40
 
-data class ReferralNoteOrNonContactSessionBffDto(
+data class ReferralNotesBffResponseDto(
+  val fullName: String,
+  val notesAndNonContactSessions: PageResponse<ReferralNoteOrNonContactSessionDto>,
+)
+
+data class ReferralNoteOrNonContactSessionDto(
   val id: UUID,
   val createdAt: String,
   val createdBy: String,
@@ -15,9 +20,9 @@ data class ReferralNoteOrNonContactSessionBffDto(
   val detailsTruncated: Boolean,
 ) {
   companion object {
-    fun from(row: ReferralNoteOrNonContactSessionRow): ReferralNoteOrNonContactSessionBffDto {
+    fun from(row: ReferralNoteOrNonContactSessionRow): ReferralNoteOrNonContactSessionDto {
       val truncatedDetails = row.details.truncateDetails()
-      return ReferralNoteOrNonContactSessionBffDto(
+      return ReferralNoteOrNonContactSessionDto(
         id = row.id,
         createdAt = row.createdAt.format(SHORT_DATE_TIME_FORMAT),
         createdBy = row.createdBy,
