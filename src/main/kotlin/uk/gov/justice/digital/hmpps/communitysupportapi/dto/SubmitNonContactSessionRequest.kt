@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.dto
 
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
+import uk.gov.justice.digital.hmpps.communitysupportapi.entity.ReferralNonContactSession
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -23,4 +24,20 @@ data class SubmitNonContactSessionRequest(
 
   @field:NotEmpty(message = "The session must have at least one pathway")
   val pathways: List<UUID>,
+)
+
+fun SubmitNonContactSessionRequest.toReferralNonContactSession(
+  referralId: UUID,
+  createdBy: String,
+  createdAt: OffsetDateTime,
+): ReferralNonContactSession = ReferralNonContactSession(
+  id = UUID.randomUUID(),
+  referralId = referralId,
+  createdAt = createdAt,
+  createdBy = createdBy,
+  title = title,
+  details = details,
+  startDateTime = startDate,
+  durationHours = durationHours,
+  durationMinutes = durationMinutes,
 )

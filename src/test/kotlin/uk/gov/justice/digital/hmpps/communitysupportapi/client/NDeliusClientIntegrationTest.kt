@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.communitysupportapi.dto.CodeDescriptionDto
@@ -18,6 +19,7 @@ import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResp
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createHomeOfficeInterest
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.createPersonDetailsAndCircumstances
 import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.ExternalApiResponse.personDetailsAndCircumstancesNotFoundJson
+import uk.gov.justice.digital.hmpps.communitysupportapi.testdata.factory.NDeliusOffenceAndSentenceDtoFactory
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -65,7 +67,11 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
     )
 
     assertThat(result.disabilities.size).isEqualTo(1)
-    checkDisabilitiesDto(result.disabilities[0], CodeDescriptionDto("BLN", "Blind"), OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)))
+    checkDisabilitiesDto(
+      result.disabilities[0],
+      CodeDescriptionDto("BLN", "Blind"),
+      OffsetDateTime.of(2026, 3, 12, 14, 25, 0, 0, ZoneOffset.ofHours(1)),
+    )
 
     assertThat(result.offenderPersonalityDisorder?.status?.code).isEqualTo("NO")
     assertThat(result.offenderPersonalityDisorder?.status?.description).isEqualTo("N/A")
@@ -163,7 +169,84 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
     }
   }
 
-  fun checkPersonalCircumstanceDto(circumstance: PersonalCircumstanceDto, expectedType: CodeDescriptionDto, expectedSubType: CodeDescriptionDto, expectedUpdatedAt: OffsetDateTime) {
+  @Nested
+  inner class GetOffenceAndSentenceByCrn {
+    @Test
+    fun `should return a list when a list is returned`() {
+      val jsonRecord = NDeliusOffenceAndSentenceDtoFactory()
+        .withEventId(1)
+        .withOffence(CodeDescriptionDto("OFF", "Offence"))
+        .withOffenceSubCategory(CodeDescriptionDto("SUB", "Sub category"))
+        .withOutcome(CodeDescriptionDto("OUT", "Outcome"))
+        .withSentenceEndDate("2026-11-26T09:00Z")
+        .createAsJson()
+
+      stubFor(
+        get(urlEqualTo("/case/$CRN/offence-and-sentence"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody("[$jsonRecord]"),
+          ),
+      )
+
+      val result = nDeliusClient.getOffenceAndSentence(CRN)
+
+      assertThat(result).isNotNull
+      assertThat(result.size).isEqualTo(1)
+      assertThat(result[0].eventId).isEqualTo(1)
+      assertThat(result[0].offence?.code).isEqualTo("OFF")
+      assertThat(result[0].offence?.description).isEqualTo("Offence")
+      assertThat(result[0].offenceSubCategory?.code).isEqualTo("SUB")
+      assertThat(result[0].offenceSubCategory?.description).isEqualTo("Sub category")
+      assertThat(result[0].outcome?.code).isEqualTo("OUT")
+      assertThat(result[0].outcome?.description).isEqualTo("Outcome")
+      assertThat(result[0].sentenceEndDate).isEqualTo("2026-11-26T09:00Z")
+    }
+
+    @Test
+    fun `should return an empty list when nDelius returns nothing`() {
+      stubFor(
+        get(urlEqualTo("/case/$CRN/offence-and-sentence"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withHeader("Content-Type", "application/json")
+              .withBody("[]"),
+          ),
+      )
+
+      val result = nDeliusClient.getOffenceAndSentence(CRN)
+
+      assertThat(result).isNotNull
+      assertThat(result.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `should throw NotFoundException when nDelius returns 404`() {
+      stubFor(
+        get(urlEqualTo("/case/UNKNOWN/offence-and-sentence"))
+          .willReturn(
+            aResponse()
+              .withStatus(404)
+              .withHeader("Content-Type", "application/json")
+              .withBody(personDetailsAndCircumstancesNotFoundJson()),
+          ),
+      )
+
+      assertThrows(NotFoundException::class.java) {
+        nDeliusClient.getOffenceAndSentence("UNKNOWN")
+      }
+    }
+  }
+
+  fun checkPersonalCircumstanceDto(
+    circumstance: PersonalCircumstanceDto,
+    expectedType: CodeDescriptionDto,
+    expectedSubType: CodeDescriptionDto,
+    expectedUpdatedAt: OffsetDateTime,
+  ) {
     assertThat(circumstance.type?.code).isEqualTo(expectedType.code)
     assertThat(circumstance.type?.description).isEqualTo(expectedType.description)
     assertThat(circumstance.subType?.code).isEqualTo(expectedSubType.code)
@@ -171,7 +254,11 @@ class NDeliusClientIntegrationTest : IntegrationTestBase() {
     assertThat(circumstance.updatedAt).isEqualTo(expectedUpdatedAt)
   }
 
-  fun checkDisabilitiesDto(disabilities: DisabilitiesDto, expectedType: CodeDescriptionDto, expectedUpdatedAt: OffsetDateTime) {
+  fun checkDisabilitiesDto(
+    disabilities: DisabilitiesDto,
+    expectedType: CodeDescriptionDto,
+    expectedUpdatedAt: OffsetDateTime,
+  ) {
     assertThat(disabilities.type?.code).isEqualTo(expectedType.code)
     assertThat(disabilities.type?.description).isEqualTo(expectedType.description)
     assertThat(disabilities.updatedAt).isEqualTo(expectedUpdatedAt)
