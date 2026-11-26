@@ -108,6 +108,9 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
       val referral = referralHelper.createReferral()
 
+      val emptyCaseNotes = caseNoteRepository.findAllByReferralIdAndDeletedAtIsNullOrderByCreatedAtDesc(referral.id)
+      emptyCaseNotes.size shouldBe 0
+
       webTestClient.post()
         .uri("/referral/${referral.referenceNumber}/case-note")
         .headers(setAuthorisation())
@@ -151,6 +154,9 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
     fun `should return OK with success message when not supplying a pathway`() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
       val referral = referralHelper.createReferral()
+
+      val emptyCaseNotes = caseNoteRepository.findAllByReferralIdAndDeletedAtIsNullOrderByCreatedAtDesc(referral.id)
+      emptyCaseNotes.size shouldBe 0
 
       webTestClient.post()
         .uri("/referral/${referral.referenceNumber}/case-note")
@@ -259,6 +265,9 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
       whenever(userMapper.fromToken(any<HmppsAuthenticationHolder>())).thenReturn(testUser)
       val referral = referralHelper.createReferral()
 
+      val emptySessions = referralNonContactSessionRepository.findAllByReferralIdAndDeletedAtIsNullOrderByCreatedAtDesc(referral.id)
+      emptySessions.size shouldBe 0
+
       webTestClient.post()
         .uri("/referral/${referral.referenceNumber}/non-contact-session")
         .headers(setAuthorisation())
@@ -282,8 +291,12 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
           body.message shouldBe "Non contact session submitted successfully"
         }
 
+      val emptyCaseNotes = caseNoteRepository.findAllByReferralIdAndDeletedAtIsNullOrderByCreatedAtDesc(referral.id)
+      emptyCaseNotes.size shouldBe 0
+
       val sessions = referralNonContactSessionRepository.findAllByReferralIdAndDeletedAtIsNullOrderByCreatedAtDesc(referral.id)
       sessions.size shouldBe 1
+
       val session = sessions.first()
       session.title shouldBe "Test session title"
       session.details shouldBe "Test session details"
@@ -319,8 +332,10 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
           ),
         )
         .exchange()
-        .expectStatus().is4xxClientError
         .expectStatus().isEqualTo(400)
+        .expectBody()
+        .jsonPath("$.status").isEqualTo("400")
+        .jsonPath("$.userMessage").isEqualTo("Validation failure: pathways: The session must have at least one pathway")
     }
 
     @Test
@@ -345,6 +360,8 @@ class CaseNoteControllerIntegrationTest : IntegrationTestBase() {
         .exchange()
         .expectStatus().is4xxClientError
         .expectStatus().isEqualTo(400)
+        .expectBody()
+        .jsonPath("$.userMessage").isEqualTo("Validation failure: One of [12345678-1234-1234-1234-1234567890ab] is not a valid pathway ID")
     }
   }
 
