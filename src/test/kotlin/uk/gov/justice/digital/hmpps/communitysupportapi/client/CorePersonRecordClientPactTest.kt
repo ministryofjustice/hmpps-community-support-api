@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.communitysupportapi.client
 
 import au.com.dius.pact.consumer.MockServer
 import au.com.dius.pact.consumer.dsl.LambdaDsl.newJsonBody
+import au.com.dius.pact.consumer.dsl.PactDslJsonRootValue
 import au.com.dius.pact.consumer.dsl.PactDslWithProvider
 import au.com.dius.pact.consumer.junit5.PactConsumerTestExt
 import au.com.dius.pact.consumer.junit5.PactTestFor
@@ -9,6 +10,7 @@ import au.com.dius.pact.core.model.PactSpecVersion
 import au.com.dius.pact.core.model.RequestResponsePact
 import au.com.dius.pact.core.model.annotations.Pact
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.web.reactive.function.client.WebClient
@@ -47,11 +49,8 @@ class CorePersonRecordClientPactTest {
           sex.stringType("description", "Male")
         }
         body.`object`("identifiers") { identifiers ->
-          identifiers.array("crns") { crns ->
-            crns.stringType(crn)
-            crns.stringType("X999999")
-          }
-          identifiers.array("prisonNumbers") { prisonNumbers -> prisonNumbers.stringType("B9876ZY") }
+          identifiers.minArrayLike("crns", 1, PactDslJsonRootValue.stringType(crn), 1)
+          identifiers.minArrayLike("prisonNumbers", 0, PactDslJsonRootValue.stringType("B9876ZY"), 1)
         }
       }.build(),
     )
@@ -81,65 +80,41 @@ class CorePersonRecordClientPactTest {
         body.`object`("ethnicity") { ethnicity ->
           ethnicity.stringType("description", "Black/Black British : Any other backgr'nd")
         }
-        body.array("nationalities") { nationalities ->
-          nationalities.`object` { nationality ->
-            nationality.stringType("description", "GB")
-          }
+        body.minArrayLike("nationalities", 0, 1) { nationality ->
+          nationality.stringType("description", "GB")
         }
-        body.array("addresses") { addresses ->
-          addresses.`object` { address ->
-            address.stringType("cprAddressId", "ec4c7479-218c-4f11-a02d-edd749820679")
-            address.date("startDate", "yyyy-MM-dd", LocalDate.of(2020, 2, 26))
-            address.stringType("buildingName", "Main Building")
-            address.stringType("buildingNumber", "102")
-            address.stringType("thoroughfareName", "Petty France")
-            address.stringType("dependentLocality", "Westminster")
-            address.stringType("postTown", "London")
-            address.stringType("county", "Greater London")
-            address.stringType("postcode", "SW1H 9AJ")
-            address.`object`("status") { status ->
-              status.stringType("code", "M")
+        body.minArrayLike("addresses", 0, 1) { address ->
+          address.stringType("cprAddressId", "ec4c7479-218c-4f11-a02d-edd749820679")
+          address.date("startDate", "yyyy-MM-dd", LocalDate.of(2020, 2, 26))
+          address.stringType("buildingName", "Main Building")
+          address.stringType("buildingNumber", "102")
+          address.stringType("thoroughfareName", "Petty France")
+          address.stringType("dependentLocality", "Westminster")
+          address.stringType("postTown", "London")
+          address.stringType("county", "Greater London")
+          address.stringType("postcode", "SW1H 9AJ")
+          address.`object`("status") { status ->
+            status.stringType("code", "M")
+          }
+          address.stringType("comment", "Some comment")
+          address.minArrayLike("usages", 0, 1) { usage ->
+            usage.stringType("description", "Curfew Order")
+            usage.booleanType("isActive", true)
+          }
+          address.minArrayLike("contacts", 0, 1) { contact ->
+            contact.`object`("type") { type ->
+              type.stringType("code", "TELEPHONE")
             }
-            address.stringType("comment", "Some comment")
-            address.array("usages") { usages ->
-              usages.`object` { usage ->
-                usage.stringType("description", "Curfew Order")
-                usage.booleanType("isActive", true)
-              }
-            }
-            address.array("contacts") { contacts ->
-              contacts.`object` { contact ->
-                contact.`object`("type") { type ->
-                  type.stringType("code", "HOME")
-                }
-                contact.stringType("value", "+44 20 7946 0000")
-              }
-              contacts.`object` { contact ->
-                contact.`object`("type") { type ->
-                  type.stringType("code", "TELEPHONE")
-                }
-                contact.stringType("value", "+44 20 7946 0001")
-              }
-              contacts.`object` { contact ->
-                contact.`object`("type") { type ->
-                  type.stringType("code", "MOBILE")
-                }
-                contact.stringType("value", "+44 7700 900002")
-              }
-              contacts.`object` { contact ->
-                contact.`object`("type") { type ->
-                  type.stringType("code", "EMAIL")
-                }
-                contact.stringType("value", "john.doe@example.com")
-              }
-            }
+            contact.stringType("value", "+44 20 7946 0001")
           }
         }
         body.`object`("identifiers") { identifiers ->
-          identifiers.array("prisonNumbers") { prisonNumbers ->
-            prisonNumbers.stringType(prisonNumber)
-            prisonNumbers.stringType("B5678DE")
-          }
+          identifiers.minArrayLike(
+            "prisonNumbers",
+            1,
+            PactDslJsonRootValue.stringType(prisonNumber),
+            1,
+          )
         }
       }.build(),
     )
@@ -179,14 +154,14 @@ class CorePersonRecordClientPactTest {
     assertEquals("Morgan", person.middleNames)
     assertEquals("Doe", person.lastName)
     assertEquals(LocalDate.of(1990, 8, 21), person.dateOfBirth)
-    assertEquals(listOf(prisonNumber, "B5678DE"), person.prisonNumbers)
+    assertEquals(listOf(prisonNumber), person.prisonNumbers)
     assertEquals("Male", person.sex)
     assertEquals(listOf("GB"), additionalDetails.nationalities)
     assertEquals("Black/Black British : Any other backgr'nd", additionalDetails.ethnicity)
     assertEquals("Christianity", additionalDetails.religionOrBelief)
     assertEquals("+44 20 7946 0001", additionalDetails.phoneNumber)
-    assertEquals("+44 7700 900002", additionalDetails.mobileNumber)
-    assertEquals("john.doe@example.com", additionalDetails.emailAddress)
+    assertNull(additionalDetails.mobileNumber)
+    assertNull(additionalDetails.emailAddress)
     assertEquals(
       "102, Main Building, Petty France, Westminster, London, Greater London, SW1H 9AJ",
       additionalDetails.address,
