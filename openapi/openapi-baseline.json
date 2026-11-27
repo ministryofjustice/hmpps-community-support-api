@@ -5536,43 +5536,6 @@
         ]
       }
     },
-    "/bff/ics-feedback/{caseReference}/attendance": {
-      "get": {
-        "operationId": "getIcsFeedbackAttendance",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "caseReference",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IcsFeedbackAttendanceBffDto"
-                }
-              }
-            },
-            "description": "Attendance page details found"
-          },
-          "404": {
-            "content": {
-              "application/json": {}
-            },
-            "description": "Referral or ICS appointment not found"
-          }
-        },
-        "summary": "Get referral first name, appointment date and time for the ICS feedback attendance page",
-        "tags": [
-          "appointment-controller"
-        ]
-      }
-    },
     "/bff/ics-feedback/{caseReference}/check-answers": {
       "get": {
         "operationId": "getIcsFeedbackCheckAnswers",
@@ -5679,6 +5642,52 @@
           }
         },
         "summary": "Get referral first name for the ICS feedback how they tried to contact the person page",
+        "tags": [
+          "appointment-controller"
+        ]
+      }
+    },
+    "/bff/ics-feedback/{caseReference}/ics/{icsId}/attendance": {
+      "get": {
+        "operationId": "getIcsFeedbackAttendance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseReference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "icsId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IcsFeedbackAttendanceBffDto"
+                }
+              }
+            },
+            "description": "Attendance page details found"
+          },
+          "404": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Referral or ICS appointment not found"
+          }
+        },
+        "summary": "Get referral first name, appointment date and time for the ICS feedback attendance page",
         "tags": [
           "appointment-controller"
         ]
