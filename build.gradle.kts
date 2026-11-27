@@ -90,7 +90,7 @@ tasks {
   }
 }
 
-val compileKotlin: KotlinCompile by tasks
+val compileKotlin = tasks.getByName<KotlinCompile>("compileKotlin")
 compileKotlin.compilerOptions {
   freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
 }
@@ -100,7 +100,7 @@ allOpen {
   annotation("jakarta.persistence.MappedSuperclass")
   annotation("jakarta.persistence.Embeddable")
 }
-val compileTestKotlin: KotlinCompile by tasks
+val compileTestKotlin = tasks.getByName<KotlinCompile>("compileTestKotlin")
 compileTestKotlin.compilerOptions {
   freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
 }
@@ -126,7 +126,7 @@ tasks.register<Test>("pactTest") {
   }
 }
 
-val test by testing.suites.existing(JvmTestSuite::class)
+val test = testing.suites.named<JvmTestSuite>("test")
 
 tasks.register<Test>("initialiseDatabase") {
   testClassesDirs = files(test.map { it.sources.output.classesDirs })

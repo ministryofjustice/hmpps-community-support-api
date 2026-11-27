@@ -386,12 +386,13 @@ class AppointmentController(
       ApiResponse(responseCode = "404", description = "Referral or ICS appointment not found", content = [Content(mediaType = "application/json")]),
     ],
   )
-  @GetMapping("/bff/ics-feedback/{caseReference}/attendance")
+  @GetMapping("/bff/ics-feedback/{caseReference}/ics/{icsId}/attendance")
   fun getIcsFeedbackAttendance(
     @PathVariable caseReference: String,
+    @PathVariable icsId: UUID,
   ): ResponseEntity<IcsFeedbackAttendanceBffDto> {
-    log.info("GET /bff/ics-feedback/{}/attendance", caseReference)
-    return ResponseEntity.ok(appointmentService.getIcsFeedbackAttendance(caseReference))
+    log.info("GET /bff/ics-feedback/{}/ics/{}/attendance", caseReference, icsId)
+    return ResponseEntity.ok(appointmentService.getIcsFeedbackAttendance(caseReference, icsId))
   }
 
   @Operation(summary = "Get referral first name, appointment date and time for the ICS feedback session details page")
