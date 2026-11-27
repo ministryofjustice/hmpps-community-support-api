@@ -1,10 +1,10 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.15"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.1.2"
   kotlin("plugin.spring") version "2.4.21"
   kotlin("plugin.jpa") version "2.4.21"
-  id("au.com.dius.pact") version "4.6.5"
+  id("au.com.dius.pact") version "4.7.7"
 }
 
 configurations {
@@ -32,9 +32,12 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webmvc")
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+  // Springdoc 3.2.1 moved to swagger-core 3.0.0 (Jackson 3), while the latest swagger-parser 2.1.49
+  // still depends on swagger-core 2.x and Jackson 2. Temporarily pinning Springdoc to 3.2.0
+  // to avoid runtime issues with swagger-parser until it is updated to support swagger-core 3.0.0 and Jackson 3.
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0")
   // Swagger UI 5.35.0 bundles DOMPurify patched for CVE-2026-116802 and CVE-2026-116803.
-  implementation("org.webjars:swagger-ui:5.35.0")
+  implementation("org.webjars:swagger-ui:5.36.0")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-flyway")
   implementation("org.springframework:spring-web")
@@ -45,7 +48,7 @@ dependencies {
   // security
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
   implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
-  implementation("org.springframework.security:spring-security-crypto:7.1.2")
+  implementation("org.springframework.security:spring-security-crypto:7.2.0")
   implementation("com.nimbusds:oauth2-oidc-sdk:11.39")
 
   // csv
@@ -58,7 +61,7 @@ dependencies {
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:3.1.0")
   testImplementation("org.mockito.kotlin:mockito-kotlin:6.4.0")
   testImplementation("org.wiremock:wiremock-standalone:3.13.2")
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.48") {
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.49") {
     exclude(group = "io.swagger.core.v3")
   }
   testImplementation("org.testcontainers:postgresql:1.21.4")
@@ -67,10 +70,10 @@ dependencies {
   testImplementation("com.ninja-squad:springmockk:5.0.1")
   testImplementation("io.kotest:kotest-assertions-core:6.2.7")
   testImplementation("io.mockk:mockk:1.14.12")
-  testImplementation("au.com.dius.pact.consumer:junit5:4.6.5")
+  testImplementation("au.com.dius.pact.consumer:junit5:4.7.7")
 
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
-  runtimeOnly("org.postgresql:postgresql:42.7.14")
+  runtimeOnly("org.postgresql:postgresql:42.7.15")
 
   testImplementation("org.awaitility:awaitility-kotlin:4.3.0")
 }
