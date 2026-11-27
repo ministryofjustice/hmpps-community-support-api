@@ -157,7 +157,7 @@ class AppointmentIcsFeedbackControllerIntegrationTest : IntegrationTestBase() {
         }
 
       webTestClient.get()
-        .uri("/bff/ics-feedback/$referralCaseReference/attendance")
+        .uri("/bff/ics-feedback/$referralCaseReference/ics/$retrospectiveId/attendance")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk

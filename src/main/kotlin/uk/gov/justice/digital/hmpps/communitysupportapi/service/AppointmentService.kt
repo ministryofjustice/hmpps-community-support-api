@@ -375,15 +375,29 @@ class AppointmentService(
   }
 
   /**
-   * Returns the referral's first name and the latest created ICS appointment date and time for the attendance page.
+   * Returns the referral's first name and the specified ICS appointment's date and time for the attendance page.
    */
   @Transactional(readOnly = true)
-  fun getIcsFeedbackAttendance(caseReference: String): IcsFeedbackAttendanceBffDto {
+  fun getIcsFeedbackAttendance(caseReference: String, icsId: UUID): IcsFeedbackAttendanceBffDto {
     val referral = referralLookupService.findByCaseIdentifier(caseReference)
     val referralFirstName = referralFirstName(referral)
-    val appointmentHistory = getLatestCreatedIcsAppointmentHistory(referral)
+    val appointmentHistory = getIcsAppointmentHistoryForReferral(referral, icsId)
 
     return IcsFeedbackAttendanceBffDto.from(referralFirstName, appointmentHistory)
+  }
+
+  /**
+   * Returns the ICS appointment history entry for the given ICS appointment ID, verifying it belongs to the referral.
+   */
+  private fun getIcsAppointmentHistoryForReferral(referral: Referral, icsId: UUID): AppointmentHistory {
+    val appointmentHistory = appointmentIcsRepository.findById(icsId)
+      .orElseThrow { NotFoundException("ICS appointment not found: $icsId") }
+
+    if (appointmentHistory.appointment.referral.id != referral.id) {
+      throw NotFoundException("ICS appointment not found for referral reference number: ${referral.referenceNumber}")
+    }
+
+    return appointmentHistory
   }
 
   /**

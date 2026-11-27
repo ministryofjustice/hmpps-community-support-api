@@ -1440,11 +1440,18 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should enforce authorization for attendance`() {
-      val path = "/bff/ics-feedback/${referral.referenceNumber}/attendance"
+      val appointment = appointmentHelper.createAppointment(referral)
+      val appointmentHistory = appointmentHelper.createAppointmentIcs(
+        appointment = appointment,
+        user = testUser,
+        communications = listOf("Email"),
+      )
+      val path = "/bff/ics-feedback/${referral.referenceNumber}/ics/${appointmentHistory.id}/attendance"
       assertUnauthorized(HttpMethod.GET, path)
       assertForbiddenNoRole(HttpMethod.GET, path)
       assertForbiddenWrongRole(HttpMethod.GET, path)
-      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${UUID.randomUUID()}/attendance")
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${UUID.randomUUID()}/ics/${appointmentHistory.id}/attendance")
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/ics/${UUID.randomUUID()}/attendance")
     }
 
     @Test
@@ -1511,7 +1518,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return 404 for attendance when no ICS appointment exists`() {
-      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/attendance")
+      assertNotFound(HttpMethod.GET, "/bff/ics-feedback/${referral.referenceNumber}/ics/${UUID.randomUUID()}/attendance")
     }
 
     @Test
@@ -1521,7 +1528,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       val appointmentDateTime = LocalDateTime.of(2026, 3, 27, 15, 0)
       val delivery = appointmentHelper.createAppointmentDelivery(AppointmentDeliveryMethod.VIDEO_CALL, "Zoom link")
 
-      appointmentHelper.createAppointmentIcs(
+      val appointmentHistory = appointmentHelper.createAppointmentIcs(
         appointment,
         delivery,
         testUser,
@@ -1532,7 +1539,7 @@ class AppointmentControllerIntegrationTest : IntegrationTestBase() {
       appointmentHelper.createAppointmentStatusHistory(appointment)
 
       webTestClient.get()
-        .uri("/bff/ics-feedback/${referral.referenceNumber}/attendance")
+        .uri("/bff/ics-feedback/${referral.referenceNumber}/ics/${appointmentHistory.id}/attendance")
         .headers(setAuthorisation())
         .exchange()
         .expectStatus()
